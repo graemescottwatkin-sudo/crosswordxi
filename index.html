@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111111" />
+  <title>CrosswordXI</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.06), transparent 34%),
+        #101010;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center;
+    }
+
+    main {
+      width: min(760px, 100%);
+    }
+
+    .mark {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 26px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .mark span {
+      background: #ffffff;
+      border-radius: 2px;
+    }
+
+    .mark span:nth-child(2),
+    .mark span:nth-child(4),
+    .mark span:nth-child(6),
+    .mark span:nth-child(8) {
+      background: #d7b65d;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 10vw, 7rem);
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+    }
+
+    .xi {
+      color: #d7b65d;
+    }
+
+    p {
+      margin: 22px auto 0;
+      max-width: 560px;
+      color: #bdbdbd;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      line-height: 1.6;
+    }
+
+    .coming-soon {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 10px 16px;
+      border: 1px solid #343434;
+      border-radius: 999px;
+      color: #e7e7e7;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+
+    <h1>Crossword<span class="xi">XI</span></h1>
+    <p>A new daily football crossword game is coming soon.</p>
+    <div class="coming-soon">Coming Soon</div>
+  </main>
+</body>
+</html>
