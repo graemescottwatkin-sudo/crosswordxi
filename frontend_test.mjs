@@ -202,9 +202,23 @@ server.listen(0, "127.0.0.1", async () => {
     // The width freed by removing the sidebar goes to the pitch, not the cells.
     return /Math\.min\(52, size\)/.test(js) && !/Math\.min\(6[0-9], size\)/.test(js);
   })());
-  t("the pitch box takes the full content width, with the grid centred on it",
-    /\.grid-wrap\{[^}]*width:100%[^}]*justify-content:center/.test(css));
-  t("clue strip, board and clue columns share one width measure", (() => {
+  t("the pitch hugs the grid rather than spanning the content width", (() => {
+    // Full width put a small crossword in the middle of a huge pitch on a real
+    // iPad. The turf is a margin around the board, not a field it floats on.
+    return /\.grid-wrap\{[^}]*align-self:center/.test(css) &&
+      // `max-width:100%` contains "width:100%": match a bare declaration only.
+      !/\.grid-wrap\{[^}]*[;{]width:100%/.test(css);
+  })());
+  t("landscape tablets get their chrome trimmed so the board has height", (() => {
+    // Height binds on a landscape tablet, not width: header, toolbar, clue card
+    // and keyboard together leave the grid only a few hundred pixels.
+    return /@media \(orientation:landscape\) and \(max-height:1100px\)/.test(css) &&
+      /@media \(orientation:landscape\) and \(max-height:820px\)/.test(css);
+  })());
+  t("the board never shrinks to a token size on tablet and up",
+    /window\.innerWidth \|\| 360\) >= 700 \? 30 : 20/.test(
+      fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")));
+  t("clue columns follow the board's width, not the page's", (() => {
     // All three take their measure from the board box, so they line up as the
     // cell size changes rather than each aligning to the page.
     return /\.now-clue\{[^}]*width:100%/.test(css) &&

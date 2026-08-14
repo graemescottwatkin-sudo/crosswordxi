@@ -4,7 +4,7 @@
 MatchFitness XI suite alongside Scrambled XI and Missing XI.
 
 > **Status: complete and ready to upload.** The game, the API, the database
-> schema and the tooling are all here and tested together — 434 checks across
+> schema and the tooling are all here and tested together — 441 checks across
 > six suites. It runs as soon as you commit it, using the small development
 > dataset, and switches to your real clue bank once you finish step F.
 
@@ -167,7 +167,7 @@ npm install jsdom          # once, for the frontend suite
 node functions_test.mjs    # 30 — the API contract
 node d1_test.mjs           # 16 — database semantics against production row ids
 node frontend_test.mjs     # 39 — the real game against the real API, and layout
-node viewport_test.mjs     #  6 — no rule can force horizontal overflow
+node viewport_test.mjs     # 11 — overflow, keyboard fit, breakpoint cascade
 node deploy_check.mjs      # 13 — the pre-upload checklist
 ```
 

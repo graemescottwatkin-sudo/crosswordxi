@@ -280,12 +280,13 @@ header{
    rather than a square, and the markings have room to show around the grid.
    Absolute positioning keeps the backdrop out of fitCells()'s measurement. */
 .grid-wrap{
-  /* Full main-content width, with the grid centred on it. The pitch takes the
-     space the sidebar used to occupy; the crossword itself stays the same size,
-     so a wide monitor gets a bigger pitch rather than bigger squares. */
-  width:100%;position:relative;z-index:1;
-  display:flex;justify-content:center;
-  padding:clamp(9px,1.6vw,20px) clamp(14px,2.5vw,32px);
+  /* The pitch hugs the grid rather than spanning the content width. Full width
+     looked right in the abstract and wrong on a real iPad: the crossword sat
+     small in the middle of an enormous pitch, which is the opposite of the
+     board being the focus. The turf is a margin around the board, not a field
+     the board floats on. */
+  position:relative;z-index:1;align-self:center;max-width:100%;
+  padding:clamp(9px,1.6vw,20px) clamp(14px,2.2vw,30px);
 }
 .pitch-bg{
   position:absolute;inset:0;z-index:0;border-radius:12px;
@@ -628,15 +629,29 @@ tr.faroff{display:none}
   position:sticky;bottom:0;z-index:20;display:none;
   background:var(--paper);border-top:1px solid var(--line);
   padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  /* Two dials, so height and width are tuned independently. Keys used to be
+     capped at 44px wide, which on a tablet left the keyboard huddled in the
+     middle of the screen with small letters and a lot of empty space either
+     side. Width now scales with the viewport; height is scaled by viewport
+     height, because that is the scarce dimension in landscape. */
+  /* The widest row is 10 keys, so the floor has to fit the narrowest phone:
+     10 keys + 9 gaps + padding must clear 320px. 27 + 9x3 + 8 = 305. */
+  --osk-key:clamp(27px,8vw,64px);
+  --osk-h:clamp(34px,5.4vh,52px);
+  --osk-gap:clamp(3px,0.7vw,8px);
 }
 body.touch .osk{display:block}
-.osk-row{display:flex;justify-content:center;gap:4px;margin-bottom:5px}
+.osk-row{display:flex;justify-content:center;gap:var(--osk-gap);margin-bottom:var(--osk-gap)}
 .osk-key{
-  flex:1;max-width:44px;height:46px;border:1px solid var(--line);border-radius:6px;
-  background:var(--card);font-family:var(--disp);font-weight:600;font-size:18px;color:var(--ink);
+  flex:0 0 auto;width:var(--osk-key);height:var(--osk-h);
+  border:1px solid var(--line);border-radius:6px;
+  background:var(--card);font-family:var(--disp);font-weight:600;
+  /* Clamped, not purely proportional: a plain ratio would have made the
+     letters smaller on a phone than they were before, while fixing the tablet. */
+  font-size:clamp(16px,calc(var(--osk-key) * .42),26px);color:var(--ink);
 }
 .osk-key:active{background:var(--sel-cell)}
-.osk-key.wide{max-width:66px;font-size:15px}
+.osk-key.wide{width:calc(var(--osk-key) * 1.5);font-size:clamp(14px,calc(var(--osk-key) * .32),20px)}
 
 /* ============ COMPLETION ============ */
 .overlay{
@@ -726,8 +741,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 
 /* ============ RESPONSIVE ============ */
 @media (max-width:900px){
-  .stage{grid-template-columns:1fr;gap:16px;padding-bottom:8px;justify-items:center}
-  .clues{grid-template-columns:1fr 1fr;gap:14px}
+  /* The stage is flex now; grid-template-columns here was left over from the
+     two-column layout and did nothing. The .clues override did do something,
+     and it was wrong: this block sits after the 820px stacking rule, so it won
+     the cascade and forced two columns from 641px to 820px — exactly the width
+     where the clue text needed to stack. Removed rather than reordered. */
+  .stage{gap:16px;padding-bottom:8px}
   header{padding:12px 12px 9px}
 }
 @media (max-width:640px){
@@ -756,4 +775,31 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .masthead{font-size:22px}
   .strap{font-size:9.5px;letter-spacing:.2em;margin-top:3px}
   .stage{padding:6px 8px 8px;gap:10px}
+}
+
+
+/* ============ SHORT AND LANDSCAPE: GIVE THE BOARD THE HEIGHT ============
+   On a landscape tablet the header, toolbar, clue card and on-screen keyboard
+   together leave the grid only a few hundred pixels, so the cells come out
+   small however wide the page is — height binds, not width. These rules trim
+   the chrome rather than the board. Nothing here changes on a desktop monitor,
+   where there is height to spare. */
+@media (orientation:landscape) and (max-height:1100px){
+  header{padding:8px 20px 6px}
+  .masthead{font-size:clamp(20px,2.6vw,26px)}
+  .brandline{display:none}          /* the masthead already says it */
+  .strap{font-size:9.5px;margin-top:2px}
+  .toolbar{padding:7px 9px;margin:7px auto 3px}
+  .tb-table table.league td{padding:1px 6px}
+  .tb-table .club-bar{margin-bottom:4px}
+  .now-clue{height:76px}            /* one line plus the bank, which is inline here */
+  .stage{gap:14px;padding:6px 16px 24px}
+  .grid-wrap{padding:10px 16px}
+  .osk{padding:4px 4px calc(4px + env(safe-area-inset-bottom));--osk-h:clamp(32px,4.6vh,44px)}
+}
+@media (orientation:landscape) and (max-height:820px){
+  .masthead{font-size:20px}
+  .strap{display:none}
+  .now-clue{height:68px}
+  .osk{--osk-h:clamp(30px,4.2vh,38px)}
 }

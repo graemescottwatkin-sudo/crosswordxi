@@ -743,7 +743,13 @@
        monitor reads as oversized rather than substantial. The width goes to the
        pitch around the grid instead: the board box is full width and the grid
        sits centred on it, so the extra space becomes turf. */
-    size = Math.max(20, Math.min(52, size));
+    /* Floor raised from 20 to 30 on anything but a phone. A 20px cell keeps the
+       whole board above the keyboard, but at that size it stops being the thing
+       the page is for — better to let the board be substantial and let the page
+       scroll a little. Phones keep the low floor: there, fitting the board on
+       screen matters more than its size. */
+    var floor = (window.innerWidth || 360) >= 700 ? 30 : 20;
+    size = Math.max(floor, Math.min(52, size));
     if (size !== lastCellSize) {
       lastCellSize = size;
       document.documentElement.style.setProperty("--cell", size + "px");
