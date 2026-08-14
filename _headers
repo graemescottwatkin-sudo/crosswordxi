@@ -1,0 +1,21 @@
+# Cloudflare Pages headers.
+#
+# The whole game is one HTML file, so caching it is the only caching decision
+# that matters. It must always revalidate: a new build has to reach players the
+# moment it is committed, and a stale copy would serve yesterday's puzzle logic.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Puzzle responses carry today's clues and must never sit in a shared cache.
+# The Functions set this themselves too; this is belt and braces.
+/api/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex
