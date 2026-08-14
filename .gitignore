@@ -8,6 +8,10 @@
 data/clues-production.sql
 data/puzzles-production.sql
 data/*-production.sql
+
+# Preview builds inline the answers so they can run offline — the exact thing
+# moving the bank to D1 removed. Never commit one.
+crosswordxi-preview-*.html
 *.local.json
 
 # Cloudflare / wrangler

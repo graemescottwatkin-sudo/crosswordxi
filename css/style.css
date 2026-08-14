@@ -880,10 +880,15 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .toolbar{padding:7px 9px;margin:7px auto 3px}
   .tb-table table.league td{padding:1px 6px}
   .tb-table .club-bar{margin-bottom:4px}
-  .now-clue{height:76px}            /* one line plus the bank, which is inline here */
+  .now-clue{height:64px}            /* one line plus the bank, which is inline here */
   .stage{gap:14px;padding:6px 16px 24px}
   .grid-wrap{padding:10px 16px}
-  .osk{padding:4px 4px calc(4px + env(safe-area-inset-bottom));--osk-h:clamp(32px,4.6vh,44px)}
+  /* Keyboard height is the last thing standing between the board and the space
+     it needs. Keys stay wide — width costs nothing here — but lose a little
+     height, which goes straight into the cells. */
+  .osk{padding:3px 4px calc(3px + env(safe-area-inset-bottom));--osk-h:clamp(30px,4vh,38px);
+    --osk-gap:clamp(4px,0.6vw,7px)}
+  .stage{padding-top:4px}
 
   .tb-help{padding:5px 9px 6px}
   .tb-label{font-size:9px}

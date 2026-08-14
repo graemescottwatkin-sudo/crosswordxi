@@ -73,8 +73,14 @@ t("the phone clue card is shorter but still fixed, so the board cannot jump", ((
    limited only by height. Anything the toolbar gives back becomes cells. */
 const flatCss = css.replace(/\s*\n\s*/g, "");
 const landscape = flatCss.slice(flatCss.indexOf("@media (orientation:landscape) and (max-height:1100px)"));
-t("the landscape toolbar collapses the league table to one row",
-  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(landscape.slice(0, 1200)));
+/* Slice the block it actually belongs to, not a fixed number of characters
+   from a neighbouring one — the first version of this drifted out of range the
+   moment nearby rules grew. */
+const narrowLandscape = flatCss.slice(
+  flatCss.indexOf("and (max-height:1100px) and (max-width:999px)"),
+  flatCss.indexOf("and (max-height:1100px) and (min-width:1000px)"));
+t("narrow landscape collapses the league table to one row",
+  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(narrowLandscape));
 t("narrow landscape collapses the table, where there is no room for a rail",
   /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:999px\)/.test(flatCss));
 t("wide landscape puts the toolbar in a side rail instead", (() => {

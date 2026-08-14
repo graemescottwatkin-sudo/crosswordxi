@@ -214,6 +214,25 @@ themselves points. Fixing that needs accounts and a server-side game session,
 which is a much larger change for a puzzle with no login — worth doing only if
 you ever add a shared leaderboard.
 
+## I2. Seeing a build without deploying it
+
+```bash
+node tools/build_preview.js
+```
+
+Writes `crosswordxi-preview-<build>.html` one level up: one file, everything
+inlined, with the API answered from the development puzzles. Open it in any
+browser on any device — no server, no deploy, no Cloudflare.
+
+**Never upload a preview.** The shim has to answer `check-answer` and `reveal`,
+so the answers are inside the file — exactly what moving the bank to D1 removed.
+It carries a red banner and a `noindex` tag, it is gitignored, and
+`deploy_check.mjs` fails if one is ever found in the package.
+
+Two things differ from the deployed site: puzzles come from the handful of
+development samples rather than D1, and the fonts still load from Google, so it
+looks slightly different offline. Layout, CSS and game code are identical.
+
 ## J. Checking which build is live
 
 Every release tags its asset URLs (`css/style.css?v=v06g`) and prints the build

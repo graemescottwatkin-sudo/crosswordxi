@@ -58,6 +58,12 @@ t("no production SQL is present in the package",
 t("no secrets are committed", !has(".env") && !has(".dev.vars") &&
   !/(api[_-]?key|password|secret)\s*[:=]\s*["'][^"']{8,}/i.test(all));
 t("no node_modules in the package", !has("node_modules"));
+t("no preview build is in the package", (() => {
+  // A preview inlines the answers so it can run from disk. It must never reach
+  // the repository, which is what the whole D1 move was for.
+  return !fs.readdirSync(DIR).some((f) => /^crosswordxi-preview-.*\.html$/.test(f)) &&
+    /crosswordxi-preview-\*\.html/.test(read(".gitignore"));
+})());
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
