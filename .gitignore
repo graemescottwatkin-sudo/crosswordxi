@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# THE CLUE BANK MUST NEVER BE COMMITTED.
+# These files contain every question and answer. They are generated locally by
+# the scripts in tools/ and loaded straight into D1 with wrangler. If they ever
+# reach GitHub, the whole point of moving the bank server-side is lost — and
+# git history keeps them even after deletion.
+# ---------------------------------------------------------------------------
+data/clues-production.sql
+data/puzzles-production.sql
+data/*-production.sql
+*.local.json
+
+# Cloudflare / wrangler
+.wrangler/
+.dev.vars
+wrangler.toml.local
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS and editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
+.idea/
+.vscode/
