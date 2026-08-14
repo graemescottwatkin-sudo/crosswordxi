@@ -24,6 +24,7 @@
   --gold:#F2C94C;
   --gold-ink:#3A2D00;
   --gold-ans:#F8E9B8;
+  --cell-bg:#FFFFFF;
   /* Turf: a pale, desaturated field. The grid's white cells and near-black
      blocks must still dominate, so these sit only a step off --paper. */
   --turf-a:#2F7D4E;
@@ -31,10 +32,15 @@
   --turf-line:rgba(255,255,255,.34);
   --turf-edge:rgba(18,59,39,.45);
 }
+/* Theme. Follows the operating system by default — which is why the same
+   build is dark on an iPad in dark mode and light on a phone that is not.
+   The footer control writes data-theme to override it, so a player can
+   choose rather than inherit. */
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --paper:#12160F;
     --card:#1B2118;
+  --cell-bg:#5A6356;
     --ink:#E6EAE2;
     --ink-soft:#9BA894;
     --ink-faint:#75816F;
@@ -42,9 +48,9 @@
     --pitch-deep:#8FD9AE;
     --block:#070907;
     --block-line:#070907;
-    --cell-line:#2E3A2A;
-    --sel-word:#22321F;
-    --sel-cell:#2E4A32;
+    --cell-line:#8D9788;
+    --sel-word:#47513F;
+    --sel-cell:#6E8564;
     --wrong:#E3695A;
     --wrong-ink:#FFD9D3;
     --wrong-bg:#4A231D;
@@ -54,8 +60,8 @@
     --gold:#C9A227;
     --gold-ink:#120E00;
     --gold-ans:#5C4E1E;
-    --turf-a:#22513A;
-    --turf-b:#1D4732;
+    --turf-a:#14301F;
+    --turf-b:#11261B;
     --turf-line:rgba(255,255,255,.20);
     --turf-edge:rgba(0,0,0,.45);
   }
@@ -66,6 +72,34 @@
   .dev pre{background:#141A12}
   .kick-card,.result{border-top-color:var(--pitch)}
   .grid{box-shadow:none}
+}
+:root[data-theme="dark"]{
+  --paper:#12160F;
+  --card:#1B2118;
+  --cell-bg:#5A6356;
+  --ink:#E6EAE2;
+  --ink-soft:#9BA894;
+  --ink-faint:#75816F;
+  --pitch:#4FB07C;
+  --pitch-deep:#8FD9AE;
+  --block:#070907;
+  --block-line:#070907;
+  --cell-line:#8D9788;
+  --sel-word:#47513F;
+  --sel-cell:#6E8564;
+  --wrong:#E3695A;
+  --wrong-ink:#FFD9D3;
+  --wrong-bg:#4A231D;
+  --revealed:#8AA0B6;
+  --line:#2A3326;
+  --wordbreak:#4A5C4E;
+  --gold:#C9A227;
+  --gold-ink:#120E00;
+  --gold-ans:#5C4E1E;
+  --turf-a:#14301F;
+  --turf-b:#11261B;
+  --turf-line:rgba(255,255,255,.20);
+  --turf-edge:rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -163,6 +197,13 @@ header{
   font-family:var(--disp);font-weight:600;font-size:9.5px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--ink-faint);line-height:1;
 }
+/* The help label doubles as the collapse control on phones. It stays a real
+   button for keyboard and screen-reader users at every width; above 640px it
+   simply has nothing to collapse. */
+button.tb-label{
+  background:none;border:none;padding:0;cursor:default;text-align:left;
+}
+@media (max-width:640px){ button.tb-label{cursor:pointer} }
 .toolbar .btn{padding:0 12px;height:34px;font-size:14px;white-space:nowrap;
   display:inline-flex;align-items:center;gap:4px}
 .tb-sep{width:1px;height:26px;background:var(--line);margin:0 3px}
@@ -317,7 +358,7 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
   touch-action:manipulation;user-select:none;-webkit-user-select:none;
 }
 .cell{
-  width:var(--cell);height:var(--cell);position:relative;background:var(--card);
+  width:var(--cell);height:var(--cell);position:relative;background:var(--cell-bg);
   border-right:1px solid var(--cell-line);border-bottom:1px solid var(--cell-line);
   display:flex;align-items:center;justify-content:center;
   font-family:var(--disp);font-weight:600;
@@ -357,7 +398,7 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
 .cell.gold.active,.cell.gold-ans.active{box-shadow:inset 0 0 0 2px var(--pitch-deep)}
 /* softened multi-word separators (max 2px) */
 .cell.just-solved{animation:solved .6s ease}
-@keyframes solved{0%{background:var(--sel-cell)}100%{background:var(--card)}}
+@keyframes solved{0%{background:var(--sel-cell)}100%{background:var(--cell-bg)}}
 @media (prefers-reduced-motion:reduce){.cell.just-solved{animation:none}}
 .cell.brk-r{border-right:2px solid var(--wordbreak)}
 .cell.brk-b{border-bottom:2px solid var(--wordbreak)}
@@ -787,6 +828,34 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .tb-table{padding:5px 8px 5px;min-width:0;flex:1 1 100%}
   .tb-season{font-size:8.5px;margin-top:3px}
   .tb-help{padding:5px 7px 6px;flex:1 1 100%}
+  .tb-help.collapsed .tb-row{display:none}
+  .tb-help.collapsed{padding-bottom:5px}
+  .help-toggle::after{content:" \25BE";font-size:8px}
+  .tb-help.collapsed .help-toggle::after{content:" \25B8"}
+
+  /* Phone header, in three lines rather than five:
+       clock · solved · pause · new
+       check · all · letter · answer
+       (the league table has moved below the board)
+     Each is one row, so the board starts far higher up the screen. */
+  .tb-left{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:5px}
+  .tb-match,.tb-game{gap:5px;flex-wrap:nowrap}
+  .tb-row{grid-template-columns:repeat(4,1fr);grid-auto-flow:row;
+    grid-template-rows:none;gap:4px}
+  .tb-row .btn{padding:0 5px;font-size:11px;letter-spacing:.02em;height:30px;
+    justify-content:center;gap:3px}
+  .tb-row .cost{font-size:9px;padding:0 4px}
+  #subBtn{grid-row:auto;grid-column:1 / span 4}
+
+  /* Moved out of the header, the table is a panel in its own right. */
+  #tablePanel.below-board{
+    width:100%;border:1px solid var(--line);border-radius:9px;
+    background:var(--paper);padding:7px 10px;margin:0;
+  }
+  #tablePanel.below-board tbody tr{display:table-row}
+  #tablePanel.below-board tbody tr.faroff{display:none}
+  #tablePanel.below-board .club-bar{display:flex;margin-bottom:6px}
+  #tablePanel.below-board .tb-season{display:block;margin-top:4px}
   .tb-label{font-size:8.5px;letter-spacing:.12em}
   .toolbar .btn{height:30px}
   .icon-btn{width:34px}
@@ -815,6 +884,54 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .stage{gap:14px;padding:6px 16px 24px}
   .grid-wrap{padding:10px 16px}
   .osk{padding:4px 4px calc(4px + env(safe-area-inset-bottom));--osk-h:clamp(32px,4.6vh,44px)}
+
+  .tb-help{padding:5px 9px 6px}
+  .tb-label{font-size:9px}
+}
+
+/* Narrow landscape — a small tablet or a phone on its side. No room for a rail,
+   so the toolbar stays on top and gives back what it can: the league table
+   collapses to your own row with the club inline. The full table is still shown
+   at Full Time. */
+@media (orientation:landscape) and (max-height:1100px) and (max-width:999px){
+  #tablePanel tbody tr:not(.you){display:none}
+  #tablePanel tr.you td{padding-top:3px;padding-bottom:3px}
+  .tb-table{flex-direction:row;align-items:center;gap:10px;padding:5px 10px}
+  .tb-table .club-bar{margin-bottom:0;flex:0 0 auto}
+  .tb-table table.league{width:auto;min-width:190px}
+  .tb-season{display:none}
+}
+
+/* ============ LANDSCAPE TABLET: TOOLBAR AS A SIDE RAIL ============
+   The board here is limited by height and nothing else — width is abundant and
+   was going unused, with the crossword squeezed between the toolbar and the
+   keyboard while several hundred pixels sat empty either side of it.
+
+   Moving the toolbar into a rail spends that width on the one thing that was
+   short. On an iPad Pro it takes the board from roughly 37px cells to 49px, and
+   the rail has vertical space to spare, so the full three-row league table and
+   the club selector come back rather than being collapsed.
+
+   Every overlay, sheet and toast is position:fixed, so gridding the body moves
+   only the four elements named here. */
+@media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
+  body{
+    display:grid;align-items:start;
+    grid-template-columns:minmax(260px,300px) 1fr;
+    grid-template-areas:"masthead masthead" "rail board" "keys keys";
+  }
+  header{grid-area:masthead}
+  .toolbar{
+    grid-area:rail;flex-direction:column;align-items:stretch;
+    margin:10px 0 0 16px;max-width:none;gap:8px;
+  }
+  .tb-left{flex-direction:column;align-items:stretch}
+  .tb-match,.tb-game{justify-content:flex-start}
+  .tb-table,.tb-help{flex:0 0 auto;max-width:none;min-width:0}
+  .tb-row{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr 1fr}
+  #subBtn{grid-row:auto;grid-column:1 / span 2}
+  .stage{grid-area:board;padding-top:10px}
+  .osk{grid-area:keys}
 }
 @media (orientation:landscape) and (max-height:820px){
   .masthead{font-size:20px}

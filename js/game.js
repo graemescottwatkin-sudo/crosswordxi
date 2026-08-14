@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06g";
+  var BUILD = "v06k";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -943,6 +943,71 @@
     applyPitch();
   });
   applyPitch();
+
+  /* Theme: auto follows the operating system, which is why the same build looks
+     dark on one device and light on another. Light and dark override it. */
+  var THEMES = ["auto", "light", "dark"];
+  var theme = "auto";
+  try { theme = localStorage.getItem("fcw.theme") || "auto"; } catch (e) {}
+  if (THEMES.indexOf(theme) === -1) theme = "auto";
+  function applyTheme() {
+    if (theme === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
+    var b = $("themeToggle");
+    if (b) b.textContent = "theme: " + theme;
+  }
+  on("themeToggle", "click", function () {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem("fcw.theme", theme); } catch (e) {}
+    applyTheme();
+  });
+  applyTheme();
+
+  /* The league table moves below the board on a phone. CSS cannot reorder across
+     containers — the table lives inside the toolbar — so the node itself is
+     relocated. Listeners and rendering follow the element, so nothing else in
+     the game needs to know which side of the board it is on. */
+  var tableHome = null, tableAnchor = null;
+  function placeTable() {
+    var panel = $("tablePanel");
+    if (!panel) return;
+    if (!tableHome) { tableHome = panel.parentNode; tableAnchor = panel.nextElementSibling; }
+    var phone = (window.innerWidth || 360) <= 640;
+    var stage = document.querySelector(".stage");
+    var board = document.querySelector(".grid-panel");
+    if (phone && stage && board) {
+      if (panel.parentNode !== stage) stage.insertBefore(panel, board.nextSibling);
+      panel.classList.add("below-board");
+    } else if (!phone && tableHome && panel.parentNode !== tableHome) {
+      tableHome.insertBefore(panel, tableAnchor);
+      panel.classList.remove("below-board");
+    } else if (!phone) {
+      panel.classList.remove("below-board");
+    }
+  }
+  placeTable();
+  window.addEventListener("resize", placeTable);
+
+  /* Help is one row of four on a phone now, so it no longer needs hiding — but
+     the toggle stays for anyone who wants the space back. */
+  function helpFits() { return (window.innerWidth || 360) > 640; }
+  var helpOpen = true;
+  function applyHelp() {
+    var box = document.querySelector(".tb-help");
+    var btn = $("helpToggle");
+    if (!box) return;
+    box.classList.toggle("collapsed", !helpOpen);
+    if (btn) btn.setAttribute("aria-expanded", helpOpen ? "true" : "false");
+  }
+  on("helpToggle", "click", function () {
+    if (helpFits()) return;          // always open where there is room
+    helpOpen = !helpOpen;
+    applyHelp();
+  });
+  window.addEventListener("resize", function () {
+    if (helpFits() && !helpOpen) { helpOpen = true; applyHelp(); }
+  });
+  applyHelp();
 
   on("bankToggle", "click", function () {
     bankOn = !bankOn;

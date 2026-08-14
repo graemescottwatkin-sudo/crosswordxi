@@ -241,6 +241,66 @@ server.listen(0, "127.0.0.1", async () => {
   t("nothing sets a fixed pixel position for layout",
     !/\.(stage|clues|grid-panel)\{[^}]*position:absolute/.test(css));
 
+  console.log("\nTheme and phone header");
+  t("theme follows the OS by default and can be overridden", (() => {
+    const flat = css.replace(/\s*\n\s*/g, "");
+    return /@media \(prefers-color-scheme: dark\)\{:root:not\(\[data-theme="light"\]\)/.test(flat) &&
+      /:root\[data-theme="dark"\]\{/.test(flat);
+  })());
+  t("the theme control cycles auto, light and dark, and persists", (() => {
+    const btn = $("themeToggle");
+    if (!btn) return false;
+    const seen = [];
+    for (let i = 0; i < 3; i++) {
+      btn.dispatchEvent(new w.Event("click", { bubbles: true }));
+      seen.push(btn.textContent.replace("theme: ", ""));
+    }
+    const stored = w.localStorage.getItem("fcw.theme");
+    return seen.join(",") === "light,dark,auto" && stored === "auto" &&
+      !d.documentElement.hasAttribute("data-theme");
+  })(), $("themeToggle") && $("themeToggle").textContent);
+  t("forcing light beats the OS dark setting", (() => {
+    const btn = $("themeToggle");
+    btn.dispatchEvent(new w.Event("click", { bubbles: true }));       // -> light
+    const forced = d.documentElement.getAttribute("data-theme");
+    for (let i = 0; i < 2; i++) btn.dispatchEvent(new w.Event("click", { bubbles: true }));
+    return forced === "light";
+  })());
+  t("help is a real button, so it stays keyboard reachable", (() => {
+    const b = $("helpToggle");
+    return !!b && b.tagName === "BUTTON" && b.hasAttribute("aria-expanded") &&
+      b.getAttribute("aria-controls") === "helpRow";
+  })());
+  t("help collapses on phones only, and is open where there is room",
+    /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
+    !d.querySelector(".tb-help").classList.contains("collapsed"));
+
+  console.log("\nPhone: the league table moves below the board");
+  t("on a wide viewport the table is in the header", (() => {
+    const panel = $("tablePanel");
+    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
+  })());
+  t("narrowing moves the node below the board, not just its styling", (() => {
+    // CSS cannot reorder across containers, so the element itself relocates.
+    Object.defineProperty(w, "innerWidth", { value: 390, writable: true, configurable: true });
+    w.dispatchEvent(new w.Event("resize"));
+    const panel = $("tablePanel");
+    const board = d.querySelector(".grid-panel");
+    return panel.parentNode === d.querySelector(".stage") &&
+      panel.classList.contains("below-board") &&
+      (board.compareDocumentPosition(panel) & 4) !== 0;   // board precedes table
+  })());
+  t("the table still renders three rows after the move", (() => {
+    const rows = [...d.querySelectorAll("#tablePanel #leagueBody tr")];
+    return rows.length === 20 && rows.filter((r) => !r.classList.contains("faroff")).length === 3;
+  })(), [...d.querySelectorAll("#tablePanel #leagueBody tr")].filter((r) => !r.classList.contains("faroff")).length + " visible");
+  t("widening puts it back in the header", (() => {
+    Object.defineProperty(w, "innerWidth", { value: 1400, writable: true, configurable: true });
+    w.dispatchEvent(new w.Event("resize"));
+    const panel = $("tablePanel");
+    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
+  })());
+
   console.log("\nSelection still works from the lists below");
   const downNum = d.querySelector("#downList li .cl-num").textContent.trim();
   // Clue list items bind "click"; grid cells bind "pointerdown". Different

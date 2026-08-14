@@ -11,7 +11,11 @@ const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "
    thing that prevents it, and media-query breakpoints are not widths at all —
    matching those was the first version of this check calling its own caps a
    failure. */
-const fixedWide = [...css.matchAll(/(?<!max-)(?:min-)?width\s*:\s*(\d{3,})px/g)]
+/* A hard `width` or `min-width` declaration can force overflow. `max-width`
+   prevents it, and a media-query breakpoint — `(min-width:1000px)` — is a
+   condition, not a width, so neither counts. Both are excluded by lookbehind:
+   the first version of this check flagged its own breakpoints. */
+const fixedWide = [...css.matchAll(/(?<![(\w-])(?:min-)?width\s*:\s*(\d{3,})px/g)]
   .map((m) => Number(m[1])).filter((n) => n > 400);
 t("no rule pins a width wider than a phone", fixedWide.length === 0, fixedWide.join(", "));
 t("the stage is capped and centred, not fixed",
@@ -63,6 +67,67 @@ t("the phone header collapses the league table to your own row",
 t("the phone clue card is shorter but still fixed, so the board cannot jump", (() => {
   const flat = css.replace(/\s*\n\s*/g, "");
   return /\.now-clue\{height:112px\}/.test(flat) && !/\.now-clue\{height:auto/.test(flat);
+})());
+
+/* Landscape tablets: width is abundant, height is scarce, and the board is
+   limited only by height. Anything the toolbar gives back becomes cells. */
+const flatCss = css.replace(/\s*\n\s*/g, "");
+const landscape = flatCss.slice(flatCss.indexOf("@media (orientation:landscape) and (max-height:1100px)"));
+t("the landscape toolbar collapses the league table to one row",
+  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(landscape.slice(0, 1200)));
+t("narrow landscape collapses the table, where there is no room for a rail",
+  /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:999px\)/.test(flatCss));
+t("wide landscape puts the toolbar in a side rail instead", (() => {
+  // Width was abundant and unused while the board was squeezed by height.
+  const rail = flatCss.slice(flatCss.indexOf("and (min-width:1000px)"));
+  return /body\{display:grid/.test(rail.slice(0, 900)) &&
+    /grid-template-areas:"masthead masthead" "rail board" "keys keys"/.test(rail.slice(0, 900));
+})());
+t("the two landscape layouts cannot both apply", (() => {
+  // One is max-width:999px, the other min-width:1000px.
+  return /\(max-width:999px\)/.test(flatCss) && /\(min-width:1000px\)/.test(flatCss);
+})());
+t("the rail layout only moves elements that are in flow", (() => {
+  // Overlays, sheets and the toast are position:fixed, so gridding the body
+  // leaves them alone; only header, toolbar, stage and keyboard are placed.
+  const areas = (flatCss.match(/grid-area:(masthead|rail|board|keys)/g) || []).length;
+  return areas === 4;
+})());
+
+/* Dark mode had the crossword nearly invisible against its own pitch: the cell
+   fill and the turf sat at 1.57:1, where light mode manages 5.04:1. The grid
+   shape got lost as a mass. Both dark blocks — the OS one and the forced one —
+   must carry the fix, or choosing "dark" by hand would look different from
+   having dark set in the OS. */
+const darkBlocks = (css.match(/--cell-bg:#5A6356/g) || []).length;
+t("both dark themes lighten the playable cells", darkBlocks === 2, darkBlocks + " blocks");
+t("cells are painted from their own token, not the card colour",
+  /\.cell\{[^}]*background:var\(--cell-bg\)/.test(css.replace(/\s*\n\s*/g, "")) &&
+  /:root\{[^}]*--cell-bg:#FFFFFF/.test(css.replace(/\s*\n\s*/g, "")));
+t("the solved animation settles back to the cell colour, not the card",
+  /@keyframes solved\{.*?background:var\(--cell-bg\)/.test(css.replace(/\s*\n\s*/g, "")));
+
+/* Phone reorder: clock/solved/pause/new on one row, help on one row, and the
+   league table moved below the board. */
+/* There are two @media (max-width:640px) blocks — a one-line cursor rule and
+   the main phone block. Take the last, and take all of it. */
+const phone = flatCss.slice(flatCss.lastIndexOf("@media (max-width:640px)"));
+t("phone: status and controls sit on a single row",
+  /\.tb-left\{flex-direction:row;flex-wrap:nowrap/.test(phone));
+t("phone: the four help buttons sit on a single row",
+  /\.tb-row\{grid-template-columns:repeat\(4,1fr\)/.test(phone));
+t("phone: substitution takes its own row when it appears",
+  /#subBtn\{grid-row:auto;grid-column:1 \/ span 4\}/.test(phone));
+/* The v05p bug, one specificity level up: `#tablePanel.below-board tbody tr`
+   outranks the bare `tr.faroff` rule, so without an explicit override the
+   moved table would show all twenty rows again. */
+t("phone: the moved table still hides rows outside the three-row window",
+  /#tablePanel\.below-board tbody tr\.faroff\{display:none\}/.test(phone));
+t("phone: and it shows the full three rows, not just yours", (() => {
+  const showAll = phone.indexOf("#tablePanel.below-board tbody tr{display:table-row}");
+  const collapse = phone.indexOf("#tablePanel tbody tr:not(.you){display:none}");
+  // Equal specificity, so the later rule wins: the override must come after.
+  return showAll > -1 && collapse > -1 && showAll > collapse;
 })());
 
 console.log(`\n${pass} passed, ${fail} failed`);
