@@ -55,5 +55,15 @@ const after820 = flat.slice(flat.indexOf("max-width:820px"));
 t("nothing re-forces two clue columns after the stacking rule",
   !/@media \(max-width:900px\)\{[^}]*\.clues\{grid-template-columns:1fr 1fr/.test(after820));
 
+/* The phone header used to take half the viewport before any of the board was
+   visible. The league table collapsing to the player's row is the main saving,
+   so it is worth a test rather than a comment. */
+t("the phone header collapses the league table to your own row",
+  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));
+t("the phone clue card is shorter but still fixed, so the board cannot jump", (() => {
+  const flat = css.replace(/\s*\n\s*/g, "");
+  return /\.now-clue\{height:112px\}/.test(flat) && !/\.now-clue\{height:auto/.test(flat);
+})());
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

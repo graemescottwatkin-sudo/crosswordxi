@@ -775,6 +775,25 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .masthead{font-size:22px}
   .strap{font-size:9.5px;letter-spacing:.2em;margin-top:3px}
   .stage{padding:6px 8px 8px;gap:10px}
+
+  /* The header was taking half the screen before a single square was visible:
+     clock, controls, a full three-row league table and a 2x2 help grid, then
+     the clue card. On a 390px phone that left about four grid rows above the
+     keyboard. The table collapses to your own row here — position and points,
+     which is what you glance at mid-solve — and the full table is still shown
+     at Full Time. */
+  #tablePanel tbody tr:not(.you){display:none}
+  #tablePanel tr.you td{padding-top:4px;padding-bottom:4px}
+  .tb-table{padding:5px 8px 5px;min-width:0;flex:1 1 100%}
+  .tb-season{font-size:8.5px;margin-top:3px}
+  .tb-help{padding:5px 7px 6px;flex:1 1 100%}
+  .tb-label{font-size:8.5px;letter-spacing:.12em}
+  .toolbar .btn{height:30px}
+  .icon-btn{width:34px}
+  /* 132px of clue card is a lot of a phone screen. Two lines plus the bank
+     still fit; the height stays fixed so the board does not jump. */
+  .now-clue{height:112px}
+  .grid-wrap{padding:5px 6px}
 }
 
 

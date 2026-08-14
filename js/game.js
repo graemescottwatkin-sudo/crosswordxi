@@ -115,6 +115,16 @@
   var seasonErrors = FCW.loadSeasons(FCW_SEASONS);
   // Answer-repetition control for the Daily. If the table is missing or a day
   // falls outside it, dailyBans() returns null and the Daily plays as before.
+  /* The build this file came from. Visible in the footer and on the console, so
+     "is the new version actually live?" is a question with an answer. */
+  var BUILD = "v06g";
+  try {
+    window.CROSSWORDXI_BUILD = BUILD;
+    console.log("Crossword XI build " + BUILD);
+    var tag = document.getElementById("buildTag");
+    if (tag) tag.textContent = BUILD;
+  } catch (e) {}
+
   /* ---------- Server API ----------
      The clue bank lives in D1 and never reaches this browser. What arrives is
      one puzzle: the grid shape and the clues, with no solution letters in it.

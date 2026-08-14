@@ -84,10 +84,18 @@ server.listen(0, "127.0.0.1", async () => {
 
   console.log("Loading");
   t("the page loads its stylesheet and scripts as separate files", (() => {
-    return !!d.querySelector('link[href="css/style.css"]') &&
-      !!d.querySelector('script[src="js/game.js"]') &&
-      !!d.querySelector('script[src="js/engine.js"]');
+    // Match the path, not the whole attribute: the URLs carry a ?v= build tag.
+    return !!d.querySelector('link[href^="css/style.css"]') &&
+      !!d.querySelector('script[src^="js/game.js"]') &&
+      !!d.querySelector('script[src^="js/engine.js"]');
   })());
+  t("every asset URL carries the build tag, so a deploy cannot serve stale CSS",
+    [...d.querySelectorAll('link[href^="css/"], script[src^="js/"]')]
+      .every((n) => /\?v=/.test(n.getAttribute("href") || n.getAttribute("src"))));
+  t("the build tag is visible in the footer and on window", (() => {
+    const tag = d.getElementById("buildTag");
+    return !!tag && !!w.CROSSWORDXI_BUILD && tag.textContent === w.CROSSWORDXI_BUILD;
+  })(), w.CROSSWORDXI_BUILD);
   t("the clue bank is not in the page", !/FCW_DATA/.test(d.documentElement.outerHTML));
   t("the engine loaded", !!w.FCW && typeof w.FCW.computeScore === "function");
   t("the game fetched its puzzle from the API", apiCalls > 0, apiCalls + " API calls");

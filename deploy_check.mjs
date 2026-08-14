@@ -15,8 +15,24 @@ t("functions/ is at the repository root", has("functions/api/daily.js"));
 t("css and js are present", has("css/style.css") && has("js/game.js") && has("js/engine.js"));
 
 const html = read("index.html");
-const refs = [...html.matchAll(/(?:src|href)="(?!data:|#|https?:|mailto:)([^"]+)"/g)].map((m) => m[1]);
+const refs = [...html.matchAll(/(?:src|href)="(?!data:|#|https?:|mailto:)([^"]+)"/g)]
+  .map((m) => m[1].split("?")[0]);   // drop the cache-busting ?v= tag
 t("every relative reference resolves, exact case", refs.every(has), refs.join(", "));
+
+/* The bug this guards against: index.html revalidated but css/ and js/ had no
+   cache rule, so browsers served stale assets after a deploy and the site
+   looked unchanged however many times it was uploaded. */
+const headers = read("_headers");
+t("css and js have cache rules, not just the HTML",
+  /\/css\/\*/.test(headers) && /\/js\/\*/.test(headers));
+t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
+  const tagged = [...html.matchAll(/(?:src|href)="(?:css|js)\/[^"?]+\?v=([^"]+)"/g)].map((m) => m[1]);
+  const assets = [...html.matchAll(/(?:src|href)="(?:css|js)\/[^"]+"/g)].length;
+  return tagged.length === assets && new Set(tagged).size === 1;
+})());
+t("the build tag matches the one the script reports",
+  read("js/game.js").includes('var BUILD = "' + (html.match(/\?v=([^"]+)"/) || [])[1] + '"'),
+  (html.match(/\?v=([^"]+)"/) || [])[1]);
 t("no absolute or machine-specific paths",
   !/localhost/.test(html) && !/file:\/\//.test(html) && !/[A-Za-z]:\\/.test(html) &&
   !/(src|href)="\//.test(html));

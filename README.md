@@ -214,7 +214,26 @@ themselves points. Fixing that needs accounts and a server-side game session,
 which is a much larger change for a puzzle with no login — worth doing only if
 you ever add a shared leaderboard.
 
-## J. Known limits
+## J. Checking which build is live
+
+Every release tags its asset URLs (`css/style.css?v=v06g`) and prints the build
+to the console. Three ways to confirm what is actually being served:
+
+- the footer shows the build tag
+- the browser console logs `Crossword XI build v06g` on load
+- `window.CROSSWORDXI_BUILD` in the console returns it
+
+**If the footer tag is not the build you just uploaded, the deploy has not
+landed — not the layout.** Before this was added, `index.html` revalidated but
+`css/` and `js/` had no cache rule, so browsers kept serving stale stylesheets
+after a deploy and the site looked unchanged however many times it was
+re-uploaded.
+
+**Bump the tag in `index.html` on every release.** Four places: the stylesheet
+link, the three script tags, and `var BUILD` in `js/game.js`. `deploy_check.mjs`
+fails if they disagree.
+
+## J2. Known limits
 
 - **Era filters are gone from practice.** Pools are built per topic, so era is
   not something the server can filter on, and a control that silently does
