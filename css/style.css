@@ -977,3 +977,16 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .now-clue{height:68px}
   .osk{--osk-h:clamp(30px,4.2vh,38px)}
 }
+
+/* ============ BUILD BADGE (temporary) ============
+   Pinned top-right so the deployed build is visible in any screenshot without
+   scrolling. Sits below the overlays (z-index 50+) so it never covers Kick Off
+   or Full Time. Delete this block and the element in index.html when the
+   layout is settled. */
+.build-badge{
+  position:fixed;top:0;right:0;z-index:40;
+  font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.14em;
+  background:var(--gold);color:var(--gold-ink);
+  padding:3px 9px;border-radius:0 0 0 7px;pointer-events:none;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+}

@@ -96,6 +96,19 @@ server.listen(0, "127.0.0.1", async () => {
     const tag = d.getElementById("buildTag");
     return !!tag && !!w.CROSSWORDXI_BUILD && tag.textContent === w.CROSSWORDXI_BUILD;
   })(), w.CROSSWORDXI_BUILD);
+  t("the build badge is pinned, so it shows in any screenshot", (() => {
+    const badge = d.getElementById("buildBadge");
+    // `css` is declared further down; read the file directly here.
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return !!badge && badge.textContent === w.CROSSWORDXI_BUILD &&
+      /\.build-badge\{position:fixed;top:0;right:0;z-index:40/.test(flat);
+  })(), d.getElementById("buildBadge") && d.getElementById("buildBadge").textContent);
+  t("the badge sits below the overlays, so it cannot cover Kick Off", (() => {
+    // Overlays are z-index 50+; the badge is 40 and ignores pointer events.
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /\.build-badge\{[^}]*pointer-events:none/.test(flat) &&
+      /\.overlay\{[^}]*z-index:5[0-9]/.test(flat);
+  })());
   t("the clue bank is not in the page", !/FCW_DATA/.test(d.documentElement.outerHTML));
   t("the engine loaded", !!w.FCW && typeof w.FCW.computeScore === "function");
   t("the game fetched its puzzle from the API", apiCalls > 0, apiCalls + " API calls");

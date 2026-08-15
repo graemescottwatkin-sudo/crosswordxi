@@ -117,12 +117,14 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06n";
+  var BUILD = "v06o";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
     var tag = document.getElementById("buildTag");
     if (tag) tag.textContent = BUILD;
+    var badge = document.getElementById("buildBadge");
+    if (badge) badge.textContent = BUILD;
   } catch (e) {}
 
   /* ---------- Server API ----------
