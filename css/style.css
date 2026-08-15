@@ -938,6 +938,10 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .clues{grid-column:1 / -1;grid-row:4}
   #seasonPanel{grid-column:1 / -1;grid-row:5}
 
+  /* The base toolbar is a row with space-between. Turned on its side that
+     distributes the panels down the card, which is where the gaps between the
+     controls, the table and the help block were coming from. */
+  .toolbar{justify-content:flex-start}
   .tb-left{flex-direction:column;align-items:stretch;gap:8px}
   .tb-match,.tb-game{justify-content:flex-start}
   /* Inside the rail the panels are the card's contents, not free-floating
@@ -947,8 +951,24 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
     background:none;border:none;padding:0;
   }
   .tb-help{border-top:1px solid var(--line);padding-top:8px}
-  .tb-row{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr 1fr}
+  /* minmax(0,1fr), not 1fr: a plain 1fr track will not shrink below its
+     content, so "REVEAL ANSWER -9" pushed the buttons out through the side of
+     the card. Short labels as well, because the rail is 280px wide. */
+  .tb-row{grid-auto-flow:row;grid-template-rows:none;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tb-row .btn{min-width:0;padding:0 8px}
+  .tb-row .lbl-full{display:none}
+  .tb-row .lbl-short{display:inline}
   #subBtn{grid-row:auto;grid-column:1 / span 2}
+
+  /* The board fills its column, so the right edge of the pitch lines up with
+     the right edge of the clue strip above it: rail + board = one block. */
+  .grid-wrap{justify-self:stretch}
+  /* The clue lists took their width from the board box, which left them
+     narrower than the page and wrapped every clue over three or four lines
+     with white space either side. Here they use the full width. */
+  .clues,#seasonPanel{max-width:none}
+  .clues{gap:14px 46px}
 }
 
 @media (orientation:landscape) and (max-height:820px){

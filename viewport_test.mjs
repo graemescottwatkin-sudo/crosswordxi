@@ -100,6 +100,19 @@ t("the clue lists run full width underneath",
   /\.clues\{grid-column:1 \/ -1;grid-row:4\}/.test(rail));
 t("panels inside the rail are contents of the card, not boxes on top of it",
   /\.tb-table,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
+/* A plain 1fr track refuses to shrink below its content, so the help buttons
+   pushed straight out through the side of the card. */
+t("help buttons cannot overflow the rail",
+  /\.tb-row\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/.test(rail) &&
+  /\.tb-row \.btn\{min-width:0/.test(rail));
+t("the rail uses short button labels, since it is only 280px wide",
+  /\.tb-row \.lbl-full\{display:none\}/.test(rail) && /\.tb-row \.lbl-short\{display:inline\}/.test(rail));
+t("the toolbar stacks from the top rather than spreading down the card",
+  /\.toolbar\{justify-content:flex-start\}/.test(rail));
+t("the board fills its column, so it lines up with the clue strip above",
+  /\.grid-wrap\{justify-self:stretch\}/.test(rail));
+t("the clue lists use the full width instead of the board's",
+  /\.clues,#seasonPanel\{max-width:none\}/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
   // One is max-width:999px, the other min-width:1000px.
   return /\(max-width:999px\)/.test(flatCss) && /\(min-width:1000px\)/.test(flatCss);
