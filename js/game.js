@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v07d";
+  var BUILD = "v07g";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -735,30 +735,36 @@
                    y: (parseFloat(c.paddingTop) || 0) + (parseFloat(c.paddingBottom) || 0) }
                : { x: 0, y: 0 };
     };
+    var vw = window.innerWidth || document.documentElement.clientWidth || 360;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    var railMode = vw >= 860 && vw > vh && vh <= 1100;
+    var railW = Math.max(230, Math.min(280, vw * 0.235));
+    var pairGap = 18;
     if (panel) {
       var pp = boxPad(panel), wp = boxPad(wrap);
       padY = pp.y + wp.y;
-      availW = panel.clientWidth - pp.x - wp.x - 8;
-      /* In the landscape rail the panel is display:contents — it has no box, so
-         clientWidth is 0 and the old fallback handed the board the width of the
-         whole page, rail included. Measure the stage and take the rail off it. */
-      if (availW < 160) {
-        var stage = document.querySelector(".stage");
-        var bar = $("toolbar");
-        if (stage && bar && stage.contains(bar)) {
-          var sp = boxPad(stage);
-          availW = stage.clientWidth - sp.x - bar.offsetWidth - 18 - wp.x - 8;
-        }
+      if (railMode) {
+        /* Do not measure the stage here. Its width is itself derived from the
+           board, so measuring it to choose a cell size creates a circular layout
+           dependency. Browser zoom and even clue-content repaints could then
+           settle on a neighbouring pixel. Use only viewport + fixed rail maths. */
+        var pairCap = Math.min(1140, Math.max(0, vw - 32));
+        availW = pairCap - railW - pairGap - wp.x - 8;
+      } else {
+        availW = panel.clientWidth - pp.x - wp.x - 8;
       }
     }
     if (availW < 160) availW = document.body.clientWidth - 44;
     if (availW < 160) availW = (window.innerWidth || 360) - 44;
     // Height: measured chrome where layout is available, otherwise a
     // sensible reserve so the board never hides under the keyboard.
-    var measured = h("header") + h(".toolbar") + h(".now-clue") + h(".osk");
+    /* In rail mode the toolbar is beside the board, not above it. Counting its
+       height as vertical chrome made the cell size sensitive to the rail's
+       content and was another source of reflow. */
+    var measured = h("header") + h(".now-clue") + h(".osk") + (railMode ? 0 : h(".toolbar"));
     var isTouch = document.body.classList.contains("touch");
     var chrome = (measured > 80 ? measured : (isTouch ? 330 : 230)) + 46 + padY;
-    var availH = (window.innerHeight || 800) - chrome;
+    var availH = vh - chrome;
     if (availH < 200) availH = 200;
     var size = Math.floor(Math.min(availW / puzzle.width, availH / puzzle.height));
     /* Cells stay 20–52px. Removing the sidebar freed a lot of width, and the
@@ -787,9 +793,12 @@
          drag the board's column wider than the board and everything drifts to
          one side. */
       var bar = $("toolbar"), stage = document.querySelector(".stage");
-      if (bar && stage && stage.contains(bar) && bar.offsetWidth) {
-        document.documentElement.style.setProperty(
-          "--block-w", (bar.offsetWidth + 18 + board.offsetWidth) + "px");
+      if (railMode && bar && stage && stage.contains(bar)) {
+        /* Use the same deterministic rail width as CSS rather than bar.offsetWidth.
+           The latter is content-sensitive and was the last moving part when a
+           clue changed. Round once so top, middle and bottom share one pixel edge. */
+        var blockW = Math.round(railW + pairGap + board.offsetWidth);
+        document.documentElement.style.setProperty("--block-w", blockW + "px");
       } else {
         document.documentElement.style.removeProperty("--block-w");
       }
@@ -813,7 +822,13 @@
     }
     if (window.ResizeObserver && !fitObserver) {
       var panel = document.querySelector(".grid-panel");
-      if (panel) {
+      /* In the landscape rail .grid-panel is display:contents. Observing a
+         boxless element while its children change clue state is browser-dependent
+         and can trigger redundant fit passes. Window resize already covers zoom
+         and orientation, so only observe the real panel in non-rail layouts. */
+      var vw = window.innerWidth || 360, vh = window.innerHeight || 800;
+      var railMode = vw >= 860 && vw > vh && vh <= 1100;
+      if (panel && !railMode) {
         fitObserver = new ResizeObserver(function () { fitCells(); });
         fitObserver.observe(panel);
       }

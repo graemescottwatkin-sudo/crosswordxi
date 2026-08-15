@@ -908,7 +908,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    so the toolbar stays on top and gives back what it can: the league table
    collapses to your own row with the club inline. The full table is still shown
    at Full Time. */
-@media (orientation:landscape) and (max-height:1100px) and (max-width:999px){
+@media (orientation:landscape) and (max-height:1100px) and (max-width:859px){
   #tablePanel tbody tr:not(.you){display:none}
   #tablePanel tr.you td{padding-top:3px;padding-bottom:3px}
   .tb-table{flex-direction:row;align-items:center;gap:10px;padding:5px 10px}
@@ -927,18 +927,20 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    grid: the active clue spans both, the rail stretches to the board's height,
    and the clue lists run full width underneath. The toolbar is moved into the
    stage by script, since it is a sibling of it in the markup. */
-@media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
+@media (orientation:landscape) and (max-height:1100px) and (min-width:860px){
   .stage{
     display:grid;align-items:start;
-    /* v06s: make the stage itself exactly the width of the visible game pair
-       (rail + gap + board) and centre that stage. In v06r the tracks were
-       centred inside the wider 1140px stage, while the spanning clue rows used
-       --block-w; on iPad that left the middle row a few pixels left of the top
-       and bottom rows. One shared measure removes that optical drift. */
+    /* v07g: the landscape layout has one deterministic measure. The rail width
+       comes only from the viewport, never from its button/table contents, and
+       --block-w is published from the puzzle dimensions. That removes the
+       feedback loop where selecting a clue could re-measure the board and move
+       the whole middle row by a few pixels. */
+    --rail-w:clamp(230px,23.5vw,280px);
+    --pair-gap:18px;
     width:min(100%,var(--block-w,1140px));max-width:1140px;margin:0 auto;
-    grid-template-columns:minmax(230px,280px) max-content;
+    grid-template-columns:var(--rail-w) max-content;
     justify-content:center;
-    gap:10px 18px;
+    column-gap:var(--pair-gap);row-gap:10px;
   }
   /* The card ends where its content ends. Stretching it to the board's height
      left a couple of hundred pixels of empty white below the help buttons. */

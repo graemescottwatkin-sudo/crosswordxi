@@ -28,7 +28,7 @@ CREATE TABLE clues (
   grid          TEXT NOT NULL,         -- letters only, e.g. "PARISSTGERMAIN"
   enumeration   TEXT,                  -- e.g. "(5,2,7)"
   entity        TEXT,                  -- club or subject the clue belongs to
-  difficulty    INTEGER,
+  difficulty    TEXT,                  -- 'Easy' | 'Medium' | 'Hard' — a label, not a number
   era           TEXT,                  -- "1990s".."2020s", "Timeless", "Pre-1990"
   puzzle_group  TEXT,                  -- rows that must not share a puzzle
   max_per       INTEGER DEFAULT 1,     -- 0 archives a row without deleting it

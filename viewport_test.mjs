@@ -12,7 +12,7 @@ const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "
    matching those was the first version of this check calling its own caps a
    failure. */
 /* A hard `width` or `min-width` declaration can force overflow. `max-width`
-   prevents it, and a media-query breakpoint — `(min-width:1000px)` — is a
+   prevents it, and a media-query breakpoint — `(min-width:860px)` — is a
    condition, not a width, so neither counts. Both are excluded by lookbehind:
    the first version of this check flagged its own breakpoints. */
 const fixedWide = [...css.matchAll(/(?<![(\w-])(?:min-)?width\s*:\s*(\d{3,})px/g)]
@@ -77,13 +77,13 @@ const landscape = flatCss.slice(flatCss.indexOf("@media (orientation:landscape) 
    from a neighbouring one — the first version of this drifted out of range the
    moment nearby rules grew. */
 const narrowLandscape = flatCss.slice(
-  flatCss.indexOf("and (max-height:1100px) and (max-width:999px)"),
-  flatCss.indexOf("and (max-height:1100px) and (min-width:1000px)"));
+  flatCss.indexOf("and (max-height:1100px) and (max-width:859px)"),
+  flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
 t("narrow landscape collapses the league table to one row",
   /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(narrowLandscape));
 t("narrow landscape collapses the table, where there is no room for a rail",
-  /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:999px\)/.test(flatCss));
-const rail = flatCss.slice(flatCss.indexOf("and (max-height:1100px) and (min-width:1000px)"));
+  /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:859px\)/.test(flatCss));
+const rail = flatCss.slice(flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
 t("wide landscape grids the stage, not the body", (() => {
   /* Gridding the body put the rail beside the whole stage, so it ran the height
      of the page while the board floated in the middle of its column. Gridding
@@ -105,7 +105,7 @@ t("the rail + board tracks are centred inside the page", (() => {
      assertion was left behind when the rule changed. */
   return /width:min\(100%,var\(--block-w,1140px\)\);max-width:1140px;margin:0 auto/.test(rail) &&
     /justify-content:center/.test(rail) &&
-    /--block-w/.test(js) && /bar\.offsetWidth \+ 18 \+ board\.offsetWidth/.test(js);
+    /--block-w/.test(js) && /railW \+ pairGap \+ board\.offsetWidth/.test(js);
 })());
 t("the active clue spans the pair and is capped to the pair width",
   /\.now-clue\{grid-column:1 \/ -1;grid-row:1;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
@@ -126,14 +126,14 @@ t("the board column is sized to the board, so the pitch keeps hugging the grid",
   /* With 1fr the column was as wide as the page and the grid sat in half a
      pitch. max-content makes the column the board's own width, so the pitch and
      the crossword cover the same space and the edges still line up. */
-  return /grid-template-columns:minmax\(230px,280px\) max-content/.test(rail) &&
+  return /grid-template-columns:var\(--rail-w\) max-content/.test(rail) &&
     /\.grid-wrap\{justify-self:start\}/.test(rail);
 })());
 t("the clue lists end at the same right edge as the board pair",
   /\.clues,#seasonPanel\{max-width:var\(--block-w,100%\)\}/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
-  // One is max-width:999px, the other min-width:1000px.
-  return /\(max-width:999px\)/.test(flatCss) && /\(min-width:1000px\)/.test(flatCss);
+  // One is max-width:859px, the other min-width:860px.
+  return /\(max-width:859px\)/.test(flatCss) && /\(min-width:860px\)/.test(flatCss);
 })());
 t("the board panel becomes display:contents so its children can be placed",
   /\.grid-panel\{display:contents\}/.test(rail));
