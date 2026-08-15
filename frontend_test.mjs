@@ -288,9 +288,205 @@ server.listen(0, "127.0.0.1", async () => {
     return !!b && b.tagName === "BUTTON" && b.hasAttribute("aria-expanded") &&
       b.getAttribute("aria-controls") === "helpRow";
   })());
+  t("help reads as section plus target, not four loose buttons", (() => {
+    /* "All" and "Answer" beside each other gave no clue which was a check and
+       which a reveal. Section plus button now reads as one phrase. */
+    const rows = [...d.querySelectorAll("#helpRow .tb-row")];
+    const label = (r) => r.querySelector(".tb-sub").textContent.trim();
+    const btns = (r) => [...r.querySelectorAll("button")].map(
+      (b) => b.textContent.replace(/[\u2212-]\d+.*/, "").trim());
+    return rows.length === 3 &&
+      label(rows[0]) === "Check" && btns(rows[0]).join("/") === "Answer/Grid" &&
+      label(rows[1]) === "Reveal" && btns(rows[1]).join("/") === "Letter/Answer";
+  })(), [...d.querySelectorAll("#helpRow .tb-row")].map(
+    (r) => r.querySelector(".tb-sub").textContent + ": " +
+      [...r.querySelectorAll("button")].map((b) => b.id).join(",")).join(" | "));
   t("help collapses on phones only, and is open where there is room",
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
+
+  console.log("\nA save belongs to a puzzle, not an address");
+  t("the save records what the puzzle actually is", (() => {
+    /* A daily number or a practice token names a slot. The contents of that
+       slot change — a regenerated daily, a re-imported pool — and letters are
+       stored by cell position, so they land on unrelated squares. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function puzzleFingerprint/.test(js) &&
+      /fingerprint: puzzleFingerprint\(puzzle\)/.test(js);
+  })());
+  t("a save from a changed puzzle is discarded, not applied", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /restore\.fingerprint !== puzzleFingerprint\(puzzle\)/.test(js) &&
+      /restore = null/.test(js);
+  })());
+  t("and the player is told rather than left with a half-filled grid", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /This puzzle has changed/.test(js);
+  })());
+  t("the fingerprint distinguishes a rebuilt puzzle at the same address", (() => {
+    const fp = (p) => p.width + "x" + p.height + ":" + p.entries.map((e) => e.row.id).join(",");
+    const a = { width: 11, height: 13, entries: [{ row: { id: "001" } }, { row: { id: "042" } }] };
+    const b = { width: 11, height: 13, entries: [{ row: { id: "001" } }, { row: { id: "099" } }] };
+    return fp(a) !== fp(b);
+  })());
+
+  console.log("\nThe clue card");
+  t("empty answer slots are visible against the page", (() => {
+    /* They were dashed in --line, a divider colour at 1.26:1 against paper —
+       present but invisible, so the enumeration read as blank space. */
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /--slot:#A9B4A4/.test(flat) && /--slot:#6B7A66/.test(flat) &&
+      /\.bank-cell\.empty\{[^}]*border-color:var\(--slot\)/.test(flat);
+  })());
+  t("a long clue is scaled to fit rather than clipped", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /classList\.toggle\("long"/.test(js) && /classList\.toggle\("xlong"/.test(js) &&
+      /\.nc-text\.long\{font-size/.test(flat) && /\.nc-text\.xlong\{font-size/.test(flat);
+  })());
+  t("scaling is by clue length, so the same clue always looks the same", (() => {
+    // Not a measure-and-shrink loop: that would depend on what came before.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /text\.length > 76/.test(js) && /text\.length > 104/.test(js) &&
+      !/scrollHeight/.test(js.slice(js.indexOf('el.textContent = text'), js.indexOf('el.textContent = text') + 400));
+  })());
+  t("the card height still never changes between clues", (() => {
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /\.now-clue\{[^}]*height:96px/.test(flat) && !/\.now-clue\{[^}]*height:auto/.test(flat);
+  })());
+
+  console.log("\nPausing is recorded, not forbidden");
+  t("pausing hides the puzzle, so it buys no thinking time", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function pauseGame"), js.indexOf("function resumeGame"));
+    return /classList\.add\("prestart"\)/.test(fn) && /stopTimer\(\)/.test(fn);
+  })());
+  t("a pause is counted and its duration measured", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /pauseCount\+\+/.test(js) && /pausedMs \+= Date\.now\(\) - pauseStartedAt/.test(js);
+  })());
+  t("both survive a refresh, including a pause still open", (() => {
+    /* Without the open-pause term, refreshing mid-pause would erase it — the
+       one moment a player is most likely to reload. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /pausedMs \+ \(pauseStartedAt \? Date\.now\(\) - pauseStartedAt : 0\)/.test(js) &&
+      /pauseCount = restore\.pauseCount/.test(js);
+  })());
+  t("they reach the stored result", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const rec = js.slice(js.indexOf("function recordDaily"), js.indexOf("function showPauseNote"));
+    return /pauses: pauseCount/.test(rec) && /pausedSeconds:/.test(rec);
+  })());
+  t("and are stated on the Full Time card rather than recorded silently", (() => {
+    const el = d.getElementById("rPauseNote");
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return !!el && /Clock stopped /.test(js);
+  })());
+  t("a run with no pauses says nothing at all", (() => {
+    const el = d.getElementById("rPauseNote");
+    return el.style.display === "none";
+  })());
+
+  console.log("\nLosing the connection");
+  /* Actually cut the connection rather than assert on source. */
+  const realFetch = w.fetch;
+  /* Check refuses on an unstarted game or an empty entry, so set both up
+     before cutting the connection. */
+  if (d.querySelector(".stage").classList.contains("prestart")) {
+    $("kickOffBtn").dispatchEvent(new w.Event("click", { bubbles: true }));
+    await wait(300);
+  }
+  d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "A", bubbles: true }));
+  await wait(300);
+  w.fetch = () => Promise.reject(new Error("network down"));
+  $("checkBtn").dispatchEvent(new w.Event("click", { bubbles: true }));
+  await wait(900);
+  t("a dropped request marks the game offline and tells the player", (() => {
+    return d.body.classList.contains("offline") &&
+      /connection/i.test(d.getElementById("netStrip").textContent);
+  })(), d.getElementById("netStrip").textContent);
+  w.fetch = realFetch;
+  w.dispatchEvent(new w.Event("online"));
+  await wait(900);
+  t("reconnecting clears the notice and re-checks what was missed",
+    !d.body.classList.contains("offline"),
+    d.getElementById("netStrip").textContent || "(cleared)");
+  t("the offline notice exists and is hidden until needed", (() => {
+    const strip = d.getElementById("netStrip");
+    return !!strip && !d.body.classList.contains("offline");
+  })());
+  t("verification retries by itself rather than waiting for a keystroke", (() => {
+    /* The failure path used to clear the retry marker and stop. If the grid was
+       finished while offline, nothing re-checked on reconnect and the puzzle
+       never completed. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /addEventListener\("online"/.test(js) &&
+      /function scheduleRetry/.test(js) &&
+      /setInterval/.test(js.slice(js.indexOf("function scheduleRetry"), js.indexOf("var verifyTimer")));
+  })());
+  t("coming back online triggers a catch-up, not just a cleared flag", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const setOff = js.slice(js.indexOf("function setOffline"), js.indexOf("window.addEventListener(\"online\""));
+    return /if \(!state\) verifyNow\(\)/.test(setOff);
+  })());
+  t("a dropped request is trusted over the browser's own online flag", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    // navigator.onLine reports a connected wifi with no route out as online.
+    return /setOffline\(true\)/.test(js) && !/navigator\.onLine/.test(js);
+  })());
+  t("the notice cannot shift the board", (() => {
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /\.net-strip\{display:none;position:fixed/.test(flat);
+  })());
+
+  console.log("\nA failed action costs nothing");
+  t("every paid action charges inside the success path, not beside it", (() => {
+    /* Reveals and checks are server calls. The penalty used to be applied
+       outside the promise, so a request that failed — a stale token after the
+       practice pool was rebuilt, a dropped connection — still cost the points
+       and filled in nothing. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    // subBtn is defined earlier in the file than revealBtn, so slicing between
+    // them ran backwards. Take a fixed window from the handler instead.
+    const start = js.indexOf('on("revealBtn"');
+    const reveal = js.slice(start, start + 1600);
+    // The charge must appear after .then( and before the .catch(
+    const then = reveal.indexOf(".then(");
+    const cat = reveal.indexOf(".catch(");
+    const charge = reveal.indexOf('helpActions.push("revealAnswer")');
+    return then > -1 && cat > then && charge > then && charge < cat;
+  })());
+  t("a failed reveal explains itself instead of silently costing points", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function revealFailed/.test(js) &&
+      /nothing charged/.test(js) && /has expired/.test(js);
+  })());
+  t("a spent substitution is only spent when a letter arrives", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const subStart = js.indexOf('on("subBtn"');
+    const sub = js.slice(subStart, subStart + 1400);
+    return sub.indexOf("subsUsed++") > sub.indexOf("}, function ()");
+  })());
+
+  console.log("\nRefreshing does not change what you are playing");
+  t("the mode in play is remembered", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /localStorage\.setItem\("fcw\.mode", mode\)/.test(js) &&
+      /localStorage\.getItem\("fcw\.mode"\)/.test(js);
+  })());
+  t("boot no longer requires letters typed before resuming practice", (() => {
+    /* The old rule resumed practice only if letters existed *and* today's
+       daily was finished, so refreshing an untouched practice board dropped
+       you onto the daily. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const boot = js.slice(js.indexOf("function boot()"), js.indexOf("function boot()") + 900);
+    return !/Object\.keys\(practice\.letters/.test(boot) &&
+      /last === "practice"/.test(boot);
+  })());
+  t("the kick-off card offers both modes", (() => {
+    const alt = d.getElementById("kickAltBtn");
+    return !!alt && /practice|daily/i.test(alt.textContent);
+  })(), d.getElementById("kickAltBtn") && d.getElementById("kickAltBtn").textContent);
 
   console.log("\nWhat's live");
   t("the build badge is a button that opens the status panel", (() => {

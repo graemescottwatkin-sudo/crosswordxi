@@ -41,6 +41,10 @@ const REPLACE_PRACTICE = process.argv.includes("--replace-practice");
 const RESET = process.argv.includes("--reset");
 const SOURCE = arg("source", path.join(ROOT, "..", "crosswordxi-source"));
 const OUT = path.join(ROOT, "data", "puzzles-production.sql");
+/* The game is called Crossword XI. Eleven is the invariant, not a preference,
+   so it is declared before either loop rather than beside the practice pool. */
+const TARGET_ANSWERS = 11;
+let shortRetries = 0, shortSkipped = 0;
 
 function need(file) {
   const p = path.join(SOURCE, file);
@@ -82,6 +86,11 @@ let t0 = Date.now();
 let written = 0;
 for (let d = 1; d <= DAYS; d++) {
   const p = FCW.generate(rows, FCW.dailyOptions(d, bans));
+  if (p.entries.length !== TARGET_ANSWERS) {
+    console.error(`\nDaily #${d} came out with ${p.entries.length} answers, not ${TARGET_ANSWERS}.`);
+    console.error("Refusing to write a run with an inconsistent daily.\n");
+    process.exit(1);
+  }
   if (d >= FROM) {
     const payload = JSON.stringify({ salt: salt(), puzzle: p });
     out.push(`INSERT INTO puzzles (mode, daily_no, category, payload) VALUES ` +
@@ -131,7 +140,21 @@ for (const pool of POOLS) {
       // Never exclude so much that the grid cannot be built.
       if (FCW.filterViability(rows, candidate).enough) filter = candidate;
     }
-    const p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: filter });
+    /* Eleven answers or it does not get stored. generate() returns the best
+       layout it found rather than failing, so when the rolling exclusion
+       starves the pool it can come back with nine — and two such puzzles went
+       into the pool before this check existed. Retry without the exclusion,
+       which is always buildable; variety is worth less than the invariant the
+       game is named after. */
+    let p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: filter });
+    if (p.entries.length !== TARGET_ANSWERS && filter !== pool.filter) {
+      p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: pool.filter });
+      shortRetries++;
+    }
+    if (p.entries.length !== TARGET_ANSWERS) {
+      shortSkipped++;
+      continue;                       // never store a puzzle of the wrong size
+    }
     const clueIds = p.entries.map((e) => e.row.id);
     recent.push(...clueIds);
     if (recent.length > RECENT_WINDOW) recent = recent.slice(-RECENT_WINDOW);
@@ -145,6 +168,8 @@ for (const pool of POOLS) {
 
 fs.writeFileSync(OUT, out.join("\n") + "\n");
 const mb = (fs.statSync(OUT).size / 1048576).toFixed(1);
+if (shortRetries) console.log(`  ${shortRetries} puzzle(s) rebuilt without the exclusion to reach ${TARGET_ANSWERS}`);
+if (shortSkipped) console.log(`  ${shortSkipped} puzzle(s) skipped: could not reach ${TARGET_ANSWERS}`);
 console.log(`\nWrote ${OUT}  (${mb}MB, ${written} daily from #${FROM} + ${made} practice)`);
 if (!RESET) {
   console.log(`Days 1..${FROM - 1} are untouched; practice is ` +

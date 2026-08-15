@@ -109,6 +109,13 @@
   var seed = null;
   var started = false;       // pre-kick-off gate: grid/clues hidden, clock stopped
   var paused = false;        // half time: clock stopped, grid and clues hidden
+  /* Pausing hides the puzzle, so it cannot be used to think for free — but it
+     does stop the scoring clock, which is worth about 20 points in the first
+     half hour. Recorded rather than forbidden: a doorbell should not cost a
+     player their score, and "solved in 4 minutes" should not look identical to
+     "solved in 4 minutes across six pauses spread over two hours" when there is
+     a leaderboard to compare them on. */
+  var pauseCount = 0, pausedMs = 0, pauseStartedAt = null;
   var mode = "daily";        // "daily" | "practice"
   var dailyNo = FCW.dailyNumber();
   var cellEls = {};
@@ -117,7 +124,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v07l";
+  var BUILD = "v07t";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -148,9 +155,21 @@
       : { method: "GET" };
     return fetch(path, opts).then(function (r) {
       return r.json().then(function (j) {
-        if (!r.ok) throw new Error(j && j.error ? j.error : "Request failed (" + r.status + ")");
+        if (!r.ok) {
+          /* The server answered and said no — an expired puzzle, a daily that
+             is not today. Not a connection problem, and must not be reported
+             as one. */
+          var e = new Error(j && j.error ? j.error : "Request failed (" + r.status + ")");
+          e.status = r.status;
+          throw e;
+        }
         return j;
       });
+    }, function (netErr) {
+      // fetch itself rejected: nothing reached the server.
+      var e = new Error("No connection");
+      e.offline = true;
+      throw e;
     });
   }
 
@@ -178,6 +197,43 @@
      Free feedback — the game has always told you when an entry is right the
      moment you finish it. Which letters are wrong is the paid Check, and is
      requested separately with detail. */
+  /* ---------- Losing the connection ----------
+     Typing, saving and the clock are local and carry on. Everything about
+     correctness is a server call, so when the network goes the solved count
+     stops moving and completion cannot fire — the player needs to know that,
+     and the game needs to catch up by itself when the signal returns rather
+     than waiting for the next keystroke. Finishing the grid offline used to
+     mean the puzzle never completed at all. */
+  var offline = false;
+  function setOffline(state, why) {
+    if (offline === state) return;
+    offline = state;
+    document.body.classList.toggle("offline", state);
+    var strip = $("netStrip");
+    if (strip) {
+      strip.textContent = state
+        ? (why || "No connection \u2014 answers cannot be checked until it returns")
+        : "";
+    }
+    if (!state) verifyNow();          // catch up on everything missed
+  }
+  window.addEventListener("online", function () { setOffline(false); });
+  window.addEventListener("offline", function () { setOffline(true); });
+  /* A dropped request is better evidence than the browser's own flag, which
+     reports a connected wifi with no route out as "online". */
+  var retryTimer = null;
+  function scheduleRetry() {
+    if (retryTimer) return;
+    retryTimer = setInterval(function () {
+      if (!puzzle || !puzzleToken) return;
+      var pending = puzzle.entries.some(function (e, i) {
+        return entryText(i) !== null && verified[i] !== true;
+      });
+      if (!pending) { clearInterval(retryTimer); retryTimer = null; return; }
+      verifyNow();
+    }, 5000);
+  }
+
   var verifyTimer = null;
   function verifySoon() {
     if (verifyTimer) clearTimeout(verifyTimer);
@@ -192,8 +248,12 @@
       if (verifySent[i] === text) return;
       verifySent[i] = text;
       jobs.push(api("/api/check-answer", { token: puzzleToken, entry: i, guess: text })
-        .then(function (r) { verified[i] = !!r.correct; })
-        .catch(function () { delete verifySent[i]; }));
+        .then(function (r) { verified[i] = !!r.correct; setOffline(false); })
+        .catch(function () {
+          delete verifySent[i];       // so it is asked again
+          setOffline(true);
+          scheduleRetry();            // ...without waiting for a keystroke
+        }));
     });
     if (!jobs.length) { updateProgress(); return Promise.resolve(); }
     return Promise.all(jobs).then(function () {
@@ -292,11 +352,27 @@
   /* ---------- Persistence (best-effort) ---------- */
   var saveT = null;
   function saveSoon() { clearTimeout(saveT); saveT = setTimeout(save, 400); }
+  /* What puzzle this actually is, as opposed to what it is called. A daily
+     number or a practice token names a slot; the contents of that slot can
+     change — a regenerated daily, a re-imported practice pool — and saved
+     letters then land on a different grid at the same address. */
+  function puzzleFingerprint(p) {
+    if (!p) return null;
+    return p.width + "x" + p.height + ":" +
+      p.entries.map(function (e) { return e.row.id; }).join(",");
+  }
+
   function save() {
     try {
+      // Which mode is in play, so a refresh comes back to the same game.
+      localStorage.setItem("fcw.mode", mode);
       localStorage.setItem(mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice", JSON.stringify({
         mode: mode, dailyNo: dailyNo,
         seed: seed, token: puzzleToken, letters: letters,
+        fingerprint: puzzleFingerprint(puzzle),
+        pauseCount: pauseCount,
+        // Include a pause still open, so refreshing mid-pause cannot erase it.
+        pausedMs: pausedMs + (pauseStartedAt ? Date.now() - pauseStartedAt : 0),
         revealedCells: Object.keys(revealedCells),
         revealAnswerCells: Object.keys(revealAnswerCells),
         revealedEntries: Object.keys(revealedEntries).map(Number),
@@ -441,7 +517,9 @@
     n.textContent = "Could not load the puzzle. " + String(err && err.message || err);
   }
 
+  var staleSave = false;
   function finishBuild(restore) {
+    staleSave = false;
     var diff = FCW.puzzleDifficulty(puzzle);
     if (randomPick && clubMode === "random") {
       // Re-derive with the puzzle's difficulty now that the grid exists.
@@ -460,9 +538,21 @@
       ? "Daily #" + dailyNo + " \u00B7 Crossword XI"
       : "Practice \u00B7 Crossword XI";
     letters = {}; wrong = {}; revealedEntries = {}; revealedCells = {}; revealAnswerCells = {};
+    pauseCount = 0; pausedMs = 0; pauseStartedAt = null;
     subbedCells = {}; subsUsed = 0;
     checksUsed = 0; checkAllsUsed = 0; elapsed = 0; complete = false;
     helpActions = []; consecutiveChecks = 0; halfTimeShown = false; lastPos = null;
+    /* A save from a different grid is discarded rather than applied. Letters
+       are stored by cell position, so on a changed puzzle they land on
+       unrelated squares — a board that looks half-solved with nonsense in it,
+       and no way for the player to tell why. Every daily changed when the
+       puzzles moved from twelve answers to eleven; without this, anyone
+       mid-solve would have seen exactly that. */
+    if (restore && restore.fingerprint &&
+        restore.fingerprint !== puzzleFingerprint(puzzle)) {
+      restore = null;
+      staleSave = true;
+    }
     if (restore) {
       letters = restore.letters || {};
       (restore.revealedCells || []).forEach(function (k) { revealedCells[k] = true; });
@@ -473,6 +563,8 @@
       checksUsed = restore.checks || 0;
       checkAllsUsed = restore.checkAlls || 0;
       elapsed = restore.elapsed || 0;
+      pauseCount = restore.pauseCount || 0;
+      pausedMs = restore.pausedMs || 0;
       helpActions = restore.helpActions || [];
       halfTimeShown = FCW.matchMinute(elapsed) >= 45;
       if (restore.clubMode) clubMode = restore.clubMode;
@@ -520,6 +612,13 @@
     if (pendingKickOff) { pendingKickOff = false; revealBoard(); }
     else if (started) startTimer();
     save();
+    if (staleSave) {
+      /* Said out loud. Silently discarding someone's progress is worse than
+         telling them why — and this happens whenever a puzzle is rebuilt
+         underneath a saved game. */
+      toast("This puzzle has changed", "Your earlier progress on it could not be carried over.");
+      staleSave = false;
+    }
     if (restore) checkComplete(); // a finished daily boots straight to Full Time
   }
   /* The icon shows what pressing it would do next: pause bars while running,
@@ -535,6 +634,8 @@
   function pauseGame() {
     if (!started || complete || paused) return;
     paused = true;
+    pauseCount++;
+    pauseStartedAt = Date.now();
     stopTimer();
     // Same treatment as pre-kick-off: the whole stage (grid, selected clue,
     // and both clue lists) is blurred and interaction is disabled.
@@ -546,6 +647,7 @@
   function resumeGame() {
     if (!paused) return;
     paused = false;
+    if (pauseStartedAt) { pausedMs += Date.now() - pauseStartedAt; pauseStartedAt = null; }
     document.querySelector(".stage").classList.remove("prestart");
     $("pauseOverlay").classList.remove("show");
     $("pauseBtn").disabled = false; syncPauseIcon();
@@ -985,7 +1087,16 @@
     // the numbering and the letter bank together on one line.
     $("ncMeta").textContent = e.num + (e.dir === A ? "A" : "D") + " " + e.row.enum;
     $("ncMeta").title = e.num + " " + (e.dir === A ? "Across" : "Down");
-    $("ncText").textContent = clueText(e.row, e.num);
+    /* Scale the clue to fit rather than letting it clip. The card height is
+       fixed so the board cannot move between clues, which means a long clue has
+       to give — and a clue cut off mid-word is unsolvable, not merely untidy.
+       Thresholds are character counts, so the same clue always renders the same
+       way regardless of what came before it. */
+    var text = clueText(e.row, e.num);
+    var el = $("ncText");
+    el.textContent = text;
+    el.classList.toggle("long", text.length > 76 && text.length <= 104);
+    el.classList.toggle("xlong", text.length > 104);
     renderBank(e);
     /* Do not call scrollIntoView() when the selected clue changes. On iPad,
        especially with the software keyboard open, Safari may scroll the visual
@@ -1484,19 +1595,21 @@
     var cells = puzzle.entries[cur.entry].cells;
     var hasLetters = cells.some(function (c) { return letters[K(c.x, c.y)]; });
     if (!hasLetters) return; // nothing to check — no charge
-    checksUsed++;
-    helpActions.push("check");
-    consecutiveChecks++;
     var idx = cur.entry;
     var typed = cells.map(function (c) { return letters[K(c.x, c.y)] || " "; }).join("");
     api("/api/check-answer", { token: puzzleToken, entry: idx, guess: typed, detail: 1 })
-      .then(function (r) { markWrongFromServer(idx, r.wrong || []); })
-      .catch(function (err) { toast("Check unavailable", String(err.message || err), "loss"); });
-    var headline = consecutiveChecks === 2 ? "Back-to-back defeats"
-                 : consecutiveChecks >= 3 ? "Three losses on the bounce"
-                 : "Defeat \u2014 3 points dropped";
-    toast(headline, consecutiveChecks > 1 ? "3 points dropped" : "", "loss");
-    updateScoreUI();
+      .then(function (r) {
+        markWrongFromServer(idx, r.wrong || []);
+        checksUsed++;
+        helpActions.push("check");
+        consecutiveChecks++;
+        var headline = consecutiveChecks === 2 ? "Back-to-back defeats"
+                     : consecutiveChecks >= 3 ? "Three losses on the bounce"
+                     : "Defeat \u2014 3 points dropped";
+        toast(headline, consecutiveChecks > 1 ? "3 points dropped" : "", "loss");
+        updateScoreUI(); saveSoon();
+      })
+      .catch(function (err) { revealFailed(err); });
   });
 
   /* ---------- Check All (whole grid, -9 pts) ----------
@@ -1544,17 +1657,17 @@
       letters[k] = ch;                 // insert or correct
       delete wrong[k];
       revealedCells[k] = true;         // locked + gold from here on
-      refreshLetters(); verifySoon(); saveSoon();
+    }, function () {
+      helpActions.push("revealLetter");
+      consecutiveChecks = 0;
+      toast("Draw \u2014 2 points dropped", "Held to a draw.", "draw");
+      // advance to the next editable cell, like typing
+      do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
+      if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
+      refreshLetters(); updateSelection(); updateScoreUI(); verifySoon(); saveSoon();
+      checkComplete();
     });
-    helpActions.push("revealLetter");
-    consecutiveChecks = 0;
-    toast("Draw \u2014 2 points dropped", "Held to a draw.", "draw");
-    // advance to the next editable cell, like typing
-    do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
-    if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
-    refreshLetters(); updateSelection(); updateScoreUI(); saveSoon();
     startTimer();
-    checkComplete();
   });
 
   /* ---------- Substitution (practice levels): free letter, no score effect ---------- */
@@ -1577,22 +1690,43 @@
       letters[k] = ch;
       delete wrong[k];
       subbedCells[k] = true;           // locked + gold, but never scored
-      refreshLetters(); verifySoon(); saveSoon();
+    }, function () {
+      subsUsed++;                      // a substitution is spent only if used
+      toast("Substitution", "Fresh legs \u2014 free letter, nothing conceded.");
+      do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
+      if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
+      refreshLetters(); updateSelection(); updateScoreUI(); updateSubUI(); verifySoon(); saveSoon();
+      checkComplete();
     });
-    subsUsed++;
-    toast("Substitution", "Fresh legs \u2014 free letter, nothing conceded.");
-    do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
-    if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
-    refreshLetters(); updateSelection(); updateScoreUI(); updateSubUI(); saveSoon();
     startTimer();
-    checkComplete();
   });
 
   /* One letter, from the server, for Reveal Letter and Substitution alike. */
-  function revealFromServer(entryIdx, cellIdx, apply) {
+  /* A failed reveal must cost nothing. `charge` runs only after the letter
+     arrives, so a stale token or a dropped connection leaves the score alone. */
+  function revealFromServer(entryIdx, cellIdx, apply, charge) {
     api("/api/reveal", { token: puzzleToken, entry: entryIdx, index: cellIdx })
-      .then(function (r) { apply(r.letter); })
-      .catch(function (err) { toast("Reveal unavailable", String(err.message || err), "loss"); });
+      .then(function (r) { apply(r.letter); if (charge) charge(); })
+      .catch(function (err) { revealFailed(err); });
+  }
+  function revealFailed(err) {
+    /* A request that never left the device is a connection problem, not a
+       refusal — say so, and start catching up rather than leaving the player
+       to work out why nothing is confirming. */
+    if (err && err.offline) {
+      setOffline(true);
+      scheduleRetry();
+      toast("No connection", "Nothing charged. It will catch up when you are back.", "loss");
+      return;
+    }
+    var msg = String((err && err.message) || err);
+    /* The commonest cause is a puzzle that no longer exists — the practice pool
+       was rebuilt under a saved game. Say what to do rather than the error. */
+    if (/no longer stored|Unknown puzzle|not today/i.test(msg)) {
+      toast("This puzzle has expired", "Press New Puzzle to start a fresh one.", "loss");
+    } else {
+      toast("Reveal unavailable", msg + " \u2014 nothing charged.", "loss");
+    }
   }
 
   /* ---------- Reveal Answer (selected answer, -9 pts per unique answer) ---------- */
@@ -1602,6 +1736,10 @@
     var idx = cur.entry;
     // The one place a whole answer is fetched, and only because the player has
     // asked for it and paid nine points.
+    /* The charge lands only once the answer has. Reveals are a server call now,
+       and the penalty used to be applied outside the promise — so a request
+       that failed (a stale token after a pool re-import, a dropped
+       connection) still cost nine points and filled in nothing. */
     api("/api/reveal", { token: puzzleToken, entry: idx })
       .then(function (r) {
         e.cells.forEach(function (c, i) {
@@ -1611,18 +1749,17 @@
           // Lock every cell; keep prior gold letter-reveals gold (no double charge).
           if (!revealedCells[k]) revealAnswerCells[k] = true;
         });
-        refreshLetters(); verifySoon(); saveSoon();
+        if (!revealedEntries[idx]) {
+          revealedEntries[idx] = true;
+          helpActions.push("revealAnswer");
+          consecutiveChecks = 0;
+          toast("Three defeats on the bounce", "9 points dropped", "loss");
+        }
+        refreshLetters(); updateSelection(); updateScoreUI(); verifySoon(); saveSoon();
+        checkComplete();
       })
-      .catch(function (err) { toast("Reveal unavailable", String(err.message || err), "loss"); });
-    if (!revealedEntries[cur.entry]) {
-      revealedEntries[cur.entry] = true;
-      helpActions.push("revealAnswer");
-      consecutiveChecks = 0;
-      toast("Three defeats on the bounce", "9 points dropped", "loss");
-    }
-    refreshLetters(); updateSelection(); updateScoreUI(); saveSoon();
+      .catch(function (err) { revealFailed(err); });
     startTimer();
-    checkComplete();
   });
 
   /* ---------- Daily results (local only, no accounts) ----------
@@ -1662,12 +1799,32 @@
       elapsedSeconds: elapsed, matchMinute: FCW.matchMinute(elapsed),
       checks: checksUsed,
       revealedLetters: revealedLetterCount(),
-      revealedAnswers: revealedAnswerCount()
+      revealedAnswers: revealedAnswerCount(),
+      /* Recorded so a leaderboard can tell a four-minute solve from a
+         four-minute solve spread across two hours. Pausing hides the puzzle, so
+         it is not cheating — but it stops the scoring clock, and that is worth
+         knowing rather than hiding. */
+      pauses: pauseCount,
+      pausedSeconds: Math.round(pausedMs / 1000)
     }));
     list.sort(function (a, b) { return a.dailyNo - b.dailyNo; });
     saveResults(list);
     return list;
   }
+  /* Say it on the card. A run with the clock stopped for twenty minutes is a
+     different run from one without, and the player should see that stated
+     rather than have it recorded silently against them. */
+  function showPauseNote() {
+    var el = $("rPauseNote");
+    if (!el) return;
+    if (!pauseCount) { el.style.display = "none"; return; }
+    var mins = Math.round(pausedMs / 60000);
+    el.textContent = "Clock stopped " +
+      (pauseCount === 1 ? "once" : pauseCount === 2 ? "twice" : pauseCount + " times") +
+      (mins >= 1 ? " for " + mins + (mins === 1 ? " minute" : " minutes") : "") + ".";
+    el.style.display = "";
+  }
+
   function showClockNote(playedNo, todayNo) {
     var el = $("rClockNote");
     if (!el) return;
@@ -1889,6 +2046,22 @@
     sel.value = clubMode === "chosen" ? club : "__random__";
   }
   on("kickOffBtn", "click", kickOff);
+  /* Switch mode from the card itself, then kick off in one press. */
+  on("kickAltBtn", "click", function () {
+    mode = (mode === "daily") ? "practice" : "daily";
+    try { localStorage.setItem("fcw.mode", mode); } catch (e) {}
+    seed = (Math.random() * 1e9) | 0;
+    renderKickCard();
+    buildPuzzle(null).then(function () { kickOff(); });
+  });
+  function renderKickCard() {
+    // #kickMode is the card's existing subtitle; the game already keeps it in
+    // step elsewhere, so this only has to set the alternative button's label.
+    var alt = $("kickAltBtn");
+    if (alt) alt.textContent = mode === "daily"
+      ? "Play a practice puzzle instead" : "Play today's daily instead";
+  }
+  renderKickCard();
 
   /* ---------- Completion + scoring ---------- */
   /* Completion is the server's word. Every entry has to have been judged
@@ -1917,6 +2090,7 @@
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
     if ($("rClockNote")) $("rClockNote").style.display = "none";
+    showPauseNote();
     updateScoreUI();
     $("rClub").textContent = club + (season ? "  \u00B7  " + season.season : "");
     $("rPos").textContent = (FCW.ordinal(pos) + " \u2014 " + res.score + " pts").toUpperCase();
@@ -2013,13 +2187,17 @@
 
   /* ---------- Boot: today's daily first; unfinished practice resumes ---------- */
   (function boot() {
-    var daily = loadSaved("daily");
+    /* Return to whatever was last being played. The old rule resumed practice
+       only if letters had been typed *and* today's daily was finished — so
+       refreshing on a practice board you had not written in yet dropped you
+       onto the daily, and so did refreshing on practice with the daily still
+       open. Refreshing should not change what you are playing. */
+    var last = null;
+    try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
     var practice = loadSaved("practice");
-    if (practice && practice.seed != null && !practice.complete &&
-        Object.keys(practice.letters || {}).length &&
-        !(daily && daily.dailyNo === FCW.dailyNumber() && !daily.complete)) {
+    if (last === "practice" && practice && !practice.complete) {
       mode = "practice";
-      newPuzzle(practice.seed, practice); // mid-practice takes priority over a fresh daily
+      newPuzzle(practice.seed, practice);
     } else {
       bootDaily();
     }

@@ -167,10 +167,14 @@ t("the solved animation settles back to the cell colour, not the card",
 const phone = flatCss.slice(flatCss.lastIndexOf("@media (max-width:640px)"));
 t("phone: status and controls sit on a single row",
   /\.tb-left\{flex-direction:row;flex-wrap:nowrap/.test(phone));
-t("phone: the four help buttons sit on a single row",
-  /\.tb-row\{grid-template-columns:repeat\(4,1fr\)/.test(phone));
-t("phone: substitution takes its own row when it appears",
-  /#subBtn\{grid-row:auto;grid-column:1 \/ span 4\}/.test(phone));
+t("phone: help is two labelled pairs, not four loose buttons", (() => {
+  /* Four across fitted, but "All" and "Answer" side by side gave no clue which
+     was a check and which a reveal. Label plus pair reads as one phrase. */
+  return /\.tb-row\{grid-template-columns:auto minmax\(0,1fr\) minmax\(0,1fr\)/.test(phone) &&
+    /\.tb-sub\{min-width:38px/.test(phone);
+})());
+t("phone: substitution sits under the pairs when it appears",
+  /\.tb-row-sub \.btn\{grid-column:2 \/ span 2\}/.test(phone));
 /* The v05p bug, one specificity level up: `#tablePanel.below-board tbody tr`
    outranks the bare `tr.faroff` rule, so without an explicit override the
    moved table would show all twenty rows again. */

@@ -31,6 +31,10 @@
   --turf-b:#2A7147;
   --turf-line:rgba(255,255,255,.34);
   --turf-edge:rgba(18,59,39,.45);
+  /* Empty answer slots. --line is a divider colour at 1.26:1 against paper —
+     right for a hairline between panels, invisible as a box. */
+  --slot:#A9B4A4;
+  --slot-fill:rgba(24,34,25,.035);
 }
 /* Theme. Follows the operating system by default — which is why the same
    build is dark on an iPad in dark mode and light on a phone that is not.
@@ -64,6 +68,8 @@
     --turf-b:#11261B;
     --turf-line:rgba(255,255,255,.20);
     --turf-edge:rgba(0,0,0,.45);
+    --slot:#6B7A66;
+    --slot-fill:rgba(255,255,255,.05);
   }
   .cell{color:var(--ink)}
   .cell.gold{color:var(--gold-ink)}
@@ -150,14 +156,25 @@ header{
 /* Help stacks into columns by kind: checking, revealing, substituting.
    Two rows, filled column-first, so Check sits above Check all and Reveal
    letter above Reveal answer without needing a wrapper per pair. */
+/* Label, then its two buttons. Equal columns so Check and Reveal line up
+   under each other and read as a pair rather than a queue. */
 .tb-row{
-  display:grid;grid-template-rows:auto auto;grid-auto-flow:column;
-  gap:6px;align-items:center;
+  display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);
+  gap:6px;align-items:center;margin-bottom:5px;
 }
-#subBtn{grid-row:1 / span 2;align-self:center}
+.tb-row:last-child{margin-bottom:0}
+.tb-sub{
+  font-family:var(--disp);font-weight:700;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);min-width:46px;
+}
+/* The free row has one button, which sits under the first column of buttons
+   rather than stretching across both. */
+.tb-row-sub .btn{grid-column:2 / span 2}
 @media (max-width:560px){
-  .tb-row{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr 1fr}
-  #subBtn{grid-row:auto;grid-column:1 / span 2}
+  /* Label above its pair when there is no room for it alongside. */
+  .tb-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tb-sub{grid-column:1 / -1;min-width:0}
+  .tb-row-sub .btn{grid-column:1 / span 2}
 }
 /* Pause is an icon: it is a single recognisable control and the word was
    taking the space of a label it did not need. */
@@ -282,6 +299,11 @@ button.tb-label{
   gap:5px 10px;                       /* row gap, column gap */
   max-height:100%;overflow-y:auto;
 }
+/* Long clues are shrunk to fit rather than clipped. The card height is fixed
+   so the board never moves between clues; the text scales instead. A clue cut
+   off mid-word looks broken and, worse, may not be solvable. */
+.nc-text.long{font-size:15px;line-height:1.35}
+.nc-text.xlong{font-size:14px;line-height:1.3}
 @media (max-width:900px){ .now-clue{height:118px} }
 @media (max-width:560px){ .now-clue{height:132px} }
 .nc-meta{
@@ -296,7 +318,11 @@ button.tb-label{
   font-family:var(--disp);font-weight:600;font-size:17px;color:var(--ink);
   background:var(--card);
 }
-.bank-cell.empty{border-style:dashed;background:transparent}
+.bank-cell.empty{
+  /* Dashed on --line was 1.26:1 against the page: the slots were there but
+     could not be seen, so the enumeration read as empty space. */
+  border-style:dashed;border-color:var(--slot);background:var(--slot-fill);
+}
 .bank-cell.wrong{background:var(--wrong-bg);color:var(--wrong-ink);border-color:var(--wrong)}
 .bank-cell.gold{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
 .bank-cell.gold-ans{background:var(--gold-ans);color:#4A3A00;border-color:var(--gold-ans)}
@@ -850,12 +876,14 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      Each is one row, so the board starts far higher up the screen. */
   .tb-left{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:5px}
   .tb-match,.tb-game{gap:5px;flex-wrap:nowrap}
-  .tb-row{grid-template-columns:repeat(4,1fr);grid-auto-flow:row;
-    grid-template-rows:none;gap:4px}
+  /* Two pairs, each with its label alongside — the four-across row lost the
+     distinction between checking and revealing, which is the whole point. */
+  .tb-row{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px}
+  .tb-sub{min-width:38px;font-size:9px}
   .tb-row .btn{padding:0 5px;font-size:11px;letter-spacing:.02em;height:30px;
     justify-content:center;gap:3px}
   .tb-row .cost{font-size:9px;padding:0 4px}
-  #subBtn{grid-row:auto;grid-column:1 / span 4}
+  .tb-row-sub .btn{grid-column:2 / span 2}
 
   /* Moved out of the header, the table is a panel in its own right. */
   #tablePanel.below-board{
@@ -896,7 +924,9 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      the bank. It costs the board ~20px of height, which is the right way round:
      a board you can see but cannot type into is worse than a slightly smaller
      one. */
-  .now-clue{height:84px}            /* one line plus the bank, which is inline here */
+  /* 84px left the longest clue 3px short once the meta line and bank are
+     counted — which is exactly the case that was clipping. */
+  .now-clue{height:92px}            /* one line plus the bank, which is inline here */
   .stage{gap:14px;padding:6px 16px 24px}
   .grid-wrap{padding:10px 16px}
   /* Keyboard height is the last thing standing between the board and the space
@@ -1001,12 +1031,13 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   /* minmax(0,1fr), not 1fr: a plain 1fr track will not shrink below its
      content, so "REVEAL ANSWER -9" pushed the buttons out through the side of
      the card. Short labels as well, because the rail is 280px wide. */
-  .tb-row{grid-auto-flow:row;grid-template-rows:none;
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  /* The rail is narrow: the label goes above its pair. */
+  .tb-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .tb-sub{grid-column:1 / -1;min-width:0}
   .tb-row .btn{min-width:0;padding:0 8px}
   .tb-row .lbl-full{display:none}
   .tb-row .lbl-short{display:inline}
-  #subBtn{grid-row:auto;grid-column:1 / span 2}
+  .tb-row-sub .btn{grid-column:1 / span 2}
 
   .grid-wrap{justify-self:start}
   /* Tighter clue rows: at this width every clue fits on one line, so the list
@@ -1024,7 +1055,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 @media (orientation:landscape) and (max-height:820px){
   .masthead{font-size:20px}
   .strap{display:none}
-  .now-clue{height:68px}
+  /* Under 820px tall the board needs every pixel, so the clue scales further
+     rather than the card growing. A long clue at 12.5px still reads; a board
+     squeezed another 16px does not. */
+  .now-clue{height:86px}
+  .nc-text.long{font-size:13.5px;line-height:1.25}
+  .nc-text.xlong{font-size:12.5px;line-height:1.2}
   .osk{--osk-h:clamp(30px,4.2vh,38px)}
 }
 
@@ -1083,3 +1119,27 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 }
 .status-table td.bad{color:var(--wrong);font-weight:600}
 .status-table td.good{color:var(--pitch)}
+
+
+/* The second way out of the Kick Off card. Quieter than Kick Off — the daily is
+   the point of the game and practice is the alternative, not an equal. */
+.kick-alt{margin-top:8px;width:100%;height:38px}
+
+
+/* Offline notice. Fixed, so it cannot shift the board, and quiet enough not to
+   look like an error — losing signal is not the player's mistake. */
+.net-strip{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:45;
+  background:#7A5E00;color:#FFF8E1;text-align:center;
+  font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.06em;
+  padding:6px 10px;
+}
+body.offline .net-strip{display:block}
+body.touch.offline .net-strip{bottom:auto;top:0}
+
+
+/* Pauses on the Full Time card. Quiet — it is a fact about the run, not a
+   telling-off. */
+.res-pause{
+  font-size:12.5px;color:var(--ink-faint);margin:-4px 0 10px;
+}

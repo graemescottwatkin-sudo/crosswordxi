@@ -69,14 +69,16 @@ export async function onRequestPost({ request, env }) {
     await env.DB.prepare(
       `INSERT INTO results (id, user_id, puzzle_token, mode, daily_no, played_on,
         solved, score, elapsed_seconds, checks, check_alls, revealed_letters,
-        revealed_answers, substitutions, club, season, completed_at, source)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
+        revealed_answers, substitutions, pauses, paused_seconds,
+        club, season, completed_at, source)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
       .bind(
         newId(), user.id,
         "daily:" + dailyNo, mode, dailyNo,
         str(r.date, 10), r.score === undefined ? 0 : 1, intOr(r.score, null),
         intOr(r.elapsedSeconds, null), intOr(r.checks), intOr(r.checkAlls),
         intOr(r.revealedLetters), intOr(r.revealedAnswers), intOr(r.substitutions),
+        intOr(r.pauses), intOr(r.pausedSeconds),
         str(r.club, 60), str(r.season, 20), str(r.completedAt, 40),
       ).run();
     added++;

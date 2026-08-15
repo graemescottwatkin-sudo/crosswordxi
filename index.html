@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v07l">
+<link rel="stylesheet" href="css/style.css?v=v07t">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -36,6 +36,10 @@
 </header>
 
 <div id="errStrip" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99;background:#7a1f1f;color:#f5efe0;font:12px/1.5 monospace;padding:6px 34px 6px 10px;white-space:pre-wrap;word-break:break-all"><button id="errStripX" style="position:absolute;right:6px;top:4px;background:none;border:1px solid #f5efe0;color:#f5efe0;border-radius:4px;cursor:pointer">&times;</button><span id="errStripMsg"></span></div>
+
+<!-- Connection notice. Everything about correctness is a server call now, so
+     an offline player needs to know why the solved count has stopped moving. -->
+<div id="netStrip" class="net-strip" role="status" aria-live="polite"></div>
 
 <div class="toolbar" id="toolbar">
   <div class="tb-left">
@@ -64,12 +68,25 @@
 
   <div class="tb-group tb-help" role="group" aria-label="Help — costs points">
     <button class="tb-label help-toggle" id="helpToggle" aria-expanded="true" aria-controls="helpRow">Help &middot; costs points</button>
-    <div class="tb-row" id="helpRow">
-      <button class="btn secondary" id="checkBtn" title="Check the selected answer">Check<span class="cost">&minus;3</span></button>
-      <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid"><span class="lbl-full">Check all</span><span class="lbl-short">All</span><span class="cost">&minus;9</span></button>
-      <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter (locks it)"><span class="lbl-full">Reveal letter</span><span class="lbl-short">Letter</span><span class="cost">&minus;2</span></button>
-      <button class="btn outline" id="revealBtn" title="Reveal the selected answer (locks it)"><span class="lbl-full">Reveal answer</span><span class="lbl-short">Answer</span><span class="cost">&minus;9</span></button>
-      <button class="btn outline" id="subBtn" style="display:none" title="Substitution: reveal the selected letter free of charge"><span class="lbl-full">Substitution</span><span class="lbl-short">Sub</span><span class="cost" id="subCount"></span></button>
+    <!-- Two labelled pairs rather than four loose buttons. Section and button
+         read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
+         says what it acts on and the row says what it does. "All" and "Answer"
+         alone did not distinguish checking from revealing. -->
+    <div id="helpRow">
+      <div class="tb-row">
+        <span class="tb-sub">Check</span>
+        <button class="btn secondary" id="checkBtn" title="Check the selected answer — tells you which letters are wrong">Answer<span class="cost">&minus;3</span></button>
+        <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid">Grid<span class="cost">&minus;9</span></button>
+      </div>
+      <div class="tb-row">
+        <span class="tb-sub">Reveal</span>
+        <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter and lock it">Letter<span class="cost">&minus;2</span></button>
+        <button class="btn outline" id="revealBtn" title="Reveal the whole selected answer and lock it">Answer<span class="cost">&minus;9</span></button>
+      </div>
+      <div class="tb-row tb-row-sub">
+        <span class="tb-sub">Free</span>
+        <button class="btn outline" id="subBtn" style="display:none" title="Substitution: reveal the selected letter free of charge">Substitution<span class="cost" id="subCount"></span></button>
+      </div>
     </div>
   </div>
 </div>
@@ -226,6 +243,9 @@
       </div>
     </div>
     <button class="btn primary" id="kickOffBtn">Kick Off</button>
+    <!-- Mode was only reachable from a footer link, so which game you were
+         about to play was never stated at the point of starting one. -->
+    <button class="btn outline kick-alt" id="kickAltBtn">Play a practice puzzle</button>
     <div class="kick-note" id="kickNote">The clock starts at kick-off.</div>
   </div>
 </div>
@@ -238,6 +258,9 @@
     <div class="res-score"><span id="rScore">0</span> <small>/ 114 pts</small></div>
     <p class="res-msg" id="rMsg"></p>
     <p class="res-msg" id="rClockNote" style="display:none"></p>
+    <!-- Stated plainly rather than buried: honesty is a better deterrent
+         than a lock, and the clock stopping is worth about 20 points. -->
+    <p class="res-pause" id="rPauseNote" style="display:none"></p>
     <div class="season-strip">
       <div class="season-head">
         <span class="lbl">Season</span><span class="wdl" id="rSeasonWdl"></span>
@@ -278,7 +301,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by MatchFitness &middot; unofficial word puzzle &middot; <span id="buildTag">v07l</span> &middot;
+  Crossword XI by MatchFitness &middot; unofficial word puzzle &middot; <span id="buildTag">v07t</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -288,8 +311,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v07l"></script>
-<script src="js/engine.js?v=v07l"></script>
-<script src="js/game.js?v=v07l"></script>
+<script src="js/seasons.js?v=v07t"></script>
+<script src="js/engine.js?v=v07t"></script>
+<script src="js/game.js?v=v07t"></script>
 </body>
 </html>

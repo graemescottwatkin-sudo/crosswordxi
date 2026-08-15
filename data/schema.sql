@@ -1,25 +1,15 @@
--- Crossword XI — Cloudflare D1 schema
+-- Crossword XI — database schema (safe to re-run)
 --
--- Two tables, doing two different jobs.
+-- This file only creates what is missing. It will never drop a table, so
+-- running it against a live database cannot delete accounts.
 --
---   clues    the master bank. Nothing reads it at request time; it is the
---            source the puzzle generator runs against on your machine. It
---            lives here so there is one authoritative copy, backed up and
---            queryable, rather than a spreadsheet on a laptop.
+-- It used to begin with DROP TABLE for every table, including `users`. That is
+-- fine on an empty database and catastrophic on a live one: a routine re-import
+-- would have silently deleted everyone who had signed up. Structural changes
+-- now go in data/migrations/ instead, and the destructive version has a name
+-- that says what it does.
 --
---   puzzles  pre-generated puzzles, stored whole. This is what the API reads.
---            Laying out a crossword costs ~900ms of CPU, which a Worker should
---            not spend per request, so the work is done ahead of time and each
---            request becomes one indexed SELECT.
---
--- The schema in the deployment standard assumed one row per question with the
--- puzzle assembled per request. Crossword XI cannot work that way: a crossword
--- is a interlocking layout, not a list of questions, so the generated grid has
--- to be stored as a unit. The clue-level fields are kept in `clues` where they
--- belong.
-
-DROP TABLE IF EXISTS clues;
-CREATE TABLE clues (
+CREATE TABLE IF NOT EXISTS clues (
   id            TEXT PRIMARY KEY,      -- stable id from the source bank
   game_type     TEXT NOT NULL DEFAULT 'crossword',
   category      TEXT NOT NULL,         -- e.g. "Transfers", "Grounds", "Caps"
@@ -37,12 +27,11 @@ CREATE TABLE clues (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_clues_category ON clues (category);
-CREATE INDEX idx_clues_active   ON clues (active, max_per);
-CREATE INDEX idx_clues_era      ON clues (era);
+CREATE INDEX IF NOT EXISTS idx_clues_category ON clues (category);
+CREATE INDEX IF NOT EXISTS idx_clues_active   ON clues (active, max_per);
+CREATE INDEX IF NOT EXISTS idx_clues_era      ON clues (era);
 
-DROP TABLE IF EXISTS puzzles;
-CREATE TABLE puzzles (
+CREATE TABLE IF NOT EXISTS puzzles (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   mode        TEXT NOT NULL,           -- 'daily' | 'practice'
   daily_no    INTEGER,                 -- set for daily, NULL for practice
@@ -57,8 +46,8 @@ CREATE TABLE puzzles (
 );
 
 -- The daily lookup is the hot path: one row, by number, every request.
-CREATE UNIQUE INDEX idx_puzzles_daily ON puzzles (daily_no) WHERE mode = 'daily';
-CREATE INDEX idx_puzzles_mode ON puzzles (mode, category);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_daily ON puzzles (daily_no) WHERE mode = 'daily';
+CREATE INDEX IF NOT EXISTS idx_puzzles_mode ON puzzles (mode, category);
 
 -- ===========================================================================
 -- ACCOUNTS (Phase 1)
@@ -72,8 +61,7 @@ CREATE INDEX idx_puzzles_mode ON puzzles (mode, category);
 -- or get wrong.
 -- ===========================================================================
 
-DROP TABLE IF EXISTS users;
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,        -- internal id, never the email
   provider      TEXT NOT NULL,           -- 'google' | 'apple' | 'email'
   provider_id   TEXT NOT NULL,           -- the provider's subject claim
@@ -85,18 +73,17 @@ CREATE TABLE users (
 
 -- One account per identity at a provider. Signing in with the same Google
 -- account twice finds the existing row rather than making a second one.
-CREATE UNIQUE INDEX idx_users_provider ON users (provider, provider_id);
-CREATE INDEX idx_users_email ON users (email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider ON users (provider, provider_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 
-DROP TABLE IF EXISTS sessions;
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
   id          TEXT PRIMARY KEY,          -- opaque random id, sent as a cookie
   user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   expires_at  TEXT NOT NULL
 );
-CREATE INDEX idx_sessions_user ON sessions (user_id);
-CREATE INDEX idx_sessions_expiry ON sessions (expires_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions (expires_at);
 
 -- Results are Phase 2. The table exists now so the account foundation has
 -- somewhere to migrate guest history to, and so the shape is settled before
@@ -106,8 +93,7 @@ CREATE INDEX idx_sessions_expiry ON sessions (expires_at);
 -- score. A leaderboard that trusts a number the browser sent is a leaderboard
 -- someone will send 114 to; recording start and finish times, checks and
 -- reveals means the server can recompute a score later without a rebuild.
-DROP TABLE IF EXISTS results;
-CREATE TABLE results (
+CREATE TABLE IF NOT EXISTS results (
   id                TEXT PRIMARY KEY,
   user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   puzzle_token      TEXT NOT NULL,       -- 'daily:5' | 'practice:37'
@@ -122,6 +108,11 @@ CREATE TABLE results (
   revealed_letters  INTEGER DEFAULT 0,
   revealed_answers  INTEGER DEFAULT 0,
   substitutions     INTEGER DEFAULT 0,
+  -- Pausing stops the scoring clock. Not forbidden — it hides the puzzle, so it
+  -- buys no thinking time — but recorded, so a leaderboard can tell a fast solve
+  -- from a slow one taken in instalments.
+  pauses            INTEGER DEFAULT 0,
+  paused_seconds    INTEGER DEFAULT 0,
   club              TEXT,
   season            TEXT,
   started_at        TEXT,
@@ -131,6 +122,6 @@ CREATE TABLE results (
 );
 
 -- A daily counts once per player, whatever the browser sends.
-CREATE UNIQUE INDEX idx_results_daily ON results (user_id, daily_no)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_results_daily ON results (user_id, daily_no)
   WHERE mode = 'daily' AND daily_no IS NOT NULL;
-CREATE INDEX idx_results_user ON results (user_id, played_on);
+CREATE INDEX IF NOT EXISTS idx_results_user ON results (user_id, played_on);

@@ -517,7 +517,12 @@ var FCW = (function () {
      strong layout exists and a minimum share of the budget is spent. */
   function generate(rows, options) {
     var opts = Object.assign({
-      target: 12, minAnswers: 10, maxAnswers: 14,
+      /* Eleven answers, always — a crossword XI. Not a loose target: min and
+         max are pinned to the same number so a puzzle can never quietly ship
+         with ten or twelve. Measured cost against the old target of 12 is 1.2
+         crossings (17.5 -> 16.3), which is worth paying for a game whose name
+         is the number. */
+      target: 11, minAnswers: 11, maxAnswers: 11,
       // Retuned as the bank grew past 900 rows. With ~100 puzzle groups,
       // sampling ONE row per group is both faster and better than two: breadth
       // across groups beats depth within them. Measured across the whole bank
@@ -1193,6 +1198,8 @@ var FCW = (function () {
       checks: o.checks,
       revealedLetters: o.revealedLetters,
       revealedAnswers: o.revealedAnswers,
+      pauses: o.pauses || 0,
+      pausedSeconds: o.pausedSeconds || 0,
       completedAt: o.completedAt || new Date(now()).toISOString()
     };
   }

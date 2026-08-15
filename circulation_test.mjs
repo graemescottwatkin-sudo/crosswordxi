@@ -5,12 +5,12 @@ import { onRequestPost as practicePost } from "./functions/api/practice.js";
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 
-/* A stub pool: 40 puzzles of 12 clues each, all distinct — so "picked the one
+/* A stub pool: 40 puzzles of 11 clues each, all distinct — so "picked the one
    with least overlap" is measurable rather than lucky. */
 const POOL = [];
 let next = 0;
 for (let i = 1; i <= 40; i++) {
-  const ids = Array.from({ length: 12 }, () => "c" + (++next).toString().padStart(4, "0"));
+  const ids = Array.from({ length: 11 }, () => "c" + (++next).toString().padStart(4, "0"));
   POOL.push({
     id: i, category: i % 2 ? "England" : null, clue_ids: JSON.stringify(ids),
     payload: JSON.stringify({ salt: "s", category: i % 2 ? "England" : null, puzzle: {
@@ -53,8 +53,8 @@ const ask = (used, category) => practicePost({
 });
 
 const first = await (await ask([])).json();
-t("a practice puzzle comes back", !!first.puzzle && first.puzzle.entries.length === 12);
-t("the response says how much of the bank is reachable", first.bankSize === 480, first.bankSize + " clues");
+t("a practice puzzle comes back", !!first.puzzle && first.puzzle.entries.length === 11);
+t("the response says how much of the bank is reachable", first.bankSize === 440, first.bankSize + " clues");
 
 /* Walk the pool: after each puzzle, add its clues to the used set. Every pick
    should be fresh until the pool is exhausted. */
@@ -69,7 +69,7 @@ for (let i = 0; i < 30; i++) {
 }
 t("thirty puzzles in a row, none repeating a clue already seen",
   repeats === 0, repeats + " repeats over " + picks + " puzzles");
-t("that is 360 distinct clues before anything came round again", used.size === 360, used.size + " clues");
+t("that is 330 distinct clues before anything came round again", used.size === 330, used.size + " clues");
 
 /* Past exhaustion it must still serve something rather than fail. */
 const everything = POOL.flatMap((p) => JSON.parse(p.clue_ids));
