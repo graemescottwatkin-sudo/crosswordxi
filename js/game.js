@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v07g";
+  var BUILD = "v07h";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -939,8 +939,12 @@
     $("ncMeta").title = e.num + " " + (e.dir === A ? "Across" : "Down");
     $("ncText").textContent = clueText(e.row, e.num);
     renderBank(e);
-    var active = document.querySelector(".clue-col li.active");
-    if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest" });
+    /* Do not call scrollIntoView() when the selected clue changes. On iPad,
+       especially with the software keyboard open, Safari may scroll the visual
+       viewport to reveal the active item in the clue list below the board. That
+       makes the crossword appear to jump even though its CSS position has not
+       changed. The fixed active-clue strip already shows the selected clue, so
+       keeping the viewport anchored is the better interaction. */
   }
   /* Letter bank: the crossing letters you have already earned, gathered
      beside the clue. Adds no information — every letter shown is already
