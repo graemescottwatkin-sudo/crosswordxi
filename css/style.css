@@ -920,12 +920,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 @media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
   .stage{
     display:grid;align-items:start;
-    /* Keep the stage as the normal centred page width, then centre the actual
-       game pair (rail + board) *inside* it. Earlier builds sized the whole stage
-       to --block-w; while --block-w was settling that could pin the pair to the
-       left edge on iPad. The tracks now centre independently, so the left and
-       right whitespace stay balanced even during re-fit. */
-    width:100%;max-width:1140px;margin:0 auto;
+    /* v06s: make the stage itself exactly the width of the visible game pair
+       (rail + gap + board) and centre that stage. In v06r the tracks were
+       centred inside the wider 1140px stage, while the spanning clue rows used
+       --block-w; on iPad that left the middle row a few pixels left of the top
+       and bottom rows. One shared measure removes that optical drift. */
+    width:min(100%,var(--block-w,1140px));max-width:1140px;margin:0 auto;
     grid-template-columns:minmax(230px,280px) max-content;
     justify-content:center;
     gap:10px 18px;
