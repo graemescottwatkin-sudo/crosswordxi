@@ -5,7 +5,7 @@
  * browser cannot choose for itself.
  */
 import { publicPuzzle, json, bad } from "../_lib/puzzle.js";
-import { getPracticePuzzle, getPuzzleForToken, parseToken, listCategories, makeToken } from "../_lib/db.js";
+import { getPracticePuzzle, getPuzzleForToken, parseToken, listCategories, makeToken, bankSize } from "../_lib/db.js";
 
 /* Everything from the query string is untrusted. Category is checked against
    the values actually present rather than interpolated into SQL, and `seen` is
@@ -18,7 +18,22 @@ function parseSeen(raw) {
     .slice(0, 40);
 }
 
+/* POST carries the list of clues already seen. A thousand ids will not fit in
+   a query string, and this is not a state change — the body is simply the only
+   place a list that long can go. */
+export async function onRequestPost({ request, env }) {
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  const used = Array.isArray(body.usedClues)
+    ? body.usedClues.filter((x) => typeof x === "string").slice(0, 2000) : [];
+  return serve(request, env, used);
+}
+
 export async function onRequestGet({ request, env }) {
+  return serve(request, env, []);
+}
+
+async function serve(request, env, usedClues) {
   const url = new URL(request.url);
 
   /* ?token= returns one named practice puzzle, so a player resuming a saved
@@ -52,7 +67,7 @@ export async function onRequestGet({ request, env }) {
     category = asked;
   }
 
-  const stored = await getPracticePuzzle(env, { category, seenIds });
+  const stored = await getPracticePuzzle(env, { category, seenIds, usedClues });
   if (!stored) {
     return bad("No practice puzzles are stored" + (category ? " for that category" : "") +
       ". Run tools/build_puzzles.js and import the result — see README step 5.", 404);
@@ -68,5 +83,8 @@ export async function onRequestGet({ request, env }) {
     category: stored.category || null,
     token: makeToken("practice", stored.rowId),
     puzzle: publicPuzzle(stored.puzzle),
+    // How much of the bank exists, so the browser can show progress through it.
+    bankSize: await bankSize(env),
+    fresh: stored.fresh !== false,
   });
 }

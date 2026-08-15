@@ -288,7 +288,19 @@ checks, reveals — so the server can recompute one later without rebuilding the
 account system. Do not open a public leaderboard until that recomputation is in
 place.
 
-## J. Checking which build is live
+## J. Checking what is live
+
+Tap the gold badge in the top-right corner. It opens a panel showing the build,
+whether the puzzles are coming from D1 or the development samples, the clue and
+puzzle counts, how many dailies remain, and whether sign-in is configured.
+
+`/api/status` returns the same as JSON if you prefer a URL.
+
+**The badge alone was not enough.** It tells you which frontend is running; it
+cannot tell you the database never got bound — and a site serving three
+development samples looks exactly like one serving a full clue bank.
+
+## J2. Checking which build is live
 
 Every release tags its asset URLs (`css/style.css?v=v06g`) and prints the build
 to the console. Three ways to confirm what is actually being served:

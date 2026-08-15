@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v07h";
+  var BUILD = "v07l";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -340,6 +340,47 @@
      Now the server holds the bank, lays the grid out ahead of time and sends
      one puzzle with no solution letters in it. Everything downstream of this
      function is unchanged: the same shape arrives, minus the answers. */
+  /* ---------- Clue circulation (practice) ----------
+     Every clue this browser has been shown, so the server can pick puzzles
+     built from ones it has not. Practice only: the Daily is the same for
+     everyone and must not vary by what you happen to have played. */
+  var USED_KEY = "fcw.usedClues.v1";
+  var USED_CAP = 2000;
+  function loadUsedClues() {
+    try {
+      var v = JSON.parse(localStorage.getItem(USED_KEY));
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  function recordUsedClues(ids) {
+    try {
+      var list = loadUsedClues();
+      var have = {};
+      list.forEach(function (id) { have[id] = 1; });
+      ids.forEach(function (id) { if (!have[id]) { have[id] = 1; list.push(id); } });
+      if (list.length > USED_CAP) list = list.slice(list.length - USED_CAP);
+      localStorage.setItem(USED_KEY, JSON.stringify(list));
+    } catch (e) {}
+    renderCirculation();
+  }
+  var bankReach = 0;
+  function renderCirculation() {
+    var el = $("circLine");
+    if (!el) return;
+    var n = loadUsedClues().length;
+    if (mode !== "practice") { el.textContent = ""; return; }
+    el.textContent = bankReach
+      ? n + " of " + bankReach + " clues seen"
+      : n + " clues seen";
+    var btn = $("circReset");
+    if (btn) btn.style.display = n ? "" : "none";
+  }
+  on("circReset", "click", function () {
+    try { localStorage.removeItem(USED_KEY); } catch (e) {}
+    renderCirculation();
+    toast("Clues back in circulation", "Every clue can appear again.");
+  });
+
   function requestPuzzle(restore) {
     /* Resuming needs the puzzle that was saved, not a new one. The seed used to
        identify it, back when the browser generated the grid itself; now the
@@ -359,7 +400,9 @@
     if (cat) qs.push("category=" + encodeURIComponent(cat));
     var seen = loadRecent().filter(function (n) { return typeof n === "number"; }).slice(0, 40);
     if (seen.length) qs.push("seen=" + seen.join(","));
-    return api("/api/practice" + (qs.length ? "?" + qs.join("&") : ""));
+    /* POST, because a list of a thousand clue ids will not fit in a URL. */
+    return api("/api/practice" + (qs.length ? "?" + qs.join("&") : ""),
+               { usedClues: loadUsedClues() });
   }
 
   function buildPuzzle(restore) {
@@ -371,6 +414,11 @@
       puzzleToken = res.token;
       if (res.mode === "daily" && res.dailyNo) dailyNo = res.dailyNo;
       if (res.poolId) recordRecent([res.poolId]);
+      if (typeof res.bankSize === "number" && res.bankSize) bankReach = res.bankSize;
+      if (res.mode === "practice" && res.puzzle && res.puzzle.entries) {
+        recordUsedClues(res.puzzle.entries.map(function (e) { return e.row.id; }));
+      }
+      renderCirculation();
       verified = {}; verifySent = {}; gridStats = { wrongCells: 0, wrongEntries: 0 };
       showLoading(false);
       finishBuild(restore);
@@ -783,25 +831,25 @@
       lastCellSize = size;
       document.documentElement.style.setProperty("--cell", size + "px");
     }
-    /* Publish the board box's width so the active clue strip, the clue columns
-       and the season strip all share one measure with the pitch. */
-    var board = document.querySelector(".grid-wrap");
-    if (board && board.offsetWidth) {
-      document.documentElement.style.setProperty("--board-w", board.offsetWidth + "px");
-      /* In the rail layout the stage is sized to the block rather than the page:
-         rail + gap + board. Without it the clue lists, which span both columns,
-         drag the board's column wider than the board and everything drifts to
-         one side. */
-      var bar = $("toolbar"), stage = document.querySelector(".stage");
-      if (railMode && bar && stage && stage.contains(bar)) {
-        /* Use the same deterministic rail width as CSS rather than bar.offsetWidth.
-           The latter is content-sensitive and was the last moving part when a
-           clue changed. Round once so top, middle and bottom share one pixel edge. */
-        var blockW = Math.round(railW + pairGap + board.offsetWidth);
-        document.documentElement.style.setProperty("--block-w", blockW + "px");
-      } else {
-        document.documentElement.style.removeProperty("--block-w");
-      }
+    /* Publish the widths the rest of the layout lines up against.
+       Both are *calculated*, never measured. offsetWidth reads the board as it
+       is currently painted, and this runs immediately after --cell changes — so
+       it returned the width for the previous cell size and the block came out a
+       step behind. Selecting a clue re-ran this, the stale value landed, and the
+       whole rail and board slid sideways inside a clue strip that had not moved.
+       Derived from the same numbers that chose the cell size, there is nothing
+       left to drift: the same puzzle at the same viewport gives the same edges
+       every time, whatever the clue card happens to contain. */
+    var wrapPadX = boxPad(wrap).x;
+    var boardW = Math.round(puzzle.width * size + wrapPadX);
+    document.documentElement.style.setProperty("--board-w", boardW + "px");
+
+    var bar = $("toolbar"), stage = document.querySelector(".stage");
+    if (railMode && bar && stage && stage.contains(bar)) {
+      document.documentElement.style.setProperty(
+        "--block-w", Math.round(railW + pairGap + boardW) + "px");
+    } else {
+      document.documentElement.style.removeProperty("--block-w");
     }
   }
   /* First paint measures the page before the web fonts have loaded, so the
@@ -1198,6 +1246,59 @@
     account = r.user || null;
     renderAccount();
   }).catch(function () { renderAccount(); });
+
+  /* ---------- What's live ----------
+     The badge says which frontend is running. This says which data — the
+     question that has actually caused trouble, because a site serving three
+     development samples looks exactly like one serving the whole clue bank. */
+  function statusRow(label, value, state) {
+    var cls = state === true ? " class=\"good\"" : state === false ? " class=\"bad\"" : "";
+    return "<tr><td>" + escapeHtml(label) + "</td><td" + cls + ">" +
+      escapeHtml(String(value)) + "</td></tr>";
+  }
+  function showStatus() {
+    var sheet = $("statusSheet"), body = $("statusBody"), sub = $("statusSub");
+    if (!sheet) return;
+    sheet.classList.add("show");
+    body.innerHTML = "";
+    sub.textContent = "Checking\u2026";
+    fetch("/api/status", { headers: { "X-Crossword-XI": "1" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var rows = [statusRow("Build", BUILD)];
+        if (!d.db) {
+          sub.textContent = "Running on development data";
+          rows.push(statusRow("Puzzle source", "development samples", false));
+          rows.push(statusRow("Database", "not connected", false));
+          rows.push(statusRow("Note", d.note || ""));
+        } else {
+          sub.textContent = "Running on your database";
+          rows.push(statusRow("Puzzle source", "D1", true));
+          rows.push(statusRow("Clues in bank", d.clues));
+          rows.push(statusRow("Practice puzzles", d.practice));
+          rows.push(statusRow("Clues reachable", d.practiceReach +
+            (d.clues ? " of " + d.clues : ""), d.clueIdsPresent));
+          if (!d.clueIdsPresent) {
+            rows.push(statusRow("Clue tracking", "pool predates clue_ids \u2014 re-import", false));
+          }
+          rows.push(statusRow("Dailies stored", d.firstDay + "\u2013" + d.lastDay));
+          rows.push(statusRow("Today", "#" + d.today,
+            d.daysLeft === null ? null : d.daysLeft >= 0));
+          rows.push(statusRow("Days remaining", d.daysLeft,
+            d.daysLeft === null ? null : d.daysLeft > 14));
+          rows.push(statusRow("Sign-in", d.accounts ? "configured" : "not configured", !!d.accounts));
+          rows.push(statusRow("Accounts", d.users === null ? "\u2014" : d.users));
+        }
+        body.innerHTML = rows.join("");
+      })
+      .catch(function (err) {
+        sub.textContent = "Could not reach the server";
+        body.innerHTML = statusRow("Build", BUILD) +
+          statusRow("Status", String(err.message || err), false);
+      });
+  }
+  on("buildBadge", "click", showStatus);
+  on("statusClose", "click", function () { $("statusSheet").classList.remove("show"); });
 
   on("bankToggle", "click", function () {
     bankOn = !bankOn;

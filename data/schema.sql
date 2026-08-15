@@ -49,6 +49,10 @@ CREATE TABLE puzzles (
   daily_date  TEXT,                    -- optional human-readable date
   category    TEXT,                    -- set only for filtered practice pools
   payload     TEXT NOT NULL,           -- JSON: { salt, poolId?, puzzle }
+  clue_ids    TEXT,                    -- JSON array of the clue ids inside it,
+                                       -- so a puzzle can be chosen by what the
+                                       -- player has not seen without unpacking
+                                       -- every payload on every request
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

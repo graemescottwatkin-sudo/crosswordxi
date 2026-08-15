@@ -890,7 +890,13 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .toolbar{padding:7px 9px;margin:7px auto 3px}
   .tb-table table.league td{padding:1px 6px}
   .tb-table .club-bar{margin-bottom:4px}
-  .now-clue{height:64px}            /* one line plus the bank, which is inline here */
+  /* 64px fitted one line plus the bank. About 1% of clues are long enough to
+     wrap at this width — and when they did, the bank was pushed out of the card
+     and you could not see the letters you were typing. 84px holds two lines and
+     the bank. It costs the board ~20px of height, which is the right way round:
+     a board you can see but cannot type into is worse than a slightly smaller
+     one. */
+  .now-clue{height:84px}            /* one line plus the bank, which is inline here */
   .stage{gap:14px;padding:6px 16px 24px}
   .grid-wrap{padding:10px 16px}
   /* Keyboard height is the last thing standing between the board and the space
@@ -938,7 +944,13 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
     --rail-w:clamp(230px,23.5vw,280px);
     --pair-gap:18px;
     width:min(100%,var(--block-w,1140px));max-width:1140px;margin:0 auto;
-    grid-template-columns:var(--rail-w) max-content;
+    /* var(--board-w), not max-content. A max-content track sizes to the widest
+       thing in it, and the clue strip and clue lists span both columns — so a
+       long clue grew the board's column, the tracks stopped fitting the stage
+       box, and the rail and board slid out from under a clue strip that stayed
+       put. The board's width is already known exactly (cells x size), so the
+       track is told what it is rather than asked to work it out from text. */
+    grid-template-columns:var(--rail-w) var(--board-w, max-content);
     justify-content:center;
     column-gap:var(--pair-gap);row-gap:10px;
   }
@@ -951,6 +963,9 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 
   .now-clue{
     grid-column:1 / -1;grid-row:1;
+    /* A spanning item can grow the tracks it spans; min-width:0 stops a long
+       clue doing so and dragging the board's column out from under it. */
+    min-width:0;
     /* Match the exact combined width of the rail + board, rather than running
        across the whole tablet. This makes the top clue finish at the board edge. */
     width:min(100%,var(--block-w,100%));justify-self:center;
@@ -962,11 +977,11 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   }
   .grid-wrap{grid-column:2;grid-row:2;justify-self:center}
   .clues{
-    grid-column:1 / -1;grid-row:4;
+    grid-column:1 / -1;grid-row:4;min-width:0;
     width:min(100%,var(--block-w,100%));justify-self:center;
   }
   #seasonPanel{
-    grid-column:1 / -1;grid-row:5;
+    grid-column:1 / -1;grid-row:5;min-width:0;
     width:min(100%,var(--block-w,100%));justify-self:center;
   }
 
@@ -1019,10 +1034,10 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    or Full Time. Delete this block and the element in index.html when the
    layout is settled. */
 .build-badge{
-  position:fixed;top:0;right:0;z-index:40;
+  position:fixed;top:0;right:0;z-index:40;border:none;cursor:pointer;
   font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.14em;
   background:var(--gold);color:var(--gold-ink);
-  padding:3px 9px;border-radius:0 0 0 7px;pointer-events:none;
+  padding:3px 9px;border-radius:0 0 0 7px;
   box-shadow:0 1px 3px rgba(0,0,0,.25);
 }
 
@@ -1047,3 +1062,24 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 }
 .acct-actions{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
 .acct-actions .btn{height:36px}
+
+
+/* Clues seen, and the control to put them back. Practice only — the Daily is
+   the same for everyone and does not vary by what you have played. */
+.circ-line{color:var(--ink-faint);margin-right:6px}
+
+
+/* What's live. Rows of fact, deliberately plain — this is a diagnostic, not a
+   feature, and it should read like one. */
+.status-table{width:100%;border-collapse:collapse;text-align:left;margin-bottom:14px}
+.status-table td{
+  padding:6px 4px;font-size:14px;border-bottom:1px solid var(--line);
+  color:var(--ink);vertical-align:top;
+}
+.status-table td:first-child{
+  color:var(--ink-faint);font-family:var(--disp);font-weight:600;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;width:44%;
+  padding-top:9px;
+}
+.status-table td.bad{color:var(--wrong);font-weight:600}
+.status-table td.good{color:var(--pitch)}

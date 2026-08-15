@@ -36,7 +36,7 @@ export async function getDailyPuzzle(env, dailyNo) {
    practice game" and the server decides which one — the pool never leaves the
    server, and no client-side selection over the bank is possible. */
 export async function getPracticePuzzle(env, opts = {}) {
-  const { category = null, seenIds = [] } = opts;
+  const { category = null, seenIds = [], usedClues = null } = opts;
 
   if (!hasDB(env)) {
     const list = category
@@ -46,8 +46,38 @@ export async function getPracticePuzzle(env, opts = {}) {
     return pick ? { ...pick, rowId: pick.rowId } : null;
   }
 
-  // Avoid repeating the pool entries this browser has just seen, when it can be
-  // done without making the query unbounded.
+  /* Pick by what the player has not read, not merely what they have not been
+     served. Two cheap queries: the id and clue list of every candidate (a few
+     hundred short rows), then the payload of the one chosen. Unpacking every
+     payload to compare would mean reading megabytes per request. */
+  if (usedClues && usedClues.length) {
+    const used = new Set(usedClues);
+    let sql = "SELECT id, clue_ids FROM puzzles WHERE mode = 'practice'";
+    const binds = [];
+    if (category) { sql += " AND category = ?"; binds.push(category); }
+    const all = await env.DB.prepare(sql).bind(...binds).all();
+    const cands = (all.results || []).filter((r) => r.clue_ids);
+    if (cands.length) {
+      let best = null, bestScore = Infinity;
+      for (const c of cands) {
+        let ids;
+        try { ids = JSON.parse(c.clue_ids); } catch (e) { continue; }
+        let overlap = 0;
+        for (const id of ids) if (used.has(id)) overlap++;
+        // Ties broken at random, or every player walks the pool in step.
+        const score = overlap + Math.random() * 0.5;
+        if (score < bestScore) { bestScore = score; best = c; }
+      }
+      if (best) {
+        const row = await env.DB
+          .prepare("SELECT id, payload FROM puzzles WHERE id = ?").bind(best.id).first();
+        if (row) return { ...JSON.parse(row.payload), rowId: row.id,
+                          fresh: Math.round(bestScore) === 0 };
+      }
+    }
+  }
+
+  // Fall back to avoiding pool entries this browser has recently been served.
   const recent = seenIds.slice(0, 40).filter((n) => Number.isInteger(n));
   const holes = recent.map(() => "?").join(",");
 
@@ -108,4 +138,19 @@ export async function listCategories(env) {
     .prepare("SELECT DISTINCT category FROM puzzles WHERE mode = 'practice' AND category IS NOT NULL")
     .all();
   return (res.results || []).map((r) => r.category);
+}
+
+/* How many clues the practice pool can reach. Not the whole bank: a clue only
+   becomes reachable once some pre-generated puzzle uses it, so this is the
+   honest denominator for "clues seen". */
+export async function bankSize(env) {
+  if (!hasDB(env)) return 0;
+  const rows = await env.DB
+    .prepare("SELECT clue_ids FROM puzzles WHERE mode = 'practice' AND clue_ids IS NOT NULL")
+    .all();
+  const ids = new Set();
+  for (const r of rows.results || []) {
+    try { JSON.parse(r.clue_ids).forEach((id) => ids.add(id)); } catch (e) {}
+  }
+  return ids.size;
 }

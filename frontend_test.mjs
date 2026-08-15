@@ -19,6 +19,7 @@ import { onRequestGet as apiPractice } from "./functions/api/practice.js";
 import { onRequestGet as apiCategories } from "./functions/api/categories.js";
 import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
 import { onRequestPost as apiReveal } from "./functions/api/reveal.js";
+import { onRequestGet as apiStatus } from "./functions/api/status.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
@@ -30,7 +31,7 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css",
 const ROUTES = {
   "/api/daily": apiDaily, "/api/practice": apiPractice,
   "/api/categories": apiCategories, "/api/check-answer": apiCheck,
-  "/api/reveal": apiReveal,
+  "/api/reveal": apiReveal, "/api/status": apiStatus,
 };
 
 let apiCalls = 0;
@@ -104,9 +105,12 @@ server.listen(0, "127.0.0.1", async () => {
       /\.build-badge\{position:fixed;top:0;right:0;z-index:40/.test(flat);
   })(), d.getElementById("buildBadge") && d.getElementById("buildBadge").textContent);
   t("the badge sits below the overlays, so it cannot cover Kick Off", (() => {
-    // Overlays are z-index 50+; the badge is 40 and ignores pointer events.
+    /* It used to ignore pointer events; now it is a button that opens the
+       status panel, so it must receive them. Overlays still cover it because
+       they sit at a higher z-index. */
     const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
-    return /\.build-badge\{[^}]*pointer-events:none/.test(flat) &&
+    return /\.build-badge\{[^}]*z-index:40/.test(flat) &&
+      !/\.build-badge\{[^}]*pointer-events:none/.test(flat) &&
       /\.overlay\{[^}]*z-index:5[0-9]/.test(flat);
   })());
   t("the clue bank is not in the page", !/FCW_DATA/.test(d.documentElement.outerHTML));
@@ -288,6 +292,52 @@ server.listen(0, "127.0.0.1", async () => {
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
 
+  console.log("\nWhat's live");
+  t("the build badge is a button that opens the status panel", (() => {
+    const badge = d.getElementById("buildBadge");
+    return !!badge && badge.tagName === "BUTTON" && badge.textContent === w.CROSSWORDXI_BUILD;
+  })(), d.getElementById("buildBadge") && d.getElementById("buildBadge").textContent);
+  t("the panel opens and closes", (() => {
+    const sheet = d.getElementById("statusSheet");
+    $("buildBadge").dispatchEvent(new w.Event("click", { bubbles: true }));
+    const opened = sheet.classList.contains("show");
+    $("statusClose").dispatchEvent(new w.Event("click", { bubbles: true }));
+    return opened && !sheet.classList.contains("show");
+  })());
+  $("buildBadge").dispatchEvent(new w.Event("click", { bubbles: true }));
+  await wait(500);   // the panel fills from /api/status
+  t("it reports the build and where the puzzles came from", (() => {
+    const rows = d.getElementById("statusBody").textContent;
+    return rows.indexOf(w.CROSSWORDXI_BUILD) !== -1 && /D1|development/i.test(rows);
+  })(), d.getElementById("statusBody").textContent.replace(/\s+/g, " ").slice(0, 80));
+  $("statusClose").dispatchEvent(new w.Event("click", { bubbles: true }));
+
+  console.log("\nLayout does not drift when the clue changes");
+  t("board and block widths are calculated, never measured", (() => {
+    /* offsetWidth reads the board as currently painted, and the read happened
+       immediately after --cell changed — so it returned the previous size and
+       the block landed a step behind. Selecting a clue re-ran it and the whole
+       rail and board slid sideways inside a clue strip that had not moved. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    // Strip comments first: the comment explaining this fix mentions
+    // offsetWidth, and matching prose rather than code fails on its own note.
+    const fit = js.slice(js.indexOf("function fitCells"), js.indexOf("var lastCellSize"))
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    return !/offsetWidth/.test(fit) &&
+      /puzzle\.width \* size \+ wrapPadX/.test(fit) &&
+      /railW \+ pairGap \+ boardW/.test(fit);
+  })());
+  t("the same puzzle at the same size gives the same widths every time", (() => {
+    const root = d.documentElement;
+    const before = [root.style.getPropertyValue("--board-w"), root.style.getPropertyValue("--block-w")];
+    // Change clue several times: none of it should touch the geometry.
+    for (const id of ["nextClue", "prevClue", "nextClue"]) {
+      $(id).dispatchEvent(new w.Event("click", { bubbles: true }));
+    }
+    const after = [root.style.getPropertyValue("--board-w"), root.style.getPropertyValue("--block-w")];
+    return before[0] === after[0] && before[1] === after[1];
+  })(), d.documentElement.style.getPropertyValue("--board-w") || "(unset in jsdom)");
+
   console.log("\nNothing moves the page when a button is pressed");
   t("the nudge is inside the board, not between it and the clue lists", (() => {
     const nudge = $("gridNudge");
@@ -364,11 +414,13 @@ server.listen(0, "127.0.0.1", async () => {
     return moved && back;
   })());
   t("the board still gets a sensible width when the panel has no box", (() => {
-    /* display:contents leaves .grid-panel with clientWidth 0, so fitCells has
-       to measure the stage and subtract the rail — otherwise it sizes the
-       board against the whole page and overflows the column. */
+    /* .grid-panel is display:contents in the rail, so it has no box and
+       clientWidth is 0. Measuring the stage instead worked but was circular —
+       the stage's width derives from the board — so v07h sizes the board from
+       the viewport and a fixed rail width. Either way the requirement is the
+       same: the rail must not be counted as space the board can use. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /stage\.clientWidth - sp\.x - bar\.offsetWidth/.test(js);
+    return /railMode/.test(js) && /pairCap - railW - pairGap/.test(js);
   })());
   t("the board and its clue strip survive the move", (() => {
     return !!$("nowClue") && !!d.querySelector(".grid-wrap") &&

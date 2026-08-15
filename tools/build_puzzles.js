@@ -104,6 +104,11 @@ console.log(`Generating ${perPool} practice puzzles for each of ` +
   `${POOLS.length} pools (all${GROUPS.length ? ", " + GROUPS.join(", ") : ""})...`);
 t0 = Date.now();
 let made = 0;
+/* How far back the exclusion reaches. 600 slots covers roughly the last fifty
+   puzzles; measured coverage is 851 clues at 200, 977 at 600, and slightly
+   worse unbounded — starving the pool makes the generator fall back. */
+const RECENT_WINDOW = 600;
+let recent = [];
 for (const pool of POOLS) {
   // A pool with too few rows cannot make a viable grid; skip it rather than
   // fill the table with failures.
@@ -113,11 +118,27 @@ for (const pool of POOLS) {
   }
   for (let i = 1; i <= perPool; i++) {
     made++;
-    // Practice is unseeded variety, not a shared puzzle, so any seed will do.
-    const p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: pool.filter });
+    /* Rolling exclusion. Generated independently, every practice puzzle picks
+       the same short, easy-fitting rows — 120 puzzles between them used just
+       109 distinct clues out of 2,948. Excluding what the last few hundred
+       slots used forces the generator down into the rest of the bank, which
+       takes the same 120 puzzles to 977 distinct clues. */
+    let filter = pool.filter;
+    if (recent.length) {
+      const ex = {};
+      recent.forEach((id) => { ex[id] = true; });
+      const candidate = Object.assign({}, pool.filter, { excludeIds: ex });
+      // Never exclude so much that the grid cannot be built.
+      if (FCW.filterViability(rows, candidate).enough) filter = candidate;
+    }
+    const p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: filter });
+    const clueIds = p.entries.map((e) => e.row.id);
+    recent.push(...clueIds);
+    if (recent.length > RECENT_WINDOW) recent = recent.slice(-RECENT_WINDOW);
     const payload = JSON.stringify({ salt: salt(), category: pool.category, puzzle: p });
-    out.push(`INSERT INTO puzzles (mode, daily_no, category, payload) VALUES ` +
-      `('practice', NULL, ${pool.category ? sqlStr(pool.category) : "NULL"}, ${sqlStr(payload)});`);
+    out.push(`INSERT INTO puzzles (mode, daily_no, category, payload, clue_ids) VALUES ` +
+      `('practice', NULL, ${pool.category ? sqlStr(pool.category) : "NULL"}, ` +
+      `${sqlStr(payload)}, ${sqlStr(JSON.stringify(clueIds))});`);
     if (made % 25 === 0) console.log(`  ${made}  (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
   }
 }

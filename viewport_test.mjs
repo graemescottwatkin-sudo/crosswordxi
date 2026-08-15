@@ -71,7 +71,10 @@ t("the phone clue card is shorter but still fixed, so the board cannot jump", ((
 
 /* Landscape tablets: width is abundant, height is scarce, and the board is
    limited only by height. Anything the toolbar gives back becomes cells. */
-const flatCss = css.replace(/\s*\n\s*/g, "");
+/* Comments stripped as well as newlines: several rules now carry explanations
+   long enough that a regex spanning a declaration block matches the prose
+   instead of the CSS. */
+const flatCss = css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
 const landscape = flatCss.slice(flatCss.indexOf("@media (orientation:landscape) and (max-height:1100px)"));
 /* Slice the block it actually belongs to, not a fixed number of characters
    from a neighbouring one — the first version of this drifted out of range the
@@ -103,9 +106,15 @@ t("the rail + board tracks are centred inside the page", (() => {
   /* Was `width:100%`, which the shipped CSS never says: the stage is capped to
      the measured pair width so the spanning rows cannot widen the tracks. The
      assertion was left behind when the rule changed. */
-  return /width:min\(100%,var\(--block-w,1140px\)\);max-width:1140px;margin:0 auto/.test(rail) &&
+  return /width:min\(100%,var\(--block-w,[^)]*\)\)/.test(rail) && /margin:0 auto/.test(rail) &&
     /justify-content:center/.test(rail) &&
-    /--block-w/.test(js) && /railW \+ pairGap \+ board\.offsetWidth/.test(js);
+    /--block-w/.test(js) && /railW \+ pairGap \+ boardW/.test(js) &&
+    // Derived from the cell size, not read back off the painted board.
+    /puzzle\.width \* size \+ wrapPadX/.test(js);
+})());
+t("nothing that spans both columns can widen them", (() => {
+  // min-width:0 stops a long clue or a long list item forcing a track wider.
+  return /\.now-clue\{[^}]*min-width:0/.test(rail) && /\.clues\{[^}]*min-width:0/.test(rail);
 })());
 t("the active clue spans the pair and is capped to the pair width",
   /\.now-clue\{grid-column:1 \/ -1;grid-row:1;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
@@ -123,11 +132,11 @@ t("the rail uses short button labels, since it is only 280px wide",
 t("the toolbar stacks from the top rather than spreading down the card",
   /\.toolbar\{justify-content:flex-start\}/.test(rail));
 t("the board column is sized to the board, so the pitch keeps hugging the grid", (() => {
-  /* With 1fr the column was as wide as the page and the grid sat in half a
-     pitch. max-content makes the column the board's own width, so the pitch and
-     the crossword cover the same space and the edges still line up. */
-  return /grid-template-columns:var\(--rail-w\) max-content/.test(rail) &&
-    /\.grid-wrap\{justify-self:start\}/.test(rail);
+  /* Went 1fr -> max-content -> var(--board-w). 1fr made the column as wide as
+     the page; max-content let a long clue in a spanning row widen it. The
+     board's width is known exactly, so the track is told rather than asked. */
+  return /grid-template-columns:var\(--rail-w\)\s*var\(--board-w/.test(rail) &&
+    /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
 })());
 t("the clue lists end at the same right edge as the board pair",
   /\.clues,#seasonPanel\{max-width:var\(--block-w,100%\)\}/.test(rail));
