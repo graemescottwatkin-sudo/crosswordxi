@@ -1,7 +1,7 @@
 # Crossword XI — deployment repository
 
-**Crossword XI — The Football Crossword**, by MatchFitness. Part of the
-MatchFitness XI suite alongside Scrambled XI and Missing XI.
+**Crossword XI — The Football Crossword**, by The XI Games. Part of the
+XI Games suite alongside Scrambled XI and Missing XI.
 
 > **Status: complete and ready to upload.** The game, the API, the database
 > schema and the tooling are all here and tested together — 441 checks across

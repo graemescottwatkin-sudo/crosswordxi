@@ -128,7 +128,7 @@ header{
 }
 .masthead .ball{display:inline-block;transform:translateY(-2px);font-size:.5em;margin:0 .5em;color:var(--pitch)}
 .masthead{letter-spacing:.14em}
-/* The XI is the mark shared across the MatchFitness suite (Scrambled XI,
+/* The XI is the mark shared across The XI Games suite (Scrambled XI,
    Missing XI), so it carries the accent while the word stays ink. */
 .masthead .xi{color:var(--pitch);letter-spacing:.06em}
 .brandline{

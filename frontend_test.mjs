@@ -184,6 +184,14 @@ server.listen(0, "127.0.0.1", async () => {
     /\.now-clue\{[^}]*height:96px/.test(fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "")));
   t("the brand is Crossword XI", /Crossword\s*XI/i.test(d.querySelector(".masthead").textContent));
   t("no Pitchword naming survives", !/pitchword/i.test(html));
+  t("the strapline credits The XI Games", (() => {
+    const line = d.querySelector(".brandline");
+    return !!line && /The XI Games/.test(line.textContent);
+  })(), d.querySelector(".brandline") && d.querySelector(".brandline").textContent.trim());
+  /* MatchFitness is the fitness handle, not the games label. Asserted the same
+     way the Pitchword rename was, so this one cannot rot half-done either. */
+  t("no MatchFitness naming survives anywhere in the page",
+    !/matchfitness/i.test(html), (html.match(/.{0,30}matchfitness.{0,30}/i) || [])[0]);
 
   console.log("\nLayout");
   const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");

@@ -1,6 +1,10 @@
 /* functions/_lib/daily.js — which day it is, decided in one place.
-   Daily #1 is 11 August 2026. Kept in step with DAILY_EPOCH in js/engine.js. */
-const EPOCH = Date.UTC(2026, 7, 11);
+   Daily #1 is 16 August 2026. This is one of TWO places the launch date is
+   written; the other is DAILY_EPOCH in js/engine.js, which stores the day
+   *before* #1 in local-time components. Change one without the other and the
+   browser asks for a puzzle the server will not accept reveals for, so every
+   check and reveal returns 403. epoch_test.mjs checks they agree. */
+const EPOCH = Date.UTC(2026, 7, 16);
 
 export function dailyNumber(now = Date.now()) {
   const d = new Date(now);

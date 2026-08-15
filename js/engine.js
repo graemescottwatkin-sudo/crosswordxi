@@ -309,6 +309,17 @@ var FCW = (function () {
     function rowAllowed(r) {
       var sk = rowMeta(r).sk;
       if (usedTerms[r.grid] || (sk && usedTerms[sk])) return false;
+      /* Cap clues of the same shape. Transfers are 63% of the bank, so an
+         unconstrained puzzle drew 6.3 of its 11 from them and one drew 9 —
+         eleven different answers, but the same question asked nine times. The
+         cap is on the family ("Transfer", "City"), not the exact category, so
+         Club Joined and Club Left count together: they read identically to a
+         player. */
+      if (opts.maxPerFamily) {
+        var fam = r.cat.split(" \u2192")[0];
+        var cap = opts.maxPerFamily[fam] || opts.maxPerFamily["*"];
+        if (cap && (familyCount[fam] || 0) >= cap) return false;
+      }
       // A clue must not name an answer already in the grid, and its own answer
       // must not already have been named by a clue in the grid. Descriptive
       // clues ("beating Brazil 3-0") would otherwise hand over another entry.
@@ -328,9 +339,12 @@ var FCW = (function () {
       if (sk0) usedTerms[sk0] = true;
       var k = r.cat + "|" + r.clue;
       clueTextCount[k] = (clueTextCount[k] || 0) + 1;
+      var fam0 = r.cat.split(" \u2192")[0];
+      familyCount[fam0] = (familyCount[fam0] || 0) + 1;
     }
     // Per-restart variety + speed: consider a sampled subset of each
     // group's rows (different clue mix every restart).
+    var familyCount = {};
     var sampled = {};
     pgks.forEach(function (p) {
       sampled[p] = shuffled(byPgk[p], rng).slice(0, opts.rowsPerGroup || 3);
@@ -1332,7 +1346,15 @@ var FCW = (function () {
   /* Daily puzzle: number and seed derive from the LOCAL calendar date,
      so everyone in a timezone gets the same puzzle and it rolls over at
      local midnight (Wordle-style). Deterministic hash -> seed. */
-  var DAILY_EPOCH = { y: 2026, m: 7, d: 10 }; // day before launch; 2026-08-11 = Puzzle #1
+  /* THE LAUNCH DATE. Daily #1 falls the day after this.
+     Written in two files and they must agree: this one, and EPOCH in
+     functions/_lib/daily.js (which stores day #1 itself, in UTC). If they drift
+     apart the browser asks for puzzle N while the server thinks it is N±1, and
+     every reveal and check is refused with a 403 — for everybody. epoch_test.mjs
+     checks the pair on real dates.
+     Any date before #1 clamps to #1, so testing before launch never eats into
+     the stored days. */
+  var DAILY_EPOCH = { y: 2026, m: 7, d: 15 }; // day before launch; 2026-08-16 = Puzzle #1
   function dailyNumber(at) {
     var t = at || new Date(now());
     var today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
@@ -1481,6 +1503,9 @@ var FCW = (function () {
     streaks: streaks,
     seasonStats: seasonStats,
     timePenaltyTo: timePenaltyTo,
+    // Exported so tests can be written against the launch date rather than
+    // hard-coding it — it has moved once and will move again.
+    DAILY_EPOCH: DAILY_EPOCH,
     dailyNumber: dailyNumber,
     dailySeed: dailySeed,
     DAILY_LOOKBACK: DAILY_LOOKBACK,

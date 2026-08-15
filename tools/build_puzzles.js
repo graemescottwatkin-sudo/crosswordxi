@@ -80,12 +80,43 @@ if (RESET) {
 /* Days before FROM are still generated, because each day's bans depend on the
    week before it — the chain cannot be joined halfway. They are computed and
    thrown away; only days from FROM are written. */
+/* Two constraints on the daily, both measured over 120 days.
+
+   maxPerFamily — transfers are 63% of the bank, so an unconstrained puzzle drew
+   6.3 of its 11 from them, and one drew 9: eleven different answers, but the
+   same question asked nine times. Capped at 3.
+
+   DAILY_CLUE_WINDOW — a clue used recently sits out, so the game keeps reaching
+   for material it has not used. Coverage over 120 days: 769 clues as it was,
+   847 with a 40-day window. Unbounded exclusion reaches 880 but starves the
+   pool — 40 of 120 puzzles could not reach eleven answers, so it is a window
+   rather than a memory.
+
+   The cost is crossings, 16.8 -> 15.3. Fewer intersections means slightly less
+   help from letters already in the grid, which is the price of variety. */
+const DAILY_FAMILY_CAP = { Transfer: 3 };
+const DAILY_CLUE_WINDOW = 440;
+let recentDaily = [];
+
 console.log(`Generating days 1..${DAYS}` +
   (FROM > 1 ? `, writing from ${FROM} (earlier days are recomputed for the ban chain, not written)` : ""));
 let t0 = Date.now();
 let written = 0;
 for (let d = 1; d <= DAYS; d++) {
-  const p = FCW.generate(rows, FCW.dailyOptions(d, bans));
+  const opts = FCW.dailyOptions(d, bans);
+  opts.maxPerFamily = DAILY_FAMILY_CAP;
+  if (recentDaily.length) {
+    const ex = {};
+    recentDaily.forEach((id) => { ex[id] = true; });
+    const f = Object.assign({}, opts.filter || {}, { excludeIds: ex });
+    // Never exclude so much that eleven answers cannot be placed.
+    if (FCW.filterViability(rows, f).enough) opts.filter = f;
+  }
+  const p = FCW.generate(rows, opts);
+  p.entries.forEach((e) => recentDaily.push(e.row.id));
+  if (recentDaily.length > DAILY_CLUE_WINDOW) {
+    recentDaily = recentDaily.slice(-DAILY_CLUE_WINDOW);
+  }
   if (p.entries.length !== TARGET_ANSWERS) {
     console.error(`\nDaily #${d} came out with ${p.entries.length} answers, not ${TARGET_ANSWERS}.`);
     console.error("Refusing to write a run with an inconsistent daily.\n");
@@ -146,9 +177,11 @@ for (const pool of POOLS) {
        into the pool before this check existed. Retry without the exclusion,
        which is always buildable; variety is worth less than the invariant the
        game is named after. */
-    let p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: filter });
+    let p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: filter,
+                                 maxPerFamily: DAILY_FAMILY_CAP });
     if (p.entries.length !== TARGET_ANSWERS && filter !== pool.filter) {
-      p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: pool.filter });
+      p = FCW.generate(rows, { seed: 1000000 + made * 7919, filter: pool.filter,
+                               maxPerFamily: DAILY_FAMILY_CAP });
       shortRetries++;
     }
     if (p.entries.length !== TARGET_ANSWERS) {
