@@ -88,12 +88,24 @@ t("wide landscape grids the stage, not the body", (() => {
   /* Gridding the body put the rail beside the whole stage, so it ran the height
      of the page while the board floated in the middle of its column. Gridding
      the stage makes the rail a column of the board itself. */
-  return /\.stage\{display:grid;align-items:start;justify-content:center/.test(rail) &&
+  return /\.stage\{display:grid;align-items:start/.test(rail) &&
     !/body\{display:grid/.test(rail);
 })());
-t("the rail sits in the board's row and stretches to its height",
-  /\.toolbar\{grid-column:1;grid-row:2;align-self:stretch/.test(rail) &&
-  /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail));
+t("the rail sits in the board's row and ends with its content", (() => {
+  /* Stretching it to the board's height left a couple of hundred pixels of
+     empty card below the help buttons. */
+  return /\.toolbar\{grid-column:1;grid-row:2/.test(rail) &&
+    /\.toolbar\{align-self:start\}/.test(rail) &&
+    /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
+})());
+t("the block is sized from script and centred, not left to the grid", (() => {
+  /* The clue lists span both columns, and a spanning item can grow the tracks
+     it spans — long clue text was widening the board's column and pushing the
+     whole block to one side. */
+  const js = fs.readFileSync("js/game.js", "utf8");
+  return /width:var\(--block-w, auto\);max-width:100%;margin:0 auto/.test(rail) &&
+    /--block-w/.test(js) && /bar\.offsetWidth \+ 18 \+ board\.offsetWidth/.test(js);
+})());
 t("the active clue spans the rail and the board",
   /\.now-clue\{grid-column:1 \/ -1;grid-row:1\}/.test(rail));
 t("the clue lists run full width underneath",

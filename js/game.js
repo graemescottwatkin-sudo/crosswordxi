@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06p";
+  var BUILD = "v06q";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -782,6 +782,17 @@
     var board = document.querySelector(".grid-wrap");
     if (board && board.offsetWidth) {
       document.documentElement.style.setProperty("--board-w", board.offsetWidth + "px");
+      /* In the rail layout the stage is sized to the block rather than the page:
+         rail + gap + board. Without it the clue lists, which span both columns,
+         drag the board's column wider than the board and everything drifts to
+         one side. */
+      var bar = $("toolbar"), stage = document.querySelector(".stage");
+      if (bar && stage && stage.contains(bar) && bar.offsetWidth) {
+        document.documentElement.style.setProperty(
+          "--block-w", (bar.offsetWidth + 18 + board.offsetWidth) + "px");
+      } else {
+        document.documentElement.style.removeProperty("--block-w");
+      }
     }
   }
   /* First paint measures the page before the web fonts have loaded, so the
