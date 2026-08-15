@@ -919,9 +919,15 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    stage by script, since it is a sibling of it in the markup. */
 @media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
   .stage{
-    display:grid;align-items:start;
-    grid-template-columns:minmax(230px,280px) 1fr;
-    gap:10px 18px;max-width:1180px;
+    display:grid;align-items:start;justify-content:center;
+    /* max-content, not 1fr: the board column takes the board's own width, so
+       the pitch keeps hugging the grid instead of stretching past it — the
+       crossword and its backdrop cover the same space. The clue strip and the
+       clue lists then span exactly rail + board, so every edge still lines up.
+       1fr made the column as wide as the page and left the grid sitting in
+       half a pitch. */
+    grid-template-columns:minmax(230px,280px) max-content;
+    gap:10px 18px;max-width:100%;
   }
   /* The panel's children become items of the stage grid, so the clue strip and
      the board can be placed independently without unwrapping the markup. */
@@ -961,9 +967,8 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .tb-row .lbl-short{display:inline}
   #subBtn{grid-row:auto;grid-column:1 / span 2}
 
-  /* The board fills its column, so the right edge of the pitch lines up with
-     the right edge of the clue strip above it: rail + board = one block. */
-  .grid-wrap{justify-self:stretch}
+  /* The column is sized to the board, so the wrap needs no stretching. */
+  .grid-wrap{justify-self:start}
   /* The clue lists took their width from the board box, which left them
      narrower than the page and wrapped every clue over three or four lines
      with white space either side. Here they use the full width. */

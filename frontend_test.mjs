@@ -302,6 +302,13 @@ server.listen(0, "127.0.0.1", async () => {
     const back = !stage.contains($("toolbar"));
     return moved && back;
   })());
+  t("the board still gets a sensible width when the panel has no box", (() => {
+    /* display:contents leaves .grid-panel with clientWidth 0, so fitCells has
+       to measure the stage and subtract the rail — otherwise it sizes the
+       board against the whole page and overflows the column. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /stage\.clientWidth - sp\.x - bar\.offsetWidth/.test(js);
+  })());
   t("the board and its clue strip survive the move", (() => {
     return !!$("nowClue") && !!d.querySelector(".grid-wrap") &&
       d.querySelectorAll("#grid .cell").length > 50 &&

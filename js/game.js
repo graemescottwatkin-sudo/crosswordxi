@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06o";
+  var BUILD = "v06p";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -739,6 +739,17 @@
       var pp = boxPad(panel), wp = boxPad(wrap);
       padY = pp.y + wp.y;
       availW = panel.clientWidth - pp.x - wp.x - 8;
+      /* In the landscape rail the panel is display:contents — it has no box, so
+         clientWidth is 0 and the old fallback handed the board the width of the
+         whole page, rail included. Measure the stage and take the rail off it. */
+      if (availW < 160) {
+        var stage = document.querySelector(".stage");
+        var bar = $("toolbar");
+        if (stage && bar && stage.contains(bar)) {
+          var sp = boxPad(stage);
+          availW = stage.clientWidth - sp.x - bar.offsetWidth - 18 - wp.x - 8;
+        }
+      }
     }
     if (availW < 160) availW = document.body.clientWidth - 44;
     if (availW < 160) availW = (window.innerWidth || 360) - 44;

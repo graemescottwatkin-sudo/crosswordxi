@@ -88,7 +88,7 @@ t("wide landscape grids the stage, not the body", (() => {
   /* Gridding the body put the rail beside the whole stage, so it ran the height
      of the page while the board floated in the middle of its column. Gridding
      the stage makes the rail a column of the board itself. */
-  return /\.stage\{display:grid;align-items:start;grid-template-columns:minmax\(230px,280px\) 1fr/.test(rail) &&
+  return /\.stage\{display:grid;align-items:start;justify-content:center/.test(rail) &&
     !/body\{display:grid/.test(rail);
 })());
 t("the rail sits in the board's row and stretches to its height",
@@ -109,8 +109,13 @@ t("the rail uses short button labels, since it is only 280px wide",
   /\.tb-row \.lbl-full\{display:none\}/.test(rail) && /\.tb-row \.lbl-short\{display:inline\}/.test(rail));
 t("the toolbar stacks from the top rather than spreading down the card",
   /\.toolbar\{justify-content:flex-start\}/.test(rail));
-t("the board fills its column, so it lines up with the clue strip above",
-  /\.grid-wrap\{justify-self:stretch\}/.test(rail));
+t("the board column is sized to the board, so the pitch keeps hugging the grid", (() => {
+  /* With 1fr the column was as wide as the page and the grid sat in half a
+     pitch. max-content makes the column the board's own width, so the pitch and
+     the crossword cover the same space and the edges still line up. */
+  return /grid-template-columns:minmax\(230px,280px\) max-content/.test(rail) &&
+    /\.grid-wrap\{justify-self:start\}/.test(rail);
+})());
 t("the clue lists use the full width instead of the board's",
   /\.clues,#seasonPanel\{max-width:none\}/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
