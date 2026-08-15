@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v06s">
+<link rel="stylesheet" href="css/style.css?v=v07b">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -100,8 +100,11 @@
         </svg>
       </div>
       <div class="grid" id="grid" role="grid" aria-label="Crossword grid"></div>
+      <!-- Inside the board, and positioned over it: as a block element between
+           the board and the clue lists it went from no height to ~35px every
+           time it appeared, shifting the page under the player's finger. -->
+      <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
     </div>
-    <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
   </div>
   <!-- Clue lists sit under the board now, two columns on desktop, stacked when
        the width would squeeze the text. The right-hand column is gone: it made
@@ -125,6 +128,44 @@
 <div class="osk" id="osk"></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Accounts are optional. Nothing here gates play: the sheet only opens if
+     the player asks for it, and the game never waits on it. -->
+<div class="sheet" id="accountSheet">
+  <div class="sheet-card">
+    <h2 id="acctTitle">Your account</h2>
+    <div class="sheet-sub" id="acctSub">Playing as a guest on this device</div>
+
+    <div id="acctSignedOut">
+      <p class="acct-why">
+        Create a free account to keep your streak, stats and league position
+        across devices. Your progress on this device comes with you.
+      </p>
+      <div id="googleBtn" class="acct-provider"></div>
+      <p class="acct-note" id="acctUnavailable" style="display:none">
+        Sign-in is not switched on for this site yet.
+      </p>
+    </div>
+
+    <div id="acctSignedIn" style="display:none">
+      <label class="acct-field">
+        <span>Display name</span>
+        <input id="acctName" type="text" maxlength="40" autocomplete="nickname">
+      </label>
+      <div class="acct-actions">
+        <button class="btn secondary" id="acctSave">Save</button>
+        <button class="btn outline" id="acctSignOut">Sign out</button>
+      </div>
+      <div class="sheet-note" id="acctMigrated"></div>
+    </div>
+
+    <div class="sheet-note">
+      Signing in is optional. The daily puzzle, practice and your club all work
+      without an account.
+    </div>
+    <button class="btn outline sheet-close" id="acctClose">Close</button>
+  </div>
+</div>
 
 <div class="sheet" id="statsSheet">
   <div class="sheet-card">
@@ -226,15 +267,16 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by MatchFitness &middot; unofficial word puzzle &middot; <span id="buildTag">v06s</span> &middot;
+  Crossword XI by MatchFitness &middot; unofficial word puzzle &middot; <span id="buildTag">v07b</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
+  <button id="accountToggle">sign in</button> &middot;
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v06s"></script>
-<script src="js/engine.js?v=v06s"></script>
-<script src="js/game.js?v=v06s"></script>
+<script src="js/seasons.js?v=v07b"></script>
+<script src="js/engine.js?v=v07b"></script>
+<script src="js/game.js?v=v07b"></script>
 </body>
 </html>

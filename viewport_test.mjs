@@ -100,7 +100,10 @@ t("the rail sits in the board's row and ends with its content", (() => {
 })());
 t("the rail + board tracks are centred inside the page", (() => {
   const js = fs.readFileSync("js/game.js", "utf8");
-  return /width:100%;max-width:1140px;margin:0 auto/.test(rail) &&
+  /* Was `width:100%`, which the shipped CSS never says: the stage is capped to
+     the measured pair width so the spanning rows cannot widen the tracks. The
+     assertion was left behind when the rule changed. */
+  return /width:min\(100%,var\(--block-w,1140px\)\);max-width:1140px;margin:0 auto/.test(rail) &&
     /justify-content:center/.test(rail) &&
     /--block-w/.test(js) && /bar\.offsetWidth \+ 18 \+ board\.offsetWidth/.test(js);
 })());

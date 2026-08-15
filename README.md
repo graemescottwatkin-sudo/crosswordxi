@@ -233,6 +233,61 @@ Two things differ from the deployed site: puzzles come from the handful of
 development samples rather than D1, and the fonts still load from Google, so it
 looks slightly different offline. Layout, CSS and game code are identical.
 
+## I3. Turning on accounts (optional)
+
+Accounts are **off until you configure them**, and the game works without them.
+A guest plays the daily, practice, picks a club and keeps a local streak. What
+an account adds is the same player across devices.
+
+There are **no passwords anywhere** in this project. Identity comes from Google,
+verified server-side against Google's public keys.
+
+**Step 1 — get a Google client ID.** In the Google Cloud console: create a
+project → APIs & Services → Credentials → Create credentials → OAuth client ID →
+Web application. Under *Authorised JavaScript origins* add:
+
+```text
+https://crosswordxi.com
+```
+
+Copy the client ID (it ends `.apps.googleusercontent.com`).
+
+**Step 2 — tell Cloudflare.** Workers & Pages → your project → Settings →
+Variables → add:
+
+```text
+GOOGLE_CLIENT_ID = <the client ID>
+```
+
+It is not a secret — the browser needs it — but it lives in Cloudflare rather
+than the repository so it can differ between environments.
+
+**Step 3 — create the account tables.**
+
+```bash
+npx wrangler d1 execute crosswordxi --remote --file=data/schema.sql
+```
+
+⚠️ `schema.sql` drops and recreates every table, including `users`. Fine before
+launch; once real people have accounts, run only the new `CREATE TABLE`
+statements instead.
+
+**Step 4 — check it.** The footer says *sign in*. Signing in should show your
+name, and any daily results already on that device move to the account.
+
+### What is deliberately not built yet
+
+Phase 1 is the foundation only. Apple sign-in, email links, streaks and
+statistics from the server, and leaderboards are Phases 2–5 in the requirements
+doc. The `results` table exists now so guest history has somewhere to go and the
+shape is settled before anything depends on it.
+
+**On leaderboards:** scoring is still done in the browser, so a submitted score
+cannot be trusted. `results` records the *actions* a score was made of — times,
+checks, reveals — so the server can recompute one later without rebuilding the
+account system. Do not open a public leaderboard until that recomputation is in
+place.
+
 ## J. Checking which build is live
 
 Every release tags its asset URLs (`css/style.css?v=v06g`) and prints the build

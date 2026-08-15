@@ -288,6 +288,67 @@ server.listen(0, "127.0.0.1", async () => {
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
 
+  console.log("\nNothing moves the page when a button is pressed");
+  t("the nudge is inside the board, not between it and the clue lists", (() => {
+    const nudge = $("gridNudge");
+    return !!nudge && nudge.parentNode.className.indexOf("grid-wrap") !== -1;
+  })());
+  t("the nudge is taken out of the flow, so showing it shifts nothing", (() => {
+    /* It used to toggle display none/block — no height to ~35px — on every
+       Check, every Check All, and twice per New Puzzle. On touch that can move
+       a control out from under a finger between press and release. */
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /\.nudge\{[^}]*position:absolute/.test(flat) &&
+      /\.nudge\{[^}]*visibility:hidden/.test(flat) &&
+      !/\.nudge\{[^}]*display:none/.test(flat) &&
+      /\.nudge\.show\{opacity:1;visibility:visible\}/.test(flat);
+  })());
+  t("it cannot swallow a tap aimed at the board",
+    /\.nudge\{[^}]*pointer-events:none/.test(
+      fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "")));
+  t("showing and hiding it leaves the board where it was", (() => {
+    const wrap = d.querySelector(".grid-wrap");
+    const nudge = $("gridNudge");
+    const before = wrap.childElementCount;
+    nudge.classList.add("show");
+    nudge.textContent = "Six letters are wrong";
+    const during = wrap.childElementCount;
+    nudge.classList.remove("show");
+    // jsdom has no layout, so this checks the structural precondition: the
+    // nudge is a child of the board box and never added or removed from flow.
+    return before === during && wrap.contains(nudge);
+  })());
+
+  console.log("\nAccounts stay out of the way");
+  t("no sign-in wall: the board is playable without an account", (() => {
+    // The whole point of Phase 1 — a guest must reach the puzzle untouched.
+    return d.querySelectorAll("#grid .cell").length > 50 &&
+      !d.querySelector("#accountSheet").classList.contains("show");
+  })());
+  t("the account sheet only opens when asked for", (() => {
+    const sheet = d.getElementById("accountSheet");
+    $("accountToggle").dispatchEvent(new w.Event("click", { bubbles: true }));
+    const opened = sheet.classList.contains("show");
+    $("acctClose").dispatchEvent(new w.Event("click", { bubbles: true }));
+    return !!sheet && opened && !sheet.classList.contains("show");
+  })());
+  t("a guest sees the reason to sign up, not a form", (() => {
+    return d.getElementById("acctSignedOut").style.display !== "none" &&
+      d.getElementById("acctSignedIn").style.display === "none" &&
+      /streak|stats/i.test(d.querySelector(".acct-why").textContent);
+  })());
+  t("no password field exists anywhere",
+    d.querySelectorAll('input[type=password]').length === 0);
+  t("account requests carry the anti-CSRF header", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /"X-Crossword-XI": "1"/.test(js) && /credentials: "same-origin"/.test(js);
+  })());
+  t("signing out never clears the local results", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const out = js.slice(js.indexOf('on("acctSignOut"'), js.indexOf('on("acctSave"'));
+    return !/removeItem|clear\(/.test(out);
+  })());
+
   console.log("\nLandscape tablet: the rail");
   t("the toolbar moves into the stage so it can be a column of the board", (() => {
     // matchMedia is stubbed false in this harness, so drive placeToolbar()

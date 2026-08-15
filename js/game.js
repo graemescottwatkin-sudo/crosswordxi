@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06s";
+  var BUILD = "v07b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1056,6 +1056,129 @@
     if (helpFits() && !helpOpen) { helpOpen = true; applyHelp(); }
   });
   applyHelp();
+
+  /* ---------- Accounts (Phase 1) ----------
+     Deliberately self-contained. Nothing in the game loop calls into this, and
+     nothing here changes how a puzzle is built, scored or saved — a signed-out
+     player and a signed-in player play exactly the same game. The account adds
+     somewhere for results to live later; it is not a gate. */
+  var account = null;              // null = guest
+  var accountsAvailable = false;
+
+  function apiAuth(path, body) {
+    var opts = {
+      method: body ? "POST" : "GET",
+      headers: { "X-Crossword-XI": "1" },   // the CSRF check on the server
+      credentials: "same-origin",
+    };
+    if (body) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    return fetch(path, opts).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error(j && j.error ? j.error : "Request failed");
+        return j;
+      });
+    });
+  }
+
+  function renderAccount() {
+    var toggle = $("accountToggle");
+    if (toggle) toggle.textContent = account ? "account" : "sign in";
+    var sub = $("acctSub");
+    if (sub) {
+      sub.textContent = account
+        ? "Signed in" + (account.provider ? " with " + account.provider : "")
+        : "Playing as a guest on this device";
+    }
+    if ($("acctSignedIn")) $("acctSignedIn").style.display = account ? "" : "none";
+    if ($("acctSignedOut")) $("acctSignedOut").style.display = account ? "none" : "";
+    if ($("acctUnavailable")) {
+      $("acctUnavailable").style.display = accountsAvailable ? "none" : "";
+    }
+    if (account && $("acctName")) $("acctName").value = account.displayName || "";
+  }
+
+  /* Everything a guest has played on this device, in the shape the migrate
+     endpoint expects. Read-only — the local copy is never cleared, so signing
+     out leaves the player exactly as they were. */
+  function guestPayload() {
+    var results = [];
+    try { results = JSON.parse(localStorage.getItem(RESULTS_KEY)) || []; } catch (e) {}
+    return { club: club || null, results: Array.isArray(results) ? results : [] };
+  }
+
+  function afterSignIn(res) {
+    account = res.user;
+    renderAccount();
+    /* Carry the guest's history over once. Failure here is not fatal: the
+       player is signed in, and the local copy is still on the device. */
+    apiAuth("/api/account/migrate", guestPayload()).then(function (m) {
+      var note = $("acctMigrated");
+      if (note && m.added) {
+        note.textContent = m.added + (m.added === 1 ? " result" : " results") +
+          " from this device saved to your account.";
+      }
+    }).catch(function () {});
+  }
+
+  function loadGoogle(clientId) {
+    if (window.google && window.google.accounts) return renderGoogleButton(clientId);
+    var sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true; sc.defer = true;
+    sc.onload = function () { renderGoogleButton(clientId); };
+    sc.onerror = function () {
+      accountsAvailable = false;
+      if ($("acctUnavailable")) {
+        $("acctUnavailable").textContent = "Could not reach the sign-in service.";
+        $("acctUnavailable").style.display = "";
+      }
+    };
+    document.head.appendChild(sc);
+  }
+
+  function renderGoogleButton(clientId) {
+    if (!window.google || !window.google.accounts || !$("googleBtn")) return;
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: function (resp) {
+        apiAuth("/api/auth/google", { credential: resp.credential })
+          .then(afterSignIn)
+          .catch(function (err) {
+            var note = $("acctUnavailable");
+            if (note) { note.textContent = String(err.message || err); note.style.display = ""; }
+          });
+      },
+    });
+    window.google.accounts.id.renderButton($("googleBtn"),
+      { theme: "outline", size: "large", text: "signin_with", shape: "pill" });
+  }
+
+  on("accountToggle", "click", function () {
+    $("accountSheet").classList.add("show");
+    if (accountsAvailable && !account) loadGoogle(accountsAvailable);
+  });
+  on("acctClose", "click", function () { $("accountSheet").classList.remove("show"); });
+  on("acctSignOut", "click", function () {
+    apiAuth("/api/auth/signout", {}).then(function () {
+      account = null; renderAccount();
+    }).catch(function () {});
+  });
+  on("acctSave", "click", function () {
+    var name = $("acctName") ? $("acctName").value : "";
+    apiAuth("/api/account/profile", { displayName: name, club: club || null })
+      .then(function (r) { account = r.user; renderAccount(); })
+      .catch(function () {});
+  });
+
+  /* One call at boot, and the game does not wait for it. */
+  apiAuth("/api/auth/session").then(function (r) {
+    accountsAvailable = r.googleClientId || false;
+    account = r.user || null;
+    renderAccount();
+  }).catch(function () { renderAccount(); });
 
   on("bankToggle", "click", function () {
     bankOn = !bankOn;
