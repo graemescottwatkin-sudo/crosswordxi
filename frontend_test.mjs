@@ -275,6 +275,26 @@ server.listen(0, "127.0.0.1", async () => {
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
 
+  console.log("\nLandscape tablet: the rail");
+  t("the toolbar moves into the stage so it can be a column of the board", (() => {
+    // matchMedia is stubbed false in this harness, so drive placeToolbar()
+    // through a real media-query result rather than a viewport guess.
+    const real = w.matchMedia;
+    w.matchMedia = (q) => ({ matches: /min-width:1000px/.test(q), addListener() {}, removeListener() {} });
+    w.dispatchEvent(new w.Event("resize"));
+    const stage = d.querySelector(".stage");
+    const moved = stage.contains($("toolbar")) && stage.firstElementChild === $("toolbar");
+    w.matchMedia = real;
+    w.dispatchEvent(new w.Event("resize"));
+    const back = !stage.contains($("toolbar"));
+    return moved && back;
+  })());
+  t("the board and its clue strip survive the move", (() => {
+    return !!$("nowClue") && !!d.querySelector(".grid-wrap") &&
+      d.querySelectorAll("#grid .cell").length > 50 &&
+      d.querySelectorAll("#nowClue").length === 1;
+  })());
+
   console.log("\nPhone: the league table moves below the board");
   t("on a wide viewport the table is in the header", (() => {
     const panel = $("tablePanel");

@@ -83,22 +83,29 @@ t("narrow landscape collapses the league table to one row",
   /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(narrowLandscape));
 t("narrow landscape collapses the table, where there is no room for a rail",
   /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:999px\)/.test(flatCss));
-t("wide landscape puts the toolbar in a side rail instead", (() => {
-  // Width was abundant and unused while the board was squeezed by height.
-  const rail = flatCss.slice(flatCss.indexOf("and (min-width:1000px)"));
-  return /body\{display:grid/.test(rail.slice(0, 900)) &&
-    /grid-template-areas:"masthead masthead" "rail board" "keys keys"/.test(rail.slice(0, 900));
+const rail = flatCss.slice(flatCss.indexOf("and (max-height:1100px) and (min-width:1000px)"));
+t("wide landscape grids the stage, not the body", (() => {
+  /* Gridding the body put the rail beside the whole stage, so it ran the height
+     of the page while the board floated in the middle of its column. Gridding
+     the stage makes the rail a column of the board itself. */
+  return /\.stage\{display:grid;align-items:start;grid-template-columns:minmax\(230px,280px\) 1fr/.test(rail) &&
+    !/body\{display:grid/.test(rail);
 })());
+t("the rail sits in the board's row and stretches to its height",
+  /\.toolbar\{grid-column:1;grid-row:2;align-self:stretch/.test(rail) &&
+  /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail));
+t("the active clue spans the rail and the board",
+  /\.now-clue\{grid-column:1 \/ -1;grid-row:1\}/.test(rail));
+t("the clue lists run full width underneath",
+  /\.clues\{grid-column:1 \/ -1;grid-row:4\}/.test(rail));
+t("panels inside the rail are contents of the card, not boxes on top of it",
+  /\.tb-table,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
   // One is max-width:999px, the other min-width:1000px.
   return /\(max-width:999px\)/.test(flatCss) && /\(min-width:1000px\)/.test(flatCss);
 })());
-t("the rail layout only moves elements that are in flow", (() => {
-  // Overlays, sheets and the toast are position:fixed, so gridding the body
-  // leaves them alone; only header, toolbar, stage and keyboard are placed.
-  const areas = (flatCss.match(/grid-area:(masthead|rail|board|keys)/g) || []).length;
-  return areas === 4;
-})());
+t("the board panel becomes display:contents so its children can be placed",
+  /\.grid-panel\{display:contents\}/.test(rail));
 
 /* Dark mode had the crossword nearly invisible against its own pitch: the cell
    fill and the turf sat at 1.57:1, where light mode manages 5.04:1. The grid

@@ -907,37 +907,50 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .tb-season{display:none}
 }
 
-/* ============ LANDSCAPE TABLET: TOOLBAR AS A SIDE RAIL ============
-   The board here is limited by height and nothing else — width is abundant and
-   was going unused, with the crossword squeezed between the toolbar and the
-   keyboard while several hundred pixels sat empty either side of it.
+/* ============ LANDSCAPE TABLET: RAIL BESIDE THE BOARD ============
+   The first version gridded the body, which put the rail beside the *stage*
+   rather than beside the board — so the rail ran the height of the whole page
+   while the board sat somewhere in the middle of the column, and the panels
+   inside the rail spilled past the card that was supposed to hold them.
 
-   Moving the toolbar into a rail spends that width on the one thing that was
-   short. On an iPad Pro it takes the board from roughly 37px cells to 49px, and
-   the rail has vertical space to spare, so the full three-row league table and
-   the club selector come back rather than being collapsed.
-
-   Every overlay, sheet and toast is position:fixed, so gridding the body moves
-   only the four elements named here. */
+   This grids the stage instead, so the rail is a genuine column next to the
+   grid: the active clue spans both, the rail stretches to the board's height,
+   and the clue lists run full width underneath. The toolbar is moved into the
+   stage by script, since it is a sibling of it in the markup. */
 @media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
-  body{
+  .stage{
     display:grid;align-items:start;
-    grid-template-columns:minmax(260px,300px) 1fr;
-    grid-template-areas:"masthead masthead" "rail board" "keys keys";
+    grid-template-columns:minmax(230px,280px) 1fr;
+    gap:10px 18px;max-width:1180px;
   }
-  header{grid-area:masthead}
+  /* The panel's children become items of the stage grid, so the clue strip and
+     the board can be placed independently without unwrapping the markup. */
+  .grid-panel{display:contents}
+
+  .now-clue{grid-column:1 / -1;grid-row:1}
   .toolbar{
-    grid-area:rail;flex-direction:column;align-items:stretch;
-    margin:10px 0 0 16px;max-width:none;gap:8px;
+    grid-column:1;grid-row:2;align-self:stretch;
+    flex-direction:column;align-items:stretch;
+    margin:0;max-width:none;gap:8px;
   }
-  .tb-left{flex-direction:column;align-items:stretch}
+  .grid-wrap{grid-column:2;grid-row:2;justify-self:center}
+  .nudge{grid-column:2;grid-row:3}
+  .clues{grid-column:1 / -1;grid-row:4}
+  #seasonPanel{grid-column:1 / -1;grid-row:5}
+
+  .tb-left{flex-direction:column;align-items:stretch;gap:8px}
   .tb-match,.tb-game{justify-content:flex-start}
-  .tb-table,.tb-help{flex:0 0 auto;max-width:none;min-width:0}
+  /* Inside the rail the panels are the card's contents, not free-floating
+     boxes: they lose their own background so the card reads as one panel. */
+  .tb-table,.tb-help{
+    flex:0 0 auto;max-width:none;min-width:0;
+    background:none;border:none;padding:0;
+  }
+  .tb-help{border-top:1px solid var(--line);padding-top:8px}
   .tb-row{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr 1fr}
   #subBtn{grid-row:auto;grid-column:1 / span 2}
-  .stage{grid-area:board;padding-top:10px}
-  .osk{grid-area:keys}
 }
+
 @media (orientation:landscape) and (max-height:820px){
   .masthead{font-size:20px}
   .strap{display:none}

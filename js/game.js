@@ -117,7 +117,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v06l";
+  var BUILD = "v06m";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -967,10 +967,34 @@
      containers — the table lives inside the toolbar — so the node itself is
      relocated. Listeners and rendering follow the element, so nothing else in
      the game needs to know which side of the board it is on. */
+  /* The toolbar is a sibling of the stage in the markup, but on a landscape
+     tablet it has to be a *column of the board* — same grid, same row, so it
+     stretches to the board's height and the active clue can span both. CSS
+     cannot reparent, so the node moves. */
+  var barHome = null, barAnchor = null;
+  function railWanted() {
+    return window.matchMedia &&
+      window.matchMedia("(orientation:landscape) and (max-height:1100px) and (min-width:1000px)").matches;
+  }
+  function placeToolbar() {
+    var bar = $("toolbar"), stage = document.querySelector(".stage");
+    if (!bar || !stage) return;
+    if (!barHome) { barHome = bar.parentNode; barAnchor = bar.nextElementSibling; }
+    if (railWanted()) {
+      if (bar.parentNode !== stage) stage.insertBefore(bar, stage.firstChild);
+    } else if (bar.parentNode !== barHome) {
+      barHome.insertBefore(bar, barAnchor);
+    }
+  }
+  placeToolbar();
+  window.addEventListener("resize", placeToolbar);
+
   var tableHome = null, tableAnchor = null;
   function placeTable() {
     var panel = $("tablePanel");
     if (!panel) return;
+    // Captured once, before either move happens, so the toolbar relocation
+    // cannot make this the wrong home.
     if (!tableHome) { tableHome = panel.parentNode; tableAnchor = panel.nextElementSibling; }
     var phone = (window.innerWidth || 360) <= 640;
     var stage = document.querySelector(".stage");
