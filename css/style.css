@@ -920,15 +920,14 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
 @media (orientation:landscape) and (max-height:1100px) and (min-width:1000px){
   .stage{
     display:grid;align-items:start;
-    /* Width is set from script (--block-w = rail + gap + board), not left to
-       the grid. The clue lists span both columns, and a spanning item is
-       allowed to grow the tracks it spans — so the long clue text was pushing
-       column 2 far wider than the board, which then sat at the left of an
-       over-wide column with all the empty turf on the right. Fixing the width
-       to the block stops the clue text having any say in it, and margin auto
-       centres the whole thing. */
-    width:var(--block-w, auto);max-width:100%;margin:0 auto;
+    /* Keep the stage as the normal centred page width, then centre the actual
+       game pair (rail + board) *inside* it. Earlier builds sized the whole stage
+       to --block-w; while --block-w was settling that could pin the pair to the
+       left edge on iPad. The tracks now centre independently, so the left and
+       right whitespace stay balanced even during re-fit. */
+    width:100%;max-width:1140px;margin:0 auto;
     grid-template-columns:minmax(230px,280px) max-content;
+    justify-content:center;
     gap:10px 18px;
   }
   /* The card ends where its content ends. Stretching it to the board's height
@@ -938,7 +937,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      the board can be placed independently without unwrapping the markup. */
   .grid-panel{display:contents}
 
-  .now-clue{grid-column:1 / -1;grid-row:1}
+  .now-clue{
+    grid-column:1 / -1;grid-row:1;
+    /* Match the exact combined width of the rail + board, rather than running
+       across the whole tablet. This makes the top clue finish at the board edge. */
+    width:min(100%,var(--block-w,100%));justify-self:center;
+  }
   .toolbar{
     grid-column:1;grid-row:2;
     flex-direction:column;align-items:stretch;
@@ -946,8 +950,14 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   }
   .grid-wrap{grid-column:2;grid-row:2;justify-self:center}
   .nudge{grid-column:2;grid-row:3}
-  .clues{grid-column:1 / -1;grid-row:4}
-  #seasonPanel{grid-column:1 / -1;grid-row:5}
+  .clues{
+    grid-column:1 / -1;grid-row:4;
+    width:min(100%,var(--block-w,100%));justify-self:center;
+  }
+  #seasonPanel{
+    grid-column:1 / -1;grid-row:5;
+    width:min(100%,var(--block-w,100%));justify-self:center;
+  }
 
   /* The base toolbar is a row with space-between. Turned on its side that
      distributes the panels down the card, which is where the gaps between the
@@ -978,10 +988,10 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .clue-col li{padding:4px 8px;font-size:14px;line-height:1.35}
   .clue-col h2{font-size:16px;padding-bottom:3px;margin-bottom:5px}
   .clues{gap:10px 46px}
-  /* The clue lists took their width from the board box, which left them
-     narrower than the page and wrapped every clue over three or four lines
-     with white space either side. Here they use the full width. */
-  .clues,#seasonPanel{max-width:none}
+  /* Keep the clue lists on the same measure as the combined rail + board.
+     They are still wide enough for two readable columns, but no longer create
+     a full-viewport line that visually pulls the layout back toward the left. */
+  .clues,#seasonPanel{max-width:var(--block-w,100%)}
   .clues{gap:14px 46px}
 }
 

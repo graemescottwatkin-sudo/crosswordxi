@@ -98,18 +98,16 @@ t("the rail sits in the board's row and ends with its content", (() => {
     /\.toolbar\{align-self:start\}/.test(rail) &&
     /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
 })());
-t("the block is sized from script and centred, not left to the grid", (() => {
-  /* The clue lists span both columns, and a spanning item can grow the tracks
-     it spans — long clue text was widening the board's column and pushing the
-     whole block to one side. */
+t("the rail + board tracks are centred inside the page", (() => {
   const js = fs.readFileSync("js/game.js", "utf8");
-  return /width:var\(--block-w, auto\);max-width:100%;margin:0 auto/.test(rail) &&
+  return /width:100%;max-width:1140px;margin:0 auto/.test(rail) &&
+    /justify-content:center/.test(rail) &&
     /--block-w/.test(js) && /bar\.offsetWidth \+ 18 \+ board\.offsetWidth/.test(js);
 })());
-t("the active clue spans the rail and the board",
-  /\.now-clue\{grid-column:1 \/ -1;grid-row:1\}/.test(rail));
-t("the clue lists run full width underneath",
-  /\.clues\{grid-column:1 \/ -1;grid-row:4\}/.test(rail));
+t("the active clue spans the pair and is capped to the pair width",
+  /\.now-clue\{grid-column:1 \/ -1;grid-row:1;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
+t("the clue lists span underneath and are capped to the pair width",
+  /\.clues\{grid-column:1 \/ -1;grid-row:4;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
 t("panels inside the rail are contents of the card, not boxes on top of it",
   /\.tb-table,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
 /* A plain 1fr track refuses to shrink below its content, so the help buttons
@@ -128,8 +126,8 @@ t("the board column is sized to the board, so the pitch keeps hugging the grid",
   return /grid-template-columns:minmax\(230px,280px\) max-content/.test(rail) &&
     /\.grid-wrap\{justify-self:start\}/.test(rail);
 })());
-t("the clue lists use the full width instead of the board's",
-  /\.clues,#seasonPanel\{max-width:none\}/.test(rail));
+t("the clue lists end at the same right edge as the board pair",
+  /\.clues,#seasonPanel\{max-width:var\(--block-w,100%\)\}/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
   // One is max-width:999px, the other min-width:1000px.
   return /\(max-width:999px\)/.test(flatCss) && /\(min-width:1000px\)/.test(flatCss);
