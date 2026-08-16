@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08h";
+  var BUILD = "v08j";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -864,6 +864,14 @@
 
   function revealBoard() {
     resetViewScroll();
+    /* Focusing a cell and the keyboard appearing both scroll the page after
+       this point, so one reset at the top of the function is not enough — the
+       measured scrollY after kick off was 86 on a 320x568 screen even with it.
+       Reset again once the browser has finished reacting. */
+    requestAnimationFrame(function () {
+      resetViewScroll();
+      setTimeout(resetViewScroll, 120);
+    });
     started = true;
     document.querySelector(".stage").classList.remove("prestart");
     $("startOverlay").classList.remove("show");
@@ -1292,10 +1300,22 @@
   placeTable();
   window.addEventListener("resize", placeTable);
 
-  /* Help is one row of four on a phone now, so it no longer needs hiding — but
-     the toggle stays for anyone who wants the space back. */
-  function helpFits() { return (window.innerWidth || 360) > 640; }
-  var helpOpen = true;
+  /* Help starts closed on a phone. Its three rows became 44px each when the
+     controls were sized for touch, which pushed the board 70px down the page
+     and straight under the keyboard — the cells shrank and the grid still
+     ended lower, because it now started lower.
+     It is the right group to close: Check and Reveal cost points, so they are
+     used occasionally and deliberately, unlike the clock and New Puzzle. One
+     tap opens them, and the state is remembered. */
+  /* 744x1133 overflowed its viewport by 6px with help open — three 44px rows
+     is more than that screen can spare above a keyboard. The threshold is the
+     narrowest tablet, not the widest phone. */
+  function helpFits() { return (window.innerWidth || 360) > 760; }
+  var helpOpen = helpFits();
+  try {
+    var saved = localStorage.getItem("fcw.helpOpen");
+    if (saved !== null) helpOpen = saved === "1";
+  } catch (e) {}
   function applyHelp() {
     var box = document.querySelector(".tb-help");
     var btn = $("helpToggle");
@@ -1306,7 +1326,9 @@
   on("helpToggle", "click", function () {
     if (helpFits()) return;          // always open where there is room
     helpOpen = !helpOpen;
+    try { localStorage.setItem("fcw.helpOpen", helpOpen ? "1" : "0"); } catch (e) {}
     applyHelp();
+    if (puzzle) fitCells();          // the board gets the space back immediately
   });
   window.addEventListener("resize", function () {
     if (helpFits() && !helpOpen) { helpOpen = true; applyHelp(); }

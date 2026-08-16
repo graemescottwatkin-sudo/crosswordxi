@@ -334,6 +334,49 @@ server.listen(0, "127.0.0.1", async () => {
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
 
+  console.log("\nMeasured-defect fixes");
+  t("help starts closed on a phone, so the board keeps its height", (() => {
+    /* 44px controls added 14px to each of five toolbar rows — 70px, which is
+       exactly how far the grid moved down between builds. Cells shrank and the
+       board still ended lower, because it started lower. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /var helpOpen = helpFits\(\)/.test(js) && /fcw\.helpOpen/.test(js);
+  })());
+  t("reopening help re-fits the board rather than waiting for a resize", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const h = js.slice(js.indexOf('on("helpToggle"'), js.indexOf('on("helpToggle"') + 420);
+    return /fitCells\(\)/.test(h);
+  })());
+  t("no control sets a fixed height below 44px", (() => {
+    /* height beats min-height, so four rules were quietly overriding the touch
+       target sizes — the stylesheet said 44 while the buttons measured 30. */
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    const hits = [...flat.matchAll(/\.(btn|nc-arrow|toolbar[^{]*)\{[^}]*[^-]height:(\d+)px/g)]
+      .filter((m) => Number(m[2]) < 44);
+    return hits.length === 0;
+  })(), "checked .btn, .nc-arrow, .toolbar");
+  t("the clue arrows are reachable too", (() => {
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
+    return /\.nc-arrow\{min-height:44px;min-width:44px/.test(flat);
+  })());
+
+  t("the scroll reset survives the keyboard appearing", (() => {
+    /* One reset at kick off was not enough: focusing a cell and the keyboard
+       opening both scroll the page afterwards, and the measured scrollY was
+       still 86 on a 320x568 screen. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const rb = js.slice(js.indexOf("function revealBoard"), js.indexOf("function revealBoard") + 600);
+    return /requestAnimationFrame/.test(rb) && /setTimeout\(resetViewScroll/.test(rb);
+  })());
+  t("help collapses on narrow tablets too, not just phones", (() => {
+    // 744x1133 overflowed its viewport by 6px with three 44px help rows open.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8");
+    return /innerWidth \|\| 360\) > 760/.test(js) &&
+      /@media \(max-width:760px\)/.test(css);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

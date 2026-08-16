@@ -328,9 +328,9 @@ button.tb-label{
 .bank-cell.gold-ans{background:var(--gold-ans);color:#4A3A00;border-color:var(--gold-ans)}
 .bank-cell.here{box-shadow:inset 0 0 0 2px var(--pitch)}
 .bank-gap{width:9px}
-.nc-arrow{
+.nc-arrow{min-height:44px;min-width:44px;
   background:none;border:1px solid var(--line);border-radius:6px;
-  color:var(--ink-soft);font-size:17px;width:32px;height:32px;flex:none;
+  color:var(--ink-soft);font-size:17px;flex:none;
 }
 .nc-arrow:hover{background:var(--sel-word);color:var(--pitch)}
 
@@ -843,7 +843,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .nc-text{font-size:15px;flex:1 1 100%}
   .now-clue{padding:6px 7px;gap:6px}
   .nc-main{gap:4px 8px}
-  .nc-arrow{width:28px;height:28px;font-size:15px}
+  .nc-arrow{font-size:15px}
   .bank-cell{width:22px;height:26px;font-size:15px}
   /* Club selection lives on the Kick Off card; the duplicate control
      just pushed the clue list further down the page. */
@@ -1199,3 +1199,18 @@ body.rotate-needed .rotate-prompt{
 /* height beats min-height, so the fixed heights above were quietly overriding
    the 44px rule — the controls would have measured 30-34px while the
    stylesheet appeared to say otherwise. They are min-height now. */
+
+
+/* ============ RECLAIMING THE HEIGHT C3 SPENT ============
+   Making every control 44px added 14px to each of five toolbar rows — 70px,
+   which is exactly how far the grid moved down between builds. The cells got
+   smaller and the board still ended lower, because it now starts lower.
+
+   Help is collapsed by default on phones. It is three of those five rows, and
+   it is the group a player touches least: Check and Reveal cost points, so
+   they are used occasionally and deliberately. One tap opens them. */
+@media (max-width:760px){
+  .tb-help.collapsed .tb-row{display:none}
+  .tb-help.collapsed{padding-bottom:5px}
+  .tb-help.collapsed .help-toggle::after{content:" \25B8"}
+}
