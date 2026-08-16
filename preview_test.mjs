@@ -3,7 +3,7 @@
    jsdom gets to opening it off disk. */
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
-const html = fs.readFileSync("../crosswordxi-preview-v08d.html", "utf8");
+const html = fs.readFileSync("../crosswordxi-preview-v08e.html", "utf8");
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 const errors = [];
