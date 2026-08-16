@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08e";
+  var BUILD = "v08g";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -543,11 +543,11 @@
     }
     $("grid").style.opacity = "";
     $("strapText").innerHTML = mode === "daily"
-      ? "Premier League &middot; Daily #" + dailyNo
+      ? "Premier League &middot; " + FCW.dailyPhase(dailyNo).label
       : "Premier League &middot; Practice";
     $("dailyBtn").style.display = mode === "daily" ? "none" : "";
     document.title = mode === "daily"
-      ? "Daily #" + dailyNo + " \u00B7 Crossword XI"
+      ? FCW.dailyPhase(dailyNo).label + " \u00B7 Crossword XI"
       : "Practice \u00B7 Crossword XI";
     letters = {}; wrong = {}; revealedEntries = {}; revealedCells = {}; revealAnswerCells = {};
     pauseCount = 0; pausedMs = 0; pauseStartedAt = null;
@@ -608,7 +608,8 @@
     document.querySelector(".stage").classList.toggle("prestart", !started);
     $("startOverlay").classList.toggle("show", !started);
     if (!started) {
-      $("kickMode").textContent = mode === "daily" ? "Daily #" + dailyNo : "Practice puzzle";
+      $("kickMode").textContent = mode === "daily"
+        ? FCW.dailyPhase(dailyNo).label : "Practice puzzle";
       syncKickSelect();
       // Topic filters belong to Practice: the Daily is the same for everyone.
       $("filterBox").style.display = mode === "practice" ? "" : "none";
@@ -1789,6 +1790,19 @@
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
   function recordDaily(pos, score, res) {
+    /* Friendlies are not recorded. Four weeks of pre-season exist so the opening
+       bugs cannot spoil anyone's streak, and so the season starts clean for
+       everybody on the same day. The puzzle is played and scored exactly as
+       normal; it simply does not go on the record. */
+    if (!FCW.dailyPhase(dailyNo).counts) {
+      var note = $("rClockNote");
+      if (note) {
+        note.textContent = "Pre-season friendly \u2014 not added to your record. " +
+          "The season starts on Matchday 1, 13 September.";
+        note.style.display = "";
+      }
+      return loadResults();
+    }
     var list = loadResults();
     // A Daily is recorded once; a later replay never overwrites the original.
     if (list.some(function (r) { return r.dailyNo === dailyNo; })) return list;
@@ -1840,7 +1854,7 @@
   function showClockNote(playedNo, todayNo) {
     var el = $("rClockNote");
     if (!el) return;
-    el.textContent = "Not recorded \u2014 this is Daily #" + playedNo +
+    el.textContent = "Not recorded \u2014 this is " + FCW.dailyPhase(playedNo).label.toLowerCase() +
       ", and today's is #" + todayNo + ".";
     el.style.display = "";
   }
@@ -2135,7 +2149,8 @@
                                revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
-    var name = mode === "daily" ? "Crossword XI #" + dailyNo : "Crossword XI (practice)";
+    var name = mode === "daily"
+      ? "Crossword XI — " + FCW.dailyPhase(dailyNo).label : "Crossword XI (practice)";
     var text = name + " \u2014 " + club + " finished " + FCW.ordinal(pos) +
       (season ? " in " + season.season : "") +
       " \u2014 " + res.score + "/114 pts \u26BD " + fmt(elapsed);

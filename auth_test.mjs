@@ -89,7 +89,7 @@ const now = () => Math.floor(Date.now() / 1000);
 const valid = () => ({ iss: "https://accounts.google.com", aud: CLIENT, sub: "google-user-1",
   email: "player@example.com", name: "Graeme", exp: now() + 600, iat: now() });
 
-const req = (opts = {}) => new Request("https://crosswordxi.com/api/x", {
+const req = (opts = {}) => new Request("https://crossword.thexigames.com/api/x", {
   method: opts.method || "GET",
   headers: Object.assign(opts.csrf === false ? {} : { "X-Crossword-XI": "1" },
     opts.cookie ? { Cookie: opts.cookie } : {}),
@@ -271,6 +271,16 @@ t("markup in a display name is stored as text, not executed", await (async () =>
     body: { displayName: "<img src=x onerror=alert(1)>" } }), env })).json();
   return j.user.displayName.indexOf("<img") === 0;
 })(), "escaping is the renderer's job — nothing renders it yet");
+
+/* The domain move exists so one sign-in works across every XI game. If the
+   cookie is ever scoped to a single subdomain, login succeeds here and fails
+   silently in the next game — so sign-out must always match sign-in. */
+t("signing out clears the same cookie scope it was set with", (() => {
+  const set = sessionCookie("x", new Date(Date.now() + 1000).toISOString());
+  const clear = clearedCookie();
+  const domainOf = (c) => (c.match(/Domain=([^;]+)/) || [])[1] || "(host only)";
+  return domainOf(set) === domainOf(clear);
+})(), (sessionCookie("x", new Date().toISOString()).match(/Domain=([^;]+)/) || [])[1] || "host-only for now");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -313,6 +313,56 @@ server.listen(0, "127.0.0.1", async () => {
     /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
     !d.querySelector(".tb-help").classList.contains("collapsed"));
 
+  console.log("\nThe new home");
+  t("no active code path names the old hostname", (() => {
+    /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS
+       preflight fails in a way that is hard to diagnose — the URL looks right in
+       the network tab — so an absolute self-reference must not survive. */
+    const files = ["index.html", "js/game.js", "js/engine.js", "js/seasons.js"];
+    return files.every((f) => {
+      const src = fs.readFileSync(path.join(DIR, f), "utf8")
+        .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      return !/crosswordxi\.com/.test(src);
+    });
+  })());
+  t("the page says which address is canonical", (() => {
+    const link = d.querySelector('link[rel="canonical"]');
+    return !!link && /crossword\.thexigames\.com/.test(link.getAttribute("href"));
+  })(), d.querySelector('link[rel="canonical"]') &&
+        d.querySelector('link[rel="canonical"]').getAttribute("href"));
+  t("a shared link previews as something other than a grey box", (() => {
+    const need = ["og:type", "og:url", "og:title", "og:description", "og:site_name"];
+    return need.every((prop) => !!d.querySelector(`meta[property="${prop}"]`)) &&
+      !!d.querySelector('meta[name="twitter:card"]');
+  })());
+  t("the preview points at the new hostname, not the old", (() => {
+    const url = d.querySelector('meta[property="og:url"]');
+    return !!url && /crossword\.thexigames\.com/.test(url.getAttribute("content"));
+  })());
+
+  console.log("\nPre-season");
+  t("the first four weeks are friendlies, then the season starts", (() => {
+    const a = w.FCW.dailyPhase(1), b = w.FCW.dailyPhase(28), c = w.FCW.dailyPhase(29);
+    return a.label === "Pre-season friendly #1" && a.counts === false &&
+      b.label === "Pre-season friendly #28" && b.counts === false &&
+      c.label === "Matchday 1" && c.counts === true;
+  })(), w.FCW.dailyPhase(29).label);
+  t("a friendly is not added to the record", (() => {
+    /* Played and scored exactly as normal — it simply does not count, so a bug
+       found in the opening weeks cannot spoil anybody's streak. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const rec = js.slice(js.indexOf("function recordDaily"), js.indexOf("function recordDaily") + 700);
+    return /if \(!FCW\.dailyPhase\(dailyNo\)\.counts\)/.test(rec) && /return loadResults\(\)/.test(rec);
+  })());
+  t("the header says which phase it is, not a raw number", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return !/"Daily #" \+ dailyNo/.test(js) && /FCW\.dailyPhase\(dailyNo\)\.label/.test(js);
+  })());
+  t("the stored sequence is unbroken, so nothing about generation changes", (() => {
+    // Day 29 is Matchday 1: pre-season uses stored days 1-28, not a second set.
+    return w.FCW.dailyPhase(29).number === 1 && w.FCW.dailyPhase(148).number === 120;
+  })());
+
   console.log("\nA save belongs to a puzzle, not an address");
   t("the save records what the puzzle actually is", (() => {
     /* A daily number or a practice token names a slot. The contents of that

@@ -1355,6 +1355,21 @@ var FCW = (function () {
      Any date before #1 clamps to #1, so testing before launch never eats into
      the stored days. */
   var DAILY_EPOCH = { y: 2026, m: 7, d: 15 }; // day before launch; 2026-08-16 = Puzzle #1
+  /* Four weeks of friendlies before the season proper. The stored sequence is
+     unbroken — days 1-28 are pre-season, day 29 is Matchday 1 on 13 September
+     2026 — so nothing about generation or storage changes. What changes is what
+     a day is called and whether it counts.
+     The point is a record that starts clean: bugs found in the opening weeks
+     cannot spoil anybody's streak, and the season has a real first day rather
+     than the site merely existing one morning. */
+  var PRESEASON_DAYS = 28;
+  function dailyPhase(n) {
+    var no = n || dailyNumber();
+    return no <= PRESEASON_DAYS
+      ? { phase: "preseason", number: no, label: "Pre-season friendly #" + no, counts: false }
+      : { phase: "season", number: no - PRESEASON_DAYS,
+          label: "Matchday " + (no - PRESEASON_DAYS), counts: true };
+  }
   function dailyNumber(at) {
     var t = at || new Date(now());
     var today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
@@ -1506,6 +1521,8 @@ var FCW = (function () {
     // Exported so tests can be written against the launch date rather than
     // hard-coding it — it has moved once and will move again.
     DAILY_EPOCH: DAILY_EPOCH,
+    PRESEASON_DAYS: PRESEASON_DAYS,
+    dailyPhase: dailyPhase,
     dailyNumber: dailyNumber,
     dailySeed: dailySeed,
     DAILY_LOOKBACK: DAILY_LOOKBACK,

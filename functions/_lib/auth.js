@@ -130,16 +130,35 @@ export async function destroySession(request, env) {
   if (sid) await env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(sid).run();
 }
 
+/* ⚠️  THE COOKIE DOMAIN IS THE WHOLE REASON THE GAMES MOVED TO SUBDOMAINS.
+ *
+ * When sign-in is shared across the XI Games, this cookie must be scoped to
+ *
+ *     Domain=.thexigames.com          <- leading dot
+ *
+ * The leading dot makes it valid on crossword., wordsearch., scrambled. and
+ * every future subdomain, while staying first-party on all of them. Scoped to
+ * crossword.thexigames.com instead, login works perfectly here and silently
+ * fails in every other game — and nobody finds out until the second game ships.
+ *
+ * It is deliberately NOT set yet: there is one game and one account, and a
+ * cookie scoped to a parent domain is harder to reason about than one that is
+ * not. Add COOKIE_DOMAIN below when the second game is close, not before. */
+const COOKIE_DOMAIN = null;   // set to ".thexigames.com" for shared sign-in
+
 export function sessionCookie(id, expires) {
   /* HttpOnly so script cannot read it. Secure so it never crosses plain HTTP.
      Lax so it survives a normal navigation but is not sent on cross-site
      posts. */
   return `${SESSION_COOKIE}=${encodeURIComponent(id)}; Path=/; HttpOnly; Secure; ` +
+    (COOKIE_DOMAIN ? `Domain=${COOKIE_DOMAIN}; ` : "") +
     `SameSite=Lax; Expires=${new Date(expires).toUTCString()}`;
 }
 
 export function clearedCookie() {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  // Must match sessionCookie's domain, or signing out leaves the cookie behind.
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; ` +
+    (COOKIE_DOMAIN ? `Domain=${COOKIE_DOMAIN}; ` : "") + `SameSite=Lax; Max-Age=0`;
 }
 
 /* Cookies ride along on cross-site posts; a custom header does not. */

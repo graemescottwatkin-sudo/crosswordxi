@@ -247,7 +247,7 @@ project → APIs & Services → Credentials → Create credentials → OAuth cli
 Web application. Under *Authorised JavaScript origins* add:
 
 ```text
-https://crosswordxi.com
+https://crossword.thexigames.com
 ```
 
 Copy the client ID (it ends `.apps.googleusercontent.com`).
