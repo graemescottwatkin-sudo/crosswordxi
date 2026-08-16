@@ -248,9 +248,30 @@ server.listen(0, "127.0.0.1", async () => {
     return /@media \(orientation:landscape\) and \(max-height:1100px\)/.test(css) &&
       /@media \(orientation:landscape\) and \(max-height:820px\)/.test(css);
   })());
-  t("the board never shrinks to a token size on tablet and up",
-    /window\.innerWidth \|\| 360\) >= 700 \? 30 : 20/.test(
-      fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")));
+  t("the board never shrinks to a token size on tablet and up, in portrait", (() => {
+    /* The 30px floor still applies where the page can scroll to reach the rest
+       of the board. It no longer applies in landscape: there the keyboard is
+       pinned to the bottom, so anything past the fold is behind it rather than
+       reachable, and forcing a floor was what put 292px of grid under the
+       keyboard at 844x390. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /vw >= 700 && portrait && size < 30\) size = 30/.test(js) &&
+      /var portrait = vh >= vw/.test(js);
+  })());
+  t("the height budget has no floor that can force an overflow", (() => {
+    // availH was floored at 200px: an instruction to overflow, not a safety net.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return !/if \(availH < 200\) availH = 200/.test(js);
+  })());
+  t("the board is sized against the visual viewport, not innerHeight", (() => {
+    /* iOS shrinks the visual viewport when the keyboard opens while
+       innerHeight stays as it was — the measurement the whole overlap
+       defect turns on. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /window\.visualViewport/.test(js) &&
+      /vv && vv\.height/.test(js) &&
+      /visualViewport\.addEventListener\("resize"/.test(js);
+  })());
   t("clue columns follow the board's width, not the page's", (() => {
     // All three take their measure from the board box, so they line up as the
     // cell size changes rather than each aligning to the page.

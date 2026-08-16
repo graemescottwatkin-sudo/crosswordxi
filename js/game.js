@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08g";
+  var BUILD = "v08h";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -827,7 +827,43 @@
     }
     revealBoard();
   }
+  /* C4 — the player has to scroll down to reach Kick Off on a short screen, and
+     without this they land mid-page with the header and match clock cut off.
+     Measured scrollY after kick off: 368 at 915x412, 271 at 844x390. */
+  /* On the smallest portrait screens a 13-row grid, a clue card and a keyboard
+     will not all fit however small the cells are drawn — 320x568 leaves 56px
+     for a board that needs 234px at the minimum legible size. Shrinking the
+     cells further makes the board unreadable rather than visible.
+     What the player actually needs is not the whole board on screen; it is the
+     square they are typing into. So the page scrolls, and the active cell is
+     kept clear of the keyboard. */
+  function keepCellVisible() {
+    var el = document.querySelector(".cell.active");
+    if (!el) return;
+    var kb = document.querySelector(".osk");
+    var box = el.getBoundingClientRect();
+    var vv = window.visualViewport;
+    var viewBottom = (vv ? vv.height : window.innerHeight);
+    var kbTop = (kb && kb.offsetParent !== null) ? kb.getBoundingClientRect().top : viewBottom;
+    var limit = Math.min(kbTop, viewBottom);
+    var headroom = 72;                 // clear of the clue card as well
+    if (box.bottom > limit - 4) {
+      window.scrollBy({ top: box.bottom - limit + 12, behavior: "auto" });
+    } else if (box.top < headroom) {
+      window.scrollBy({ top: box.top - headroom, behavior: "auto" });
+    }
+  }
+
+  function setRotatePrompt(on) {
+    document.body.classList.toggle("rotate-needed", !!on);
+  }
+
+  function resetViewScroll() {
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+
   function revealBoard() {
+    resetViewScroll();
     started = true;
     document.querySelector(".stage").classList.remove("prestart");
     $("startOverlay").classList.remove("show");
@@ -899,7 +935,13 @@
                : { x: 0, y: 0 };
     };
     var vw = window.innerWidth || document.documentElement.clientWidth || 360;
-    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    /* C1 — visualViewport, not innerHeight. On iOS the system keyboard shrinks
+       the visual viewport while innerHeight stays as it was, so a board sized
+       against innerHeight is built for space that is no longer there. This is
+       the one measurement the whole keyboard-overlap defect turns on. */
+    var vv = window.visualViewport;
+    var vh = (vv && vv.height) || window.innerHeight ||
+             document.documentElement.clientHeight || 800;
     var railMode = vw >= 860 && vw > vh && vh <= 1100;
     var railW = Math.max(230, Math.min(280, vw * 0.235));
     var pairGap = 18;
@@ -927,8 +969,12 @@
     var measured = h("header") + h(".now-clue") + h(".osk") + (railMode ? 0 : h(".toolbar"));
     var isTouch = document.body.classList.contains("touch");
     var chrome = (measured > 80 ? measured : (isTouch ? 330 : 230)) + 46 + padY;
+    /* C1/C2 — the real remaining height, with no floor.
+       availH used to be floored at 200px, and the cell at 20px. At 844x390 the
+       true space is 52px, so the board was built to 260px and 208px of it sat
+       under the keyboard — measured at 292px on the live site. A floor here is
+       not a safety net; it is an instruction to overflow. */
     var availH = vh - chrome;
-    if (availH < 200) availH = 200;
     var size = Math.floor(Math.min(availW / puzzle.width, availH / puzzle.height));
     /* Cells stay 20–52px. Removing the sidebar freed a lot of width, and the
        temptation is to spend it on bigger cells — but a 64px cell on a 1920
@@ -940,8 +986,21 @@
        the page is for — better to let the board be substantial and let the page
        scroll a little. Phones keep the low floor: there, fitting the board on
        screen matters more than its size. */
-    var floor = (window.innerWidth || 360) >= 700 ? 30 : 20;
-    size = Math.max(floor, Math.min(52, size));
+    /* Below this a cell holding a typed letter and a clue number is not
+       legible, whatever the layout does. If the space cannot afford it, the
+       answer is to say so rather than to draw a board nobody can use. */
+    var MIN_PLAYABLE = 18;          // below this a letter and clue number do not fit
+    var fits = size >= MIN_PLAYABLE;
+    size = Math.max(MIN_PLAYABLE, Math.min(52, size));
+    /* On a tall screen a board may exceed the fold and the page simply scrolls —
+       a substantial board is worth a little scrolling, which is why the 30px
+       floor exists. In landscape there is nothing to scroll to: the keyboard is
+       pinned to the bottom, so anything past the fold is behind it. */
+    var portrait = vh >= vw;
+    if (vw >= 700 && portrait && size < 30) size = 30;
+    /* When even the minimum will not fit in landscape, say so rather than draw
+       a board with half of it under the keyboard. */
+    setRotatePrompt(!fits && !portrait);
     if (size !== lastCellSize) {
       lastCellSize = size;
       document.documentElement.style.setProperty("--cell", size + "px");
@@ -1116,7 +1175,13 @@
        viewport to reveal the active item in the clue list below the board. That
        makes the crossword appear to jump even though its CSS position has not
        changed. The fixed active-clue strip already shows the selected clue, so
-       keeping the viewport anchored is the better interaction. */
+       keeping the viewport anchored is the better interaction.
+
+       keepCellVisible below is not that: it scrolls only when the active cell
+       is actually behind the keyboard or above the fold, and by the minimum
+       needed. Anchoring the viewport is right until the square you are typing
+       into cannot be seen. */
+    keepCellVisible();
   }
   /* Letter bank: the crossing letters you have already earned, gathered
      beside the clue. Adds no information — every letter shown is already
@@ -2197,6 +2262,13 @@
   on("prevClue", "click", function () { stepClue(-1); });
   on("nextClue", "click", function () { stepClue(1); });
   window.addEventListener("resize", function () { if (puzzle) fitCells(); });
+  /* The keyboard opening does not fire resize on iOS — it changes the visual
+     viewport instead. Without this the board is sized for a screen that no
+     longer exists the moment a cell is focused. */
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function () { if (puzzle) fitCells(); });
+    window.visualViewport.addEventListener("scroll", function () { if (puzzle) fitCells(); });
+  }
   window.addEventListener("orientationchange", function () {
     setTimeout(function () { if (puzzle) fitCells(); }, 250);
   });

@@ -32,7 +32,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v08g">
+<link rel="stylesheet" href="css/style.css?v=v08h">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -63,6 +63,17 @@
 <!-- Connection notice. Everything about correctness is a server call now, so
      an offline player needs to know why the solved count has stopped moving. -->
 <div id="netStrip" class="net-strip" role="status" aria-live="polite"></div>
+
+<!-- Shown only when a landscape phone cannot fit a legible board above the
+     keyboard. Better to ask for a rotation than to draw a board with half of it
+     hidden — measured at 292px of a 570px grid on an 844x390 screen. -->
+<div id="rotatePrompt" class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon" aria-hidden="true">&#8635;</div>
+    <h2>Turn your phone upright</h2>
+    <p>There isn&rsquo;t room for the board and the keyboard side by side on a screen this short.</p>
+  </div>
+</div>
 
 <div class="toolbar" id="toolbar">
   <div class="tb-left">
@@ -324,7 +335,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v08g</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v08h</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -334,8 +345,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v08g"></script>
-<script src="js/engine.js?v=v08g"></script>
-<script src="js/game.js?v=v08g"></script>
+<script src="js/seasons.js?v=v08h"></script>
+<script src="js/engine.js?v=v08h"></script>
+<script src="js/game.js?v=v08h"></script>
 </body>
 </html>

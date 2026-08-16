@@ -221,7 +221,7 @@ button.tb-label{
   background:none;border:none;padding:0;cursor:default;text-align:left;
 }
 @media (max-width:640px){ button.tb-label{cursor:pointer} }
-.toolbar .btn{padding:0 12px;height:34px;font-size:14px;white-space:nowrap;
+.toolbar .btn{padding:0 12px;min-height:44px;font-size:14px;white-space:nowrap;
   display:inline-flex;align-items:center;gap:4px}
 .tb-sep{width:1px;height:26px;background:var(--line);margin:0 3px}
 .lbl-short{display:none}
@@ -880,7 +880,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      distinction between checking and revealing, which is the whole point. */
   .tb-row{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px}
   .tb-sub{min-width:38px;font-size:9px}
-  .tb-row .btn{padding:0 5px;font-size:11px;letter-spacing:.02em;height:30px;
+  .tb-row .btn{padding:0 5px;font-size:11px;letter-spacing:.02em;min-height:44px;
     justify-content:center;gap:3px}
   .tb-row .cost{font-size:9px;padding:0 4px}
   .tb-row-sub .btn{grid-column:2 / span 2}
@@ -895,7 +895,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   #tablePanel.below-board .club-bar{display:flex;margin-bottom:6px}
   #tablePanel.below-board .tb-season{display:block;margin-top:4px}
   .tb-label{font-size:8.5px;letter-spacing:.12em}
-  .toolbar .btn{height:30px}
+  .toolbar .btn{min-height:44px}
   .icon-btn{width:34px}
   /* 132px of clue card is a lot of a phone screen. Two lines plus the bank
      still fit; the height stays fixed so the board does not jump. */
@@ -1097,7 +1097,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   padding:9px 10px;
 }
 .acct-actions{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
-.acct-actions .btn{height:36px}
+.acct-actions .btn{min-height:44px}
 
 
 /* Clues seen, and the control to put them back. Practice only — the Daily is
@@ -1143,3 +1143,59 @@ body.touch.offline .net-strip{bottom:auto;top:0}
 .res-pause{
   font-size:12.5px;color:var(--ink-faint);margin:-4px 0 10px;
 }
+
+
+/* ============ C3 — TAP TARGETS ============
+   44px is the platform guidance on iOS and Android, and it matters more here
+   than in most apps: Check and Reveal deduct points, so a mis-tap costs score
+   rather than merely annoying. Measured before this: helpToggle 9px, clubSelect
+   25px, every game button 30-34px.
+
+   .osk-key is deliberately exempt. Ten keys must fit a row, so they are sized
+   like a native keyboard's — and making them 44px tall would push the board
+   further under the keyboard, worsening C1 while appearing to fix C3. */
+.btn,
+.toolbar button,
+#clubSelect,
+select {
+  min-height:44px;
+}
+.osk-key { min-height:0; }          /* exempt: see above */
+.build-badge { min-height:0; }      /* status pill, not a control */
+
+/* helpToggle was 9px — effectively unhittable. */
+#helpToggle {
+  min-height:44px;padding:0 10px;display:inline-flex;align-items:center;
+}
+
+/* The cost pill sits inside the button, so the button grows around it rather
+   than the pill dictating the height. */
+.btn .cost { line-height:1; }
+
+/* Footer links are navigation rather than gameplay, but a 44px target costs
+   nothing there either. */
+footer button { min-height:44px;padding:0 6px }
+
+
+/* ============ C2 — ROTATE PROMPT ============
+   Only ever shown when the board cannot be drawn legibly above the keyboard.
+   A crossword needs height for the grid and height for the keyboard, and a
+   390px-tall landscape phone has neither to spare. */
+.rotate-prompt{display:none}
+body.rotate-needed .rotate-prompt{
+  display:flex;position:fixed;inset:0;z-index:60;
+  align-items:center;justify-content:center;
+  background:var(--paper);padding:20px;text-align:center;
+}
+.rotate-card{max-width:340px}
+.rotate-icon{font-size:38px;color:var(--pitch);margin-bottom:10px}
+.rotate-prompt h2{
+  font-family:var(--disp);font-weight:700;letter-spacing:.04em;
+  font-size:19px;color:var(--ink);margin:0 0 8px;
+}
+.rotate-prompt p{font-size:14.5px;line-height:1.5;color:var(--ink-soft);margin:0}
+
+
+/* height beats min-height, so the fixed heights above were quietly overriding
+   the 44px rule — the controls would have measured 30-34px while the
+   stylesheet appeared to say otherwise. They are min-height now. */
