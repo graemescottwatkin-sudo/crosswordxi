@@ -405,6 +405,23 @@ server.listen(0, "127.0.0.1", async () => {
     return /provider\.charAt\(0\)\.toUpperCase\(\)/.test(js);
   })());
 
+  t("a squeezed board on a portrait tablet drops the toolbar below it", (() => {
+    /* Removing the 30px floor made the board fit honestly, but at 820x1180 that
+       meant 18px cells while 1024x1366 managed 49. The chrome was the problem,
+       not the floor. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /TIGHT_CELL = 26/.test(js) && /size < TIGHT_CELL/.test(js);
+  })());
+  t("and the decision is sticky, so it cannot oscillate", (() => {
+    /* Once below, the board is no longer squeezed — a rule that only asked
+       "is it squeezed now" would move it back up, squeeze it, and flip forever.
+       Decided once per layout, cleared on resize. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /var droppedBelow = false/.test(js) &&
+      /!droppedBelow &&/.test(js) &&
+      /droppedBelow = false;\s*\/\/ decide again/.test(js);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

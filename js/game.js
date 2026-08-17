@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08n";
+  var BUILD = "v08p";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1019,6 +1019,14 @@
       lastCellSize = size;
       document.documentElement.style.setProperty("--cell", size + "px");
     }
+    /* A squeezed board on a portrait tablet moves the toolbar below it, once.
+       The flag is only ever set here and cleared on resize, so this cannot
+       chase itself. */
+    if (!droppedBelow && !railWanted() && vh > vw && vw >= 700 && size < TIGHT_CELL) {
+      droppedBelow = true;
+      placeToolbar();
+      requestAnimationFrame(function () { fitCells(); });
+    }
     /* Publish the widths the rest of the layout lines up against.
        Both are *calculated*, never measured. offsetWidth reads the board as it
        is currently painted, and this runs immediately after --cell changes — so
@@ -1279,9 +1287,27 @@
      Puzzle are read occasionally; the board is looked at constantly, so the
      board takes the top of the screen. The league table already relocates this
      way on phones, so the pattern is established. */
+  /* The toolbar goes below the board when keeping it above would squeeze the
+     cells. Two cases, one rule:
+
+       - the shortest screens, where 320x568 left 56px for a board needing 234
+       - portrait tablets, where an open help block takes ~250px above the board
+         and drove 820x1180 down to 18px cells while 1024x1366 managed 49
+
+     Below the board it costs nothing: the clock and New Puzzle are read
+     occasionally, the board is looked at constantly. */
+  var TIGHT_CELL = 26;               // below this the board is being squeezed
+  /* Sticky, and it has to be. Once the toolbar moves below, the board is no
+     longer squeezed — so a rule that only asks "is it squeezed now" would move
+     it straight back up, squeeze it again, and flip forever. The decision is
+     made once per layout and held until the viewport changes. */
+  var droppedBelow = false;
   function toolbarBelow() {
+    if (railWanted()) return false;
+    var vw = window.innerWidth || 360;
     var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 800;
-    return !railWanted() && vh <= 600 && (window.innerWidth || 360) < 700;
+    if (vh <= 600 && vw < 700) return true;                 // shortest screens
+    return vh > vw && vw >= 700 && droppedBelow;            // portrait tablets
   }
   function placeToolbar() {
     var bar = $("toolbar"), stage = document.querySelector(".stage");
@@ -1299,7 +1325,11 @@
     }
   }
   placeToolbar();
-  window.addEventListener("resize", function () { placeToolbar(); if (puzzle) fitCells(); });
+  window.addEventListener("resize", function () {
+    droppedBelow = false;            // decide again for the new size
+    placeToolbar();
+    if (puzzle) fitCells();
+  });
 
   var tableHome = null, tableAnchor = null;
   function placeTable() {
