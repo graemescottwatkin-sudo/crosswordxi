@@ -422,6 +422,18 @@ server.listen(0, "127.0.0.1", async () => {
       /droppedBelow = false;\s*\/\/ decide again/.test(js);
   })());
 
+  t("the flag is there whether or not you are signed in", (() => {
+    /* Hiding it meant the one affordance for reporting a bad clue was invisible
+       to anyone who had not already signed in — which is most people the first
+       time they meet one. */
+    const btn = d.getElementById("flagClue");
+    return !!btn && btn.style.display !== "none";
+  })(), d.getElementById("flagClue") ? "visible" : "missing");
+  t("a guest tapping it is told what it needs", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /Sign in to flag a clue/.test(js);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

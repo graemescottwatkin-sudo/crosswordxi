@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09a";
+  var BUILD = "v09b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -623,6 +623,7 @@
     renderStreak();
     $("pauseOverlay").classList.remove("show");
     $("pauseBtn").disabled = !started; syncPauseIcon();
+    renderFlag();
     if (pendingKickOff) { pendingKickOff = false; revealBoard(); }
     else if (started) startTimer();
     save();
@@ -1630,12 +1631,20 @@
 
   /* Flag a clue while playing. Open to any signed-in player: whoever notices a
      bad clue is whoever happens to be looking at it. */
+  /* Always shown, signed in or not. Hiding it meant the one affordance for
+     reporting a bad clue was invisible to anyone who had not already signed in
+     — which is most people the first time they meet a bad clue. Guests get told
+     what it needs rather than finding nothing there. */
   function renderFlag() {
     var btn = $("flagClue");
-    if (btn) btn.style.display = account ? "" : "none";
+    if (btn) btn.style.display = "";
   }
   on("flagClue", "click", function () {
-    if (!puzzle || !account) return;
+    if (!puzzle) return;
+    if (!account) {
+      toast("Sign in to flag a clue", "So it can be traced back and reviewed.");
+      return;
+    }
     var row = puzzle.entries[cur.entry].row;
     apiAuth("/api/report-clue", { clueId: row.id, puzzle: puzzleToken })
       .then(function (r) {

@@ -1,0 +1,130 @@
+/* admin_test.mjs — the owner's tools, and who can reach them.
+ *
+ * The panel is hidden from non-admins, but hiding a button is not access
+ * control: anyone can call the endpoint directly. Every check here is about the
+ * server refusing, not the browser not asking.
+ */
+import { onRequest as admin } from "./functions/api/admin/[[route]].js";
+import { onRequestPost as report } from "./functions/api/report-clue.js";
+
+let pass = 0, fail = 0;
+const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
+
+function makeEnv({ admin: isAdmin = 0, signedIn = true } = {}) {
+  const users = [{ id: "u1", provider: "google", provider_id: "g1",
+                   display_name: "Owner", is_admin: isAdmin }];
+  const sessions = [{ id: "sess", user_id: "u1", expires_at: "2099-01-01T00:00:00.000Z" }];
+  const reports = [];
+  const puzzles = [{ mode: "daily", daily_no: 29,
+    payload: JSON.stringify({ puzzle: { width: 5, height: 5, cells: {}, stats: {},
+      entries: [{ num: 1, dir: "A", x: 0, y: 0, len: 3, cells: [],
+                  row: { id: "c1", clue: "x", enum: "(3)", grid: "ABC" } }] } }) }];
+  return { _reports: reports, DB: { prepare(sql) {
+    let b = [];
+    const api = {
+      bind(...a) { b = a; return api; },
+      async first() {
+        if (sql.includes("FROM sessions s JOIN users u")) {
+          return signedIn ? users[0] : null;
+        }
+        if (sql.includes("FROM puzzles WHERE mode = 'daily'")) {
+          return puzzles.find((p) => p.daily_no === b[0]) || null;
+        }
+        if (sql.includes("FROM clue_reports WHERE clue_id")) {
+          return reports.find((r) => r.clue_id === b[0] && r.reported_by === b[1]) || null;
+        }
+        if (sql.includes("COUNT(*)")) return { n: 7 };
+        return null;
+      },
+      async all() { return { results: reports }; },
+      async run() {
+        if (sql.includes("INSERT INTO clue_reports")) {
+          reports.push({ id: b[0], clue_id: b[1], reported_by: b[2], reason: b[3] });
+        }
+        return { success: true };
+      },
+    };
+    return api;
+  } } };
+}
+
+const req = (path, { method = "GET", body, csrf = true, cookie = "cxi_session=sess" } = {}) =>
+  new Request("https://x/api/admin/" + path, {
+    method,
+    headers: Object.assign(csrf ? { "X-Crossword-XI": "1" } : {}, cookie ? { Cookie: cookie } : {}),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+const call = (path, opts = {}, env) =>
+  admin({ request: req(path, opts), env, params: { route: path.split("?")[0].split("/") } });
+
+console.log("Who can reach the tools");
+{
+  const guest = makeEnv({ signedIn: false });
+  t("a signed-out visitor is refused", (await call("summary", {}, guest)).status === 401);
+}
+{
+  const player = makeEnv({ admin: 0 });
+  const r = await call("summary", {}, player);
+  t("a signed-in player is refused", r.status === 404, "status " + r.status);
+  t("and told nothing about what exists", (await r.json()).error === "Not found.",
+    "a 403 would confirm the route is there");
+}
+{
+  const owner = makeEnv({ admin: 1 });
+  const r = await call("summary", {}, owner);
+  t("the owner gets through", r.status === 200);
+  const j = await r.json();
+  t("and sees the counts", typeof j.users === "number" && typeof j.today === "number",
+    `today #${j.today}`);
+}
+
+console.log("\nThe flag cannot be self-granted");
+{
+  const player = makeEnv({ admin: 0 });
+  const j = await (await call("whoami", {}, player)).json();
+  t("whoami answers everyone, and says no", j.admin === false);
+  const owner = makeEnv({ admin: 1 });
+  t("and yes for the owner", (await (await call("whoami", {}, owner)).json()).admin === true);
+  const src = await import("node:fs").then((fs) =>
+    fs.readFileSync("functions/api/admin/[[route]].js", "utf8"));
+  t("no route anywhere writes the admin flag",
+    !/UPDATE users SET[^"]*is_admin/i.test(src) && !/is_admin\s*=\s*1/.test(src));
+}
+
+console.log("\nPreviewing another day");
+{
+  const owner = makeEnv({ admin: 1 });
+  const r = await call("daily?n=29", {}, owner);
+  const j = await r.json();
+  t("the owner can open a future day", r.status === 200 && j.dailyNo === 29,
+    "day " + j.dailyNo);
+  t("and it comes back stripped of answers",
+    !JSON.stringify(j).includes('"ch"') && !JSON.stringify(j).includes('"grid"'));
+  const player = makeEnv({ admin: 0 });
+  t("a player cannot", (await call("daily?n=29", {}, player)).status === 404);
+  t("a day with no stored puzzle says so",
+    (await call("daily?n=999", {}, owner)).status === 404);
+}
+
+console.log("\nFlagging a clue");
+{
+  const env = makeEnv({ admin: 0 });
+  const post = (body, csrf = true) => report({ request: new Request("https://x/api/report-clue", {
+    method: "POST", body: JSON.stringify(body),
+    headers: Object.assign(csrf ? { "X-Crossword-XI": "1" } : {}, { Cookie: "cxi_session=sess" }),
+  }), env });
+  t("any signed-in player can flag a clue", (await post({ clueId: "c1" })).status === 200,
+    "not admin-only: whoever spots it is whoever is looking");
+  const again = await (await post({ clueId: "c1" })).json();
+  t("flagging the same clue twice is not two reports", again.already === true);
+  t("it still needs the anti-CSRF header", (await post({ clueId: "c2" }, false)).status === 403);
+  const out = makeEnv({ admin: 0, signedIn: false });
+  t("a signed-out visitor cannot flag", (await report({
+    request: new Request("https://x/api/report-clue", { method: "POST",
+      body: JSON.stringify({ clueId: "c1" }), headers: { "X-Crossword-XI": "1" } }),
+    env: out }).then((r) => r.status)) === 401);
+}
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

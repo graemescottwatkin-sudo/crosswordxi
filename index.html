@@ -32,7 +32,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v08q">
+<link rel="stylesheet" href="css/style.css?v=v09b">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -43,6 +43,35 @@
 
 <!-- What is actually live. The build badge answers "which frontend"; this
      answers "which data", which is the question that has actually gone wrong. -->
+<!-- Owner tools. Hidden unless the server says this account is an admin —
+     and hiding it is only tidiness: every route behind it checks the flag
+     server-side on every request, because a hidden button is not a lock. -->
+<div class="sheet" id="adminSheet">
+  <div class="sheet-card">
+    <h2>Owner tools</h2>
+    <div class="sheet-sub" id="adminSub">&mdash;</div>
+    <table class="status-table"><tbody id="adminBody"></tbody></table>
+
+    <div class="admin-group">
+      <label class="acct-field">
+        <span>Play a different day</span>
+        <input id="adminDay" type="number" min="1" placeholder="e.g. 29 for Matchday 1">
+      </label>
+      <button class="btn secondary" id="adminGo">Play that day</button>
+      <p class="acct-note">Local only, so the Matchday 1 changeover can be seen
+        before September. Reload to go back to today.</p>
+    </div>
+
+    <div class="admin-group">
+      <button class="btn outline" id="adminReports">Show flagged clues</button>
+      <button class="btn outline" id="adminReset">Clear my record</button>
+      <div class="sheet-note" id="adminMsg"></div>
+    </div>
+
+    <button class="btn outline sheet-close" id="adminClose">Close</button>
+  </div>
+</div>
+
 <div class="sheet" id="statusSheet">
   <div class="sheet-card">
     <h2>What&rsquo;s live</h2>
@@ -135,6 +164,8 @@
         <div class="bank" id="letterBank"></div>
       </div>
       <button class="nc-arrow" id="nextClue" aria-label="Next clue">&#8250;</button>
+      <!-- Flag a clue the moment you notice it. Hidden unless signed in. -->
+      <button class="nc-flag" id="flagClue" title="Flag this clue" style="display:none">&#9873;</button>
     </div>
     <div class="grid-wrap">
       <div class="pitch-bg" id="pitchBg" aria-hidden="true">
@@ -338,18 +369,19 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v08q</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v09b</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
   <button id="accountToggle">sign in</button> &middot;
+  <button id="adminToggle" style="display:none">owner tools</button> &middot;
   <span id="circLine" class="circ-line"></span>
   <button id="circReset" style="display:none">reset clues</button> &middot;
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v08q"></script>
-<script src="js/engine.js?v=v08q"></script>
-<script src="js/game.js?v=v08q"></script>
+<script src="js/seasons.js?v=v09b"></script>
+<script src="js/engine.js?v=v09b"></script>
+<script src="js/game.js?v=v09b"></script>
 </body>
 </html>
