@@ -37,7 +37,14 @@
  * audit. Fix, re-run, and from then on it protects what you fixed.
  */
 
-import { chromium } from "playwright";
+import { chromium } from "playwright-core";
+/* playwright-core plus a browser that arrives in an npm tarball, rather than
+   playwright's own download. The download host is not always reachable —
+   behind a proxy, an allowlist or an offline runner it simply fails — and
+   without a browser this suite is the one that cannot run, which is exactly
+   the suite whose absence let three layout faults reach a real device.
+   PLAYWRIGHT_EXECUTABLE overrides it if a system Chromium is present. */
+import sparticuz from "@sparticuz/chromium";
 
 const BASE = process.env.BASE || "http://localhost:8788";
 const HEAD = process.env.HEAD === "1";
@@ -73,7 +80,13 @@ const MIN_TAP = 44;
 let failures = [];
 const check = (name, ok, detail) => {
   if (ok) return;
-  failures.push(`${name}${detail ? "  — " + detail : ""}`);
+  const line = `${name}${detail ? "  — " + detail : ""}`;
+  failures.push(line);
+  /* Printed as it happens, not collected for a summary at the end. A run that
+     is cut short — a time limit, a hang in a later viewport, a killed dev
+     server — otherwise reports nothing at all, and the failures are the entire
+     reason for running it. */
+  console.log("      • " + line);
 };
 
 /* ------------------------------------------------------------------ *
@@ -185,9 +198,21 @@ async function measure(page) { return page.evaluate(eval("(" + MEASURE + ")")); 
  * The gate
  * ------------------------------------------------------------------ */
 const run = async () => {
-  const browser = await chromium.launch({ headless: !HEAD, args: ["--no-sandbox"] });
+  const exePath = process.env.PLAYWRIGHT_EXECUTABLE || await sparticuz.executablePath();
+  const browser = await chromium.launch({
+    headless: !HEAD,
+    executablePath: exePath,
+    args: [...(sparticuz.args || []), "--no-sandbox", "--disable-dev-shm-usage"],
+  });
 
-  for (const [name, w, h] of VIEWPORTS) {
+  /* ONLY=phone,tablet runs a subset. The full matrix takes minutes, and a
+     runner with a time limit gets a truncated report that looks like a crash.
+     Substring match on the name, so ONLY=phone covers every phone size. */
+  const only = (process.env.ONLY || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const matrix = only.length
+    ? VIEWPORTS.filter(([n]) => only.some((o) => n.includes(o)))
+    : VIEWPORTS;
+  for (const [name, w, h] of matrix) {
     /* The on-screen keyboard is built for touch devices, so a context without
        touch never renders it and the keyboard assertions quietly never run.
        Emulate touch on everything phone- and tablet-sized. */
@@ -234,6 +259,18 @@ const run = async () => {
          is not the same question. */
       let started = false;
       try {
+        /* The landing screen comes first now: you choose Daily, Practice or a
+           themed board before anything is loaded, and #kickOffBtn does not
+           exist until you have. This suite predates that screen, so it clicked
+           Kick Off while the home overlay was still up, never got into a game,
+           and reported "overlay never cleared" at every viewport — with the
+           grid, scroll and keyboard checks all skipped. The measurements it
+           exists to take were not being taken. */
+        const home = page.locator("#homeOverlay.show #homeDaily");
+        if (await home.count()) {
+          await home.click({ timeout: 8000 });
+          await page.waitForSelector("#kickOffBtn", { timeout: 12000 });
+        }
         await page.waitForSelector("#kickOffBtn:not([disabled])", { timeout: 12000 });
         await page.click("#kickOffBtn");
         await page.waitForFunction(
@@ -387,9 +424,15 @@ const run = async () => {
     failures.forEach((f) => console.log("  • " + f));
     console.log("\nThese are measurements of the rendered page, not opinions " +
                 "about the CSS.\nEach one is a thing a player would meet.");
-    process.exit(1);
+    /* exitCode, not exit(). process.exit() abandons anything still buffered on
+       stdout, so on a redirected or piped run the summary — the only part that
+       says what actually failed — was being thrown away while the exit status
+       still said failure. Setting the code lets node finish writing and leave
+       of its own accord. */
+    process.exitCode = 1;
+    return;
   }
   console.log("All viewport checks passed.");
 };
 
-run().catch((e) => { console.error(e); process.exit(1); });
+run().catch((e) => { console.error(e); process.exitCode = 1; });
