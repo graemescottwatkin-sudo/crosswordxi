@@ -93,6 +93,20 @@ server.listen(0, "127.0.0.1", async () => {
     return !!home && home.classList.contains("show") &&
       d.querySelectorAll("#grid .cell").length === 0;
   })(), d.querySelectorAll("#grid .cell").length + " cells before choosing");
+  t("the club is chosen on the landing screen", (() => {
+    /* It applies to both modes and does not change between them, so asking
+       again on each kick-off card was asking twice for one answer. */
+    const sel = $("homeClubSelect");
+    return !!sel && sel.options.length > 20;
+  })(), $("homeClubSelect") ? $("homeClubSelect").options.length + " options" : "missing");
+  t("the newest season's clubs come first, not all 49 alphabetically", (() => {
+    /* Forty-nine in one run means scrolling past Barnsley and Bradford to reach
+       the side you support. Grouped from the data, so adding a season moves the
+       list on by itself. */
+    const groups = [...$("homeClubSelect").querySelectorAll("optgroup")];
+    return groups.length === 2 && /Premier League \d{4}\/\d{2}/.test(groups[0].label) &&
+      groups[0].children.length === 20;
+  })(), [...$("homeClubSelect").querySelectorAll("optgroup")].map((g) => g.label).join(" | "));
   t("both modes are offered as their own target", (() => {
     return !!$("homeDaily") && !!$("homePractice");
   })());

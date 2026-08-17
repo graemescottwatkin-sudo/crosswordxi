@@ -1160,6 +1160,13 @@ var FCW = (function () {
   }
   /* Every club that appears in any stored season — the full set a player
      may choose from, not just the current top flight. */
+  /* The clubs of the most recently stored season. Used to put the sides
+     somebody is likely to support at the top of a list of forty-nine, and
+     derived from the data so it moves on by itself when a season is added. */
+  function latestSeason() {
+    var all = SCORING.SEASONS || [];
+    return all.length ? all[all.length - 1] : null;
+  }
   function historicalClubs() {
     var seen = {};
     SCORING.SEASONS.forEach(function (s2) {
@@ -1504,6 +1511,7 @@ var FCW = (function () {
     pickSeason: pickSeason,
     pickSeasonAndClub: pickSeasonAndClub,
     historicalClubs: historicalClubs,
+    latestSeason: latestSeason,
     SCHEMA: SCHEMA,
     termKey: termKey,
     subjectKey: subjectKey,

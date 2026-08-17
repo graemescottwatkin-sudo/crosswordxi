@@ -1326,3 +1326,20 @@ body.rotate-needed .rotate-prompt{
   cursor:pointer;font-size:13px;min-height:44px;padding:0 4px;
 }
 .home-links button:hover{color:var(--pitch)}
+
+
+/* Play as, on the landing screen. Quieter than the two choices — it is a
+   setting, not the decision. */
+.home-club{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
+}
+.home-club label{
+  font-family:var(--disp);font-weight:600;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.home-club select{
+  flex:1 1 auto;min-width:0;min-height:44px;font-family:var(--body);
+  font-size:15px;color:var(--ink);background:var(--card);
+  border:1px solid var(--line);border-radius:7px;padding:0 8px;
+}

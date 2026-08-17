@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v10b";
+  var BUILD = "v10c";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2552,16 +2552,49 @@
   }
 
   /* ---------- Club selection (sidebar + kick-off card share state) ---------- */
+  /* The clubs of the most recent stored season come first, then everyone else.
+     Forty-nine clubs in one alphabetical run means scrolling past Barnsley and
+     Bradford to reach the side you actually support.
+     Taken from the data rather than typed in, so adding a season moves the list
+     on by itself — and labelled with the season it came from rather than
+     "current", because the newest table stored is not necessarily the season
+     being played. */
+  function recentClubs() {
+    var last = FCW.latestSeason && FCW.latestSeason();
+    if (!last) return { clubs: [], label: "" };
+    return {
+      clubs: (last.table || []).map(function (r) { return r.club; }),
+      label: last.season,
+    };
+  }
+
   function populateClubSelect(sel) {
     if (sel.options.length) return;
     var opt = document.createElement("option");
     opt.value = "__random__"; opt.textContent = "Random club and season";
     sel.appendChild(opt);
-    CLUBS.forEach(function (c) {
+
+    var recent = recentClubs();
+    var seen = {};
+    function addTo(parent, name) {
       var o = document.createElement("option");
-      o.value = c; o.textContent = c;
-      sel.appendChild(o);
-    });
+      o.value = name; o.textContent = name;
+      parent.appendChild(o);
+      seen[name] = true;
+    }
+    if (recent.clubs.length) {
+      var g1 = document.createElement("optgroup");
+      g1.label = "Premier League " + recent.label;
+      recent.clubs.slice().sort().forEach(function (c) { addTo(g1, c); });
+      sel.appendChild(g1);
+    }
+    var rest = CLUBS.filter(function (c) { return !seen[c]; });
+    if (rest.length) {
+      var g2 = document.createElement("optgroup");
+      g2.label = "Other clubs";
+      rest.forEach(function (c) { addTo(g2, c); });
+      sel.appendChild(g2);
+    }
     sel.addEventListener("change", function () { applyClubChoice(sel.value); });
   }
   function applyClubChoice(value) {
@@ -2589,6 +2622,11 @@
     var sel = $("kickClubSelect");
     populateClubSelect(sel);
     sel.value = clubMode === "chosen" ? club : "__random__";
+    var home = $("homeClubSelect");
+    if (home) {
+      populateClubSelect(home);
+      home.value = clubMode === "chosen" ? club : "__random__";
+    }
   }
   on("kickOffBtn", "click", kickOff);
   /* Switch mode from the card itself, then kick off in one press. */
@@ -2832,6 +2870,7 @@
   }
 
   function renderHome() {
+    syncKickSelect();          // fills and syncs the Play as control on this screen
     var today = FCW.dailyNumber();
     var phase = FCW.dailyPhase(today);
     $("homeDailyTitle").textContent = phase.label;
