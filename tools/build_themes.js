@@ -46,6 +46,19 @@ function need(f) {
 }
 const FCW = require(need("engine.js"));
 const rows = JSON.parse(fs.readFileSync(need("data.json"), "utf8"));
+/* Extra banks merged in, for material written for one theme rather than
+   scraped from the general bank. Same shape, same rules — the generator does
+   not care where a row came from. */
+const extraArg = arg("extra", "");
+for (const f of extraArg.split(",").filter(Boolean)) {
+  const p = path.resolve(f);
+  if (!fs.existsSync(p)) { console.error(`Cannot find ${p}`); process.exit(1); }
+  const add = JSON.parse(fs.readFileSync(p, "utf8"));
+  const have = new Set(rows.map((r) => String(r.id)));
+  let n = 0;
+  for (const r of add) if (!have.has(String(r.id))) { rows.push(r); n++; }
+  console.log(`merged ${n} rows from ${path.basename(p)}`);
+}
 const { THEMES, poolFor } = require("./themes.js");
 
 const CLUB = "club";   // matches the kind set in tools/themes.js
@@ -96,7 +109,11 @@ function boardsFor(theme, want) {
       const seed = 7000000 + hash(theme.id) + n * 104729 + attempt * 7919;
       const filter = Object.keys(usedIds).length ? { excludeIds: usedIds } : {};
       let p;
-      const cap = theme.kind === CLUB ? CLUB_FAMILY_CAP : FAMILY_CAP;
+      const cap = theme.kind === CLUB
+        ? (theme.familyCap
+            ? { "*": theme.familyCap, Transfer: Math.max(3, theme.familyCap) }
+            : CLUB_FAMILY_CAP)
+        : FAMILY_CAP;
       try {
         p = FCW.generate(pool, { seed, filter, maxPerFamily: cap });
       } catch (e) { continue; }
@@ -131,8 +148,9 @@ function validate(p, theme) {
       const f = e.row.cat.split(" \u2192")[0];
       fams[f] = (fams[f] || 0) + 1;
     });
+    const wildcard = theme.familyCap || 2;
     for (const [f, n] of Object.entries(fams)) {
-      const limit = f === "Transfer" ? 3 : 2;
+      const limit = f === "Transfer" ? Math.max(3, wildcard) : wildcard;
       if (n > limit) faults.push(`${n} x ${f}`);
     }
   }
@@ -151,7 +169,9 @@ function validate(p, theme) {
 
 console.log("Generating themed boards from the existing bank\n");
 const built = [];
+const ONLY = arg("only", "");
 for (const theme of THEMES) {
+  if (ONLY && theme.id !== ONLY) continue;
   const pool = poolFor(rows, theme);
   const made = boardsFor(theme, MAX_PER_THEME);
   const good = [];

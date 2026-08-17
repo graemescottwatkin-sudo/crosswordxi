@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v18b";
+  var BUILD = "v19a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3242,7 +3242,12 @@
      a supporter can ask for their club before it has a board. */
   function fillThemeRequestList(d) {
     var sel = $("themeRequestKey");
-    if (!sel || sel.options.length) return;
+    if (!sel) return;
+    /* Rebuilt each time rather than filled once: what has already been
+       requested changes as you request things, and a list that never updates
+       makes the one-each rule something you discover by pressing the button. */
+    var mine = {};
+    ((d && d.mine) || []).forEach(function (k) { mine[k] = true; });
     var seen = {};
     var opts = ((d && d.options) || []).map(function (o) { seen[o.label] = 1; return o; });
     CLUBS.concat(EFL_CLUBS).sort().forEach(function (c) {
@@ -3250,7 +3255,9 @@
     });
     sel.innerHTML = '<option value="">Choose a theme\u2026</option>' +
       opts.map(function (o) {
-        return '<option value="' + escapeHtml(o.key) + '">' + escapeHtml(o.label) + "</option>";
+        var done = mine[o.key];
+        return '<option value="' + escapeHtml(o.key) + '"' + (done ? " disabled" : "") +
+          ">" + escapeHtml(o.label) + (done ? " \u2014 requested" : "") + "</option>";
       }).join("");
   }
 
@@ -3351,7 +3358,11 @@
       msg.textContent = r.already
         ? "You have already asked for " + label + "."
         : "Noted \u2014 thanks. " + label + " is on the list.";
-      // Refetch, so the marker appears now rather than on the next visit.
+      /* Refetch and clear the choice: the marker appears now rather than on the
+         next visit, the theme just requested is struck off the list, and the
+         control is ready for the next one. Requesting several is the normal
+         case, not the exception. */
+      sel.value = "";
       loadThemes(true).then(function () { renderThemes(); }).catch(function () {});
     }).catch(function (err) {
       /* Sign-in is required, exactly as it is for flagging a clue. Say which

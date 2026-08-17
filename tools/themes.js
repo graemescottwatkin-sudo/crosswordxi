@@ -54,6 +54,25 @@ const THEMES = [
   { id: "west-ham", name: "West Ham United", kind: CLUB,
     keys: ["west ham", "upton park", "hammers", "boleyn"],
     self: ["west ham united", "west ham", "hammers", "irons"] },
+  /* Bolton's material is a purpose-built set rather than clues scraped out of
+     the general bank, so it matches on the club and its grounds across four
+     names — Burnden Park, the Reebok, the Macron and the University of Bolton
+     are all the same place at different dates. */
+  { id: "bolton", name: "Bolton Wanderers", kind: CLUB,
+    /* Not "wanderers" on its own: it matches Wolverhampton Wanderers and drags
+       in every clue about them. The club's own name and its grounds only. */
+    keys: ["bolton", "bolton wanderers", "burnden park", "burnden", "reebok",
+           "macron", "university of bolton", "toughsheet", "trotters"],
+    self: ["bolton wanderers", "bolton", "trotters", "wanderers"],
+    /* Three of a family rather than two. The cap exists to stop the general
+       bank putting the same construction on a board three times — "Won the FA
+       Cup in ____" asked thrice. It does not apply the same way here: this
+       material was written as a set, the clues are all different shapes, and
+       the categories are derived by keyword rather than carried in the data.
+       At two, Managers and Famous Goals ran out after four boards and the
+       fifth could not be built from material that was plainly there. */
+    familyCap: 3 },
+
   { id: "leicester", name: "Leicester City", kind: CLUB,
     keys: ["leicester", "king power", "filbert street", "foxes"],
     self: ["leicester city", "leicester", "foxes"] },

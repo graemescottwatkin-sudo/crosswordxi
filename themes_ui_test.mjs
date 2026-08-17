@@ -203,6 +203,40 @@ server.listen(0, "127.0.0.1", async () => {
   $("homeThemed").click();
   await wait(1200);
 
+  /* Several themes each, each of them once. The schema says so — UNIQUE
+     (theme_key, requested_by) — and the list has to say so too, or the rule is
+     something you find out by pressing the button and being refused. */
+  console.log("\nRequesting themes");
+  const pick = (key) => {
+    const sel = $("themeRequestKey");
+    sel.value = key;
+    $("themeRequestBtn").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+  };
+  t("the control says request, not ask", (() => {
+    const sheet = $("themeSheet").textContent;
+    return /Request a theme/.test(sheet) && /one request each/i.test(sheet) &&
+      $("themeRequestBtn").textContent.trim() === "Request";
+  })(), $("themeRequestBtn").textContent.trim());
+
+  pick("everton");
+  await wait(900);
+  t("a request is accepted", /on the list|Noted/i.test($("themeRequestMsg").textContent),
+    $("themeRequestMsg").textContent.trim());
+  t("and the choice is cleared, ready for another", $("themeRequestKey").value === "");
+
+  pick("leeds-united");
+  await wait(900);
+  t("a second, different theme is accepted too",
+    /on the list|Noted/i.test($("themeRequestMsg").textContent),
+    $("themeRequestMsg").textContent.trim());
+
+  await wait(300);
+  t("themes already requested are struck off the list", (() => {
+    const opts = [...$("themeRequestKey").options];
+    const villa = opts.find((o) => o.value === "aston-villa");   // seeded as requested
+    return !!villa && villa.disabled && / requested$/.test(villa.textContent);
+  })(), [...$("themeRequestKey").options].filter((o) => o.disabled).length + " struck off");
+
   /* ---- opening a board ---- */
   console.log("\nPlaying a themed board");
   $("themeAvailable").querySelector('[data-theme="man-united"][data-no="2"]').click();
