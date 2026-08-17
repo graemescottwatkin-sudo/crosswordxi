@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v11">
+<link rel="stylesheet" href="css/style.css?v=v11b">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -208,6 +208,23 @@
       </div>
     </div>
   </div>
+
+  <!-- Back in the rail beside the controls. It reads as part of the same
+       dashboard as the clock and the help buttons, and the crossword keeps its
+       own column: a table under the board pushed the clue lists down and put a
+       league position where the season record belongs. -->
+         worth of width. The width comes from --board-w, which fitCells()
+         calculates from the puzzle's own dimensions rather than measuring the
+         painted board, so the two edges cannot drift apart. -->
+    <div class="tb-table" id="tablePanel">
+      <div class="club-bar">
+        <label for="clubSelect">Your club</label>
+        <select id="clubSelect" title="Choose your club (optional)"></select>
+      </div>
+      <table class="league"><tbody id="leagueBody"></tbody></table>
+      <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
+    </div>
+  </div>
 </div>
 
 <div class="stage">
@@ -259,30 +276,11 @@
            the board and the clue lists it went from no height to ~35px every
            time it appeared, shifting the page under the player's finger. -->
       <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
-    </div>
-    <!-- Directly under the board and exactly its width. It used to sit in the
-         top banner beside the clock, which put "how is this going" a long way
-         from the thing it is about, and forced the banner to carry a table's
-         worth of width. The width comes from --board-w, which fitCells()
-         calculates from the puzzle's own dimensions rather than measuring the
-         painted board, so the two edges cannot drift apart. -->
-    <div class="tb-table board-table below-board" id="tablePanel">
-      <div class="club-bar">
-        <label for="clubSelect">Your club</label>
-        <select id="clubSelect" title="Choose your club (optional)"></select>
-      </div>
-      <table class="league"><tbody id="leagueBody"></tbody></table>
-      <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
-    </div>
-  </div>
-  <!-- Clue lists sit under the board now, two columns on desktop, stacked when
-       the width would squeeze the text. The right-hand column is gone: it made
-       the page read as a dashboard rather than a crossword. -->
-  <div class="clues" id="clues">
-    <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
-    <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
-  </div>
-  <div class="table-panel compact" id="seasonPanel">
+    <!-- Directly under the board. The season record is what the score means —
+         eleven answers become a run of results — so it belongs against the
+         thing that produced it rather than below the clue lists, where it was
+         two scrolls away from the board on a phone. -->
+  <div class="table-panel compact board-table" id="seasonPanel">
     <h2>Season</h2>
     <div class="season-strip">
       <div class="season-head">
@@ -291,6 +289,13 @@
       <div class="season-games" id="seasonGames"></div>
     </div>
     <div class="table-note">Full table at Full Time</div>
+  </div>
+  <!-- Clue lists sit under the board now, two columns on desktop, stacked when
+       the width would squeeze the text. The right-hand column is gone: it made
+       the page read as a dashboard rather than a crossword. -->
+  <div class="clues" id="clues">
+    <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
+    <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
   </div>
 </div>
 
@@ -538,7 +543,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v11</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v11b</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -549,8 +554,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v11"></script>
-<script src="js/engine.js?v=v11"></script>
-<script src="js/game.js?v=v11"></script>
+<script src="js/seasons.js?v=v11b"></script>
+<script src="js/engine.js?v=v11b"></script>
+<script src="js/game.js?v=v11b"></script>
 </body>
 </html>

@@ -290,7 +290,21 @@ function stubDB() {
 const env = { DB: stubDB() };
 const jsonOf = async (res) => JSON.parse(await res.text());
 
-const list = await jsonOf(await themes({ env }));
+/* The window between deploying the code and running the migration is real:
+   it was hit on the first deploy, and /api/themes returned a 500 because the
+   tables did not exist yet. Unconfigured is not broken. */
+const missingTables = {
+  DB: { prepare() { return { bind() { return this; },
+    async all() { throw new Error("D1_ERROR: no such table: themes"); },
+    async first() { throw new Error("D1_ERROR: no such table: themes"); } }; } },
+};
+const beforeMigration = await themes({ request: new Request("https://x/api/themes"), env: missingTables });
+t("with the tables not yet created, the section reads as unconfigured rather than failing",
+  beforeMigration.status === 200, "status " + beforeMigration.status);
+t("and reports itself unconfigured, so the client shows an empty section",
+  (await jsonOf(beforeMigration)).configured === false);
+
+const list = await jsonOf(await themes({ request: new Request("https://x/api/themes"), env }));
 t("released boards are listed", list.themes.length === 1 && list.themes[0].boards.length === 1,
   JSON.stringify(list.themes.map((x) => x.id + ":" + x.boards.length)));
 t("an unreleased board is not in the available list",

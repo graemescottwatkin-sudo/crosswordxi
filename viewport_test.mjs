@@ -63,10 +63,15 @@ t("nothing re-forces two clue columns after the stacking rule",
    visible. The saving now comes from the league table not being in the header
    at all: it is under the board in the markup at every width, so the banner
    never carries a table's worth of width and nothing has to collapse. */
-t("the league table is not a banner panel any more", (() => {
+/* The table is back in the rail, where it reads as part of the same dashboard
+   as the clock and the help buttons. What sits under the board is the season
+   record — the run of results is what the score means, and it belongs against
+   the thing that produced it. */
+t("the league table is in the rail, and the season record is under the board", (() => {
   const html = fs.readFileSync("index.html", "utf8");
   const bar = html.slice(html.indexOf('<div class="toolbar"'), html.indexOf('<div class="stage"'));
-  return bar.indexOf('id="tablePanel"') === -1 && html.indexOf('id="tablePanel"') > -1;
+  const panel = html.slice(html.indexOf('<div class="grid-panel"'), html.indexOf('<div class="clues"'));
+  return bar.indexOf('id="tablePanel"') > -1 && panel.indexOf('id="seasonPanel"') > -1;
 })());
 t("nothing collapses the table to a single row now that it has the board's width",
   !/#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));
@@ -132,8 +137,8 @@ t("the clue lists span underneath and are capped to the pair width",
   /\.clues\{grid-column:1 \/ -1;grid-row:4;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
 t("panels inside the rail are contents of the card, not boxes on top of it",
   /\.tb-match,\.tb-game,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
-t("the table follows the board into the second column, at the board's width",
-  /#tablePanel\{grid-column:2;grid-row:3;[^}]*width:var\(--board-w/.test(rail));
+t("the season record follows the board into the second column, at the board's width",
+  /#seasonPanel\{grid-column:2;grid-row:3;[^}]*width:var\(--board-w/.test(rail));
 /* A plain 1fr track refuses to shrink below its content, so the help buttons
    pushed straight out through the side of the card. */
 t("help buttons cannot overflow the rail",
@@ -151,7 +156,7 @@ t("the board column is sized to the board, so the pitch keeps hugging the grid",
     /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
 })());
 t("the clue lists end at the same right edge as the board pair",
-  /\.clues,#seasonPanel\{max-width:var\(--block-w,100%\)\}/.test(rail));
+  /\.clues\{max-width:var\(--block-w,100%\)\}/.test(rail));
 t("the two landscape layouts cannot both apply", (() => {
   // One is max-width:859px, the other min-width:860px.
   return /\(max-width:859px\)/.test(flatCss) && /\(min-width:860px\)/.test(flatCss);

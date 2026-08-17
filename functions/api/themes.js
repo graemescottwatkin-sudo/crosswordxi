@@ -22,10 +22,23 @@ import { currentUser } from "../_lib/auth.js";
    it takes to fix. */
 const WEEKS_AHEAD = 4;
 
+const EMPTY = { themes: [], upcoming: [], options: [], mine: [], configured: false };
+
 export async function onRequestGet({ request, env }) {
-  if (!hasDB(env)) {
-    return json({ themes: [], upcoming: [], options: [], mine: [], configured: false });
+  if (!hasDB(env)) return json(EMPTY);
+  try {
+    return await serve(request, env);
+  } catch (e) {
+    /* The tables may not exist yet: the code deploys from GitHub and the
+       migration is run by hand, so there is a window where one is live and the
+       other is not — and it was hit on the first deploy. A section nobody has
+       set up should look unconfigured, not broken. Every other endpoint is
+       untouched by this, so the rest of the game carries on. */
+    return json(EMPTY);
   }
+}
+
+async function serve(request, env) {
 
   const today = serverToday();
   const horizon = new Date(Date.now() + WEEKS_AHEAD * 7 * 86400000)

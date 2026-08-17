@@ -273,10 +273,10 @@ server.listen(0, "127.0.0.1", async () => {
       !/\.stage\{[^}]*grid-template-columns:auto/.test(css) &&
       !d.querySelector(".side");
   })());
-  t("the vertical flow is header, active clue, board, clues, season", (() => {
+  t("the vertical flow is header, active clue, board, season, clues", (() => {
     const order = [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
       .map((n) => n.id || n.className.split(" ")[0]);
-    return order.join(">") === "toolbar>nowClue>grid-wrap>clues>seasonPanel";
+    return order.join(">") === "toolbar>nowClue>grid-wrap>seasonPanel>clues";
   })(), [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
     .map((n) => n.id || n.className.split(" ")[0]).join(" > "));
   t("the active clue strip is still immediately above the board", (() => {
@@ -295,11 +295,9 @@ server.listen(0, "127.0.0.1", async () => {
     return n === daily.puzzle.entries.length;
   })(), d.querySelectorAll("#acrossList li").length + " across + " +
     d.querySelectorAll("#downList li").length + " down");
-  t("the club selector sits with the league table under the board", (() => {
+  t("the club selector travels with the league table, wherever it sits", (() => {
     const sel = $("clubSelect");
-    return sel && $("tablePanel").contains(sel) && !$("toolbar").contains(sel) &&
-      d.querySelector(".grid-panel").contains($("tablePanel")) &&
-      sel.options.length > 1;
+    return sel && $("tablePanel").contains(sel) && sel.options.length > 1;
   })(), $("clubSelect") && $("clubSelect").options.length + " clubs");
   t("the board publishes its width so the columns align to it",
     /--board-w/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")) &&
@@ -1045,14 +1043,14 @@ server.listen(0, "127.0.0.1", async () => {
      phones, so its position was a runtime decision and two sets of CSS had to
      describe it. It is now under the board in the markup at every width — no
      move, nothing to get wrong on resize. */
-  t("the table is inside the board column, after the board", (() => {
-    const panel = $("tablePanel");
+  t("the season record is inside the board column, after the board", (() => {
+    const panel = $("seasonPanel");
     const wrap = d.querySelector(".grid-wrap");
     return d.querySelector(".grid-panel").contains(panel) &&
       !$("toolbar").contains(panel) &&
-      (wrap.compareDocumentPosition(panel) & 4) !== 0;   // board precedes table
+      (wrap.compareDocumentPosition(panel) & 4) !== 0;   // board precedes it
   })());
-  t("it is sized from the board's published width, not its own contents",
+  t("the season record is sized from the board's published width, not its contents",
     /\.grid-panel > \.board-table\{width:min\(100%,var\(--board-w,100%\)\)/.test(css));
   t("narrowing leaves it exactly where it was", (() => {
     Object.defineProperty(w, "innerWidth", { value: 390, writable: true, configurable: true });
@@ -1065,12 +1063,11 @@ server.listen(0, "127.0.0.1", async () => {
     const rows = [...d.querySelectorAll("#tablePanel #leagueBody tr")];
     return rows.length === 20 && rows.filter((r) => !r.classList.contains("faroff")).length === 3;
   })(), [...d.querySelectorAll("#tablePanel #leagueBody tr")].filter((r) => !r.classList.contains("faroff")).length + " visible");
-  t("and widening does too", (() => {
+  t("and widening puts it back in the rail", (() => {
     Object.defineProperty(w, "innerWidth", { value: 1400, writable: true, configurable: true });
     w.dispatchEvent(new w.Event("resize"));
     const panel = $("tablePanel");
-    return d.querySelector(".grid-panel").contains(panel) &&
-      panel.classList.contains("below-board");
+    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
   })());
 
   console.log("\nSelection still works from the lists below");

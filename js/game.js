@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v11";
+  var BUILD = "v11b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1492,11 +1492,36 @@
     if (puzzle) fitCells();
   });
 
-  /* placeTable() is gone. The league table used to live in the banner and be
-     moved below the board by script on phones, which meant its position was a
-     runtime decision and the CSS had to describe it in both places. It is now
-     under the board in the markup at every width, and .below-board is simply
-     what it is rather than a state it is put into. */
+  /* Where the league table goes.
+     In the rail beside the controls, which is where it belongs on anything
+     with a rail: it reads as part of the same dashboard as the clock and the
+     help buttons, and the space under the board is the season record's — the
+     run of results is what the score actually means, and it belongs against
+     the thing that produced it.
+     On a phone there is no rail, only a banner, and a twenty-team table in a
+     banner is what forced it out in the first place. So on phones it drops
+     below the season strip instead. One runtime decision, and .below-board
+     describes the phone case only. */
+  var tableHome = null, tableAnchor = null;
+  function placeTable() {
+    var panel = $("tablePanel");
+    if (!panel) return;
+    // Captured once, before any move, so a relocation cannot make this wrong.
+    if (!tableHome) { tableHome = panel.parentNode; tableAnchor = panel.nextElementSibling; }
+    var phone = (window.innerWidth || 360) <= 640;
+    var season = $("seasonPanel");
+    if (phone && season && season.parentNode) {
+      if (panel.previousElementSibling !== season) {
+        season.parentNode.insertBefore(panel, season.nextSibling);
+      }
+      panel.classList.add("below-board");
+    } else {
+      if (tableHome && panel.parentNode !== tableHome) tableHome.insertBefore(panel, tableAnchor);
+      panel.classList.remove("below-board");
+    }
+  }
+  placeTable();
+  window.addEventListener("resize", placeTable);
 
   /* Help starts closed on a phone. Its three rows became 44px each when the
      controls were sized for touch, which pushed the board 70px down the page

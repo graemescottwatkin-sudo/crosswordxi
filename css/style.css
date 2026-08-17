@@ -1080,10 +1080,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
     grid-column:1 / -1;grid-row:4;min-width:0;
     width:min(100%,var(--block-w,100%));justify-self:center;
   }
-  #seasonPanel{
-    grid-column:1 / -1;grid-row:5;min-width:0;
-    width:min(100%,var(--block-w,100%));justify-self:center;
-  }
+
 
   /* Turned on its side the banner becomes the rail: the three boxes stack. */
   .toolbar{justify-content:flex-start}
@@ -1100,9 +1097,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      a rule between them does the separating instead. */
   .tb-game,.tb-help{border-top:1px solid var(--line);padding-top:8px}
 
-  /* The table follows the board into the second column, still at the board's
-     width. .grid-panel is display:contents here, so it has to be placed. */
-  #tablePanel{
+  /* The season record follows the board into the second column, at the board's
+     width. .grid-panel is display:contents here, so it has to be placed.
+     This is the spot the league table used to occupy: the table has gone back
+     into the rail, and what sits under the crossword is the run of results the
+     score actually produced. */
+  #seasonPanel{
     grid-column:2;grid-row:3;justify-self:start;
     width:var(--board-w,100%);margin-top:2px;
   }
@@ -1126,7 +1126,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   /* Keep the clue lists on the same measure as the combined rail + board.
      They are still wide enough for two readable columns, but no longer create
      a full-viewport line that visually pulls the layout back toward the left. */
-  .clues,#seasonPanel{max-width:var(--block-w,100%)}
+  .clues{max-width:var(--block-w,100%)}
   .clues{gap:14px 46px}
 }
 
