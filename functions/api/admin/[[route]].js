@@ -180,6 +180,12 @@ export async function onRequest({ request, env, params }) {
       `SELECT r.theme_key, COUNT(*) AS n,
               MAX(r.created_at) AS latest,
               SUM(CASE WHEN r.status = 'open' THEN 1 ELSE 0 END) AS open_n,
+              MAX(r.status) AS status,
+              /* Delivered is computed, not stored: a request is answered when a
+                 board for that theme is out, and asking the schedule is always
+                 right where a flag written at release time can go stale. */
+              (SELECT COUNT(*) FROM theme_boards b
+                WHERE b.theme_id = r.theme_key AND b.release_on <= date('now')) AS live_boards,
               t.name AS existing
          FROM theme_requests r
          LEFT JOIN themes t ON t.id = r.theme_key
@@ -187,6 +193,24 @@ export async function onRequest({ request, env, params }) {
         ORDER BY n DESC, latest DESC
         LIMIT 200`).all();
     return json({ requests: rows.results || [] });
+  }
+
+  /* Mark a theme request done or declined. The queue is only useful if it can
+     be emptied: a tally of everything ever asked answers "what has been asked",
+     and what you want to read is "what should I write next". */
+  if (route === "theme-request-status" && request.method === "POST") {
+    let body;
+    try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
+    const key = String(body.key || "").toLowerCase().slice(0, 40);
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(key)) return bad("Name a theme.");
+    const status = ["open", "done", "declined"].indexOf(String(body.status)) === -1
+      ? null : String(body.status);
+    if (!status) return bad("Status must be open, done or declined.");
+    await env.DB.prepare(
+      `UPDATE theme_requests
+          SET status = ?, reviewed_at = CASE WHEN ? = 'open' THEN NULL ELSE datetime('now') END
+        WHERE theme_key = ?`).bind(status, status, key).run();
+    return json({ ok: true, key, status });
   }
 
   /* ---- Flagged clues ---- */

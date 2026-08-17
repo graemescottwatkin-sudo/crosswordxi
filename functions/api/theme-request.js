@@ -47,3 +47,26 @@ export async function onRequestPost({ request, env }) {
     .bind(newId(), key, user.id, note).run();
   return json({ ok: true });
 }
+
+/* DELETE /api/theme-request?key=everton — take it back.
+ *
+ * Asking was one tap and there was no way to undo it, which the interface made
+ * worse by then striking the theme off the list: a mis-tap became permanent and
+ * visibly so. Nobody else's request is touched — the delete matches on the
+ * signed-in person as well as the key, so this can only ever remove your own.
+ */
+export async function onRequestDelete({ request, env }) {
+  if (!csrfOk(request)) return bad("Missing request header.", 403);
+  if (!hasDB(env)) return bad("Not configured.", 503);
+  const user = await currentUser(request, env);
+  if (!user) return bad("Sign in first.", 401);
+
+  const url = new URL(request.url);
+  const key = String(url.searchParams.get("key") || "").toLowerCase().slice(0, 40);
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(key)) return bad("Name a theme.");
+
+  const res = await env.DB
+    .prepare("DELETE FROM theme_requests WHERE theme_key = ? AND requested_by = ?")
+    .bind(key, user.id).run();
+  return json({ ok: true, removed: (res.meta && res.meta.changes) || 0 });
+}

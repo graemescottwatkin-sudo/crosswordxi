@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v21a";
+  var BUILD = "v22";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1626,9 +1626,12 @@
   var account = null;              // null = guest
   var accountsAvailable = false;
 
-  function apiAuth(path, body) {
+  function apiAuth(path, body, method) {
     var opts = {
-      method: body ? "POST" : "GET",
+      /* An explicit method where one is given: withdrawing a request is a
+         DELETE, and inferring the verb from whether there is a body cannot
+         express that. */
+      method: method || (body ? "POST" : "GET"),
       headers: { "X-Crossword-XI": "1" },   // the CSRF check on the server
       credentials: "same-origin",
     };
@@ -2030,6 +2033,44 @@
       });
       adminMsg(lines.join("\n") + mine);
     }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* What people have asked for, most-wanted first, and a way to clear it down.
+     A tally of everything ever asked answers "what has been asked"; what is
+     worth reading is "what should I write next". */
+  on("adminThemeReqs", "click", function () {
+    apiAuth("/api/admin/theme-requests").then(function (d) {
+      var rows = d.requests || [];
+      if (!rows.length) { adminMsg("Nobody has requested a theme yet."); return; }
+      $("adminReportList").innerHTML = rows.map(function (r) {
+        var name = r.existing || String(r.theme_key).replace(/-/g, " ")
+          .replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
+        /* Delivered is read from the schedule rather than a stored flag: a
+           request is answered when a board for it is out, and asking the
+           schedule is always right where a flag set at release can go stale. */
+        var state = r.live_boards ? "delivered"
+          : r.status === "declined" ? "declined"
+          : r.status === "done" ? "done" : "open";
+        return '<div class="report-row' + (state === "open" ? "" : " done") + '">' +
+          '<div class="rr-body"><div class="rr-clue">' + escapeHtml(name) +
+          " \u00B7 " + r.n + " request" + (r.n === 1 ? "" : "s") + "</div>" +
+          '<div class="rr-id">' + escapeHtml(state) + "</div></div>" +
+          (state === "delivered" ? "" :
+            '<button class="rr-done" data-req="' + escapeHtml(r.theme_key) +
+            '" data-status="' + (state === "open" ? "done" : "open") + '">' +
+            (state === "open" ? "Mark done" : "Reopen") + "</button>") +
+          "</div>";
+      }).join("");
+      adminMsg(rows.length + " theme" + (rows.length === 1 ? "" : "s") + " requested");
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+  on("adminReportList", "click", function (e) {
+    var b = e.target.closest ? e.target.closest(".rr-done[data-req]") : null;
+    if (!b) return;
+    apiAuth("/api/admin/theme-request-status",
+            { key: b.getAttribute("data-req"), status: b.getAttribute("data-status") })
+      .then(function () { $("adminThemeReqs").click(); })
+      .catch(function (err) { adminMsg(String(err.message || err)); });
   });
 
   on("adminReports", "click", loadReports);
@@ -3298,6 +3339,42 @@
       }).join("");
   }
 
+  /* What this player has asked for, each with a way to take it back. */
+  function renderMyRequests(d) {
+    var box = $("themeMine");
+    if (!box) return;
+    var mine = (d && d.mine) || [];
+    if (!mine.length) { box.innerHTML = ""; return; }
+    var label = {};
+    ((d && d.options) || []).forEach(function (o) { label[o.key] = o.label; });
+    box.className = "theme-mine";
+    box.innerHTML = mine.map(function (k) {
+      /* A club with no board yet has no label from the server, so the key is
+         all there is: "aston-villa" reads as a database row, "Aston Villa"
+         reads as the thing the person asked for. */
+      var name = label[k] || k.replace(/-/g, " ")
+        .replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
+      return '<span class="mine-chip">' + escapeHtml(name) +
+        '<button class="mine-drop" data-key="' + escapeHtml(k) +
+        '" title="Remove this request" aria-label="Remove request for ' +
+        escapeHtml(name) + '">\u00D7</button></span>';
+    }).join("");
+  }
+
+  on("themeMine", "click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".mine-drop") : null;
+    if (!btn) return;
+    var key = btn.getAttribute("data-key");
+    apiAuth("/api/theme-request?key=" + encodeURIComponent(key), null, "DELETE")
+      .then(function () {
+        $("themeRequestMsg").textContent = "Request removed.";
+        /* Refetch rather than patch the DOM: the picklist strikes off what you
+           have asked for, so removing one has to put it back. */
+        loadThemes(true).then(function () { renderThemes(); }).catch(function () {});
+      })
+      .catch(function (err) { $("themeRequestMsg").textContent = String(err.message || err); });
+  });
+
   function renderThemes() {
     var box = $("themeAvailable"), next = $("themeUpcoming");
     if (!box) return;
@@ -3308,6 +3385,7 @@
          matters most — when there are none — was the one moment the list was
          empty and the button did nothing. */
       fillThemeRequestList(d);
+      renderMyRequests(d);
       if (!d.configured || !d.themes.length) {
         box.innerHTML = '<div class="sheet-empty">No themed boards yet.</div>';
         next.innerHTML = '<div class="sheet-empty">Nothing scheduled yet.</div>';

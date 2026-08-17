@@ -1,0 +1,104 @@
+name: checks
+
+# Why this exists
+# ---------------
+# Every layout claim made about this site during development was reasoned from
+# the stylesheet, because there was no browser to hand. That found the faults
+# a stylesheet can show and missed the ones only a rendered page can: a fixed
+# frame that pushed cells under the playable floor on a landscape tablet, a
+# stage sized from a value the board publishes, an orphaned rule that stopped
+# centring a button. All three reached a real device before anybody saw them.
+#
+# render_test.mjs measures the rendered page in real Chromium across sixteen
+# viewports and throws rather than reports. Running it here means it runs on
+# every push instead of when somebody remembers.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:        # so it can be run by hand after a data change
+
+jobs:
+  suites:
+    name: Test suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install jsdom
+        run: npm install -D jsdom --no-audit --no-fund
+
+      # The generator suite needs the clue bank, which is not in the repository.
+      # Skipped rather than failed: a suite that cannot run is not a suite that
+      # found something.
+      - name: Behaviour and layout
+        run: |
+          node frontend_test.mjs
+          node viewport_test.mjs
+          node save_test.mjs
+          node tabs_test.mjs
+          node themes_ui_test.mjs
+
+      - name: API
+        run: |
+          node functions_test.mjs
+          node status_test.mjs
+          node play_test.mjs
+          node blank_test.mjs
+          node circulation_test.mjs
+          node d1_test.mjs
+          node epoch_test.mjs
+          node auth_test.mjs
+          node admin_test.mjs
+          node themes_test.mjs
+
+      # node_modules must be gone for this one: it checks the package that
+      # would actually be uploaded.
+      - name: Pre-upload checklist
+        run: |
+          rm -rf node_modules package-lock.json package.json
+          node deploy_check.mjs
+
+  render:
+    name: Sixteen viewports, real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm install -D playwright wrangler wait-on --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      # The API has to answer or the board never loads and every measurement is
+      # of an empty page. wrangler pages dev serves the Functions locally
+      # against the development sample puzzles — no D1, no secrets, nothing that
+      # needs a token.
+      - name: Serve the site
+        run: |
+          npx wrangler pages dev . --port 8788 --log-level error &
+          npx wait-on http://127.0.0.1:8788 --timeout 90000
+
+      - name: Measure
+        env:
+          BASE: http://127.0.0.1:8788
+        run: node render_test.mjs
+
+      # A failure names the viewport and the measurement, which is usually
+      # enough to work from. The screenshots make it obvious.
+      - name: Keep the evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-failures
+          path: |
+            *.png
+            render-*.log
+          if-no-files-found: ignore

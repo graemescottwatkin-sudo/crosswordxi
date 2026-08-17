@@ -87,6 +87,12 @@ const server = http.createServer(async (req, res) => {
     if (id === "201" || (theme === "aston-villa" && no === 1)) return send(await boardFixture("aston-villa", 1, 201));
     return send({ error: "No such board." }, 404);
   }
+  if (url.pathname === "/api/theme-request" && req.method === "DELETE") {
+    const k = url.searchParams.get("key");
+    requested = requested.filter((x) => x !== k);
+    THEMES_FIXTURE.mine = THEMES_FIXTURE.mine.filter((x) => x !== k);
+    return send({ ok: true, removed: 1 });
+  }
   if (url.pathname === "/api/theme-request") {
     const chunks = [];
     for await (const c of req) chunks.push(c);
@@ -182,6 +188,7 @@ server.listen(0, "127.0.0.1", async () => {
   console.log("\nWith no boards imported yet");
   w.close();
   const emptyServer = THEMES_FIXTURE.themes;
+  const emptyOptions = THEMES_FIXTURE.options;
   THEMES_FIXTURE.themes = [];
   THEMES_FIXTURE.options = [];
   dom = await open();
@@ -197,6 +204,8 @@ server.listen(0, "127.0.0.1", async () => {
     return labels.some((l) => /Everton/.test(l)) && labels.some((l) => /Sunderland/.test(l));
   })());
   THEMES_FIXTURE.themes = emptyServer;
+  THEMES_FIXTURE.options = emptyOptions;      // restored too, or later checks
+                                              // see a server with no labels
   w.close();
   dom = await open();
   w = dom.window; $ = (id) => w.document.getElementById(id);
@@ -236,6 +245,25 @@ server.listen(0, "127.0.0.1", async () => {
     const villa = opts.find((o) => o.value === "aston-villa");   // seeded as requested
     return !!villa && villa.disabled && / requested$/.test(villa.textContent);
   })(), [...$("themeRequestKey").options].filter((o) => o.disabled).length + " struck off");
+
+  /* Asking was one tap and undoing it was impossible — and the list then struck
+     the theme off, so a mis-tap was permanent and visibly so. */
+  console.log("\nTaking a request back");
+  t("what you have asked for is listed", (() => {
+    const box = $("themeMine");
+    return !!box && /Aston Villa/.test(box.textContent);
+  })(), $("themeMine") && $("themeMine").textContent.trim().slice(0, 40));
+  t("each one has a control to remove it",
+    !!$("themeMine").querySelector('.mine-drop[data-key="aston-villa"]'));
+  $("themeMine").querySelector('.mine-drop[data-key="aston-villa"]')
+    .dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+  await wait(1200);
+  t("removing it says so", /removed/i.test($("themeRequestMsg").textContent),
+    $("themeRequestMsg").textContent.trim());
+  t("and the theme goes back on the list to be asked for again", (() => {
+    const villa = [...$("themeRequestKey").options].find((o) => o.value === "aston-villa");
+    return !!villa && !villa.disabled;
+  })());
 
   /* ---- opening a board ---- */
   console.log("\nPlaying a themed board");
