@@ -246,6 +246,21 @@ t("and below that the readings take their own line",
 t("help groups fall to full width on a narrow screen",
   /@media \(max-width:899px\)\{\.grid-panel > \.tb-help \.tb-row\{flex:1 1 100%\}/.test(flatCss));
 
+/* The boxes have their own strip now. Inside the clue card they shared a fixed
+   height with the sentence, so a long clue wrapped over them and the text had
+   to be scaled to fit — a measurement that then had to be retaken on every
+   zoom, rotate and keyboard open, and was not. Separating them removes the
+   competition rather than managing it. */
+t("the answer boxes are in a strip of their own, not inside the clue card", (() => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const card = html.slice(html.indexOf('class="now-clue"'), html.indexOf('class="bank-strip"'));
+  return html.indexOf('class="bank-strip"') > -1 && card.indexOf('id="letterBank"') === -1;
+})());
+t("and that strip is only as tall as the boxes need",
+  /\.bank-strip\{[^}]*min-height:calc\(var\(--bank-cell\) \+ 18px\)/.test(flatCss));
+t("the sentence now has the whole clue card",
+  /\.grid-panel > \.now-clue \.nc-clue\{flex:1 1 100%\}/.test(flatCss));
+
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");
 const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);

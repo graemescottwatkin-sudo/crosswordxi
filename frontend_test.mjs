@@ -1093,9 +1093,13 @@ server.listen(0, "127.0.0.1", async () => {
   t("there is no toolbar to relocate; the blocks sit in the column in order", (() => {
     const panel = d.querySelector(".grid-panel");
     const ids = [...panel.children].map((n) => n.id || n.className.split(" ").pop());
+    /* The answer boxes sit between the clue and the board now, in a strip of
+       their own: inside the clue card they shared a fixed height with the
+       sentence, and a long clue spilled over them. */
     return !$("toolbar") &&
       ids.indexOf("nowClue") === 0 &&
-      ids.indexOf("grid-wrap") === 1 &&
+      ids.indexOf("bank-strip") === 1 &&
+      ids.indexOf("grid-wrap") === 2 &&
       ids.indexOf("tb-game") > ids.indexOf("grid-wrap") &&
       ids.indexOf("tb-help") > ids.indexOf("tb-game") &&
       ids.indexOf("seasonPanel") > ids.indexOf("tb-help");

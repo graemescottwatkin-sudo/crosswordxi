@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v24">
+<link rel="stylesheet" href="css/style.css?v=v25">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -166,12 +166,21 @@
           <div class="nc-meta" id="ncMeta"></div>
           <div class="nc-text" id="ncText"></div>
         </div>
-        <div class="bank" id="letterBank"></div>
       </div>
       <button class="nc-arrow" id="nextClue" aria-label="Next clue">&#8250;</button>
       <!-- Flag a clue the moment you notice it. Hidden unless signed in. -->
       <button class="nc-flag" id="flagClue" title="Flag this clue" style="display:none">&#9873;</button>
     </div>
+    <!-- The answer boxes, in a box of their own. They used to sit inside the
+         clue strip, which is a fixed height, so the sentence and the boxes
+         competed for it: a long clue wrapped to four lines and spilled over
+         them, and scaling the text to fit was a measurement that had to be
+         retaken on every zoom and rotate. Given their own strip, the clue card
+         is sized for words alone and the boxes for boxes alone. -->
+    <div class="bank-strip">
+      <div class="bank" id="letterBank"></div>
+    </div>
+
     <div class="grid-wrap">
       <div class="pitch-bg" id="pitchBg" aria-hidden="true">
         <svg viewBox="0 0 1050 680" preserveAspectRatio="xMidYMid meet" focusable="false">
@@ -549,7 +558,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v24</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v25</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -560,8 +569,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v24"></script>
-<script src="js/engine.js?v=v24"></script>
-<script src="js/game.js?v=v24"></script>
+<script src="js/seasons.js?v=v25"></script>
+<script src="js/engine.js?v=v25"></script>
+<script src="js/game.js?v=v25"></script>
 </body>
 </html>

@@ -153,6 +153,7 @@ header{
 /* One column, one edge. Every block below the clue strip is capped to the
    board's published width so the page has a single measure rather than each
    element finding its own. */
+.grid-panel > .bank-strip,
 .grid-panel > .now-clue,
 .grid-panel > .tb-box,
 .grid-panel > .tb-table,
@@ -478,6 +479,11 @@ button.tb-label{
   flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;
   gap:2px 10px;
 }
+/* Nothing to make room for now, so the sentence gets the card. This is what
+   the reservation was taking: 390px of a strip capped to the board width, on
+   every clue whether the answer needed it or not. */
+.grid-panel > .now-clue .nc-main{flex-wrap:nowrap}
+.grid-panel > .now-clue .nc-clue{flex:1 1 100%}
 /* The slots are a fixed column, not whatever is left after the words. The
    board is bounded at 15 cells (MAX_DIM in engine.js), so the widest answer
    that can ever be placed is 15 letters with up to three enumeration gaps —
@@ -528,10 +534,19 @@ button.tb-label{
   color:var(--pitch);white-space:nowrap;flex:none;
 }
 .nc-text{font-size:16px;font-weight:500;color:var(--ink);flex:1 1 auto;min-width:0}
+/* Its own strip, the same width as everything else in the column and only as
+   tall as the boxes need. The clue card above is a fixed height because the
+   board must not jump between clues; the boxes have no such constraint, and
+   sharing that height was what forced the text to be scaled to fit. */
+.bank-strip{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:6px 9px;margin:0 auto 8px;box-sizing:border-box;
+  min-height:calc(var(--bank-cell) + 18px);
+}
 .bank{
   display:flex;gap:var(--bank-gap);flex-wrap:wrap;align-items:center;
-  justify-content:flex-start;
-  flex:0 0 var(--bank-w);width:var(--bank-w);
+  justify-content:center;flex:0 1 auto;width:auto;max-width:100%;
 }
 .bank-cell{
   width:var(--bank-cell);height:calc(var(--bank-cell) + 4px);
