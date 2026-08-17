@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# THE CLUE BANK MUST NEVER BE COMMITTED.
+# These files contain every question and answer. They are generated locally by
+# the scripts in tools/ and loaded straight into D1 with wrangler. If they ever
+# reach GitHub, the whole point of moving the bank server-side is lost — and
+# git history keeps them even after deletion.
+# ---------------------------------------------------------------------------
+data/clues-production.sql
+data/puzzles-production.sql
+data/*-production.sql
+# The themed build plan: every board with its answer list. It exists to be read
+# before import and must never be committed, for the same reason the generated
+# SQL must not be — it is the clue bank with the answers attached.
+data/themes-plan.json
+data/themes-review.html
+data/themes-review.csv
+
+# Preview builds inline the answers so they can run offline — the exact thing
+# moving the bank to D1 removed. Never commit one.
+crosswordxi-preview-*.html
+*.local.json
+
+# Cloudflare / wrangler
+.wrangler/
+.dev.vars
+wrangler.toml.local
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS and editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
+.idea/
+.vscode/
