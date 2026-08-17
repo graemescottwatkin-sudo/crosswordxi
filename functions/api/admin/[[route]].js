@@ -113,10 +113,20 @@ export async function onRequest({ request, env, params }) {
   if (route === "plays" && request.method === "GET") {
     const rows = await env.DB.prepare(
       `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs,
-              ended_at, theme_key
+              ended_at, theme_key, by_owner
          FROM plays ORDER BY started_at DESC LIMIT 2000`).all();
     const byDay = new Map();
+    /* The owner's own testing, counted separately. Twenty passes over a layout
+       is not twenty people, and while the site is being built most rows are
+       his — so the headline is visitors and his are reported alongside rather
+       than deleted, since they are still the only record of what was tried. */
+    let ownerPlays = 0, ownerFinished = 0;
     for (const r of rows.results || []) {
+      if (r.by_owner) {
+        ownerPlays++;
+        if (r.completed) ownerFinished++;
+        continue;
+      }
       /* Themed boards group by board, not into one heap. Which board gets
          played is the whole question: they are the ones passed between
          friends, so "Bolton #1 thirty times, #4 twice" is the answer worth
@@ -151,7 +161,7 @@ export async function onRequest({ request, env, params }) {
       medianSolvedWhenStopped: mid(d.stops),
       abandoned: d.stops.length,
     })).sort((a, b) => (b.dailyNo || 0) - (a.dailyNo || 0));
-    return json({ days });
+    return json({ ownerPlays, ownerFinished, days });
   }
 
   /* ---- Clear my own record ---- */
@@ -211,7 +221,17 @@ export async function onRequest({ request, env, params }) {
                   "Enumeration", "Era", "Difficulty", "Reason", "Puzzle",
                   "Flagged", "Status"];
     const lines = [head.map(esc).join(",")];
+    /* The owner's own testing, counted separately. Twenty passes over a layout
+       is not twenty people, and while the site is being built most rows are
+       his — so the headline is visitors and his are reported alongside rather
+       than deleted, since they are still the only record of what was tried. */
+    let ownerPlays = 0, ownerFinished = 0;
     for (const r of rows.results || []) {
+      if (r.by_owner) {
+        ownerPlays++;
+        if (r.completed) ownerFinished++;
+        continue;
+      }
       lines.push([r.id, r.clue_id, r.category, r.clue, r.answer, r.enumeration,
                   r.era, r.difficulty, r.reason, r.puzzle, r.created_at, r.status]
         .map(esc).join(","));

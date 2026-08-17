@@ -15,7 +15,7 @@
  */
 import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
-import { newId } from "../_lib/auth.js";
+import { newId, isAdmin} from "../_lib/auth.js";
 
 const int = (v, max = 100000) => {
   const n = Number(v);
@@ -47,6 +47,13 @@ export async function onRequestPost({ request, env }) {
     ? (/^[a-z0-9][a-z0-9-]{0,48}$/.test(String(body.themeKey || "")) ? body.themeKey : null)
     : null;
 
+  /* Was this the owner testing? Read from the session, never from the browser
+     — a flag the client could set is a flag anyone could set about anyone.
+     It records that one bit and nothing else: no email, no user id, and
+     nothing at all about any other player. */
+  let byOwner = 0;
+  try { byOwner = (await isAdmin(request, env)) ? 1 : 0; } catch (e) { byOwner = 0; }
+
   if (body.event === "start") {
     /* One row per play id. A retry, a double-fire on a flaky connection, or a
        refresh mid-puzzle must not become three plays. */
@@ -54,12 +61,12 @@ export async function onRequestPost({ request, env }) {
       .bind(playId).first();
     if (seen) return json({ ok: true, already: true });
     await env.DB.prepare(
-      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key)
-       VALUES (?,?,?,?,?,?,?)`)
+      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key, by_owner)
+       VALUES (?,?,?,?,?,?,?,?)`)
       .bind(newId(), playId, mode,
             body.dailyNo ? int(body.dailyNo, 100000) : null,
             body.phase === "season" ? "season" : "preseason",
-            int(body.total, 50), themeKey).run();
+            int(body.total, 50), themeKey, byOwner).run();
     return json({ ok: true });
   }
 

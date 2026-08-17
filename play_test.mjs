@@ -115,9 +115,14 @@ console.log("\nThemed boards are counted as themselves");
        against the shape a slug has — "man-united-3" and nothing else. */
     return /\^\[a-z0-9\]\[a-z0-9-\]\{0,48\}\$/.test(src);
   })());
-  t("a themed attempt carries no more about the person than any other",
-    !/user|account|device|ip\b/i.test(
-      src.slice(src.indexOf("const themeKey"), src.indexOf("if (body.event"))));
+  t("a themed attempt carries no more about the person than any other", (() => {
+    /* Comments stripped first. This failed once on its own explanation: the
+       comment beside the code says "no user id", and the check greps for
+       "user". Fifth time in this project — §5 of the handover. */
+    const code = src.slice(src.indexOf("const themeKey"), src.indexOf("if (body.event"))
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    return !/user|account|device|ip\b/i.test(code);
+  })());
   const client = fs.readFileSync("js/game.js", "utf8");
   t("the client sends the board it is actually on",
     /themeKey: mode === "theme" && themeWanted/.test(client));
@@ -127,6 +132,32 @@ console.log("\nThemed boards are counted as themselves");
   const mig = fs.readFileSync("data/migrations/008-plays-theme.sql", "utf8");
   t("the column is added by a migration, not assumed",
     /ALTER TABLE plays ADD COLUMN theme_key TEXT/.test(mig));
+}
+
+/* The owner's own testing, kept out of the visitor figures. Twenty passes over
+   a layout is not twenty people. */
+console.log("\nOwner attempts are siloed");
+{
+  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  t("the flag is set from the session, not from the browser", (() => {
+    /* A flag the client could send is a flag anyone could set about anyone. */
+    return /await isAdmin\(request, env\)/.test(src) && !/body\.byOwner|body\.owner/.test(src);
+  })());
+  t("it records one bit and nothing else about who played", (() => {
+    const insert = src.slice(src.indexOf("INSERT INTO plays"), src.indexOf("run();"));
+    return /by_owner/.test(insert) &&
+      !/email|user_id|users\./i.test(insert);
+  })());
+  t("a failure to read the session counts the play as a visitor's, not the owner's",
+    /catch \(e\) \{ byOwner = 0; \}/.test(src));
+  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  t("the funnel leaves owner attempts out of the per-board figures",
+    /if \(r\.by_owner\) \{[\s\S]{0,140}continue;/.test(admin));
+  t("and reports them separately rather than hiding them",
+    /ownerPlays, ownerFinished, days/.test(admin));
+  const mig = fs.readFileSync("data/migrations/008-plays-theme.sql", "utf8");
+  t("the column is added by the same migration",
+    /ALTER TABLE plays ADD COLUMN by_owner INTEGER DEFAULT 0/.test(mig));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

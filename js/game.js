@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v21";
+  var BUILD = "v21a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1992,7 +1992,15 @@
 
   on("adminPlays", "click", function () {
     apiAuth("/api/admin/plays").then(function (d) {
-      if (!d.days.length) { adminMsg("Nobody has played yet."); return; }
+      var mine = d.ownerPlays
+        ? "\n\nYour own testing: " + d.ownerPlays + " attempt" +
+          (d.ownerPlays === 1 ? "" : "s") + ", " + d.ownerFinished + " finished " +
+          "(kept out of the figures above)"
+        : "";
+      if (!d.days.length) {
+        adminMsg("No visitors have played yet." + mine);
+        return;
+      }
       $("adminReportList").innerHTML = "";
       var lines = d.days.slice(0, 20).map(function (x) {
         /* Themed boards read as their own name and number, because that is how
@@ -2020,7 +2028,7 @@
         }
         return out;
       });
-      adminMsg(lines.join("\n"));
+      adminMsg(lines.join("\n") + mine);
     }).catch(function (err) { adminMsg(String(err.message || err)); });
   });
 
