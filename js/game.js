@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v19b";
+  var BUILD = "v20";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1152,7 +1152,16 @@
        a new one loaded, because everything below is capped to this width.
        Height still follows the puzzle: it is the width the layout lines up
        against, and a fixed height would only add empty grass below. */
-    var size = Math.floor(Math.min(availW / MAX_COLS, availH / puzzle.height));
+    /* The fixed frame is a wide-screen idea, and so is the arithmetic behind
+       it. Dividing by MAX_COLS sizes the board for fourteen columns whether or
+       not this puzzle has fourteen — right when there is room for turf either
+       side, and wrong on a phone, where a ten-column puzzle came out with
+       cells a third smaller than the screen could carry. Below the breakpoint
+       the board is sized for the puzzle again, as it was.
+       The number matches the CSS gate: change one and change the other. */
+    var wideFrame = vw >= 900;
+    var frameCols = wideFrame ? Math.max(MAX_COLS, puzzle.width) : puzzle.width;
+    var size = Math.floor(Math.min(availW / frameCols, availH / puzzle.height));
     /* Cells stay 20–52px. Removing the sidebar freed a lot of width, and the
        temptation is to spend it on bigger cells — but a 64px cell on a 1920
        monitor reads as oversized rather than substantial. The width goes to the
@@ -1212,7 +1221,7 @@
     document.documentElement.style.setProperty("--bank-slots", Math.max(3, longest));
 
     var wrapPadX = boxPad(wrap).x;
-    var boardW = Math.round(MAX_COLS * size + wrapPadX);
+    var boardW = Math.round(frameCols * size + wrapPadX);
     document.documentElement.style.setProperty("--board-w", boardW + "px");
 
     var bar = $("toolbar"), stage = document.querySelector(".stage");

@@ -954,16 +954,18 @@ server.listen(0, "127.0.0.1", async () => {
        immediately after --cell changed — so it returned the previous size and
        the block landed a step behind. Selecting a clue re-ran it and the whole
        rail and board slid sideways inside a clue strip that had not moved.
-       The width is now built for MAX_COLS rather than this puzzle's width, so
-       the pitch is the same size whichever board is loaded — everything below
-       is capped to it, and a per-puzzle width moved the entire page. */
+       The width is built from frameCols, which is MAX_COLS on a wide screen —
+       so the pitch is the same size whichever board is loaded, and everything
+       below lines up with it. Below 900px it is the puzzle's own width again:
+       sizing a ten-column board for fourteen on a phone cost a third of the
+       cell size for turf there was no room to show. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     // Strip comments first: the comment explaining this fix mentions
     // offsetWidth, and matching prose rather than code fails on its own note.
     const fit = js.slice(js.indexOf("function fitCells"), js.indexOf("var lastCellSize"))
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     return !/offsetWidth/.test(fit) &&
-      /MAX_COLS \* size \+ wrapPadX/.test(fit) &&
+      /frameCols \* size \+ wrapPadX/.test(fit) &&
       /railW \+ pairGap \+ boardW/.test(fit);
   })());
   t("the same puzzle at the same size gives the same widths every time", (() => {

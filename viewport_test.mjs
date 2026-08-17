@@ -129,7 +129,7 @@ t("the rail + board tracks are centred inside the page", (() => {
     /* Derived from the cell size, not read back off the painted board — and
        from the widest board the generator builds, not this puzzle's width, so
        the pitch does not resize under the column that lines up with it. */
-    /MAX_COLS \* size \+ wrapPadX/.test(js);
+    /frameCols \* size \+ wrapPadX/.test(js);
 })());
 t("nothing that spans both columns can widen them", (() => {
   // min-width:0 stops a long clue or a long list item forcing a track wider.
@@ -238,6 +238,35 @@ t("a theme and its boards sit on one line",
   /\.theme-group\{[^}]*display:flex[^}]*align-items:center/.test(flatCss));
 t("and the number buttons stay at the touch target while being square",
   /\.theme-board\{[^}]*min-height:44px;min-width:44px/.test(flatCss));
+
+/* The fixed frame is a wide-screen arrangement, and the arithmetic behind it
+   has to be gated the same way the CSS is. It was not: dividing by MAX_COLS
+   sized every board for fourteen columns, so a ten-column puzzle on a phone
+   came out with cells a third smaller than the screen could carry. */
+t("the fixed frame is gated to the same width in the CSS and the maths", (() => {
+  const js = fs.readFileSync("js/game.js", "utf8");
+  const gate = /var wideFrame = vw >= (\d+)/.exec(js);
+  const css = /@media \(min-width:(\d+)px\)\{\.grid-wrap\{width:min\(100%,var\(--board-w/.exec(flatCss);
+  return gate && css && gate[1] === css[1];
+})(), (() => {
+  const js = fs.readFileSync("js/game.js", "utf8");
+  const g = /var wideFrame = vw >= (\d+)/.exec(js);
+  return g ? "maths gated at " + g[1] : "no gate found";
+})());
+t("and a narrow screen sizes the board for the puzzle, not the frame",
+  /frameCols = wideFrame \? Math\.max\(MAX_COLS, puzzle\.width\) : puzzle\.width/
+    .test(fs.readFileSync("js/game.js", "utf8")));
+
+/* Arrangements that only work with room: the game row and the help row were
+   both laid out for a wide screen and neither was gated, so a clock, a count
+   and four buttons sat on one unbreakable line at 390px. */
+t("the game row only refuses to wrap where there is room",
+  /@media \(min-width:900px\)\{\.grid-panel > \.tb-game \.tb-controls\{flex-wrap:nowrap\}/
+    .test(flatCss));
+t("and below that the readings take their own line",
+  /@media \(max-width:899px\)\{[\s\S]{0,400}\.tb-readouts\{flex:0 0 100%/.test(flatCss));
+t("help groups fall to full width on a narrow screen",
+  /@media \(max-width:899px\)\{\.grid-panel > \.tb-help \.tb-row\{flex:1 1 100%\}/.test(flatCss));
 
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");

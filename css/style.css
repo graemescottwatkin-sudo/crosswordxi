@@ -169,9 +169,15 @@ header{
    to get a different puzzle. */
 /* One row: the readings, then the four controls. The buttons give up their
    equal share so the clock and the count fit beside them — they were a
-   full-width panel of their own holding two short readings. */
+   full-width panel of their own holding two short readings.
+   nowrap only where there is room. On a 390px screen a clock, a count and four
+   buttons on one unbreakable line push past the edge, and nothing about the
+   arrangement is worth that. */
 .grid-panel > .tb-game .tb-controls{
-  display:flex;flex-wrap:nowrap;width:100%;align-items:center;gap:6px;
+  display:flex;flex-wrap:wrap;width:100%;align-items:center;gap:6px;
+}
+@media (min-width:900px){
+  .grid-panel > .tb-game .tb-controls{flex-wrap:nowrap}
 }
 .grid-panel > .tb-game .tb-controls .tb-readouts{
   flex:0 0 auto;gap:10px;margin-right:2px;padding-right:10px;
@@ -193,12 +199,32 @@ header{
 .tb-controls .tb-readouts .match-clock{font-size:22px;text-align:left}
 .tb-controls .tb-readouts .match-clock small{font-size:9px;letter-spacing:.1em}
 .tb-controls .tb-readouts .live-chip{font-size:12px;white-space:nowrap}
+@media (max-width:899px){
+  /* Readings on their own line, controls beneath. The dividing rule goes with
+     the side-by-side arrangement it was dividing. */
+  .grid-panel > .tb-game .tb-controls .tb-readouts{
+    flex:0 0 100%;border-right:none;padding-right:0;margin-right:0;
+    justify-content:flex-start;gap:14px;
+  }
+  .grid-panel > .tb-game .tb-controls .btn{flex:1 1 auto;min-width:84px}
+}
+@media (max-width:560px){
+  .grid-panel > .tb-game .tb-controls .btn{min-width:0;padding:0 6px;font-size:12.5px}
+  .tb-controls .tb-readouts .match-clock{font-size:19px}
+}
 
 /* Help on one row. Three labelled groups side by side rather than three rows
    stacked: the labels are what make "Check: Answer" and "Reveal: Answer"
-   different phrases, so they stay — they just sit beside their buttons now. */
+   different phrases, so they stay — they just sit beside their buttons now.
+   The groups wrap rather than overflow, so on a narrow screen this becomes two
+   or three rows again by itself, which is the right answer there: five buttons
+   and three labels do not fit across a phone at a readable size. */
 .grid-panel > .tb-help #helpRow{
   display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;width:100%;
+}
+@media (max-width:899px){
+  .grid-panel > .tb-help .tb-row{flex:1 1 100%}
+  .grid-panel > .tb-help .tb-row .btn{flex:1 1 0;min-width:0}
 }
 .grid-panel > .tb-help .tb-row{
   display:flex;align-items:center;gap:5px;margin:0;grid-template-columns:none;
@@ -217,6 +243,13 @@ header{
   display:grid;grid-template-columns:repeat(19,1fr);gap:3px;width:100%;
 }
 .grid-panel > #seasonPanel .game{width:auto;min-width:0;height:16px}
+@media (max-width:560px){
+  /* Nineteen tracks across 390px leaves each result about 17px, which still
+     reads as a run of colour. Shorter, so two rows do not take a third of the
+     screen. */
+  .grid-panel > #seasonPanel .season-games{gap:2px}
+  .grid-panel > #seasonPanel .game{height:12px}
+}
 
 /* The full lists, closed by default and opened when wanted. */
 .clues-block{width:100%;max-width:var(--board-w,100%);margin:8px auto 0}
