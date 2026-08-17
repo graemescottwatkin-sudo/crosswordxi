@@ -12,6 +12,8 @@ data/*-production.sql
 # before import and must never be committed, for the same reason the generated
 # SQL must not be — it is the clue bank with the answers attached.
 data/themes-plan.json
+data/themes-review.html
+data/themes-review.csv
 
 # Preview builds inline the answers so they can run offline — the exact thing
 # moving the bank to D1 removed. Never commit one.

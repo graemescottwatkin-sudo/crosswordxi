@@ -172,6 +172,10 @@ node save_test.mjs         # 13 — what may and may not overwrite a saved game
 node tabs_test.mjs         # 13 — more than one window open on the same game
 node themes_test.mjs      # 29 — the themed boards, the API and the release guard
 node themes_ui_test.mjs   # 19 — the Themed section in a browser
+
+# Themed boards: build them, then make them reviewable
+node tools/build_themes.js  --source ../crosswordxi-source --launch-on 2026-08-21
+node tools/review_themes.js --source ../crosswordxi-source
 node deploy_check.mjs      # 13 — the pre-upload checklist
 ```
 
