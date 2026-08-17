@@ -1511,28 +1511,38 @@ body.rotate-needed .rotate-prompt{
    Three panels: what can be played, what is coming, and how to ask for one.
    Boards are grouped by theme rather than listed by date, because people
    arrive looking for their club, not for last October. */
-.theme-group{border-bottom:1px solid var(--line);padding:9px 2px}
+/* Name and boards on one line. Stacked, every theme cost two rows and a
+   margin, so twelve themes filled the sheet and the schedule below it needed a
+   scroll to reach. The name is the label for the boxes beside it, not a
+   heading over a section. */
+.theme-group{
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--line);padding:5px 2px;
+}
 .theme-group:last-child{border-bottom:none}
 .theme-name{
   font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.02em;
-  color:var(--ink);margin-bottom:6px;
+  color:var(--ink);margin:0;flex:1 1 auto;min-width:0;
 }
 .theme-asked{
   font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--pitch);border:1px solid var(--pitch);
   border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:middle;
 }
-.theme-boards{display:flex;flex-wrap:wrap;gap:6px}
-/* 44px, and set with min-height rather than height: four rules elsewhere in
-   this stylesheet were silently overriding touch targets set the other way. */
+.theme-boards{display:flex;flex-wrap:wrap;gap:5px;flex:0 0 auto}
+/* Square-ish and sized to the number they hold, rather than a wide button with
+   "#1" adrift in the middle of it. Still 44px, and still set with min-height
+   rather than height: four rules elsewhere in this stylesheet were silently
+   overriding touch targets set the other way. */
 .theme-board{
   background:var(--card);border:1px solid var(--line);border-radius:6px;
   color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px;
-  min-height:44px;padding:0 14px;cursor:pointer;
+  min-height:44px;min-width:44px;padding:0 6px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 .theme-board:hover{border-color:var(--pitch);color:var(--pitch)}
-.theme-board.played{border-left:4px solid var(--pitch)}
-.theme-board .tb-score{font-size:11px;color:var(--ink-faint);margin-left:6px}
+.theme-board.played{border-color:var(--pitch);box-shadow:inset 3px 0 0 var(--pitch)}
+.theme-board .tb-score{font-size:10px;color:var(--ink-faint);margin-left:4px}
 .theme-next{
   display:flex;justify-content:space-between;gap:10px;
   border-bottom:1px solid var(--line);padding:8px 2px;font-size:13px;

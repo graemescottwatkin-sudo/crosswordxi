@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v18";
+  var BUILD = "v18b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3238,14 +3238,35 @@
     return out;
   }
 
+  /* Every theme that exists, plus every club the game already knows about, so
+     a supporter can ask for their club before it has a board. */
+  function fillThemeRequestList(d) {
+    var sel = $("themeRequestKey");
+    if (!sel || sel.options.length) return;
+    var seen = {};
+    var opts = ((d && d.options) || []).map(function (o) { seen[o.label] = 1; return o; });
+    CLUBS.concat(EFL_CLUBS).sort().forEach(function (c) {
+      if (!seen[c]) opts.push({ key: slug(c), label: c });
+    });
+    sel.innerHTML = '<option value="">Choose a theme\u2026</option>' +
+      opts.map(function (o) {
+        return '<option value="' + escapeHtml(o.key) + '">' + escapeHtml(o.label) + "</option>";
+      }).join("");
+  }
+
   function renderThemes() {
     var box = $("themeAvailable"), next = $("themeUpcoming");
     if (!box) return;
     box.innerHTML = '<div class="sheet-empty">Loading\u2026</div>';
     loadThemes().then(function (d) {
+      /* Filled first, and whatever else is on screen. It sat inside the branch
+         that runs only when boards exist, so the moment asking for a theme
+         matters most — when there are none — was the one moment the list was
+         empty and the button did nothing. */
+      fillThemeRequestList(d);
       if (!d.configured || !d.themes.length) {
         box.innerHTML = '<div class="sheet-empty">No themed boards yet.</div>';
-        next.innerHTML = "";
+        next.innerHTML = '<div class="sheet-empty">Nothing scheduled yet.</div>';
         return;
       }
       var done = themeResults();
@@ -3278,20 +3299,7 @@
           }).join("")
         : '<div class="sheet-empty">Nothing scheduled yet.</div>';
 
-      var sel = $("themeRequestKey");
-      if (sel && !sel.options.length) {
-        /* Every theme that exists, plus every club the game already knows
-           about, so a supporter can ask for a club before it has a board. */
-        var seen = {};
-        var opts = d.options.map(function (o) { seen[o.label] = 1; return o; });
-        CLUBS.concat(EFL_CLUBS).sort().forEach(function (c) {
-          if (!seen[c]) opts.push({ key: slug(c), label: c });
-        });
-        sel.innerHTML = '<option value="">Choose a theme\u2026</option>' +
-          opts.map(function (o) {
-            return '<option value="' + escapeHtml(o.key) + '">' + escapeHtml(o.label) + "</option>";
-          }).join("");
-      }
+
     }).catch(function () {
       box.innerHTML = '<div class="sheet-empty">Could not load the themed boards.</div>';
     });

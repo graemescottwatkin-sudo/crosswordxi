@@ -230,6 +230,15 @@ t("button layout rules reach the column the buttons actually live in", (() => {
 t("and the icon button centres its glyph on both axes",
   /\.icon-btn\{[^}]*align-items:center[^}]*justify-content:center/.test(flatCss));
 
+/* Twelve themes stacked as heading-then-boxes filled the sheet and pushed the
+   schedule below it out of reach. Name and boards share a line, and the number
+   buttons are sized to the number rather than being wide buttons with "#1"
+   adrift in them — without dropping below the 44px target. */
+t("a theme and its boards sit on one line",
+  /\.theme-group\{[^}]*display:flex[^}]*align-items:center/.test(flatCss));
+t("and the number buttons stay at the touch target while being square",
+  /\.theme-board\{[^}]*min-height:44px;min-width:44px/.test(flatCss));
+
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");
 const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);

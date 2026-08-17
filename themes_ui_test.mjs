@@ -176,6 +176,33 @@ server.listen(0, "127.0.0.1", async () => {
   t("clubs with no board yet can still be asked for",
     [...$("themeRequestKey").options].some((o) => /Everton/.test(o.textContent)));
 
+  /* The one moment asking for a theme matters most is when there are none —
+     and that was the one moment the list was empty, because it was filled
+     inside the branch that only runs when boards exist. */
+  console.log("\nWith no boards imported yet");
+  w.close();
+  const emptyServer = THEMES_FIXTURE.themes;
+  THEMES_FIXTURE.themes = [];
+  THEMES_FIXTURE.options = [];
+  dom = await open();
+  w = dom.window; $ = (id) => w.document.getElementById(id);
+  $("homeThemed").click();
+  await wait(1200);
+  t("the section says so plainly", /No themed boards yet/.test($("themeAvailable").textContent));
+  t("and the request list is still filled, so a club can be asked for",
+    $("themeRequestKey").options.length > 5,
+    $("themeRequestKey").options.length + " options");
+  t("including clubs that have no board", (() => {
+    const labels = [...$("themeRequestKey").options].map((o) => o.textContent);
+    return labels.some((l) => /Everton/.test(l)) && labels.some((l) => /Sunderland/.test(l));
+  })());
+  THEMES_FIXTURE.themes = emptyServer;
+  w.close();
+  dom = await open();
+  w = dom.window; $ = (id) => w.document.getElementById(id);
+  $("homeThemed").click();
+  await wait(1200);
+
   /* ---- opening a board ---- */
   console.log("\nPlaying a themed board");
   $("themeAvailable").querySelector('[data-theme="man-united"][data-no="2"]').click();
