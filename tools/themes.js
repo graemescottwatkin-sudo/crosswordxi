@@ -71,7 +71,14 @@ const THEMES = [
        the categories are derived by keyword rather than carried in the data.
        At two, Managers and Famous Goals ran out after four boards and the
        fifth could not be built from material that was plainly there. */
-    familyCap: 3 },
+    familyCap: 3,
+    /* Its remaining boards take the earliest Fridays that still keep four
+       weeks between them, rather than waiting for their turn in the round.
+       The general ordering — every theme's second board before any theme's
+       third — is right for a programme meant to last a year, and wrong for a
+       four-board set written for one supporter: it put #3 in January and #4 in
+       April. */
+    priority: true },
 
   { id: "leicester", name: "Leicester City", kind: CLUB,
     keys: ["leicester", "king power", "filbert street", "foxes"],

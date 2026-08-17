@@ -162,14 +162,15 @@ if (hasPlan) {
      City. Two of a theme arriving together is a back catalogue, not a repeat —
      which is why the four-week rule below exempts them. */
   const WANT = { "man-united": 2, liverpool: 2, arsenal: 2, chelsea: 1, spurs: 1,
-                 "man-city": 1, grounds: 1, nicknames: 1, "premier-league": 1 };
+                 "man-city": 1, grounds: 1, nicknames: 1, "premier-league": 1,
+                 bolton: 2 };
   const got = {};
   launch.forEach((b) => { got[b.theme] = (got[b.theme] || 0) + 1; });
   t("the launch batch is the weighting asked for",
     Object.entries(WANT).every(([k, n]) => got[k] === n) &&
     Object.keys(got).length === Object.keys(WANT).length,
     JSON.stringify(got));
-  t("a dozen boards are ready for launch day", launch.length === 12, launch.length + " boards");
+  t("fourteen boards are ready for launch day", launch.length === 14, launch.length + " boards");
   /* Somebody who supports none of the big six has to have something to open
      on day one, or the section is not for them. */
   /* Somebody who supports none of the big six has to have something to open

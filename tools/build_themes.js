@@ -203,6 +203,10 @@ const LAUNCH_SPEC = [
      least big-six board in the set — eleven different clubs, none of them a
      big six, from Craven Cottage to Burnden Park. */
   ["grounds", 1], ["nicknames", 1], ["premier-league", 1],
+  /* Two Bolton boards on the shelf from the start. The other two follow on
+     their Fridays — a theme with four boards and nothing to wait for is an
+     archive rather than a series. */
+  ["bolton", 2],
 ];
 const first = [], rest = [];
 const quota = {};
@@ -237,6 +241,21 @@ for (let n = 2; n <= maxNo; n++) {
    one board has nothing else to wait for. */
 const leftoverFirsts = rest.filter((b) => b.no === 1);
 weekly.unshift(...leftoverFirsts);
+
+/* Priority themes take the earliest slots that still keep four weeks between
+   their own boards. Four weeks is the gap the whole programme holds to, so
+   this brings a theme forward without making it repeat sooner than any other.
+   Slot 4 is the fifth Friday, which is 28 days after launch. */
+const SPACING = 4;
+for (const t of THEMES.filter((x) => x.priority)) {
+  const mine = weekly.filter((b) => b.theme.id === t.id);
+  if (!mine.length) continue;
+  mine.forEach((b) => weekly.splice(weekly.indexOf(b), 1));
+  mine.sort((a, b) => a.no - b.no).forEach((b, i) => {
+    const at = Math.min((i + 1) * SPACING - 1, weekly.length);
+    weekly.splice(at, 0, b);
+  });
+}
 
 /* Fridays, with room for a burst.
  *
