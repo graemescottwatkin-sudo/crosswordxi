@@ -1315,6 +1315,21 @@ var FCW = (function () {
   }
   /* Career summary in football language. Derived only from stored results —
      nothing is assumed about days that were never played. */
+  /* Which record a result belongs to. Friendlies are played, scored and kept,
+     but they are their own competition: a pre-season streak is a real thing to
+     build, and it ending on Matchday 1 is the point rather than a loss. */
+  function resultPhase(rec) {
+    if (rec && rec.phase) return rec.phase;
+    return dailyPhase(rec && rec.dailyNo).phase;   // older records predate the field
+  }
+  function splitByPhase(records) {
+    var pre = [], season = [];
+    (records || []).forEach(function (x) {
+      (resultPhase(x) === "preseason" ? pre : season).push(x);
+    });
+    return { preseason: pre, season: season };
+  }
+
   function seasonStats(records, todayNo) {
     var r = records || [];
     var n = r.length;
@@ -1523,6 +1538,8 @@ var FCW = (function () {
     DAILY_EPOCH: DAILY_EPOCH,
     PRESEASON_DAYS: PRESEASON_DAYS,
     dailyPhase: dailyPhase,
+    resultPhase: resultPhase,
+    splitByPhase: splitByPhase,
     dailyNumber: dailyNumber,
     dailySeed: dailySeed,
     DAILY_LOOKBACK: DAILY_LOOKBACK,

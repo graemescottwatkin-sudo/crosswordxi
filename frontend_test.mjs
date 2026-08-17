@@ -394,6 +394,19 @@ server.listen(0, "127.0.0.1", async () => {
       /barAbove \? h\("\.toolbar"\) : 0/.test(js);
   })());
 
+  t("signing in during pre-season explains why nothing carried over", (() => {
+    /* Friendlies are played and scored but not recorded, so there is genuinely
+       nothing to migrate. Saying nothing reads as a failure to a player who has
+       just finished a puzzle. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /pre-season friendlies/.test(js) && /Matchday 1/.test(js) &&
+      /No results on this device to carry over/.test(js);
+  })());
+  t("the provider is named properly, not in lower case", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /provider\.charAt\(0\)\.toUpperCase\(\)/.test(js);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS
@@ -428,12 +441,30 @@ server.listen(0, "127.0.0.1", async () => {
       b.label === "Pre-season friendly #28" && b.counts === false &&
       c.label === "Matchday 1" && c.counts === true;
   })(), w.FCW.dailyPhase(29).label);
-  t("a friendly is not added to the record", (() => {
-    /* Played and scored exactly as normal — it simply does not count, so a bug
-       found in the opening weeks cannot spoil anybody's streak. */
+  t("a friendly is recorded, but to its own record", (() => {
+    /* Was: friendlies were discarded. A friendly is still a match, and a
+       pre-season streak is a real thing to build — what matters is that the
+       season table starts empty for everyone on Matchday 1, not that August
+       is thrown away. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const rec = js.slice(js.indexOf("function recordDaily"), js.indexOf("function recordDaily") + 700);
-    return /if \(!FCW\.dailyPhase\(dailyNo\)\.counts\)/.test(rec) && /return loadResults\(\)/.test(rec);
+    const rec = js.slice(js.indexOf("function recordDaily"), js.indexOf("function recordDaily") + 900);
+    return /phase: phase\.phase/.test(js) && !/return loadResults\(\);/.test(rec);
+  })());
+  t("the two records never mix", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /FCW\.splitByPhase/.test(js) && /function phaseResults/.test(js);
+  })());
+  t("older results without a phase are still placed correctly", (() => {
+    // Records written before the field existed fall back to their daily number.
+    return w.FCW.resultPhase({ dailyNo: 5 }) === "preseason" &&
+      w.FCW.resultPhase({ dailyNo: 40 }) === "season" &&
+      w.FCW.resultPhase({ dailyNo: 5, phase: "season" }) === "season";
+  })());
+  t("the friendlies stay visible once the season starts", (() => {
+    /* A run built through August vanishing on Matchday 1 would read as a bug,
+       however correct the season table is. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return !!d.getElementById("statsPreNote") && /Pre-season: /.test(js);
   })());
   t("the header says which phase it is, not a raw number", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

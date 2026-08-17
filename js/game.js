@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08k";
+  var BUILD = "v08m";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1389,7 +1389,9 @@
     var sub = $("acctSub");
     if (sub) {
       sub.textContent = account
-        ? "Signed in" + (account.provider ? " with " + account.provider : "")
+        ? "Signed in" + (account.provider
+            ? " with " + account.provider.charAt(0).toUpperCase() + account.provider.slice(1)
+            : "")
         : "Playing as a guest on this device";
     }
     if ($("acctSignedIn")) $("acctSignedIn").style.display = account ? "" : "none";
@@ -1416,9 +1418,19 @@
        player is signed in, and the local copy is still on the device. */
     apiAuth("/api/account/migrate", guestPayload()).then(function (m) {
       var note = $("acctMigrated");
-      if (note && m.added) {
+      if (!note) return;
+      if (m.added) {
         note.textContent = m.added + (m.added === 1 ? " result" : " results") +
           " from this device saved to your account.";
+      } else if (!FCW.dailyPhase(FCW.dailyNumber()).counts) {
+        /* Silence here reads as a failure. During pre-season there is genuinely
+           nothing to carry across — friendlies are played and scored but not
+           recorded — and a player who has just finished a puzzle deserves to be
+           told that rather than left wondering. */
+        note.textContent = "Nothing to carry over yet \u2014 pre-season friendlies " +
+          "are not recorded. Your record starts on Matchday 1.";
+      } else {
+        note.textContent = "No results on this device to carry over.";
       }
     }).catch(function () {});
   }
@@ -1899,18 +1911,18 @@
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
   function recordDaily(pos, score, res) {
-    /* Friendlies are not recorded. Four weeks of pre-season exist so the opening
-       bugs cannot spoil anyone's streak, and so the season starts clean for
-       everybody on the same day. The puzzle is played and scored exactly as
-       normal; it simply does not go on the record. */
-    if (!FCW.dailyPhase(dailyNo).counts) {
+    /* Friendlies are recorded, but to their own record. A pre-season streak is
+       a real thing to build, and it ending on Matchday 1 is the point rather
+       than a loss — the season table starts empty for everyone on the same day
+       whatever anyone did in August. */
+    var phase = FCW.dailyPhase(dailyNo);
+    if (!phase.counts) {
       var note = $("rClockNote");
       if (note) {
-        note.textContent = "Pre-season friendly \u2014 not added to your record. " +
-          "The season starts on Matchday 1, 13 September.";
+        note.textContent = "Pre-season friendly \u2014 kept in your pre-season record. " +
+          "The season table starts on Matchday 1, 13 September.";
         note.style.display = "";
       }
-      return loadResults();
     }
     var list = loadResults();
     // A Daily is recorded once; a later replay never overwrites the original.
@@ -1928,6 +1940,7 @@
     }
     list.push(FCW.makeResultRecord({
       date: FCW.localDateKey(), dailyNo: dailyNo, seed: seed,
+      phase: phase.phase,
       bankVersion: FCW.QUESTION_BANK_VERSION,
       club: club, season: season ? season.season : null,
       score: score, position: pos,
@@ -1967,22 +1980,48 @@
       ", and today's is #" + todayNo + ".";
     el.style.display = "";
   }
+  /* The record for the phase being played. During pre-season that is the
+     friendly record; from Matchday 1 it is the season, and the friendlies sit
+     behind it as their own line rather than being folded in or thrown away. */
+  function phaseResults() {
+    var split = FCW.splitByPhase(loadResults());
+    return FCW.dailyPhase(dailyNo).counts ? split.season : split.preseason;
+  }
   function renderStreak() {
-    var st = FCW.seasonStats(loadResults(), dailyNo);
+    var st = FCW.seasonStats(phaseResults(), dailyNo);
+    var pre = !FCW.dailyPhase(dailyNo).counts;
     $("streakLine").textContent = st.played
-      ? "Current run " + st.currentStreak + " \u00B7 best " + st.longestStreak +
-        " \u00B7 " + st.played + " played"
+      ? (pre ? "Pre-season run " : "Current run ") + st.currentStreak +
+        " \u00B7 best " + st.longestStreak + " \u00B7 " + st.played + " played"
       : "";
   }
 
   /* ---------- My Season ---------- */
   function fmtClock(sec) { return fmt(sec || 0); }
   function renderStats() {
-    var results = loadResults();
+    var split = FCW.splitByPhase(loadResults());
+    var inSeason = FCW.dailyPhase(dailyNo).counts;
+    var results = inSeason ? split.season : split.preseason;
     var st = FCW.seasonStats(results, dailyNo);
+    var label = inSeason ? "Daily" : "pre-season";
     $("statsSub").textContent = st.played
-      ? st.played + " Daily " + (st.played === 1 ? "puzzle" : "puzzles") + " completed"
-      : "Your record on this device";
+      ? st.played + " " + label + " " + (st.played === 1 ? "puzzle" : "puzzles") + " completed"
+      : (inSeason ? "Your record on this device" : "Your pre-season record");
+    /* Once the season starts, the friendlies stay visible as their own line.
+       Building a run through August and then seeing it vanish would read as a
+       bug, however correct the season table is. */
+    var preNote = $("statsPreNote");
+    if (preNote) {
+      if (inSeason && split.preseason.length) {
+        var ps = FCW.seasonStats(split.preseason, FCW.PRESEASON_DAYS);
+        preNote.textContent = "Pre-season: " + split.preseason.length +
+          " played \u00B7 best run " + ps.longestStreak +
+          (ps.bestScore !== null ? " \u00B7 best score " + ps.bestScore : "");
+        preNote.style.display = "";
+      } else {
+        preNote.style.display = "none";
+      }
+    }
     var cells = [
       ["Current run", st.currentStreak],
       ["Best run", st.longestStreak],
