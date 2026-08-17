@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT,                    -- may be absent or a relay address
   display_name  TEXT NOT NULL,
   club          TEXT,                    -- the club the league table plays as
+  -- Set by hand in the database only. Nothing the browser can reach writes it,
+  -- and there is no endpoint that grants it: an account cannot promote itself.
+  is_admin      INTEGER DEFAULT 0,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -125,3 +128,16 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_results_daily ON results (user_id, daily_no)
   WHERE mode = 'daily' AND daily_no IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_results_user ON results (user_id, played_on);
+
+
+-- Clues flagged while playing. Spotting a bad clue mid-game and having to
+-- remember it until later is how bad clues survive.
+CREATE TABLE IF NOT EXISTS clue_reports (
+  id          TEXT PRIMARY KEY,
+  clue_id     TEXT NOT NULL,
+  reported_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  reason      TEXT,
+  puzzle      TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_reports_clue ON clue_reports (clue_id);

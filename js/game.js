@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08q";
+  var BUILD = "v09a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -482,6 +482,7 @@
       // the server refuses it, and today's daily is the right thing to open.
       return api("/api/daily");
     }
+    if (adminDay) return api("/api/admin/daily?n=" + adminDay);
     if (mode === "daily") return api("/api/daily");
     var qs = [];
     var cat = practiceCategory();
@@ -1453,9 +1454,22 @@
     return { club: club || null, results: Array.isArray(results) ? results : [] };
   }
 
+  function refreshAdmin() {
+    renderFlag();
+    fetch("/api/admin/whoami", { headers: { "X-Crossword-XI": "1" }, credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        isAdmin = !!d.admin;
+        var btn = $("adminToggle");
+        if (btn) btn.style.display = isAdmin ? "" : "none";
+      })
+      .catch(function () {});
+  }
+
   function afterSignIn(res) {
     account = res.user;
     renderAccount();
+    refreshAdmin();
     /* Carry the guest's history over once. Failure here is not fatal: the
        player is signed in, and the local copy is still on the device. */
     apiAuth("/api/account/migrate", guestPayload()).then(function (m) {
@@ -1517,7 +1531,8 @@
   on("acctClose", "click", function () { $("accountSheet").classList.remove("show"); });
   on("acctSignOut", "click", function () {
     apiAuth("/api/auth/signout", {}).then(function () {
-      account = null; renderAccount();
+      account = null; isAdmin = false;
+      renderAccount(); refreshAdmin();
     }).catch(function () {});
   });
   on("acctSave", "click", function () {
@@ -1532,7 +1547,104 @@
     accountsAvailable = r.googleClientId || false;
     account = r.user || null;
     renderAccount();
+    refreshAdmin();
   }).catch(function () { renderAccount(); });
+
+  /* ---------- Owner tools ----------
+     Shown only when the server says this account is an admin. That is
+     convenience, not security: every route behind the panel re-checks the flag
+     on the server, on every request, because a hidden button is not a lock and
+     anyone can conjure one up from a console. */
+  var isAdmin = false;
+  var adminDay = null;          // set only while the owner previews another day
+
+  function adminMsg(text) {
+    var el = $("adminMsg");
+    if (el) el.textContent = text || "";
+  }
+
+  function renderAdmin() {
+    apiAuth("/api/admin/summary").then(function (d) {
+      var rows = [
+        statusRow("Today", "#" + d.today + " \u00B7 " + FCW.dailyPhase(d.today).label),
+        statusRow("Accounts", d.users),
+        statusRow("Results stored", d.results),
+        statusRow("Mine", d.myResults),
+        statusRow("Flagged clues", d.reports, d.reports ? null : true),
+        statusRow("Clues", d.clues),
+        statusRow("Dailies", d.dailies + " (to #" + d.lastDay + ")"),
+      ];
+      $("adminBody").innerHTML = rows.join("");
+      $("adminSub").textContent = "Signed in as the owner";
+    }).catch(function (err) {
+      $("adminSub").textContent = String(err.message || err);
+    });
+  }
+
+  on("adminToggle", "click", function () {
+    $("adminSheet").classList.add("show");
+    adminMsg("");
+    renderAdmin();
+  });
+  on("adminClose", "click", function () { $("adminSheet").classList.remove("show"); });
+
+  /* Play any day, locally. The Matchday 1 changeover cannot otherwise be seen
+     until September, which is a long time to wait to find out it is wrong. */
+  on("adminGo", "click", function () {
+    var n = parseInt(($("adminDay") || {}).value, 10);
+    if (!n || n < 1) { adminMsg("Give a day number."); return; }
+    mode = "daily";
+    dailyNo = n;
+    $("adminSheet").classList.remove("show");
+    /* A daily token returns today's puzzle by design — the server refuses to
+       serve another day, and that guard is what stops anyone reading tomorrow's
+       answers. So this goes through an admin-only route instead of weakening
+       it. */
+    adminDay = n;
+    buildPuzzle(null).then(function () {
+      adminDay = null;
+      toast("Playing day " + n, FCW.dailyPhase(n).label + " \u2014 reload to return to today.");
+    }).catch(function (err) {
+      toast("Could not load that day", String(err.message || err), "loss");
+    });
+  });
+
+  on("adminReset", "click", function () {
+    apiAuth("/api/admin/reset-my-record", {}).then(function () {
+      try { localStorage.removeItem(RESULTS_KEY); } catch (e) {}
+      adminMsg("Record cleared, here and on the account.");
+      renderStreak(); renderAdmin();
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  on("adminReports", "click", function () {
+    apiAuth("/api/admin/reports").then(function (d) {
+      if (!d.reports.length) { adminMsg("Nothing flagged."); return; }
+      var lines = d.reports.slice(0, 12).map(function (r) {
+        return r.clue_id + "  " + (r.clue || "(clue not found)").slice(0, 44) +
+          " \u2192 " + (r.answer || "?");
+      });
+      adminMsg(d.reports.length + " flagged:\n" + lines.join("\n"));
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* Flag a clue while playing. Open to any signed-in player: whoever notices a
+     bad clue is whoever happens to be looking at it. */
+  function renderFlag() {
+    var btn = $("flagClue");
+    if (btn) btn.style.display = account ? "" : "none";
+  }
+  on("flagClue", "click", function () {
+    if (!puzzle || !account) return;
+    var row = puzzle.entries[cur.entry].row;
+    apiAuth("/api/report-clue", { clueId: row.id, puzzle: puzzleToken })
+      .then(function (r) {
+        $("flagClue").classList.add("done");
+        toast(r.already ? "Already flagged" : "Clue flagged",
+              row.id + " \u2014 noted for review.");
+      })
+      .catch(function (err) { toast("Could not flag it", String(err.message || err), "loss"); });
+  });
 
   /* ---------- What's live ----------
      The badge says which frontend is running. This says which data — the

@@ -1235,3 +1235,21 @@ body.rotate-needed .rotate-prompt{
     min-height:32px;padding:0 2px;
   }
 }
+
+
+/* ============ OWNER TOOLS ============ */
+.admin-group{
+  border-top:1px solid var(--line);padding-top:12px;margin-bottom:14px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.admin-group .btn{width:100%}
+#adminDay{font-family:var(--disp);font-size:16px}
+
+/* The flag sits with the clue arrows, quieter than either — it is used rarely
+   and must never be mistaken for the next-clue button. */
+.nc-flag{
+  background:none;border:none;color:var(--ink-faint);font-size:15px;
+  min-height:44px;min-width:34px;cursor:pointer;flex:none;
+}
+.nc-flag:hover{color:var(--wrong)}
+.nc-flag.done{color:var(--pitch)}
