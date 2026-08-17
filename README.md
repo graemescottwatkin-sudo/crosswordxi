@@ -169,6 +169,9 @@ node d1_test.mjs           # 16 — database semantics against production row id
 node frontend_test.mjs     # 39 — the real game against the real API, and layout
 node viewport_test.mjs     # 11 — overflow, keyboard fit, breakpoint cascade
 node save_test.mjs         # 13 — what may and may not overwrite a saved game
+node tabs_test.mjs         # 13 — more than one window open on the same game
+node themes_test.mjs      # 29 — the themed boards, the API and the release guard
+node themes_ui_test.mjs   # 19 — the Themed section in a browser
 node deploy_check.mjs      # 13 — the pre-upload checklist
 ```
 
@@ -182,6 +185,25 @@ works against sample data and fails once deployed.
 
 `frontend_test.mjs` serves the site and the real Functions over HTTP, loads the
 page, plays it, and asserts the clue bank is nowhere in the browser.
+
+`themes_test.mjs` checks the generated boards against the invariants the
+generator is trusted to hold, and the API against a stub that runs enough SQL
+to tell a released board from an unreleased one. The release guard is the part
+worth proving: without it, check-answer would read answers out of a board
+scheduled six weeks away.
+
+`themes_ui_test.mjs` drives the section a player touches: the three panels, the
+request marker, the readable share link and the third save slot. It serves the
+themed endpoints from fixtures, because those need a database — the API's own
+half is `themes_test.mjs`. The fixture is a real puzzle borrowed from the
+practice sample data, not a hand-made stub: the first attempt used a stub and
+it drove the grid straight into a TypeError.
+
+`tabs_test.mjs` covers the case where several windows are open on the same
+origin. Note what it cannot do: jsdom gives each window its own storage and
+delivers no events between them, so the harness bridges two windows by hand.
+That exercises the handler, not the browser's event delivery — the real thing
+still needs two tabs and a person.
 
 `save_test.mjs` seeds a game in progress into storage *before* the page loads,
 which the other suites cannot do, and then tries to destroy it. It opens a fresh

@@ -126,7 +126,12 @@
      "solved in 4 minutes across six pauses spread over two hours" when there is
      a leaderboard to compare them on. */
   var pauseCount = 0, pausedMs = 0, pauseStartedAt = null;
-  var mode = "daily";        // "daily" | "practice"
+  var mode = "daily";        // "daily" | "practice" | "theme"
+  /* Which themed board to fetch, and what the one in play is called. themeLabel
+     is what the server said, not something rebuilt here — the name on the board
+     and the name in the share message must not be able to drift apart. */
+  var themeWanted = null;
+  var themeLabel = "";
   var dailyNo = FCW.dailyNumber();
   var cellEls = {};
   var seasonErrors = FCW.loadSeasons(FCW_SEASONS);
@@ -134,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v10g";
+  var BUILD = "v11";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -414,6 +419,23 @@
     if (!running && !complete) { running = true; timerId = setInterval(tick, 1000); }
   }
   function stopTimer() { running = false; clearInterval(timerId); }
+  /* The interval startClockSaves() opened. stopTimer deliberately leaves it
+     alone — a paused game still wants its elapsed written — so only a tab that
+     is standing down or about to be replaced needs it gone. Nothing cleared it
+     before, which is half of why a reset came back to life. */
+  function stopClockSaves() { clearInterval(clockSaveT); clockSaveT = null; }
+
+  /* This tab has lost the right to write. Two ways in: another tab changed the
+     slot underneath us, or a reset is clearing storage and reloading. Either
+     way the copy in this page's memory is now the stale one, and writing it
+     back is exactly how a cleared record reappears ten seconds later. */
+  var saveBlocked = false;
+  function standDown() {
+    saveBlocked = true;
+    clearTimeout(saveT);
+    stopTimer();
+    stopClockSaves();
+  }
 
   /* ---------- Persistence (best-effort) ---------- */
   var saveT = null;
@@ -428,7 +450,18 @@
       p.entries.map(function (e) { return e.row.id; }).join(",");
   }
 
+  /* Which slot a mode owns. Three modes, three slots: a themed board is a real
+     game with a real clock, and letting it share the practice key would mean
+     opening a themed board silently destroyed a practice game in progress. */
+  function slotKey(m) {
+    return m === "daily" ? "fcw.v04.daily"
+         : m === "theme" ? "fcw.v04.theme"
+         : "fcw.v04.practice";
+  }
+
   function save() {
+    /* Given up, either to another tab or to a reset in progress. */
+    if (saveBlocked) return;
     /* Nothing is loaded, so there is nothing to write. This is not a
        theoretical case: the landing screen's club control calls saveSoon()
        through applyClubChoice(), and on that screen no puzzle has been built.
@@ -452,14 +485,14 @@
     if (fresh) {
       var prev = null;
       try { prev = JSON.parse(localStorage.getItem(
-        mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice")); } catch (e) {}
+        slotKey(mode))); } catch (e) {}
       if (prev && !prev.complete &&
           (Object.keys(prev.letters || {}).length || prev.elapsed)) return;
     }
     try {
       // Which mode is in play, so a refresh comes back to the same game.
       localStorage.setItem("fcw.mode", mode);
-      localStorage.setItem(mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice", JSON.stringify({
+      localStorage.setItem(slotKey(mode), JSON.stringify({
         mode: mode, dailyNo: dailyNo,
         seed: seed, token: puzzleToken, letters: letters,
         fingerprint: puzzleFingerprint(puzzle),
@@ -473,7 +506,10 @@
         subbedCells: Object.keys(subbedCells), subs: subsUsed,
         excludeIds: builtExcludeIds,
         helpActions: helpActions,
-        club: club, clubMode: clubMode
+        club: club, clubMode: clubMode,
+        // Which themed board this is, so it can be resumed rather than restarted.
+        themeKey: themeWanted && themeWanted.theme
+          ? themeWanted.theme + "-" + themeWanted.no : null
       }));
     } catch (e) { /* storage unavailable — play without persistence */ }
   }
@@ -559,6 +595,12 @@
     if (restore && restore.token) {
       var t = String(restore.token);
       if (t.indexOf("practice:") === 0) return api("/api/practice?token=" + encodeURIComponent(t));
+      /* A themed board never expires, so resuming one only has to name it. It
+         can, however, be withdrawn — so a token that no longer resolves falls
+         back to the menu rather than silently opening something else. */
+      if (t.indexOf("theme:") === 0) {
+        return api("/api/theme-board?id=" + encodeURIComponent(t.slice(6)));
+      }
       // A daily token is only valid on its own day; if the date has rolled over
       // the server refuses it, and today's daily is the right thing to open.
       return api("/api/daily");
@@ -566,6 +608,12 @@
     if (sharedToken) return api("/api/practice?token=" + encodeURIComponent(sharedToken));
     if (adminDay) return api("/api/admin/daily?n=" + adminDay);
     if (mode === "daily") return api("/api/daily");
+    if (mode === "theme") {
+      return api(themeWanted && themeWanted.id
+        ? "/api/theme-board?id=" + encodeURIComponent(themeWanted.id)
+        : "/api/theme-board?theme=" + encodeURIComponent(themeWanted.theme) +
+          "&no=" + encodeURIComponent(themeWanted.no));
+    }
     var qs = [];
     var cat = practiceCategory();
     if (cat) qs.push("category=" + encodeURIComponent(cat));
@@ -584,6 +632,11 @@
       puzzle = res.puzzle;
       puzzleToken = res.token;
       if (res.mode === "daily" && res.dailyNo) dailyNo = res.dailyNo;
+      if (res.mode === "theme") {
+        themeLabel = res.label || "";
+        themeWanted = { id: res.token ? res.token.slice(6) : null,
+                        theme: res.themeId, no: res.boardNo };
+      }
       if (res.poolId) recordRecent([res.poolId]);
       if (typeof res.bankSize === "number" && res.bankSize) bankReach = res.bankSize;
       if (res.mode === "practice" && res.puzzle && res.puzzle.entries) {
@@ -628,11 +681,15 @@
     $("grid").style.opacity = "";
     $("strapText").innerHTML = mode === "daily"
       ? "Premier League &middot; " + FCW.dailyPhase(dailyNo).label
-      : "Premier League &middot; Practice";
+      : (mode === "theme" && themeLabel
+          ? "Themed board &middot; " + escapeHtml(themeLabel)
+          : "Premier League &middot; Practice");
     $("dailyBtn").style.display = mode === "daily" ? "none" : "";
     document.title = mode === "daily"
       ? FCW.dailyPhase(dailyNo).label + " \u00B7 Crossword XI"
-      : "Practice \u00B7 Crossword XI";
+      : (mode === "theme" && themeLabel
+          ? themeLabel + " \u00B7 Crossword XI"
+          : "Practice \u00B7 Crossword XI");
     letters = {}; wrong = {}; revealedEntries = {}; revealedCells = {}; revealAnswerCells = {};
     pauseCount = 0; pausedMs = 0; pauseStartedAt = null;
     subbedCells = {}; subsUsed = 0;
@@ -1435,28 +1492,11 @@
     if (puzzle) fitCells();
   });
 
-  var tableHome = null, tableAnchor = null;
-  function placeTable() {
-    var panel = $("tablePanel");
-    if (!panel) return;
-    // Captured once, before either move happens, so the toolbar relocation
-    // cannot make this the wrong home.
-    if (!tableHome) { tableHome = panel.parentNode; tableAnchor = panel.nextElementSibling; }
-    var phone = (window.innerWidth || 360) <= 640;
-    var stage = document.querySelector(".stage");
-    var board = document.querySelector(".grid-panel");
-    if (phone && stage && board) {
-      if (panel.parentNode !== stage) stage.insertBefore(panel, board.nextSibling);
-      panel.classList.add("below-board");
-    } else if (!phone && tableHome && panel.parentNode !== tableHome) {
-      tableHome.insertBefore(panel, tableAnchor);
-      panel.classList.remove("below-board");
-    } else if (!phone) {
-      panel.classList.remove("below-board");
-    }
-  }
-  placeTable();
-  window.addEventListener("resize", placeTable);
+  /* placeTable() is gone. The league table used to live in the banner and be
+     moved below the board by script on phones, which meant its position was a
+     runtime decision and the CSS had to describe it in both places. It is now
+     under the board in the markup at every width, and .below-board is simply
+     what it is rather than a state it is put into. */
 
   /* Help starts closed on a phone. Its three rows became 44px each when the
      controls were sized for touch, which pushed the board 70px down the page
@@ -1693,6 +1733,28 @@
   /* pagehide rather than unload: unload is unreliable on iOS and does not fire
      when a tab is put in the background and later discarded. */
   window.addEventListener("pagehide", function () { playEnd(false); });
+
+  /* localStorage is shared by every tab on the origin, and until now no tab
+     knew the others were there. Three windows open meant three clocks and
+     three ten-second saves writing the same two keys, last write winning — so
+     a tab left open since the morning could overwrite the board being typed
+     into now, and a cleared record came back within ten seconds because
+     another tab still held a copy of it in memory.
+
+     A tab that sees its own slot change underneath it stands down rather than
+     arguing about who is right. Storage events are only ever delivered to
+     *other* documents, so this cannot fire on the tab that did the writing,
+     and a single tab never sees it at all. A whole-storage clear reports a
+     null key. */
+  window.addEventListener("storage", function (e) {
+    if (saveBlocked || !puzzle) return;
+    var mine = slotKey(mode);
+    if (e.key !== null && e.key !== mine) return;
+    standDown();
+    toast("Open in another window",
+      "This game is being played somewhere else, so it is no longer being " +
+      "saved here. Reload to pick up where that one is.", "loss");
+  });
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") playEnd(false);
   });
@@ -1765,9 +1827,14 @@
   on("adminReplay", "click", function () {
     var no = dailyNo;
     apiAuth("/api/admin/replay-day", { dailyNo: no }).then(function () {
+      /* Stop writing before clearing. location.reload() does not halt this
+         page — the browser goes off to fetch the document while everything
+         here keeps running — so without this the clock-save interval could
+         land after the removeItem below and put the record straight back. */
+      standDown();
       try {
         // The saved game, and this day's entry in the local history.
-        localStorage.removeItem(mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice");
+        localStorage.removeItem(slotKey(mode));
         var list = loadResults().filter(function (r) { return r.dailyNo !== no; });
         localStorage.setItem(RESULTS_KEY, JSON.stringify(list));
       } catch (e) {}
@@ -1787,10 +1854,12 @@
      clean start. */
   on("adminReset", "click", function () {
     apiAuth("/api/admin/reset-my-record", {}).then(function () {
+      standDown();          // as above: no writes between here and the reload
       try {
         localStorage.removeItem(RESULTS_KEY);
         localStorage.removeItem("fcw.v04.daily");
         localStorage.removeItem("fcw.v04.practice");
+        localStorage.removeItem("fcw.v04.theme");
         localStorage.removeItem("fcw.mode");
       } catch (e) {}
       // Reload, so the clock, the season strip and the board all start again
@@ -2410,6 +2479,54 @@
     saveResults(list);
     return list;
   }
+  /* A themed board keeps its own record, and deliberately not the season's.
+     The archive is replayable and unlimited, so anyone could assemble a
+     114-point season out of forty easy boards — the same reason friendlies are
+     kept to one side. Streaks stay on the Daily, where one a day is the whole
+     constraint that makes a streak mean anything.
+
+     Best attempt wins on a replay rather than first: a board that stays open
+     for a year is not an exam, and beating your own score is the reason to go
+     back to one. */
+  function recordThemed(pos, score) {
+    if (!themeWanted || !themeWanted.theme) return;
+    var key = themeWanted.theme + "-" + themeWanted.no;
+    var list = loadThemeResults();
+    var prev = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].themeKey === key) { prev = list[i]; break; }
+    }
+    if (prev && (prev.score || 0) >= score) return list;
+    var rec = {
+      themeKey: key, themeLabel: themeLabel, date: FCW.localDateKey(),
+      club: club, season: season ? season.season : null,
+      score: score, position: pos,
+      elapsedSeconds: elapsed, matchMinute: FCW.matchMinute(elapsed),
+      checks: checksUsed,
+      revealedLetters: revealedLetterCount(),
+      revealedAnswers: revealedAnswerCount(),
+      pauses: pauseCount, pausedSeconds: Math.round(pausedMs / 1000)
+    };
+    if (prev) list[list.indexOf(prev)] = rec; else list.push(rec);
+    saveThemeResults(list);
+    return list;
+  }
+
+  /* Their own key, not the results array. That array is sorted by dailyNo,
+     read by FCW.streaks(), and posted wholesale to /api/account/migrate on
+     sign-in — a record with no dailyNo in it would sort to nowhere, count for
+     nothing and be sent to an endpoint that has never seen one. */
+  var THEME_RESULTS_KEY = "fcw.themeResults.v1";
+  function loadThemeResults() {
+    try {
+      var r = JSON.parse(localStorage.getItem(THEME_RESULTS_KEY));
+      return Array.isArray(r) ? r : [];
+    } catch (e) { return []; }
+  }
+  function saveThemeResults(list) {
+    try { localStorage.setItem(THEME_RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
   /* Say it on the card. A run with the clock stopped for twenty minutes is a
      different run from one without, and the player should see that stated
      rather than have it recorded silently against them. */
@@ -2783,6 +2900,7 @@
     $("bAnswerPen").textContent = "\u2212" + res.revealAnswerPenalty;
     $("rFinal").textContent = res.score + " / " + FCW.SCORING.MAX_SCORE;
     if (mode === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
+    else if (mode === "theme") recordThemed(pos, res.score);
     renderLeagueRows($("finalTableBody"), table, false); // Full Time: all 20
     var youRow = $("finalTableBody").querySelector("tr.you");
     playEnd(true);
@@ -2825,6 +2943,12 @@
      gets the same puzzle anyway. */
   function shareLink() {
     if (mode === "daily") return SHARE_URL;
+    /* A themed link says what it is. /?t=man-united-3 reads as an invitation;
+       /?p=4471 reads as a database key, and the name is public anyway the
+       moment it appears in the message. */
+    if (mode === "theme" && themeWanted && themeWanted.theme) {
+      return SHARE_URL + "/?t=" + encodeURIComponent(themeWanted.theme + "-" + themeWanted.no);
+    }
     var m = /^practice:(\d+)$/.exec(puzzleToken || "");
     return m ? SHARE_URL + "/?p=" + m[1] : SHARE_URL;
   }
@@ -2835,7 +2959,9 @@
     var pos = FCW.playerPosition(table);
     var name = mode === "daily"
       ? "Crossword XI \u00B7 " + FCW.dailyPhase(dailyNo).label
-      : "Crossword XI \u00B7 practice";
+      : (mode === "theme" && themeLabel
+          ? "Crossword XI \u00B7 " + themeLabel
+          : "Crossword XI \u00B7 practice");
     /* The season year is gone. "Arsenal finished 3rd in 2020/21" reads as a
        claim about football rather than about a crossword, and it is not true —
        the table is a real historical season with your score dropped into it.
@@ -2846,6 +2972,7 @@
     var line = shareStrip(res.score) + "\n" +
       res.score + " pts \u00B7 " + FCW.ordinal(pos) + " \u00B7 " + fmt(elapsed);
     var invite = mode === "daily" ? SHARE_URL : "Beat it: " + shareLink();
+    // "Manchester United #3" is the whole point of numbering them.
     return name + "\n" + line + "\n" + invite;
   }
 
@@ -2955,8 +3082,7 @@
      pressed Kick Off, started the daily's clock and lost points on a game they
      had not chosen to play. */
   function savedFor(which) {
-    try { return JSON.parse(localStorage.getItem(
-      which === "daily" ? "fcw.v04.daily" : "fcw.v04.practice")); } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(slotKey(which))); } catch (e) { return null; }
   }
 
   function renderHome() {
@@ -2987,7 +3113,153 @@
     var p = savedFor("practice");
     $("homePracticeState").textContent = inProgress(p)
       ? "One in progress \u00B7 " + fmt(p.elapsed || 0) : "";
+
+    /* How many are out, so the card says something before it is opened. Fails
+       quietly: a themed count is not worth a broken landing screen. */
+    var th = $("homeThemedState");
+    if (th) {
+      loadThemes().then(function (d) {
+        var n = (d.themes || []).reduce(function (a, t) { return a + t.boards.length; }, 0);
+        th.textContent = n ? n + (n === 1 ? " board available" : " boards available") : "";
+      }).catch(function () { th.textContent = ""; });
+    }
   }
+
+  /* ---------- The Themed section ----------
+     Three panels: what can be played now, what is coming, and how to ask for
+     one. Fetched once and cached for the session — the section is opened and
+     closed repeatedly while choosing, and refetching on each open makes it
+     feel slower than it is. */
+  var themeData = null;
+  function loadThemes(force) {
+    if (themeData && !force) return Promise.resolve(themeData);
+    return api("/api/themes").then(function (d) { themeData = d; return d; });
+  }
+
+  /* Which themed boards this device has finished, so the list can mark them.
+     Kept with the other local records rather than asked of the server: it is
+     the same question My Season answers and the same place it reads from. */
+  function themeResults() {
+    var out = {};
+    loadThemeResults().forEach(function (r) {
+      if (r && r.themeKey) out[r.themeKey] = r;
+    });
+    return out;
+  }
+
+  function renderThemes() {
+    var box = $("themeAvailable"), next = $("themeUpcoming");
+    if (!box) return;
+    box.innerHTML = '<div class="sheet-empty">Loading\u2026</div>';
+    loadThemes().then(function (d) {
+      if (!d.configured || !d.themes.length) {
+        box.innerHTML = '<div class="sheet-empty">No themed boards yet.</div>';
+        next.innerHTML = "";
+        return;
+      }
+      var done = themeResults();
+      var asked = {};
+      (d.mine || []).forEach(function (k) { asked[k] = true; });
+      box.innerHTML = d.themes.map(function (t) {
+        var boards = t.boards.map(function (b) {
+          var key = t.id + "-" + b.no;
+          var r = done[key];
+          return '<button class="theme-board' + (r ? " played" : "") +
+            '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b.no +
+            '" data-id="' + b.boardId + '">#' + b.no +
+            (r && r.score != null ? '<span class="tb-score">' + r.score + '</span>' : "") +
+            "</button>";
+        }).join("");
+        /* Standing in for an email. Somebody who asked for this theme is told
+           the week it lands, without an address, a scheduler or an
+           unsubscribe — and it reaches everyone who comes back, which is most
+           of the people an email would have reached anyway. */
+        var flag = asked[t.id]
+          ? '<span class="theme-asked">You asked for this</span>' : "";
+        return '<div class="theme-group"><div class="theme-name">' +
+          escapeHtml(t.name) + flag + '</div><div class="theme-boards">' + boards + "</div></div>";
+      }).join("");
+
+      next.innerHTML = d.upcoming.length
+        ? d.upcoming.map(function (u) {
+            return '<div class="theme-next"><span>' + escapeHtml(u.name) + " #" + u.no +
+              '</span><span class="tn-date">' + friendlyDate(u.releaseOn) + "</span></div>";
+          }).join("")
+        : '<div class="sheet-empty">Nothing scheduled yet.</div>';
+
+      var sel = $("themeRequestKey");
+      if (sel && !sel.options.length) {
+        /* Every theme that exists, plus every club the game already knows
+           about, so a supporter can ask for a club before it has a board. */
+        var seen = {};
+        var opts = d.options.map(function (o) { seen[o.label] = 1; return o; });
+        CLUBS.concat(EFL_CLUBS).sort().forEach(function (c) {
+          if (!seen[c]) opts.push({ key: slug(c), label: c });
+        });
+        sel.innerHTML = '<option value="">Choose a theme\u2026</option>' +
+          opts.map(function (o) {
+            return '<option value="' + escapeHtml(o.key) + '">' + escapeHtml(o.label) + "</option>";
+          }).join("");
+      }
+    }).catch(function () {
+      box.innerHTML = '<div class="sheet-empty">Could not load the themed boards.</div>';
+    });
+  }
+
+  function slug(name) {
+    return String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  /* "Fri 2 Oct" rather than an ISO date: this is read at a glance to answer
+     "is that soon", and 2026-10-02 makes that a subtraction. */
+  function friendlyDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+    if (!m) return String(iso || "");
+    var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var mons = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return days[d.getUTCDay()] + " " + d.getUTCDate() + " " + mons[d.getUTCMonth()];
+  }
+
+  function openThemed(theme, no, id) {
+    mode = "theme";
+    themeWanted = { theme: theme, no: no, id: id || null };
+    themeLabel = "";
+    $("themeSheet").classList.remove("show");
+    $("homeOverlay").classList.remove("show");
+    /* Come back to the same board rather than starting it again. Only when it
+       is the same board: the slot holds one themed game, and opening a
+       different one legitimately replaces it. */
+    var saved = savedFor("theme");
+    var same = saved && saved.themeKey === theme + "-" + no && !saved.complete;
+    newPuzzle(same ? saved.seed : undefined, same ? saved : null);
+  }
+
+  on("homeThemed", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
+  on("themeAvailable", "click", function (e) {
+    var b = e.target.closest ? e.target.closest(".theme-board") : null;
+    if (!b) return;
+    openThemed(b.getAttribute("data-theme"), Number(b.getAttribute("data-no")),
+               b.getAttribute("data-id"));
+  });
+  on("themeRequestBtn", "click", function () {
+    var sel = $("themeRequestKey"), msg = $("themeRequestMsg");
+    if (!sel || !sel.value) { msg.textContent = "Choose a theme first."; return; }
+    var label = sel.options[sel.selectedIndex].textContent;
+    apiAuth("/api/theme-request", { key: sel.value }).then(function (r) {
+      msg.textContent = r.already
+        ? "You have already asked for " + label + "."
+        : "Noted \u2014 thanks. " + label + " is on the list.";
+      // Refetch, so the marker appears now rather than on the next visit.
+      loadThemes(true).then(function () { renderThemes(); }).catch(function () {});
+    }).catch(function (err) {
+      /* Sign-in is required, exactly as it is for flagging a clue. Say which
+         it is rather than failing silently. */
+      msg.textContent = String(err.message || err);
+    });
+  });
 
   function showHome() {
     /* Stop anything running. Coming back to the menu must not leave a clock
@@ -3047,13 +3319,38 @@
     /* A shared practice link goes straight to that puzzle. Somebody following
        "beat it" wants the puzzle, not a menu — and the link is the whole point
        of the invitation. */
+    /* A themed link names the board in words: /?t=man-united-3. Handled before
+       the practice link because the two cannot both be present and this one is
+       the readable form somebody was given deliberately. */
+    var themed = /[?&]t=([a-z0-9-]+)-(\d+)/.exec(location.search || "");
+    if (themed) {
+      mode = "theme";
+      themeWanted = { theme: themed[1], no: Number(themed[2]), id: null };
+      $("homeOverlay").classList.remove("show");
+      /* Checked on the way out rather than caught: buildPuzzle() handles its
+         own failures — it shows the nudge and resolves — so a .catch() here
+         never fires and a link to a board that is not out left the player on a
+         dead screen with no way back to the menu. If no puzzle arrived, no
+         puzzle arrived. */
+      buildPuzzle(null).then(function () {
+        if (puzzle) return;
+        themeWanted = null; mode = "practice";
+        toast("That board is not available", "It may not have been released yet.", "loss");
+        showHome();
+      });
+      return;
+    }
     var shared = /[?&]p=(\d+)/.exec(location.search || "");
     if (shared) {
       mode = "practice";
       sharedToken = "practice:" + shared[1];
       $("homeOverlay").classList.remove("show");
-      buildPuzzle(null).then(function () { sharedToken = null; })
-        .catch(function () { sharedToken = null; showHome(); });
+      /* Same shape, and the same reason: the .catch() this replaces could not
+         fire, so a stale practice link showed an error and nothing else. */
+      buildPuzzle(null).then(function () {
+        sharedToken = null;
+        if (!puzzle) showHome();
+      });
       return;
     }
     /* Otherwise, straight to the choice. Guessing which mode somebody wants is

@@ -107,6 +107,11 @@ export async function getPuzzleForToken(env, token) {
   const t = parseToken(token);
   if (!t) return null;
   if (t.mode === "daily") return getDailyPuzzle(env, t.id);
+  /* A themed token names a board that is already out. Without the release
+     guard here, check-answer and reveal would read answers straight out of a
+     board scheduled for a Friday six weeks away — the same leak as the daily,
+     through a door nobody had thought to lock. */
+  if (t.mode === "theme") return getThemeBoard(env, t.id);
 
   if (!hasDB(env)) {
     return SAMPLE_PUZZLES.practice.find((p) => String(p.rowId) === String(t.id)) || null;
@@ -126,8 +131,36 @@ export function makeToken(mode, id) {
 }
 
 export function parseToken(token) {
-  const m = /^(daily|practice):(\d+)$/.exec(String(token || ""));
+  const m = /^(daily|practice|theme):(\d+)$/.exec(String(token || ""));
   return m ? { mode: m[1], id: Number(m[2]) } : null;
+}
+
+/* Today, as the server reckons it. Themed boards are released on a date, and
+   the date has to be decided here for the same reason a daily is: the browser
+   and the server disagree about which day it is for part of every day outside
+   UTC, so a board released by the client's clock would appear early for some
+   players and late for others. */
+export function serverToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/* A themed board, by row id, and only once it has been released. An unreleased
+   board is treated as though it does not exist rather than refused with a
+   different message: "not yet" and "no such board" should look identical from
+   outside, or the reply itself tells you what is coming. */
+export async function getThemeBoard(env, id, { includeUnreleased = false } = {}) {
+  if (!hasDB(env)) return null;
+  const row = await env.DB.prepare(
+    `SELECT b.id, b.theme_id, b.board_no, b.release_on, b.payload, t.name AS theme_name
+       FROM theme_boards b JOIN themes t ON t.id = b.theme_id
+      WHERE b.id = ? LIMIT 1`).bind(Number(id)).first();
+  if (!row) return null;
+  if (!includeUnreleased && row.release_on > serverToday()) return null;
+  const payload = JSON.parse(row.payload);
+  return Object.assign(payload, {
+    boardId: row.id, themeId: row.theme_id, themeName: row.theme_name,
+    boardNo: row.board_no, releaseOn: row.release_on,
+  });
 }
 
 export async function listCategories(env) {

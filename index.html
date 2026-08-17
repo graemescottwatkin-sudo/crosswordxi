@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v10g">
+<link rel="stylesheet" href="css/style.css?v=v11">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -153,12 +153,26 @@
 </div>
 
 <div class="toolbar" id="toolbar">
-  <div class="tb-left">
-    <div class="tb-group tb-match">
+  <!-- Three boxes, one treatment. The match readouts, the game controls and the
+       help actions were three different shapes — a bare clock, a loose row of
+       buttons, and a fenced panel — which read as three unrelated things and
+       left a band of empty card between them. Same border, same padding, same
+       label, and the only thing that varies is what is inside. -->
+  <div class="tb-group tb-box tb-match" role="group" aria-label="Match state">
+    <span class="tb-label">Match</span>
+    <div class="tb-readouts">
       <div class="match-clock" id="matchClock" aria-label="Match clock">0'<small id="elapsedLine">0:00</small></div>
       <div class="live-chip" id="progressChip" title="Answers solved">0 / 0</div>
     </div>
-    <div class="tb-group tb-game">
+  </div>
+
+  <div class="tb-group tb-box tb-game" role="group" aria-label="Game">
+    <span class="tb-label">Game</span>
+    <!-- Readouts have no border and no background; controls have both. That is
+         the whole signal for what can be pressed, so it has to be carried
+         consistently — the clock used to wear the same card face as the buttons
+         beside it. -->
+    <div class="tb-controls">
       <button class="btn outline icon-btn" id="pauseBtn" title="Stop the clock and hide the puzzle" aria-label="Pause">
         <svg class="ic ic-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>
         <svg class="ic ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8a.8.8 0 0 0 1.22.68l8.4-5.4a.8.8 0 0 0 0-1.36l-8.4-5.4A.8.8 0 0 0 4.5 2.6Z"/></svg>
@@ -171,16 +185,7 @@
     </div>
   </div>
 
-  <div class="tb-table" id="tablePanel">
-    <div class="club-bar">
-      <label for="clubSelect">Your club</label>
-      <select id="clubSelect" title="Choose your club (optional)"></select>
-    </div>
-    <table class="league"><tbody id="leagueBody"></tbody></table>
-    <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
-  </div>
-
-  <div class="tb-group tb-help" role="group" aria-label="Help — costs points">
+  <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs points">
     <button class="tb-label help-toggle" id="helpToggle" aria-expanded="true" aria-controls="helpRow">Help &middot; costs points</button>
     <!-- Two labelled pairs rather than four loose buttons. Section and button
          read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
@@ -210,8 +215,14 @@
     <div class="now-clue" id="nowClue">
       <button class="nc-arrow" id="prevClue" aria-label="Previous clue">&#8249;</button>
       <div class="nc-main">
-        <div class="nc-meta" id="ncMeta"></div>
-        <div class="nc-text" id="ncText"></div>
+        <!-- Number and clue are one column; the slots are the other, and the
+             slots are a fixed width. They used to sit immediately after the
+             text, so the boxes started in a different place on every clue and
+             the eye had to find them again each time. -->
+        <div class="nc-clue">
+          <div class="nc-meta" id="ncMeta"></div>
+          <div class="nc-text" id="ncText"></div>
+        </div>
         <div class="bank" id="letterBank"></div>
       </div>
       <button class="nc-arrow" id="nextClue" aria-label="Next clue">&#8250;</button>
@@ -248,6 +259,20 @@
            the board and the clue lists it went from no height to ~35px every
            time it appeared, shifting the page under the player's finger. -->
       <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
+    </div>
+    <!-- Directly under the board and exactly its width. It used to sit in the
+         top banner beside the clock, which put "how is this going" a long way
+         from the thing it is about, and forced the banner to carry a table's
+         worth of width. The width comes from --board-w, which fitCells()
+         calculates from the puzzle's own dimensions rather than measuring the
+         painted board, so the two edges cannot drift apart. -->
+    <div class="tb-table board-table below-board" id="tablePanel">
+      <div class="club-bar">
+        <label for="clubSelect">Your club</label>
+        <select id="clubSelect" title="Choose your club (optional)"></select>
+      </div>
+      <table class="league"><tbody id="leagueBody"></tbody></table>
+      <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
     </div>
   </div>
   <!-- Clue lists sit under the board now, two columns on desktop, stacked when
@@ -341,6 +366,44 @@
   </div>
 </div>
 
+<!-- The Themed section. Three panels, each answering a different question:
+     what can I play, what is coming, and how do I ask for mine.
+     The schedule publishes names and dates only. Knowing that Manchester
+     United #3 lands on 2 October gives nothing away; the board itself would
+     give away eleven answers, so it is not sent until its release date. -->
+<div class="sheet" id="themeSheet">
+  <div class="sheet-card">
+    <h2>Themed boards</h2>
+    <div class="sheet-sub" id="themeSub">A new board every Friday</div>
+
+    <h3>Available now</h3>
+    <div id="themeAvailable"></div>
+
+    <h3>Coming up</h3>
+    <div id="themeUpcoming"></div>
+
+    <h3>Ask for a theme</h3>
+    <!-- A picklist rather than a text box. Free text turns one club into six
+         spellings, and a count is the entire value of asking: 24 against one
+         key says what to write clues for next, six spellings say nothing. -->
+    <div class="theme-ask">
+      <select id="themeRequestKey" title="Choose a theme to ask for"></select>
+      <button class="btn outline" id="themeRequestBtn">Ask</button>
+    </div>
+    <div class="sheet-note" id="themeRequestMsg"></div>
+    <!-- Said now, before anything sends mail. Collecting a request today and
+         emailing about it later is a change of purpose unless the purpose was
+         stated when it was collected — and one line here is cheaper than
+         deciding later that the requests already gathered cannot be used. -->
+    <div class="sheet-note">
+      Asking needs an account, so we know who wants what. We may use it to let
+      you know when that board is released.
+    </div>
+
+    <button class="btn secondary" id="themeClose">Close</button>
+  </div>
+</div>
+
 <!-- The landing screen. You choose what you are playing before anything is
      loaded and before any clock exists.
      The card this replaces opened straight onto the daily, so somebody who
@@ -364,6 +427,16 @@
       <span class="hc-state" id="homePracticeState"></span>
     </button>
 
+    <!-- The third track. A new board every Friday and everything already
+         released stays playable, which is the point: a Newcastle supporter
+         arriving in November should not have to wait for Newcastle's turn to
+         come round again. -->
+    <button class="home-choice" id="homeThemed">
+      <span class="hc-title">Themed boards</span>
+      <span class="hc-note">A new one every Friday. Play any that have been released.</span>
+      <span class="hc-state" id="homeThemedState"></span>
+    </button>
+
     <!-- Chosen here rather than on the kick-off card. Which club you play as
          applies to both modes and does not change between them, so it belongs
          with the choice rather than being asked again each time. -->
@@ -374,6 +447,7 @@
 
     <div class="home-links">
       <button id="homeSeason">My Season</button> &middot;
+      <button id="homeThemes">Themes</button> &middot;
       <button id="homeAccount">Account</button>
     </div>
   </div>
@@ -464,7 +538,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v10g</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v11</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -475,8 +549,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v10g"></script>
-<script src="js/engine.js?v=v10g"></script>
-<script src="js/game.js?v=v10g"></script>
+<script src="js/seasons.js?v=v11"></script>
+<script src="js/engine.js?v=v11"></script>
+<script src="js/game.js?v=v11"></script>
 </body>
 </html>

@@ -151,13 +151,35 @@ header{
    the point-costing help actions, and the game controls. Grouping is the point
    — a flat row of mixed-weight buttons gave no clue which ones cost you. */
 .toolbar{
-  display:flex;align-items:stretch;justify-content:space-between;
+  display:flex;align-items:stretch;justify-content:flex-start;
   gap:10px;flex-wrap:wrap;
   max-width:1180px;margin:10px auto 4px;padding:9px 11px;
   background:var(--card);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 1px 2px rgba(18,59,39,.05);
 }
 .tb-group{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* One box, three times. Everything in the banner is either a readout or a
+   control, and both live in a bordered, labelled panel of the same shape —
+   which is what makes the row scan as a dashboard rather than as three
+   unrelated widgets with white space between them. justify-content is
+   flex-start, not space-between: the old rule pushed the groups to the edges
+   and put the gap in the middle, which is the white space complained of. */
+.tb-box{
+  flex:0 1 auto;display:flex;flex-direction:column;align-items:flex-start;gap:5px;
+  padding:7px 10px 8px;border:1px solid var(--line);border-radius:9px;
+  background:var(--paper);
+}
+.tb-readouts,.tb-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* Readouts are not controls, and must not dress like them. The clock and the
+   solved count wore the same card face and border as the buttons beside them,
+   so the only way to find out what was pressable was to press it. */
+.tb-match .match-clock,.tb-match .live-chip{
+  border:none;background:none;box-shadow:none;padding:0;
+}
+/* Controls keep a face and an edge, and all of them are the same size. The
+   pause icon is the one exception: it is square by design. */
+.tb-controls .btn{min-width:104px;justify-content:center}
+.tb-controls .icon-btn{min-width:44px;width:44px}
 /* Help stacks into columns by kind: checking, revealing, substituting.
    Two rows, filled column-first, so Check sits above Check all and Reveal
    letter above Reveal answer without needing a wrapper per pair. */
@@ -188,18 +210,19 @@ header{
 .icon-btn .ic-play{display:none}
 .icon-btn.playing .ic-pause{display:none}
 .icon-btn.playing .ic-play{display:block}
-/* Match state stacks above the controls, so the left cluster matches the
-   height of the table and help group beside it and the bar reads as one
-   dashboard rather than a row of loose chips. */
-.tb-left{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-/* The live table belongs with the clock and the solved count: they are all
-   answers to "how is this going". It was in the side column, two screens away
-   from the things it relates to. */
+/* The live table belongs directly under the board, at exactly the board's
+   width. It sat in the banner beside the clock — which is where the banner's
+   width came from — and "how is this going" was a long way from the thing it
+   is about. --board-w is calculated by fitCells() from the puzzle's own
+   dimensions, never measured off the painted board, so the table's edges and
+   the board's cannot drift apart. */
 .tb-table{
-  flex:0 1 auto;min-width:210px;max-width:300px;
   display:flex;flex-direction:column;gap:4px;
   padding:7px 10px 6px;border:1px solid var(--line);border-radius:9px;
-  background:var(--paper);
+  background:var(--paper);box-sizing:border-box;
+}
+.grid-panel > .board-table{
+  width:min(100%,var(--board-w,100%));align-self:center;margin:0;
 }
 .tb-table table.league{font-size:12.5px}
 .tb-table table.league td{padding:2px 6px}
@@ -207,14 +230,10 @@ header{
 .tb-table table.league tr.you td.club{font-size:13.5px}
 .tb-table table.league tr.you td.pts{font-size:14px}
 .tb-table .season-tag{float:none;padding:0;margin-left:4px;font-size:11px}
-@media (max-width:900px){ .tb-table{min-width:0;max-width:none;flex:1 1 100%} }
 /* The help group is fenced off and labelled: these are the buttons that cost
-   points, and that should be legible before you press one, not after. */
-.tb-help{
-  position:relative;flex-direction:column;align-items:flex-start;gap:4px;
-  padding:7px 10px 8px;border:1px solid var(--line);border-radius:9px;
-  background:var(--paper);
-}
+   points, and that should be legible before you press one, not after. It now
+   shares .tb-box with the other two groups and only keeps what is its own. */
+.tb-help{position:relative}
 .tb-label{
   font-family:var(--disp);font-weight:600;font-size:9.5px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--ink-faint);line-height:1;
@@ -300,28 +319,59 @@ button.tb-label{
   height:96px;box-sizing:border-box;
 }
 .nc-main{
-  flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;
-  gap:5px 10px;                       /* row gap, column gap */
-  max-height:100%;overflow-y:auto;
+  flex:1;min-width:0;display:flex;flex-wrap:nowrap;align-items:center;
+  gap:5px 14px;                       /* row gap, column gap */
+  max-height:100%;overflow:hidden;
 }
-/* Long clues are shrunk to fit rather than clipped. The card height is fixed
-   so the board never moves between clues; the text scales instead. A clue cut
-   off mid-word looks broken and, worse, may not be solvable. */
+/* Number and clue share the space the slots do not take. */
+.nc-clue{
+  flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;
+  gap:2px 10px;
+}
+/* The slots are a fixed column, not whatever is left after the words. The
+   board is bounded at 15 cells (MAX_DIM in engine.js), so the widest answer
+   that can ever be placed is 15 letters with up to three enumeration gaps —
+   and that width is reserved for every clue, whether it needs it or not.
+   Before this the boxes started wherever the sentence happened to end, which
+   moved them across the card on every clue.
+   Derived rather than typed: change --bank-cell and the reservation follows. */
+:root{
+  --bank-cell:26px;
+  --bank-gap:4px;
+  --bank-w:calc(15 * var(--bank-cell) + 14 * var(--bank-gap) + 27px);
+}
+/* Long clues are shrunk to fit rather than clipped or scrolled. The card
+   height is fixed so the board never moves between clues; the text scales
+   instead. A clue you have to scroll to read is a clue you will not read. */
 .nc-text.long{font-size:15px;line-height:1.35}
-.nc-text.xlong{font-size:14px;line-height:1.3}
-@media (max-width:900px){ .now-clue{height:118px} }
-@media (max-width:560px){ .now-clue{height:132px} }
+.nc-text.xlong{font-size:13.5px;line-height:1.3}
+@media (max-width:1099px){ :root{--bank-cell:22px} }
+/* Below this there is not enough width for a sentence and fifteen boxes side
+   by side, so the slots take their own row. They still start in the same place
+   on every clue — the left edge — which is the point of the reservation. */
+@media (max-width:900px){
+  .now-clue{height:118px}
+  .nc-main{flex-wrap:wrap}
+  .bank{flex:0 0 100%;width:100%}
+}
+@media (max-width:560px){ .now-clue{height:132px} :root{--bank-cell:19px} }
 .nc-meta{
   font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.06em;
   color:var(--pitch);white-space:nowrap;flex:none;
 }
 .nc-text{font-size:16px;font-weight:500;color:var(--ink);flex:1 1 auto;min-width:0}
-.bank{display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex:none}
+.bank{
+  display:flex;gap:var(--bank-gap);flex-wrap:wrap;align-items:center;
+  justify-content:flex-start;
+  flex:0 0 var(--bank-w);width:var(--bank-w);
+}
 .bank-cell{
-  width:26px;height:30px;border:1px solid var(--line);border-radius:3px;
+  width:var(--bank-cell);height:calc(var(--bank-cell) + 4px);
+  border:1px solid var(--line);border-radius:3px;
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--disp);font-weight:600;font-size:17px;color:var(--ink);
-  background:var(--card);
+  font-family:var(--disp);font-weight:600;
+  font-size:calc(var(--bank-cell) * 0.65);color:var(--ink);
+  background:var(--card);flex:none;
 }
 .bank-cell.empty{
   /* Dashed on --line was 1.26:1 against the page: the slots were there but
@@ -866,11 +916,11 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
      keyboard. The table collapses to your own row here — position and points,
      which is what you glance at mid-solve — and the full table is still shown
      at Full Time. */
-  #tablePanel tbody tr:not(.you){display:none}
   #tablePanel tr.you td{padding-top:4px;padding-bottom:4px}
-  .tb-table{padding:5px 8px 5px;min-width:0;flex:1 1 100%}
+  .tb-table{padding:5px 8px 5px;min-width:0}
   .tb-season{font-size:8.5px;margin-top:3px}
-  .tb-help{padding:5px 7px 6px;flex:1 1 100%}
+  .tb-box{padding:5px 7px 6px}
+  .tb-help{flex:1 1 100%}
   .tb-help.collapsed .tb-row{display:none}
   .tb-help.collapsed{padding-bottom:5px}
   .help-toggle::after{content:" \25BE";font-size:8px}
@@ -881,8 +931,10 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
        check · all · letter · answer
        (the league table has moved below the board)
      Each is one row, so the board starts far higher up the screen. */
-  .tb-left{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:5px}
-  .tb-match,.tb-game{gap:5px;flex-wrap:nowrap}
+  /* Match and Game side by side on one line, each still in its own box. */
+  .tb-match,.tb-game{flex:0 1 auto}
+  .tb-readouts,.tb-controls{gap:5px;flex-wrap:nowrap}
+  .tb-controls .btn{min-width:0;padding:0 9px}
   /* Two pairs, each with its label alongside — the four-across row lost the
      distinction between checking and revealing, which is the whole point. */
   .tb-row{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px}
@@ -892,11 +944,10 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .tb-row .cost{font-size:9px;padding:0 4px}
   .tb-row-sub .btn{grid-column:2 / span 2}
 
-  /* Moved out of the header, the table is a panel in its own right. */
-  #tablePanel.below-board{
-    width:100%;border:1px solid var(--line);border-radius:9px;
-    background:var(--paper);padding:7px 10px;margin:0;
-  }
+  /* The table is a panel in its own right under the board, at every width.
+     faroff rows still go: three rows of a twenty-team table is the glance,
+     and the full table is shown at Full Time. */
+  #tablePanel.below-board{padding:7px 10px;margin:0}
   #tablePanel.below-board tbody tr{display:table-row}
   #tablePanel.below-board tbody tr.faroff{display:none}
   #tablePanel.below-board .club-bar{display:flex;margin-bottom:6px}
@@ -934,6 +985,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   /* 84px left the longest clue 3px short once the meta line and bank are
      counted — which is exactly the case that was clipping. */
   .now-clue{height:92px}            /* one line plus the bank, which is inline here */
+  /* Wide but very short. The slots stay on the clue's line and shrink instead
+     of taking a row of their own, because a row costs height and height is
+     what the board is short of here. */
+  :root{--bank-cell:20px}
+  .nc-main{flex-wrap:nowrap}
+  .bank{flex:0 0 var(--bank-w);width:var(--bank-w)}
   .stage{gap:14px;padding:6px 16px 24px}
   .grid-wrap{padding:10px 16px}
   /* Keyboard height is the last thing standing between the board and the space
@@ -952,11 +1009,12 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    collapses to your own row with the club inline. The full table is still shown
    at Full Time. */
 @media (orientation:landscape) and (max-height:1100px) and (max-width:859px){
-  #tablePanel tbody tr:not(.you){display:none}
+  /* Under the board there is width but very little height, so the table lies
+     down: club alongside the rows rather than above them. */
   #tablePanel tr.you td{padding-top:3px;padding-bottom:3px}
   .tb-table{flex-direction:row;align-items:center;gap:10px;padding:5px 10px}
   .tb-table .club-bar{margin-bottom:0;flex:0 0 auto}
-  .tb-table table.league{width:auto;min-width:190px}
+  .tb-table table.league{width:auto;min-width:190px;flex:1 1 auto}
   .tb-season{display:none}
 }
 
@@ -1022,19 +1080,25 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
     width:min(100%,var(--block-w,100%));justify-self:center;
   }
 
-  /* The base toolbar is a row with space-between. Turned on its side that
-     distributes the panels down the card, which is where the gaps between the
-     controls, the table and the help block were coming from. */
+  /* Turned on its side the banner becomes the rail: the three boxes stack. */
   .toolbar{justify-content:flex-start}
-  .tb-left{flex-direction:column;align-items:stretch;gap:8px}
-  .tb-match,.tb-game{justify-content:flex-start}
-  /* Inside the rail the panels are the card's contents, not free-floating
-     boxes: they lose their own background so the card reads as one panel. */
-  .tb-table,.tb-help{
+  .tb-match,.tb-game,.tb-help{
     flex:0 0 auto;max-width:none;min-width:0;
-    background:none;border:none;padding:0;
+    background:none;border:none;padding:0;align-self:stretch;
   }
-  .tb-help{border-top:1px solid var(--line);padding-top:8px}
+  .tb-readouts,.tb-controls{width:100%}
+  .tb-controls .btn{flex:1 1 auto;min-width:0}
+  /* Inside the rail the panels are the card's contents, not free-floating
+     boxes: they lose their own background so the card reads as one panel, and
+     a rule between them does the separating instead. */
+  .tb-game,.tb-help{border-top:1px solid var(--line);padding-top:8px}
+
+  /* The table follows the board into the second column, still at the board's
+     width. .grid-panel is display:contents here, so it has to be placed. */
+  #tablePanel{
+    grid-column:2;grid-row:3;justify-self:start;
+    width:var(--board-w,100%);margin-top:2px;
+  }
   /* minmax(0,1fr), not 1fr: a plain 1fr track will not shrink below its
      content, so "REVEAL ANSWER -9" pushed the buttons out through the side of
      the card. Short labels as well, because the rail is 280px wide. */
@@ -1307,9 +1371,46 @@ body.rotate-needed .rotate-prompt{
 .share-to .btn{flex:1 1 0;font-size:12.5px;padding:0 8px}
 
 
+/* ============ THE THEMED SECTION ============
+   Three panels: what can be played, what is coming, and how to ask for one.
+   Boards are grouped by theme rather than listed by date, because people
+   arrive looking for their club, not for last October. */
+.theme-group{border-bottom:1px solid var(--line);padding:9px 2px}
+.theme-group:last-child{border-bottom:none}
+.theme-name{
+  font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.02em;
+  color:var(--ink);margin-bottom:6px;
+}
+.theme-asked{
+  font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--pitch);border:1px solid var(--pitch);
+  border-radius:4px;padding:2px 6px;margin-left:8px;vertical-align:middle;
+}
+.theme-boards{display:flex;flex-wrap:wrap;gap:6px}
+/* 44px, and set with min-height rather than height: four rules elsewhere in
+   this stylesheet were silently overriding touch targets set the other way. */
+.theme-board{
+  background:var(--card);border:1px solid var(--line);border-radius:6px;
+  color:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px;
+  min-height:44px;padding:0 14px;cursor:pointer;
+}
+.theme-board:hover{border-color:var(--pitch);color:var(--pitch)}
+.theme-board.played{border-left:4px solid var(--pitch)}
+.theme-board .tb-score{font-size:11px;color:var(--ink-faint);margin-left:6px}
+.theme-next{
+  display:flex;justify-content:space-between;gap:10px;
+  border-bottom:1px solid var(--line);padding:8px 2px;font-size:13px;
+}
+.theme-next:last-child{border-bottom:none}
+.theme-next .tn-date{color:var(--ink-faint);font-size:12px;white-space:nowrap}
+.theme-ask{display:flex;gap:6px;align-items:stretch;margin-top:4px}
+.theme-ask select{flex:1 1 auto;min-width:0;min-height:44px}
+.theme-ask .btn{flex:none}
+
+
 /* ============ THE LANDING SCREEN ============
-   Two choices, each one a target rather than a line of text, so neither can be
-   pressed by accident when the other was meant. */
+   Three choices, each one a target rather than a line of text, so none can be
+   pressed by accident when another was meant. */
 .home-card{max-width:430px}
 .home-choice{
   display:block;width:100%;text-align:left;cursor:pointer;

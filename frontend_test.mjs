@@ -295,9 +295,10 @@ server.listen(0, "127.0.0.1", async () => {
     return n === daily.puzzle.entries.length;
   })(), d.querySelectorAll("#acrossList li").length + " across + " +
     d.querySelectorAll("#downList li").length + " down");
-  t("the club selector moved into the header beside the league table", (() => {
+  t("the club selector sits with the league table under the board", (() => {
     const sel = $("clubSelect");
-    return sel && $("toolbar").contains(sel) && $("tablePanel").contains(sel) &&
+    return sel && $("tablePanel").contains(sel) && !$("toolbar").contains(sel) &&
+      d.querySelector(".grid-panel").contains($("tablePanel")) &&
       sel.options.length > 1;
   })(), $("clubSelect") && $("clubSelect").options.length + " clubs");
   t("the board publishes its width so the columns align to it",
@@ -531,7 +532,9 @@ server.listen(0, "127.0.0.1", async () => {
        that contradicts itself: the record says nothing was played and the game
        still refuses to let you play it. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const fn = js.slice(js.indexOf('on("adminReset"'), js.indexOf('on("adminReset"') + 700);
+    /* To a real boundary, not a character count: a comment added above the
+       code under test used to push it out of a fixed window. */
+    const fn = js.slice(js.indexOf('on("adminReset"'), js.indexOf('function loadReports'));
     return /removeItem\(RESULTS_KEY\)/.test(fn) &&
       /removeItem\("fcw\.v04\.daily"\)/.test(fn) &&
       /removeItem\("fcw\.v04\.practice"\)/.test(fn);
@@ -539,7 +542,8 @@ server.listen(0, "127.0.0.1", async () => {
   t("and replay still touches only the one day", (() => {
     // The two must stay distinct, or there is no way to redo a single day.
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const fn = js.slice(js.indexOf('on("adminReplay"'), js.indexOf('on("adminReplay"') + 700);
+    // Boundary, not character count — see the note on adminReset above.
+    const fn = js.slice(js.indexOf('on("adminReplay"'), js.indexOf('on("adminReset"'));
     return /r\.dailyNo !== no/.test(fn) && !/removeItem\(RESULTS_KEY\)/.test(fn);
   })());
 
@@ -874,10 +878,13 @@ server.listen(0, "127.0.0.1", async () => {
        Both were guesses, and a wrong guess started the daily's clock on a game
        the player had not chosen. Now it asks. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    /* A wider window: a shared practice link is handled first, so the choice
-       now sits further down the function. */
+    /* To the end of the function, not a character count. This window has now
+       been widened twice by things added above the code under test — a shared
+       practice link, then a themed one — and each time the check failed on
+       code that had not changed. boot() is the last thing before the server
+       date sync, so that is the boundary. */
     const at = js.indexOf("function boot()");
-    const boot = js.slice(at, at + 1400);
+    const boot = js.slice(at, js.indexOf("syncServerDate(function", at));
     return /renderHome\(\)/.test(boot) && !/bootDaily\(\)/.test(boot) &&
       !/last === "practice"/.test(boot);
   })());
@@ -1033,30 +1040,37 @@ server.listen(0, "127.0.0.1", async () => {
       d.querySelectorAll("#nowClue").length === 1;
   })());
 
-  console.log("\nPhone: the league table moves below the board");
-  t("on a wide viewport the table is in the header", (() => {
+  console.log("\nThe league table lives under the board");
+  /* It used to be a banner panel that script relocated below the board on
+     phones, so its position was a runtime decision and two sets of CSS had to
+     describe it. It is now under the board in the markup at every width — no
+     move, nothing to get wrong on resize. */
+  t("the table is inside the board column, after the board", (() => {
     const panel = $("tablePanel");
-    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
+    const wrap = d.querySelector(".grid-wrap");
+    return d.querySelector(".grid-panel").contains(panel) &&
+      !$("toolbar").contains(panel) &&
+      (wrap.compareDocumentPosition(panel) & 4) !== 0;   // board precedes table
   })());
-  t("narrowing moves the node below the board, not just its styling", (() => {
-    // CSS cannot reorder across containers, so the element itself relocates.
+  t("it is sized from the board's published width, not its own contents",
+    /\.grid-panel > \.board-table\{width:min\(100%,var\(--board-w,100%\)\)/.test(css));
+  t("narrowing leaves it exactly where it was", (() => {
     Object.defineProperty(w, "innerWidth", { value: 390, writable: true, configurable: true });
     w.dispatchEvent(new w.Event("resize"));
     const panel = $("tablePanel");
-    const board = d.querySelector(".grid-panel");
-    return panel.parentNode === d.querySelector(".stage") &&
-      panel.classList.contains("below-board") &&
-      (board.compareDocumentPosition(panel) & 4) !== 0;   // board precedes table
+    return d.querySelector(".grid-panel").contains(panel) &&
+      panel.classList.contains("below-board");
   })());
   t("the table still renders three rows after the move", (() => {
     const rows = [...d.querySelectorAll("#tablePanel #leagueBody tr")];
     return rows.length === 20 && rows.filter((r) => !r.classList.contains("faroff")).length === 3;
   })(), [...d.querySelectorAll("#tablePanel #leagueBody tr")].filter((r) => !r.classList.contains("faroff")).length + " visible");
-  t("widening puts it back in the header", (() => {
+  t("and widening does too", (() => {
     Object.defineProperty(w, "innerWidth", { value: 1400, writable: true, configurable: true });
     w.dispatchEvent(new w.Event("resize"));
     const panel = $("tablePanel");
-    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
+    return d.querySelector(".grid-panel").contains(panel) &&
+      panel.classList.contains("below-board");
   })());
 
   console.log("\nSelection still works from the lists below");

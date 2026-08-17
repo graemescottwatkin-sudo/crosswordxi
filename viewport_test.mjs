@@ -60,10 +60,16 @@ t("nothing re-forces two clue columns after the stacking rule",
   !/@media \(max-width:900px\)\{[^}]*\.clues\{grid-template-columns:1fr 1fr/.test(after820));
 
 /* The phone header used to take half the viewport before any of the board was
-   visible. The league table collapsing to the player's row is the main saving,
-   so it is worth a test rather than a comment. */
-t("the phone header collapses the league table to your own row",
-  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));
+   visible. The saving now comes from the league table not being in the header
+   at all: it is under the board in the markup at every width, so the banner
+   never carries a table's worth of width and nothing has to collapse. */
+t("the league table is not a banner panel any more", (() => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const bar = html.slice(html.indexOf('<div class="toolbar"'), html.indexOf('<div class="stage"'));
+  return bar.indexOf('id="tablePanel"') === -1 && html.indexOf('id="tablePanel"') > -1;
+})());
+t("nothing collapses the table to a single row now that it has the board's width",
+  !/#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));
 t("the phone clue card is shorter but still fixed, so the board cannot jump", (() => {
   const flat = css.replace(/\s*\n\s*/g, "");
   return /\.now-clue\{height:112px\}/.test(flat) && !/\.now-clue\{height:auto/.test(flat);
@@ -82,8 +88,12 @@ const landscape = flatCss.slice(flatCss.indexOf("@media (orientation:landscape) 
 const narrowLandscape = flatCss.slice(
   flatCss.indexOf("and (max-height:1100px) and (max-width:859px)"),
   flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
-t("narrow landscape collapses the league table to one row",
-  /#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(narrowLandscape));
+t("narrow landscape lays the table on its side under the board", (() => {
+  /* Width there is plentiful and height is not, so the club sits alongside the
+     rows rather than above them. */
+  return /\.tb-table\{flex-direction:row;align-items:center/.test(narrowLandscape) &&
+    /\.tb-table \.club-bar\{margin-bottom:0/.test(narrowLandscape);
+})());
 t("narrow landscape collapses the table, where there is no room for a rail",
   /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:859px\)/.test(flatCss));
 const rail = flatCss.slice(flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
@@ -121,7 +131,9 @@ t("the active clue spans the pair and is capped to the pair width",
 t("the clue lists span underneath and are capped to the pair width",
   /\.clues\{grid-column:1 \/ -1;grid-row:4;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
 t("panels inside the rail are contents of the card, not boxes on top of it",
-  /\.tb-table,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
+  /\.tb-match,\.tb-game,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
+t("the table follows the board into the second column, at the board's width",
+  /#tablePanel\{grid-column:2;grid-row:3;[^}]*width:var\(--board-w/.test(rail));
 /* A plain 1fr track refuses to shrink below its content, so the help buttons
    pushed straight out through the side of the card. */
 t("help buttons cannot overflow the rail",
@@ -165,8 +177,8 @@ t("the solved animation settles back to the cell colour, not the card",
 /* There are two @media (max-width:640px) blocks — a one-line cursor rule and
    the main phone block. Take the last, and take all of it. */
 const phone = flatCss.slice(flatCss.lastIndexOf("@media (max-width:640px)"));
-t("phone: status and controls sit on a single row",
-  /\.tb-left\{flex-direction:row;flex-wrap:nowrap/.test(phone));
+t("phone: the readouts and the controls each stay on one line",
+  /\.tb-readouts,\.tb-controls\{gap:5px;flex-wrap:nowrap\}/.test(phone));
 t("phone: help is two labelled pairs, not four loose buttons", (() => {
   /* Four across fitted, but "All" and "Answer" side by side gave no clue which
      was a check and which a reveal. Label plus pair reads as one phrase. */
@@ -181,11 +193,41 @@ t("phone: substitution sits under the pairs when it appears",
 t("phone: the moved table still hides rows outside the three-row window",
   /#tablePanel\.below-board tbody tr\.faroff\{display:none\}/.test(phone));
 t("phone: and it shows the full three rows, not just yours", (() => {
-  const showAll = phone.indexOf("#tablePanel.below-board tbody tr{display:table-row}");
-  const collapse = phone.indexOf("#tablePanel tbody tr:not(.you){display:none}");
-  // Equal specificity, so the later rule wins: the override must come after.
-  return showAll > -1 && collapse > -1 && showAll > collapse;
+  /* The blanket collapse is gone, so this no longer turns on rule order — but
+     the three-row window must still be what is shown, and the faroff override
+     above is what keeps it to three rather than twenty. */
+  return phone.indexOf("#tablePanel.below-board tbody tr{display:table-row}") > -1 &&
+    !/#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(phone);
 })());
+
+/* ---- The reserved slot column ----
+   The boxes are a fixed column so they start in the same place on every clue.
+   The reservation is only correct if it is wide enough for the widest answer
+   the generator can actually place, and MAX_DIM in engine.js is what bounds
+   that — so the two are checked against each other rather than trusted. */
+console.log("\nThe letter slots");
+const engine = fs.readFileSync("js/engine.js", "utf8");
+const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);
+t("the generator still bounds the grid at the width the reservation assumes",
+  maxDim === 15, "MAX_DIM = " + maxDim);
+t("the slot column is reserved from that bound, not a typed-in pixel value",
+  /--bank-w:calc\(15 \* var\(--bank-cell\) \+ 14 \* var\(--bank-gap\) \+ 27px\)/.test(flatCss));
+t("the slots take that reserved width rather than what the sentence leaves",
+  /\.bank\{[^}]*flex:0 0 var\(--bank-w\);width:var\(--bank-w\)/.test(flatCss));
+t("a gap element is 9px, so three of them are the 27px reserved", (() => {
+  const m = /\.bank-gap\{width:(\d+)px\}/.exec(flatCss);
+  return m && Number(m[1]) * 3 === 27;
+})());
+t("cells are sized from the same variable, so the reservation cannot drift",
+  /\.bank-cell\{width:var\(--bank-cell\)/.test(flatCss));
+t("long clues shrink to fit instead of scrolling", (() => {
+  /* overflow-y:auto meant the longest clues could be read only by scrolling
+     inside a 96px card, which nobody discovers. */
+  return /\.nc-main\{[^}]*overflow:hidden/.test(flatCss) &&
+    !/\.nc-main\{[^}]*overflow-y:auto/.test(flatCss);
+})());
+t("the slots drop to their own row only where they cannot fit beside the clue",
+  /@media \(max-width:900px\)\{[^@]*\.bank\{flex:0 0 100%;width:100%\}/.test(flatCss));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

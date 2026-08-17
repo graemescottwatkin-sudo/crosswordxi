@@ -64,6 +64,10 @@ export async function onRequest({ request, env, params }) {
       clues: await one("SELECT COUNT(*) AS n FROM clues"),
       dailies: await one("SELECT COUNT(*) AS n FROM puzzles WHERE mode = 'daily'"),
       lastDay: await one("SELECT MAX(daily_no) AS n FROM puzzles WHERE mode = 'daily'"),
+      themeBoards: await one("SELECT COUNT(*) AS n FROM theme_boards"),
+      themeNext: await one(
+        "SELECT MIN(release_on) AS n FROM theme_boards WHERE release_on > date('now')"),
+      themeRequests: await one("SELECT COUNT(*) AS n FROM theme_requests"),
     });
   }
 
@@ -145,6 +149,25 @@ export async function onRequest({ request, env, params }) {
   if (route === "reset-my-record" && request.method === "POST") {
     await env.DB.prepare("DELETE FROM results WHERE user_id = ?").bind(me.id).run();
     return json({ ok: true, cleared: true });
+  }
+
+  /* ---- What players have asked for ----
+     The whole point of collecting requests is the ordering, so this returns a
+     tally rather than a list of rows. Counts stay owner-only for now: "24
+     people have asked for Villa" is a reason to come back, and "2 people have
+     asked for Villa" is a reason not to. */
+  if (route === "theme-requests" && request.method === "GET") {
+    const rows = await env.DB.prepare(
+      `SELECT r.theme_key, COUNT(*) AS n,
+              MAX(r.created_at) AS latest,
+              SUM(CASE WHEN r.status = 'open' THEN 1 ELSE 0 END) AS open_n,
+              t.name AS existing
+         FROM theme_requests r
+         LEFT JOIN themes t ON t.id = r.theme_key
+        GROUP BY r.theme_key
+        ORDER BY n DESC, latest DESC
+        LIMIT 200`).all();
+    return json({ requests: rows.results || [] });
   }
 
   /* ---- Flagged clues ---- */
