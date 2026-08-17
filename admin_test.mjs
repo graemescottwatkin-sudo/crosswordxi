@@ -40,6 +40,9 @@ function makeEnv({ admin: isAdmin = 0, signedIn = true } = {}) {
       async run() {
         if (sql.includes("INSERT INTO clue_reports")) {
           reports.push({ id: b[0], clue_id: b[1], reported_by: b[2], reason: b[3] });
+        } else if (sql.includes("UPDATE clue_reports SET reason")) {
+          const r = reports.find((x) => x.id === b[1]);
+          if (r) r.reason = b[0];
         }
         return { success: true };
       },
@@ -118,6 +121,11 @@ console.log("\nFlagging a clue");
     "not admin-only: whoever spots it is whoever is looking");
   const again = await (await post({ clueId: "c1" })).json();
   t("flagging the same clue twice is not two reports", again.already === true);
+  /* But a second look with a clearer idea of what is wrong should not be
+     thrown away — that is what a second look is for. */
+  const better = await (await post({ clueId: "c1", reason: "Two answers fit" })).json();
+  t("a repeat report with a better reason replaces the first",
+    better.already === true && better.updated === true);
   t("it still needs the anti-CSRF header", (await post({ clueId: "c2" }, false)).status === 403);
   const out = makeEnv({ admin: 0, signedIn: false });
   t("a signed-out visitor cannot flag", (await report({

@@ -1253,3 +1253,16 @@ body.rotate-needed .rotate-prompt{
 }
 .nc-flag:hover{color:var(--wrong)}
 .nc-flag.done{color:var(--pitch)}
+
+
+/* Quick reasons. Tapping one is faster than typing, and a consistent set of
+   reasons is far easier to act on later than free text alone — but the box is
+   there too, because the useful objection is often the unexpected one. */
+.flag-reasons{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;
+}
+.flag-reasons .btn{font-size:12.5px;padding:0 10px;min-height:38px}
+.flag-reasons .btn.picked{
+  background:var(--sel-word);border-color:var(--pitch);color:var(--pitch);
+}
+#flagClueText{font-style:italic;margin-bottom:14px}

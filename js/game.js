@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09b";
+  var BUILD = "v09c";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1622,8 +1622,9 @@
     apiAuth("/api/admin/reports").then(function (d) {
       if (!d.reports.length) { adminMsg("Nothing flagged."); return; }
       var lines = d.reports.slice(0, 12).map(function (r) {
-        return r.clue_id + "  " + (r.clue || "(clue not found)").slice(0, 44) +
-          " \u2192 " + (r.answer || "?");
+        return r.clue_id + "  " + (r.clue || "(clue not found)").slice(0, 40) +
+          " \u2192 " + (r.answer || "?") +
+          (r.reason ? "\n      " + r.reason : "\n      (no reason given)");
       });
       adminMsg(d.reports.length + " flagged:\n" + lines.join("\n"));
     }).catch(function (err) { adminMsg(String(err.message || err)); });
@@ -1639,20 +1640,57 @@
     var btn = $("flagClue");
     if (btn) btn.style.display = "";
   }
+  var flagPicked = [];
   on("flagClue", "click", function () {
     if (!puzzle) return;
     if (!account) {
       toast("Sign in to flag a clue", "So it can be traced back and reviewed.");
       return;
     }
+    /* Show the clue being reported. Two weeks later a list of clue ids says
+       nothing; the wording plus a reason is what tells you whether to reword it
+       or bin it. */
+    var e = puzzle.entries[cur.entry];
+    $("flagClueText").textContent = clueText(e.row, e.num) + "  " + e.row.enum;
+    $("flagNote").value = "";
+    $("flagMsg").textContent = "";
+    flagPicked = [];
+    Array.prototype.forEach.call(
+      document.querySelectorAll("#flagReasons .btn"),
+      function (b) { b.classList.remove("picked"); });
+    $("flagSheet").classList.add("show");
+  });
+
+  /* The quick reasons are multi-select: a clue is often obscure *and* badly
+     worded, and forcing one loses the other. */
+  on("flagReasons", "click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest(".btn") : null;
+    if (!btn || !btn.getAttribute("data-reason")) return;
+    var reason = btn.getAttribute("data-reason");
+    var at = flagPicked.indexOf(reason);
+    if (at === -1) { flagPicked.push(reason); btn.classList.add("picked"); }
+    else { flagPicked.splice(at, 1); btn.classList.remove("picked"); }
+  });
+
+  on("flagCancel", "click", function () { $("flagSheet").classList.remove("show"); });
+
+  on("flagSend", "click", function () {
+    if (!puzzle || !account) return;
     var row = puzzle.entries[cur.entry].row;
-    apiAuth("/api/report-clue", { clueId: row.id, puzzle: puzzleToken })
+    var note = ($("flagNote").value || "").trim();
+    var reason = flagPicked.concat(note ? [note] : []).join("; ");
+    if (!reason) { $("flagMsg").textContent = "Pick a reason or write one."; return; }
+    apiAuth("/api/report-clue",
+            { clueId: row.id, puzzle: puzzleToken, reason: reason })
       .then(function (r) {
+        $("flagSheet").classList.remove("show");
         $("flagClue").classList.add("done");
         toast(r.already ? "Already flagged" : "Clue flagged",
-              row.id + " \u2014 noted for review.");
+              r.updated ? "Reason updated."
+                : r.already ? "You had already reported this one."
+                : row.id + " \u2014 noted for review.");
       })
-      .catch(function (err) { toast("Could not flag it", String(err.message || err), "loss"); });
+      .catch(function (err) { $("flagMsg").textContent = String(err.message || err); });
   });
 
   /* ---------- What's live ----------

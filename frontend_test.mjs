@@ -434,6 +434,22 @@ server.listen(0, "127.0.0.1", async () => {
     return /Sign in to flag a clue/.test(js);
   })());
 
+  t("flagging asks why, rather than only which", (() => {
+    /* Recording only the clue id is half the job: a fortnight later "0412" says
+       nothing, and the reason is what tells you whether to reword it or bin it. */
+    const sheet = d.getElementById("flagSheet");
+    const reasons = d.querySelectorAll("#flagReasons .btn").length;
+    return !!sheet && reasons >= 4 && !!d.getElementById("flagNote");
+  })(), `${d.querySelectorAll("#flagReasons .btn").length} quick reasons plus free text`);
+  t("the reasons are multi-select, since a clue can be two things at once", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /flagPicked\.splice\(at, 1\)/.test(js) && /flagPicked\.push\(reason\)/.test(js);
+  })());
+  t("it will not send an empty report", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /Pick a reason or write one/.test(js);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

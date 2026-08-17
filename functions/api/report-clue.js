@@ -22,17 +22,28 @@ export async function onRequestPost({ request, env }) {
   const clueId = String(body.clueId || "").slice(0, 40);
   if (!clueId) return bad("No clue id.");
 
-  /* One report per clue per person. Pressing the button twice on the same clue
-     is far more likely to be a mis-tap than two separate objections. */
+  const reason = String(body.reason || "").slice(0, 200) || null;
+
+  /* One report per clue per person — pressing the button twice is far more
+     likely to be a mis-tap than two separate objections. But a second report
+     with a better reason replaces the first rather than being thrown away:
+     coming back to a clue with a clearer idea of what is wrong with it is
+     exactly what a second look is for. */
   const seen = await env.DB
-    .prepare("SELECT id FROM clue_reports WHERE clue_id = ? AND reported_by = ?")
+    .prepare("SELECT id, reason FROM clue_reports WHERE clue_id = ? AND reported_by = ?")
     .bind(clueId, user.id).first();
-  if (seen) return json({ ok: true, already: true });
+  if (seen) {
+    if (reason && reason !== seen.reason) {
+      await env.DB.prepare("UPDATE clue_reports SET reason = ? WHERE id = ?")
+        .bind(reason, seen.id).run();
+      return json({ ok: true, already: true, updated: true });
+    }
+    return json({ ok: true, already: true });
+  }
 
   await env.DB.prepare(
     "INSERT INTO clue_reports (id, clue_id, reported_by, reason, puzzle) VALUES (?,?,?,?,?)")
-    .bind(newId(), clueId, user.id,
-          String(body.reason || "").slice(0, 200) || null,
+    .bind(newId(), clueId, user.id, reason,
           String(body.puzzle || "").slice(0, 40) || null).run();
   return json({ ok: true });
 }
