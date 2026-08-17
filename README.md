@@ -168,6 +168,7 @@ node functions_test.mjs    # 30 — the API contract
 node d1_test.mjs           # 16 — database semantics against production row ids
 node frontend_test.mjs     # 39 — the real game against the real API, and layout
 node viewport_test.mjs     # 11 — overflow, keyboard fit, breakpoint cascade
+node save_test.mjs         # 13 — what may and may not overwrite a saved game
 node deploy_check.mjs      # 13 — the pre-upload checklist
 ```
 
@@ -181,6 +182,11 @@ works against sample data and fails once deployed.
 
 `frontend_test.mjs` serves the site and the real Functions over HTTP, loads the
 page, plays it, and asserts the clue bank is nowhere in the browser.
+
+`save_test.mjs` seeds a game in progress into storage *before* the page loads,
+which the other suites cannot do, and then tries to destroy it. It opens a fresh
+window per case and carries storage across by hand, because a reload is part of
+what has to be proved. Every check in it comes from a real loss.
 
 The engine's own 330 logic tests live in the project archive with `engine.js`.
 

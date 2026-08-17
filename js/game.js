@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v10f";
+  var BUILD = "v10g";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -429,10 +429,33 @@
   }
 
   function save() {
+    /* Nothing is loaded, so there is nothing to write. This is not a
+       theoretical case: the landing screen's club control calls saveSoon()
+       through applyClubChoice(), and on that screen no puzzle has been built.
+       The write that produced was a complete, well-formed, entirely empty
+       record — letters {}, elapsed 0 — landing on top of a game in progress.
+       Worse, `mode` resets to "daily" on every load (fcw.mode is written and
+       never read), so whatever you were last playing, the landing screen wrote
+       to the daily slot. Changing your club on the menu destroyed the daily. */
+    if (!puzzle) return;
     /* A board that was never played over must not overwrite the save it
        replaced. Lifted the moment a letter is typed. */
     if (suppressSaveUntilPlayed && !Object.keys(letters).length) return;
     suppressSaveUntilPlayed = false;
+    /* Belt and braces, and the guard that would have made the above a
+       non-event whatever caused it: a record holding letters or time is never
+       replaced by one holding neither. Only an explicit reset clears a save —
+       and both of those use removeItem, which does not come through here.
+       Deliberately not conditioned on mode or on how the empty board arose,
+       because every way of arriving at one has the same wrong answer. */
+    var fresh = !Object.keys(letters).length && !elapsed && !complete;
+    if (fresh) {
+      var prev = null;
+      try { prev = JSON.parse(localStorage.getItem(
+        mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice")); } catch (e) {}
+      if (prev && !prev.complete &&
+          (Object.keys(prev.letters || {}).length || prev.elapsed)) return;
+    }
     try {
       // Which mode is in play, so a refresh comes back to the same game.
       localStorage.setItem("fcw.mode", mode);
