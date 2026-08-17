@@ -529,11 +529,22 @@ server.listen(0, "127.0.0.1", async () => {
     return /classList\.toggle\("long"/.test(js) && /classList\.toggle\("xlong"/.test(js) &&
       /\.nc-text\.long\{font-size/.test(flat) && /\.nc-text\.xlong\{font-size/.test(flat);
   })());
-  t("scaling is by clue length, so the same clue always looks the same", (() => {
-    // Not a measure-and-shrink loop: that would depend on what came before.
+  t("scaling is by lines at this width, not by a fixed character count", (() => {
+    /* A 76-character clue is one line on a desktop card and three on a 390px
+       phone. A character threshold therefore protects the wrong screen — it let
+       exactly that clue push the answer boxes out of the card on an iPhone
+       while scaling nothing. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /text\.length > 76/.test(js) && /text\.length > 104/.test(js) &&
-      !/scrollHeight/.test(js.slice(js.indexOf('el.textContent = text'), js.indexOf('el.textContent = text') + 400));
+    return /Math\.ceil\(text\.length \/ Math\.max\(12, Math\.floor\(cardW \/ 8\)\)\)/.test(js) &&
+      /lines === 2/.test(js) && /lines >= 3/.test(js);
+  })());
+  t("and still never measures the text itself", (() => {
+    /* The width read is the card's, which does not depend on the clue — so the
+       same clue at the same width always renders the same way. Measuring the
+       text would make it depend on what came before. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const at = js.indexOf("el.textContent = text");
+    return !/scrollHeight|getBoundingClientRect/.test(js.slice(at, at + 500));
   })());
   t("the card height still never changes between clues", (() => {
     const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");

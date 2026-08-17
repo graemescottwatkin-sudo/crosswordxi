@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08p";
+  var BUILD = "v08q";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1189,8 +1189,18 @@
     var text = clueText(e.row, e.num);
     var el = $("ncText");
     el.textContent = text;
-    el.classList.toggle("long", text.length > 76 && text.length <= 104);
-    el.classList.toggle("xlong", text.length > 104);
+    /* Scale by how many LINES the clue will take, not how many characters it
+       has. A 76-character clue is one line on a desktop card and three on a
+       390px phone, so a fixed character threshold protects the wrong screen —
+       it let a 76-character clue push the answer boxes out of the card on an
+       iPhone while scaling nothing.
+       The width read here is the card's, which does not depend on the clue, so
+       this stays deterministic: the same clue at the same width always renders
+       the same way. */
+    var cardW = el.clientWidth || (window.innerWidth || 360) - 120;
+    var lines = Math.ceil(text.length / Math.max(12, Math.floor(cardW / 8)));
+    el.classList.toggle("long", lines === 2);
+    el.classList.toggle("xlong", lines >= 3);
     renderBank(e);
     /* Do not call scrollIntoView() when the selected clue changes. On iPad,
        especially with the software keyboard open, Safari may scroll the visual
