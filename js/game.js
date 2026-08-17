@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v23a";
+  var BUILD = "v24";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -453,6 +453,27 @@
   /* Which slot a mode owns. Three modes, three slots: a themed board is a real
      game with a real clock, and letting it share the practice key would mean
      opening a themed board silently destroyed a practice game in progress. */
+  /* Scale the clue to the card it is actually in, now.
+     This used to run once, when a clue was selected, and never again — so the
+     size was chosen for the width the card had at that moment. Zoom, rotate or
+     open the keyboard and the card changes width while the text keeps the size
+     it was given, and the card is a fixed height with nowhere to put the
+     difference: zoomed in, four lines spilled over the answer boxes; zoomed
+     out, the last line was sliced in half. Every resize handler in this file
+     already re-fits the board; none of them re-fitted the words. */
+  function scaleClue() {
+    var el = $("ncText");
+    if (!el) return;
+    var text = el.textContent || "";
+    if (!text) return;
+    var cardW = el.clientWidth || (window.innerWidth || 360) - 120;
+    var lines = Math.ceil(text.length / Math.max(12, Math.floor(cardW / 8)));
+    el.classList.toggle("long", lines === 2);
+    el.classList.toggle("xlong", lines === 3);
+    /* Four lines fit in a 96px card only at this size. */
+    el.classList.toggle("xxlong", lines >= 4);
+  }
+
   function slotKey(m) {
     return m === "daily" ? "fcw.v04.daily"
          : m === "theme" ? "fcw.v04.theme"
@@ -1383,14 +1404,7 @@
        The width read here is the card's, which does not depend on the clue, so
        this stays deterministic: the same clue at the same width always renders
        the same way. */
-    var cardW = el.clientWidth || (window.innerWidth || 360) - 120;
-    var lines = Math.ceil(text.length / Math.max(12, Math.floor(cardW / 8)));
-    el.classList.toggle("long", lines === 2);
-    el.classList.toggle("xlong", lines === 3);
-    /* Four lines fit in a 96px card only at this size. Reachable since the
-       strip was capped to the board width: the same clue that took three lines
-       across the old full-width card takes four across this one. */
-    el.classList.toggle("xxlong", lines >= 4);
+    scaleClue();
     renderBank(e);
     /* Do not call scrollIntoView() when the selected clue changes. On iPad,
        especially with the software keyboard open, Safari may scroll the visual
@@ -1529,6 +1543,7 @@
     droppedBelow = false;            // decide again for the new size
     placeToolbar();
     if (puzzle) fitCells();
+    scaleClue();
   });
 
   /* Where the league table goes.
@@ -3222,13 +3237,13 @@
   }
   on("prevClue", "click", function () { stepClue(-1); });
   on("nextClue", "click", function () { stepClue(1); });
-  window.addEventListener("resize", function () { if (puzzle) fitCells(); });
+  window.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
   /* The keyboard opening does not fire resize on iOS — it changes the visual
      viewport instead. Without this the board is sized for a screen that no
      longer exists the moment a cell is focused. */
   if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", function () { if (puzzle) fitCells(); });
-    window.visualViewport.addEventListener("scroll", function () { if (puzzle) fitCells(); });
+    window.visualViewport.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
+    window.visualViewport.addEventListener("scroll", function () { if (puzzle) fitCells(); scaleClue(); });
   }
   window.addEventListener("orientationchange", function () {
     setTimeout(function () { if (puzzle) fitCells(); }, 250);

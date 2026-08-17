@@ -183,7 +183,22 @@ header{
   flex:0 0 auto;gap:10px;margin-right:2px;padding-right:10px;
   border-right:1px solid var(--line);
 }
-.grid-panel > .tb-game .tb-controls .btn{flex:1 1 0;min-width:0;padding:0 8px}
+/* min-width:0 lets a button shrink below its own label, and the label does not
+   shrink with it — "Menu", "Today's puzzle" and "New puzzle" ended up drawn on
+   top of one another as "MENUODAY'S PULEW PUZZLE". A floor wide enough for the
+   short labels, and anything still too long is clipped rather than allowed to
+   escape the button it belongs to. */
+.grid-panel > .tb-game .tb-controls .btn{
+  flex:1 1 0;min-width:74px;padding:0 8px;
+  overflow:hidden;text-overflow:ellipsis;
+}
+/* Below this the full labels do not fit however the row is arranged, so the
+   short ones take over: "Today" rather than "Today's puzzle". The mechanism
+   already existed and was never switched on here. */
+@media (max-width:1100px){
+  .grid-panel > .tb-game .tb-controls .lbl-full{display:none}
+  .grid-panel > .tb-game .tb-controls .lbl-short{display:inline}
+}
 /* justify-content, not just padding:0. The base .btn is an inline-flex with no
    justification, so zeroing the padding left the icon against the left edge
    rather than centring it in the square. */

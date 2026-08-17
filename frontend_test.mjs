@@ -770,6 +770,38 @@ server.listen(0, "127.0.0.1", async () => {
     return /Math\.ceil\(text\.length \/ Math\.max\(12, Math\.floor\(cardW \/ 8\)\)\)/.test(js) &&
       /lines === 2/.test(js) && /lines === 3/.test(js) && /lines >= 4/.test(js);
   })());
+  /* Scaled once at selection and never again: the size was chosen for the width
+     the card had at that moment. Zoom, rotate or open the keyboard and the card
+     changes width while the text keeps its old size — and the card is a fixed
+     height with nowhere to put the difference. Zoomed in, four lines spilled
+     over the answer boxes; zoomed out, the last line was sliced in half. */
+  t("the clue is re-scaled when the viewport changes, not only when selected", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    /* Matched loosely on purpose: the point is that every handler which
+       re-fits the board also re-fits the words, not that they are written in
+       any particular way. */
+    if (!/function scaleClue\(\)/.test(js)) return false;
+    const handlers = js.match(/addEventListener\("(resize|scroll)"[\s\S]{0,120}?\}\)/g) || [];
+    const fitters = handlers.filter((h) => /fitCells\(\)/.test(h));
+    return fitters.length > 0 && fitters.every((h) => /scaleClue\(\)/.test(h));
+  })());
+  /* The keyboard changes the visual viewport without firing resize on iOS,
+     which is the case the board already handles and the words did not. */
+  t("including the visual viewport, which the keyboard moves", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const vv = js.match(/visualViewport\.addEventListener\("(resize|scroll)"[\s\S]{0,120}?\}\)/g) || [];
+    return vv.length >= 2 && vv.every((h) => /scaleClue\(\)/.test(h));
+  })());
+  t("button labels cannot be drawn on top of each other", (() => {
+    /* min-width:0 let a button shrink below its own label while the label
+       stayed put: "MENUODAY'S PULEW PUZZLE". */
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    return /\.grid-panel > \.tb-game \.tb-controls \.btn\{[^}]*min-width:74px/.test(flat) &&
+      /\.grid-panel > \.tb-game \.tb-controls \.btn\{[^}]*overflow:hidden/.test(flat) &&
+      /\.grid-panel > \.tb-game \.tb-controls \.lbl-short\{display:inline\}/.test(flat);
+  })());
+
   t("and still never measures the text itself", (() => {
     /* The width read is the card's, which does not depend on the clue — so the
        same clue at the same width always renders the same way. Measuring the
