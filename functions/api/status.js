@@ -36,7 +36,8 @@ export async function onRequestGet({ env }) {
     });
   }
 
-  const [clues, practice, dailies, firstDay, lastDay, tagged, users] = await Promise.all([
+  const [clues, practice, dailies, firstDay, lastDay, tagged, users,
+         themeBoards, themeLive, themeNext] = await Promise.all([
     count(env, "SELECT COUNT(*) AS n FROM clues"),
     count(env, "SELECT COUNT(*) AS n FROM puzzles WHERE mode = 'practice'"),
     count(env, "SELECT COUNT(*) AS n FROM puzzles WHERE mode = 'daily'"),
@@ -44,6 +45,16 @@ export async function onRequestGet({ env }) {
     count(env, "SELECT MAX(daily_no) AS n FROM puzzles WHERE mode = 'daily'"),
     count(env, "SELECT COUNT(*) AS n FROM puzzles WHERE mode = 'practice' AND clue_ids IS NOT NULL"),
     count(env, "SELECT COUNT(*) AS n FROM users"),
+    /* Themed boards are a third of the content now, and the only way to tell
+       whether the import arrived was to open the section and find it empty —
+       which looks the same whether the tables are missing, the import never
+       ran, or every board is scheduled for a future Friday. Three separate
+       causes, one blank screen. These three numbers separate them: null means
+       no table, 0 means no import, and stored-but-none-released means the
+       dates are ahead of today. */
+    count(env, "SELECT COUNT(*) AS n FROM theme_boards"),
+    count(env, "SELECT COUNT(*) AS n FROM theme_boards WHERE release_on <= date('now')"),
+    count(env, "SELECT MIN(release_on) AS n FROM theme_boards WHERE release_on > date('now')"),
   ]);
 
   const reach = tagged ? await bankSize(env) : 0;
@@ -65,5 +76,8 @@ export async function onRequestGet({ env }) {
     today,
     daysLeft: lastDay === null ? null : lastDay - today,
     users,
+    themeBoards,
+    themeLive,
+    themeNext,
   });
 }

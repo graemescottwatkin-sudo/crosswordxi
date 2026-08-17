@@ -2,6 +2,7 @@
    It exists to make invisible failures visible, so its own honesty matters:
    it must report a missing database rather than an empty one, and must never
    carry clue text. */
+import fs from "node:fs";
 import { onRequestGet as status } from "./functions/api/status.js";
 
 let pass = 0, fail = 0;
@@ -65,6 +66,20 @@ t("a missing table is reported, not thrown on", await (async () => {
 t("nothing in the response is clue text", (() => {
   const raw = JSON.stringify(live);
   return !/clue"\s*:\s*"/.test(raw) && !/answer/i.test(raw) && !/"grid"/.test(raw);
+})());
+
+/* Themed boards get their own reading, and it has to distinguish three
+   failures that look identical from inside the section: no table, nothing
+   imported, and everything scheduled ahead of today. */
+t("the status payload reports themed boards separately", (() => {
+  const src = fs.readFileSync("functions/api/status.js", "utf8");
+  return /FROM theme_boards/.test(src) &&
+    /release_on <= date\('now'\)/.test(src) &&
+    /themeBoards/.test(src) && /themeLive/.test(src) && /themeNext/.test(src);
+})());
+t("and the panel tells a missing table from an empty one", (() => {
+  const js = fs.readFileSync("js/game.js", "utf8");
+  return /run migration 006/.test(js) && /none imported/.test(js) && /live of/.test(js);
 })());
 
 console.log(`\n${pass} passed, ${fail} failed`);

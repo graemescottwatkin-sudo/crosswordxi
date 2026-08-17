@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v17a";
+  var BUILD = "v18";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2125,6 +2125,19 @@
             d.daysLeft === null ? null : d.daysLeft >= 0));
           rows.push(statusRow("Days remaining", d.daysLeft,
             d.daysLeft === null ? null : d.daysLeft > 14));
+          /* Themed boards, and enough detail to tell three failures apart: no
+             table at all, a table with nothing imported, and boards imported
+             but every one dated ahead of today. All three look identical from
+             inside the section — an empty list. */
+          if (d.themeBoards === null || d.themeBoards === undefined) {
+            rows.push(statusRow("Themed boards", "no table \u2014 run migration 006", false));
+          } else if (!d.themeBoards) {
+            rows.push(statusRow("Themed boards", "none imported", false));
+          } else {
+            rows.push(statusRow("Themed boards", d.themeLive + " live of " + d.themeBoards,
+              d.themeLive > 0));
+            if (d.themeNext) rows.push(statusRow("Next themed board", d.themeNext));
+          }
           rows.push(statusRow("Sign-in", d.accounts ? "configured" : "not configured", !!d.accounts));
           rows.push(statusRow("Accounts", d.users === null ? "\u2014" : d.users));
         }
