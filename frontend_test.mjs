@@ -467,6 +467,18 @@ server.listen(0, "127.0.0.1", async () => {
     return /r\.dailyNo !== no/.test(fn) && !/removeItem\(RESULTS_KEY\)/.test(fn);
   })());
 
+  t("a server refusal is not reported as a lost connection", (() => {
+    /* Previewing another day returns 403 from check-answer, and the verify path
+       used to treat any failure as offline — so the game claimed there was no
+       connection while the network was perfectly fine. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    /* Anchor on the catch, not on "delete verifySent" — there is an earlier
+       one in the same function and the slice landed on the wrong occurrence. */
+    const at = js.indexOf("delete verifySent[i];       // so it is asked again");
+    const fn = js.slice(at, at + 500);
+    return at !== -1 && /if \(err && err\.offline\)/.test(fn);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

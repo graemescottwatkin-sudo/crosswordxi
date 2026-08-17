@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09f";
+  var BUILD = "v09g";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -261,10 +261,17 @@
       verifySent[i] = text;
       jobs.push(api("/api/check-answer", { token: puzzleToken, entry: i, guess: text })
         .then(function (r) { verified[i] = !!r.correct; setOffline(false); })
-        .catch(function () {
+        .catch(function (err) {
           delete verifySent[i];       // so it is asked again
-          setOffline(true);
-          scheduleRetry();            // ...without waiting for a keystroke
+          /* Only a request that never reached the server means offline. A
+             server that answered and said no — a daily that is not today, an
+             expired puzzle — is a refusal, and reporting it as a lost
+             connection sends the player looking for a network problem that is
+             not there. */
+          if (err && err.offline) {
+            setOffline(true);
+            scheduleRetry();          // ...without waiting for a keystroke
+          }
         }));
     });
     if (!jobs.length) { updateProgress(); return Promise.resolve(); }

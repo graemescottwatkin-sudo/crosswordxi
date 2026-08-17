@@ -16,6 +16,7 @@
 import { normalise, json, bad } from "../_lib/puzzle.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
+import { isAdmin } from "../_lib/auth.js";
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -26,8 +27,12 @@ export async function onRequestPost({ request, env }) {
   }
 
   const { token, entry, index } = body || {};
-  // A daily token is only playable on its own day; see _lib/daily.js.
-  if (playableDailyNo(token) === false) {
+  /* A daily token is only playable on its own day; see _lib/daily.js. The one
+     exception is the owner previewing another day — otherwise the preview is a
+     board that cannot be checked, revealed or finished, which is not much of a
+     preview. The guard is unchanged for everyone else: the flag is read from
+     the database, not taken from the request. */
+  if (playableDailyNo(token) === false && !(await isAdmin(request, env))) {
     return bad("That puzzle is not today's daily.", 403);
   }
   const stored = await getPuzzleForToken(env, token);

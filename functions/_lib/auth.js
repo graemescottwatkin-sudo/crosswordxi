@@ -166,6 +166,18 @@ export function csrfOk(request) {
   return request.headers.get("X-Crossword-XI") === "1";
 }
 
+/* Is this request from the owner? Read from the database every time, never
+   from anything the request carries. Used to let a preview of another day be
+   played rather than merely looked at. */
+export async function isAdmin(request, env) {
+  try {
+    const u = await currentUser(request, env);
+    return !!(u && u.is_admin);
+  } catch (e) {
+    return false;
+  }
+}
+
 export function publicUser(u) {
   if (!u) return null;
   return {

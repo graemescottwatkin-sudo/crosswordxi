@@ -97,5 +97,16 @@ t("practice: a daily token cannot be laundered through ?token=",
 t("practice: a junk token is refused",
   (await practice({ request: req("https://x/api/practice?token=practice:abc"), env })).status === 400);
 
+/* The future-daily guard is the thing stopping anyone reading tomorrow's
+   answers, so its one exception is worth testing from both sides. */
+{
+  const noSession = { DB: { prepare() { return { bind() { return this; },
+    async first() { return null; } }; } } };
+  const r = await check({ request: new Request("https://x/api/check-answer", {
+    method: "POST", body: JSON.stringify({ token: "daily:999", entry: 0, guess: ["A"] }),
+  }), env: noSession });
+  t("a stranger still cannot check another day", r.status === 403, "status " + r.status);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
