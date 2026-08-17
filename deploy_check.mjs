@@ -38,6 +38,16 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
 t("the build tag matches the one the script reports",
   read("js/game.js").includes('var BUILD = "' + (html.match(/\?v=([^"]+)"/) || [])[1] + '"'),
   (html.match(/\?v=([^"]+)"/) || [])[1]);
+/* A comment that lost its opening marker renders as page content. It happened:
+   moving a block cut the "<!--" and left the "-->" behind, and three lines of
+   explanation about board width appeared on the live site above the puzzle.
+   Cheap to check, invisible until someone looks at the page. */
+t("HTML comments are balanced, so none of them can render as text", (() => {
+  const html = read("index.html");
+  return (html.match(/<!--/g) || []).length === (html.match(/-->/g) || []).length;
+})(), (read("index.html").match(/<!--/g) || []).length + " open, " +
+      (read("index.html").match(/-->/g) || []).length + " close");
+
 t("no absolute or machine-specific paths",
   !/localhost/.test(html) && !/file:\/\//.test(html) && !/[A-Za-z]:\\/.test(html) &&
   !/(src|href)="\//.test(html));
