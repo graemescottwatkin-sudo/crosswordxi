@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v10e";
+  var BUILD = "v10f";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -317,6 +317,40 @@
     } catch (e) { finish(false); }
   }
   var CLUBS = FCW.historicalClubs();   // all 49 clubs of the 20-team era
+
+  /* The Football League clubs, so a Bolton or a Wrexham supporter can play as
+     their own side. No new season data is needed: the engine already displaces
+     the bottom club when yours did not play in the season being used, which is
+     exactly right — you take the last place and climb from there.
+
+     Taken from the 2024/25 divisions to match the newest season stored. Divisions
+     change every year and this list is written out rather than derived, so it
+     will drift; it is only a menu, and a wrong division costs nothing but a
+     misplaced heading. Worth checking before launch. */
+  var EFL_CLUBS = [
+    // Championship 2024/25
+    "Blackburn Rovers", "Bristol City", "Cardiff City", "Coventry City",
+    "Derby County", "Hull City", "Leeds United", "Luton Town",
+    "Middlesbrough", "Millwall", "Norwich City", "Oxford United",
+    "Plymouth Argyle", "Portsmouth", "Preston North End",
+    "Queens Park Rangers", "Sheffield United", "Sheffield Wednesday",
+    "Stoke City", "Sunderland", "Swansea City", "Watford",
+    "West Bromwich Albion",
+    // League One 2024/25
+    "Barnsley", "Birmingham City", "Blackpool", "Bolton Wanderers",
+    "Bristol Rovers", "Burton Albion", "Cambridge United", "Charlton Athletic",
+    "Crawley Town", "Exeter City", "Huddersfield Town", "Leyton Orient",
+    "Lincoln City", "Mansfield Town", "Northampton Town", "Peterborough United",
+    "Reading", "Rotherham United", "Shrewsbury Town", "Stevenage",
+    "Stockport County", "Wigan Athletic", "Wrexham", "Wycombe Wanderers",
+    // League Two 2024/25
+    "Accrington Stanley", "AFC Wimbledon", "Barrow", "Bradford City",
+    "Bromley", "Carlisle United", "Cheltenham Town", "Chesterfield",
+    "Colchester United", "Crewe Alexandra", "Doncaster Rovers",
+    "Fleetwood Town", "Gillingham", "Grimsby Town", "Harrogate Town",
+    "Milton Keynes Dons", "Morecambe", "Newport County", "Notts County",
+    "Port Vale", "Salford City", "Swindon Town", "Tranmere Rovers", "Walsall",
+  ];
   if (seasonErrors.length) console.warn("Season data problems:", seasonErrors);
   var season = null;  // the historical season this puzzle is played in
   var clubMode = "random";   // "random" | "chosen"
@@ -2614,9 +2648,19 @@
     var rest = CLUBS.filter(function (c) { return !seen[c]; });
     if (rest.length) {
       var g2 = document.createElement("optgroup");
-      g2.label = "Other clubs";
+      g2.label = "Other Premier League clubs";
       rest.forEach(function (c) { addTo(g2, c); });
       sel.appendChild(g2);
+    }
+    /* Clubs that have never played a Premier League season. They take the
+       bottom club's place in whichever season is used — which is the right
+       story anyway: you start at the bottom and climb. */
+    var efl = EFL_CLUBS.filter(function (c) { return !seen[c]; }).sort();
+    if (efl.length) {
+      var g3 = document.createElement("optgroup");
+      g3.label = "Football League clubs";
+      efl.forEach(function (c) { addTo(g3, c); });
+      sel.appendChild(g3);
     }
     sel.addEventListener("change", function () { applyClubChoice(sel.value); });
   }

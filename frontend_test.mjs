@@ -123,12 +123,26 @@ server.listen(0, "127.0.0.1", async () => {
     const sel = $("homeClubSelect");
     return !!sel && sel.options.length > 20;
   })(), $("homeClubSelect") ? $("homeClubSelect").options.length + " options" : "missing");
+  t("Football League clubs can be played as too", (() => {
+    /* No new season data needed: the engine already displaces the bottom club
+       when yours did not play that season, which is the right story anyway —
+       you take last place and climb from there. */
+    const opts = [...$("homeClubSelect").querySelectorAll("option")].map((o) => o.value);
+    return opts.includes("Bolton Wanderers") && opts.includes("Wrexham") &&
+      opts.includes("Notts County");
+  })(), $("homeClubSelect").options.length + " clubs in total");
+  t("and they are grouped separately, not mixed in", (() => {
+    const groups = [...$("homeClubSelect").querySelectorAll("optgroup")].map((g) => g.label);
+    return groups.length === 3 && /Football League/.test(groups[2]);
+  })(), [...$("homeClubSelect").querySelectorAll("optgroup")].map((g) => g.label).join(" | "));
   t("the newest season's clubs come first, not all 49 alphabetically", (() => {
     /* Forty-nine in one run means scrolling past Barnsley and Bradford to reach
        the side you support. Grouped from the data, so adding a season moves the
        list on by itself. */
+    /* Three groups now the Football League is offered too; what matters is
+       that the newest season leads and has its twenty. */
     const groups = [...$("homeClubSelect").querySelectorAll("optgroup")];
-    return groups.length === 2 && /Premier League \d{4}\/\d{2}/.test(groups[0].label) &&
+    return groups.length === 3 && /Premier League \d{4}\/\d{2}/.test(groups[0].label) &&
       groups[0].children.length === 20;
   })(), [...$("homeClubSelect").querySelectorAll("optgroup")].map((g) => g.label).join(" | "));
   t("both modes are offered as their own target", (() => {
