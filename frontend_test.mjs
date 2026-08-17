@@ -377,6 +377,23 @@ server.listen(0, "127.0.0.1", async () => {
       /@media \(max-width:760px\)/.test(css);
   })());
 
+  t("on the shortest screens the toolbar moves below the board", (() => {
+    /* Measured live at 320x568: header, clue card and toolbar took ~335px
+       before the board started, so a 15-row grid finished 37px past the fold.
+       The real puzzles run taller than the development samples, which is why
+       this passed locally and failed against the live site. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function toolbarBelow/.test(js) && /vh <= 600/.test(js) &&
+      /panel\.parentNode\.insertBefore\(bar, panel\.nextSibling\)/.test(js);
+  })());
+  t("and stops being counted as chrome above it", (() => {
+    // Counting a toolbar that sits below the board sizes the board for space
+    // it actually has.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /var barAbove = !railMode && !toolbarBelow\(\)/.test(js) &&
+      /barAbove \? h\("\.toolbar"\) : 0/.test(js);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

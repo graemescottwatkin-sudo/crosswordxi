@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08j";
+  var BUILD = "v08k";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -974,7 +974,11 @@
     /* In rail mode the toolbar is beside the board, not above it. Counting its
        height as vertical chrome made the cell size sensitive to the rail's
        content and was another source of reflow. */
-    var measured = h("header") + h(".now-clue") + h(".osk") + (railMode ? 0 : h(".toolbar"));
+    /* The toolbar only counts as chrome when it is above the board. In the
+       landscape rail it sits beside it, and on short screens below it — in
+       both cases counting its height would size the board for space it has. */
+    var barAbove = !railMode && !toolbarBelow();
+    var measured = h("header") + h(".now-clue") + h(".osk") + (barAbove ? h(".toolbar") : 0);
     var isTouch = document.body.classList.contains("touch");
     var chrome = (measured > 80 ? measured : (isTouch ? 330 : 230)) + 46 + padY;
     /* C1/C2 — the real remaining height, with no floor.
@@ -1264,18 +1268,36 @@
     return window.matchMedia &&
       window.matchMedia("(orientation:landscape) and (max-height:1100px) and (min-width:1000px)").matches;
   }
+  /* On the shortest screens the toolbar goes below the board instead of above
+     it. At 320x568 the header, clue card and toolbar take ~335px before the
+     board even starts, leaving a 15-row grid to finish 37px past the fold —
+     measured on the live site, where the real puzzles run taller than the
+     development samples.
+     Moving the toolbar down buys back its whole height. The clock and New
+     Puzzle are read occasionally; the board is looked at constantly, so the
+     board takes the top of the screen. The league table already relocates this
+     way on phones, so the pattern is established. */
+  function toolbarBelow() {
+    var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 800;
+    return !railWanted() && vh <= 600 && (window.innerWidth || 360) < 700;
+  }
   function placeToolbar() {
     var bar = $("toolbar"), stage = document.querySelector(".stage");
     if (!bar || !stage) return;
     if (!barHome) { barHome = bar.parentNode; barAnchor = bar.nextElementSibling; }
     if (railWanted()) {
       if (bar.parentNode !== stage) stage.insertBefore(bar, stage.firstChild);
-    } else if (bar.parentNode !== barHome) {
+    } else if (toolbarBelow()) {
+      var panel = document.querySelector(".grid-panel");
+      if (panel && bar.previousElementSibling !== panel) {
+        panel.parentNode.insertBefore(bar, panel.nextSibling);
+      }
+    } else if (bar.parentNode !== barHome || bar.nextElementSibling !== barAnchor) {
       barHome.insertBefore(bar, barAnchor);
     }
   }
   placeToolbar();
-  window.addEventListener("resize", placeToolbar);
+  window.addEventListener("resize", function () { placeToolbar(); if (puzzle) fitCells(); });
 
   var tableHome = null, tableAnchor = null;
   function placeTable() {
