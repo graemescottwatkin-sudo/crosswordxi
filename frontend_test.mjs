@@ -93,6 +93,30 @@ server.listen(0, "127.0.0.1", async () => {
     return !!home && home.classList.contains("show") &&
       d.querySelectorAll("#grid .cell").length === 0;
   })(), d.querySelectorAll("#grid .cell").length + " cells before choosing");
+  t("a saved game is written before leaving for the menu", (() => {
+    /* Saving is deferred 400ms, so letters typed just before pressing Menu were
+       still in a pending timer and the landing screen read the file without
+       them. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function showHome"), js.indexOf("function showHome") + 700);
+    return /clearTimeout\(saveT\); save\(\)/.test(fn);
+  })());
+  t("the clock is saved while it runs, not only when something is typed", (() => {
+    // Twenty-five seconds of thinking left elapsed at 0 in storage.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function startClockSaves/.test(js) && /setInterval/.test(js);
+  })());
+  t("a rejected save is not overwritten by the empty board that replaced it", (() => {
+    /* Discarding a save and then immediately saving an empty board destroys the
+       letters that were only being questioned. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /suppressSaveUntilPlayed = true/.test(js) &&
+      /if \(suppressSaveUntilPlayed && !Object\.keys\(letters\)\.length\) return;/.test(js);
+  })());
+  t("time on the clock counts as in progress, not just typed letters", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function inProgress/.test(js) && /\(rec\.elapsed \|\| 0\) > 0/.test(js);
+  })());
   t("the club is chosen on the landing screen", (() => {
     /* It applies to both modes and does not change between them, so asking
        again on each kick-off card was asking twice for one answer. */
@@ -527,6 +551,16 @@ server.listen(0, "127.0.0.1", async () => {
     // Nothing to consent to, and nothing to put in a privacy policy.
     return !html.includes("gtag") && !html.includes("google-analytics") &&
       !/document\.cookie/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8"));
+  })());
+
+  t("the word separator is visible in both themes", (() => {
+    /* It was 2.23:1 in light and 1.14:1 in dark — no line at all on a dark
+       screen. It carries information: AFC | BOURNEMOUTH is a different answer
+       from AFCBOURNEMOUTH, and the enumeration only says so if you read it. */
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    return /--wordbreak:#1E6B45/.test(flat) && /--wordbreak:#9DB3A6/.test(flat) &&
+      /\.cell\.brk-r\{border-right:3px/.test(flat);
   })());
 
   console.log("\nSharing a result");

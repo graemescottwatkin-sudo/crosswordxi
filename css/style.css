@@ -16,7 +16,12 @@
   --wrong-ink:#8A2419;
   --revealed:#7A8FA6;
   --line:#D9DDD6;
-  --wordbreak:#9DB3A6;      /* softened word separator */
+  /* The separator between two words of one answer. It was #9DB3A6 at 2px —
+     2.23:1 against a white cell, and 1.14:1 in dark mode, which is no line at
+     all. It carries real information: AFC | BOURNEMOUTH is a different answer
+     from AFCBOURNEMOUTH, and the enumeration only says so if you go and read
+     it. */
+  --wordbreak:#1E6B45;
   --cell:52px;
   --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
   --body:"Public Sans",-apple-system,"Segoe UI",Arial,sans-serif;
@@ -60,7 +65,7 @@
     --wrong-bg:#4A231D;
     --revealed:#8AA0B6;
     --line:#2A3326;
-    --wordbreak:#4A5C4E;
+    --wordbreak:#9DB3A6;
     --gold:#C9A227;
     --gold-ink:#120E00;
     --gold-ans:#5C4E1E;
@@ -98,7 +103,7 @@
   --wrong-bg:#4A231D;
   --revealed:#8AA0B6;
   --line:#2A3326;
-  --wordbreak:#4A5C4E;
+  --wordbreak:#9DB3A6;
   --gold:#C9A227;
   --gold-ink:#120E00;
   --gold-ans:#5C4E1E;
@@ -426,8 +431,10 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
 .cell.just-solved{animation:solved .6s ease}
 @keyframes solved{0%{background:var(--sel-cell)}100%{background:var(--cell-bg)}}
 @media (prefers-reduced-motion:reduce){.cell.just-solved{animation:none}}
-.cell.brk-r{border-right:2px solid var(--wordbreak)}
-.cell.brk-b{border-bottom:2px solid var(--wordbreak)}
+/* 3px, and in the pitch green rather than a grey. A word break is structure,
+   not decoration — it should read as firmly as the grid edge does. */
+.cell.brk-r{border-right:3px solid var(--wordbreak)}
+.cell.brk-b{border-bottom:3px solid var(--wordbreak)}
 
 .stage.prestart{filter:blur(7px);pointer-events:none;user-select:none}
 .kick-card{

@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v10c";
+  var BUILD = "v10e";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -362,7 +362,20 @@
       updateScoreUI();
     }
   }
+  /* The clock is only written when something else triggers a save, so twenty-five
+     seconds of thinking with nothing typed left elapsed at 0 in storage — and
+     the landing screen showed no progress on a game that was plainly running.
+     A save every ten seconds costs nothing and makes the displayed time true. */
+  var clockSaveT = null;
+  function startClockSaves() {
+    if (clockSaveT) return;
+    clockSaveT = setInterval(function () {
+      if (running && puzzle && !complete) save();
+    }, 10000);
+  }
+
   function startTimer() {
+    startClockSaves();
     if (!started || paused) return; // no clock before kick-off or while paused
     if (!running && !complete) { running = true; timerId = setInterval(tick, 1000); }
   }
@@ -382,6 +395,10 @@
   }
 
   function save() {
+    /* A board that was never played over must not overwrite the save it
+       replaced. Lifted the moment a letter is typed. */
+    if (suppressSaveUntilPlayed && !Object.keys(letters).length) return;
+    suppressSaveUntilPlayed = false;
     try {
       // Which mode is in play, so a refresh comes back to the same game.
       localStorage.setItem("fcw.mode", mode);
@@ -539,6 +556,7 @@
   }
 
   var staleSave = false;
+  var suppressSaveUntilPlayed = false;
   function finishBuild(restore) {
     staleSave = false;
     var diff = FCW.puzzleDifficulty(puzzle);
@@ -573,6 +591,11 @@
         restore.fingerprint !== puzzleFingerprint(puzzle)) {
       restore = null;
       staleSave = true;
+      /* Hold off writing until the player actually does something. Discarding a
+         save and then immediately saving an empty board destroys the letters
+         that were only being questioned — the worst possible reading of "this
+         might not match". If the mismatch was ours, they are still there. */
+      suppressSaveUntilPlayed = true;
     }
     if (restore) {
       letters = restore.letters || {};
@@ -2878,23 +2901,36 @@
       ? "One a day, the same for everyone. The clock counts."
       : "A friendly. Played and kept, but the season table starts on Matchday 1.";
 
+    /* A game with time on the clock is in progress whether or not anything has
+       been typed — twenty-five seconds of reading the clues is still playing,
+       and showing nothing there made it look as though the game had been lost. */
+    function inProgress(rec) {
+      return !!rec && !rec.complete &&
+        (Object.keys(rec.letters || {}).length > 0 || (rec.elapsed || 0) > 0);
+    }
+
     var d = savedFor("daily");
     var state = "";
     if (d && d.dailyNo === today) {
       if (d.complete) state = "Played \u00B7 " + (d.score != null ? d.score + "/114" : "done");
-      else if (Object.keys(d.letters || {}).length) state = "In progress \u00B7 " + fmt(d.elapsed || 0);
+      else if (inProgress(d)) state = "In progress \u00B7 " + fmt(d.elapsed || 0);
     }
     $("homeDailyState").textContent = state;
 
     var p = savedFor("practice");
-    $("homePracticeState").textContent =
-      (p && !p.complete && Object.keys(p.letters || {}).length) ? "One in progress" : "";
+    $("homePracticeState").textContent = inProgress(p)
+      ? "One in progress \u00B7 " + fmt(p.elapsed || 0) : "";
   }
 
   function showHome() {
     /* Stop anything running. Coming back to the menu must not leave a clock
        ticking on a puzzle nobody is looking at. */
     stopTimer();
+    /* Write immediately rather than leaving it to the debounce. Saving is
+       deferred 400ms, so letters typed just before pressing Menu were still in
+       a pending timer — and the landing screen then read the file without
+       them. */
+    if (puzzle && started) { clearTimeout(saveT); save(); }
     renderHome();
     $("startOverlay").classList.remove("show");
     $("homeOverlay").classList.add("show");
