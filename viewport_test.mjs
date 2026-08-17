@@ -103,70 +103,35 @@ t("narrow landscape lays the table on its side under the board", (() => {
 })());
 t("narrow landscape collapses the table, where there is no room for a rail",
   /@media \(orientation:landscape\) and \(max-height:1100px\) and \(max-width:859px\)/.test(flatCss));
-const rail = flatCss.slice(flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
-t("wide landscape grids the stage, not the body", (() => {
-  /* Gridding the body put the rail beside the whole stage, so it ran the height
-     of the page while the board floated in the middle of its column. Gridding
-     the stage makes the rail a column of the board itself. */
-  return /\.stage\{display:grid;align-items:start/.test(rail) &&
-    !/body\{display:grid/.test(rail);
+/* ---- Landscape, after the rail ----
+   There was a two-column landscape layout here: a rail of controls beside the
+   board, and fourteen checks describing it. It existed because the toolbar was
+   a banner that could be stood on its side. The controls are in one column
+   under the board now, and the rule that made the rail work —
+   .grid-panel{display:contents} — turned every block in that column into an
+   item of a two-column grid. Four had no placement, so on a tablet in
+   landscape the game row, the help row, the clue toggle and the league table
+   auto-placed wherever the grid put them.
+   The checks below are what replaced it: landscape is the same single column
+   as every other width, and the machinery that fed the rail is gone from the
+   script as well as the stylesheet — half of either is worse than neither. */
+const landscapeWide = flatCss.slice(
+  flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
+t("wide landscape is one column, capped to the board",
+  /\.stage\{width:min\(100%,var\(--board-w,100%\)\);margin:0 auto\}/.test(landscapeWide));
+t("nothing is placed into a grid that no longer exists", (() => {
+  return !/display:contents/.test(flatCss) &&
+    !/grid-template-columns:var\(--rail-w\)/.test(flatCss) &&
+    !/--rail-w/.test(flatCss);
 })());
-t("the rail sits in the board's row and ends with its content", (() => {
-  /* Stretching it to the board's height left a couple of hundred pixels of
-     empty card below the help buttons. */
-  return /\.toolbar\{grid-column:1;grid-row:2/.test(rail) &&
-    /\.toolbar\{align-self:start\}/.test(rail) &&
-    /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
-})());
-t("the rail + board tracks are centred inside the page", (() => {
+t("and the script no longer reserves width for a rail", (() => {
   const js = fs.readFileSync("js/game.js", "utf8");
-  /* Was `width:100%`, which the shipped CSS never says: the stage is capped to
-     the measured pair width so the spanning rows cannot widen the tracks. The
-     assertion was left behind when the rule changed. */
-  return /width:min\(100%,var\(--block-w,[^)]*\)\)/.test(rail) && /margin:0 auto/.test(rail) &&
-    /justify-content:center/.test(rail) &&
-    /--block-w/.test(js) && /railW \+ pairGap \+ boardW/.test(js) &&
-    /* Derived from the cell size, not read back off the painted board — and
-       from the widest board the generator builds, not this puzzle's width, so
-       the pitch does not resize under the column that lines up with it. */
-    /frameCols \* size \+ wrapPadX/.test(js);
+  /* railW reserved 230-280px beside the board. Left behind, the stylesheet
+     stops drawing a rail while the maths keeps paying for one, and the board
+     shrinks in landscape for space nothing occupies. */
+  return !/var railW =/.test(js) && !/pairCap - railW/.test(js);
 })());
-t("nothing that spans both columns can widen them", (() => {
-  // min-width:0 stops a long clue or a long list item forcing a track wider.
-  return /\.now-clue\{[^}]*min-width:0/.test(rail) && /\.clues\{[^}]*min-width:0/.test(rail);
-})());
-t("the active clue spans the pair and is capped to the pair width",
-  /\.now-clue\{grid-column:1 \/ -1;grid-row:1;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
-t("the clue lists span underneath and are capped to the pair width",
-  /\.clues\{grid-column:1 \/ -1;grid-row:4;.*?width:min\(100%,var\(--block-w,100%\)\);justify-self:center/.test(rail));
-t("panels inside the rail are contents of the card, not boxes on top of it",
-  /\.tb-match,\.tb-game,\.tb-help\{[^}]*background:none;border:none;padding:0/.test(rail));
-t("the season record follows the board into the second column, at the board's width",
-  /#seasonPanel\{grid-column:2;grid-row:3;[^}]*width:var\(--board-w/.test(rail));
-/* A plain 1fr track refuses to shrink below its content, so the help buttons
-   pushed straight out through the side of the card. */
-t("help buttons cannot overflow the rail",
-  /\.tb-row\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/.test(rail) &&
-  /\.tb-row \.btn\{min-width:0/.test(rail));
-t("the rail uses short button labels, since it is only 280px wide",
-  /\.tb-row \.lbl-full\{display:none\}/.test(rail) && /\.tb-row \.lbl-short\{display:inline\}/.test(rail));
-t("the toolbar stacks from the top rather than spreading down the card",
-  /\.toolbar\{justify-content:flex-start\}/.test(rail));
-t("the board column is sized to the board, so the pitch keeps hugging the grid", (() => {
-  /* Went 1fr -> max-content -> var(--board-w). 1fr made the column as wide as
-     the page; max-content let a long clue in a spanning row widen it. The
-     board's width is known exactly, so the track is told rather than asked. */
-  return /grid-template-columns:var\(--rail-w\)\s*var\(--board-w/.test(rail) &&
-    /\.grid-wrap\{grid-column:2;grid-row:2/.test(rail);
-})());
-t("the clue lists end at the same right edge as the board pair",
-  /\.clues\{max-width:var\(--block-w,100%\)\}/.test(rail));
-t("the two landscape layouts cannot both apply", (() => {
-  // One is max-width:859px, the other min-width:860px.
-  return /\(max-width:859px\)/.test(flatCss) && /\(min-width:860px\)/.test(flatCss);
-})());
-t("the board panel becomes display:contents so its children can be placed",
-  /\.grid-panel\{display:contents\}/.test(rail));
+
 
 /* Dark mode had the crossword nearly invisible against its own pitch: the cell
    fill and the turf sat at 1.57:1, where light mode manages 5.04:1. The grid

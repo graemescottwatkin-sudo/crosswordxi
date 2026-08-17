@@ -1195,101 +1195,18 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    grid: the active clue spans both, the rail stretches to the board's height,
    and the clue lists run full width underneath. The toolbar is moved into the
    stage by script, since it is a sibling of it in the markup. */
+/* The landscape rail is gone.
+   It was a two-column grid: a rail of controls beside the board, built when
+   the toolbar was a banner that could be stood on its side. There is no
+   toolbar now — the controls sit in one column under the board — and the rule
+   that made it work, .grid-panel{display:contents}, turned every block in that
+   column into an item of a two-column grid. Four of them had no placement, so
+   on a tablet in landscape the game row, the help row, the clue toggle and the
+   league table auto-placed into whatever cell came next.
+   Landscape now uses the same single column as everything else, capped to the
+   board's width like every other block. */
 @media (orientation:landscape) and (max-height:1100px) and (min-width:860px){
-  .stage{
-    display:grid;align-items:start;
-    /* v07g: the landscape layout has one deterministic measure. The rail width
-       comes only from the viewport, never from its button/table contents, and
-       --block-w is published from the puzzle dimensions. That removes the
-       feedback loop where selecting a clue could re-measure the board and move
-       the whole middle row by a few pixels. */
-    --rail-w:clamp(230px,23.5vw,280px);
-    --pair-gap:18px;
-    width:min(100%,var(--block-w,1140px));max-width:1140px;margin:0 auto;
-    /* var(--board-w), not max-content. A max-content track sizes to the widest
-       thing in it, and the clue strip and clue lists span both columns — so a
-       long clue grew the board's column, the tracks stopped fitting the stage
-       box, and the rail and board slid out from under a clue strip that stayed
-       put. The board's width is already known exactly (cells x size), so the
-       track is told what it is rather than asked to work it out from text. */
-    grid-template-columns:var(--rail-w) var(--board-w, max-content);
-    justify-content:center;
-    column-gap:var(--pair-gap);row-gap:10px;
-  }
-  /* The card ends where its content ends. Stretching it to the board's height
-     left a couple of hundred pixels of empty white below the help buttons. */
-  .toolbar{align-self:start}
-  /* The panel's children become items of the stage grid, so the clue strip and
-     the board can be placed independently without unwrapping the markup. */
-  .grid-panel{display:contents}
-
-  .now-clue{
-    grid-column:1 / -1;grid-row:1;
-    /* A spanning item can grow the tracks it spans; min-width:0 stops a long
-       clue doing so and dragging the board's column out from under it. */
-    min-width:0;
-    /* Match the exact combined width of the rail + board, rather than running
-       across the whole tablet. This makes the top clue finish at the board edge. */
-    width:min(100%,var(--block-w,100%));justify-self:center;
-  }
-  .toolbar{
-    grid-column:1;grid-row:2;
-    flex-direction:column;align-items:stretch;
-    margin:0;max-width:none;gap:8px;
-  }
-  .grid-wrap{grid-column:2;grid-row:2;justify-self:center}
-  .clues{
-    grid-column:1 / -1;grid-row:4;min-width:0;
-    width:min(100%,var(--block-w,100%));justify-self:center;
-  }
-
-
-  /* Turned on its side the banner becomes the rail: the three boxes stack. */
-  .toolbar{justify-content:flex-start}
-  .tb-match,.tb-game,.tb-help{
-    flex:0 0 auto;max-width:none;min-width:0;
-    background:none;border:none;padding:0;align-self:stretch;
-  }
-  .tb-readouts,.tb-controls{width:100%}
-  /* flex:1 1 0, not auto: auto sizes from the label and the rail is narrow
-     enough that the difference shows as a ragged column. */
-  .tb-controls .btn{flex:1 1 0;min-width:0}
-  /* Inside the rail the panels are the card's contents, not free-floating
-     boxes: they lose their own background so the card reads as one panel, and
-     a rule between them does the separating instead. */
-  .tb-game,.tb-help{border-top:1px solid var(--line);padding-top:8px}
-
-  /* The season record follows the board into the second column, at the board's
-     width. .grid-panel is display:contents here, so it has to be placed.
-     This is the spot the league table used to occupy: the table has gone back
-     into the rail, and what sits under the crossword is the run of results the
-     score actually produced. */
-  #seasonPanel{
-    grid-column:2;grid-row:3;justify-self:start;
-    width:var(--board-w,100%);margin-top:2px;
-  }
-  /* minmax(0,1fr), not 1fr: a plain 1fr track will not shrink below its
-     content, so "REVEAL ANSWER -9" pushed the buttons out through the side of
-     the card. Short labels as well, because the rail is 280px wide. */
-  /* The rail is narrow: the label goes above its pair. */
-  .tb-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .tb-sub{grid-column:1 / -1;min-width:0}
-  .tb-row .btn{min-width:0;padding:0 8px}
-  .tb-row .lbl-full{display:none}
-  .tb-row .lbl-short{display:inline}
-  .tb-row-sub .btn{grid-column:1 / span 2}
-
-  .grid-wrap{justify-self:start}
-  /* Tighter clue rows: at this width every clue fits on one line, so the list
-     can show all of them above the keyboard rather than two. */
-  .clue-col li{padding:4px 8px;font-size:14px;line-height:1.35}
-  .clue-col h2{font-size:16px;padding-bottom:3px;margin-bottom:5px}
-  .clues{gap:10px 46px}
-  /* Keep the clue lists on the same measure as the combined rail + board.
-     They are still wide enough for two readable columns, but no longer create
-     a full-viewport line that visually pulls the layout back toward the left. */
-  .clues{max-width:var(--block-w,100%)}
-  .clues{gap:14px 46px}
+  .stage{width:min(100%,var(--board-w,100%));margin:0 auto}
 }
 
 @media (orientation:landscape) and (max-height:820px){

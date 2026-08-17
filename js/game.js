@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v20";
+  var BUILD = "v20a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1107,22 +1107,16 @@
     var vv = window.visualViewport;
     var vh = (vv && vv.height) || window.innerHeight ||
              document.documentElement.clientHeight || 800;
-    var railMode = vw >= 860 && vw > vh && vh <= 1100;
-    var railW = Math.max(230, Math.min(280, vw * 0.235));
-    var pairGap = 18;
+    /* No rail any more. It reserved 230-280px beside the board for a column of
+       controls, and the controls are under the board now — so on a tablet in
+       landscape the board was being sized around space that nothing occupied.
+       Removed with the CSS that drew it, because half of either is worse than
+       neither: the stylesheet stops laying out a rail while the maths keeps
+       paying for one. */
     if (panel) {
       var pp = boxPad(panel), wp = boxPad(wrap);
       padY = pp.y + wp.y;
-      if (railMode) {
-        /* Do not measure the stage here. Its width is itself derived from the
-           board, so measuring it to choose a cell size creates a circular layout
-           dependency. Browser zoom and even clue-content repaints could then
-           settle on a neighbouring pixel. Use only viewport + fixed rail maths. */
-        var pairCap = Math.min(1140, Math.max(0, vw - 32));
-        availW = pairCap - railW - pairGap - wp.x - 8;
-      } else {
-        availW = panel.clientWidth - pp.x - wp.x - 8;
-      }
+      availW = panel.clientWidth - pp.x - wp.x - 8;
     }
     if (availW < 160) availW = document.body.clientWidth - 44;
     if (availW < 160) availW = (window.innerWidth || 360) - 44;
@@ -1134,7 +1128,7 @@
     /* The toolbar only counts as chrome when it is above the board. In the
        landscape rail it sits beside it, and on short screens below it — in
        both cases counting its height would size the board for space it has. */
-    var barAbove = !railMode && !toolbarBelow();
+    var barAbove = false;      // nothing sits above the board but the clue strip
     var measured = h("header") + h(".now-clue") + h(".osk") + (barAbove ? h(".toolbar") : 0);
     var isTouch = document.body.classList.contains("touch");
     var chrome = (measured > 80 ? measured : (isTouch ? 330 : 230)) + 46 + padY;
@@ -1224,13 +1218,10 @@
     var boardW = Math.round(frameCols * size + wrapPadX);
     document.documentElement.style.setProperty("--board-w", boardW + "px");
 
-    var bar = $("toolbar"), stage = document.querySelector(".stage");
-    if (railMode && bar && stage && stage.contains(bar)) {
-      document.documentElement.style.setProperty(
-        "--block-w", Math.round(railW + pairGap + boardW) + "px");
-    } else {
-      document.documentElement.style.removeProperty("--block-w");
-    }
+    /* --block-w was the rail plus the board: the width the clue strip and the
+       clue lists had to span to finish level with the pair. One column, so the
+       board's own width is the only measure there is. */
+    document.documentElement.style.removeProperty("--block-w");
   }
   /* First paint measures the page before the web fonts have loaded, so the
      header, toolbar and clue card are all the wrong height and the grid is
@@ -1254,9 +1245,9 @@
          boxless element while its children change clue state is browser-dependent
          and can trigger redundant fit passes. Window resize already covers zoom
          and orientation, so only observe the real panel in non-rail layouts. */
-      var vw = window.innerWidth || 360, vh = window.innerHeight || 800;
-      var railMode = vw >= 860 && vw > vh && vh <= 1100;
-      if (panel && !railMode) {
+      /* The panel always has a box now: it stopped being display:contents when
+         the rail went, so there is no layout in which observing it is unsafe. */
+      if (panel) {
         fitObserver = new ResizeObserver(function () { fitCells(); });
         fitObserver.observe(panel);
       }

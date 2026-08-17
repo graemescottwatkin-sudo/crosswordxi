@@ -482,11 +482,12 @@ server.listen(0, "127.0.0.1", async () => {
     return /function toolbarBelow/.test(js) && /vh <= 600/.test(js) &&
       /panel\.parentNode\.insertBefore\(bar, panel\.nextSibling\)/.test(js);
   })());
-  t("and stops being counted as chrome above it", (() => {
-    // Counting a toolbar that sits below the board sizes the board for space
-    // it actually has.
+  t("and nothing above the board is counted as chrome but the clue strip", (() => {
+    /* There is no toolbar above the board any more — the controls are in the
+       column beneath it — so nothing between the header and the board can be
+       counted against the space the board has. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /var barAbove = !railMode && !toolbarBelow\(\)/.test(js) &&
+    return /var barAbove = false/.test(js) &&
       /barAbove \? h\("\.toolbar"\) : 0/.test(js);
   })());
 
@@ -949,7 +950,7 @@ server.listen(0, "127.0.0.1", async () => {
   $("statusClose").dispatchEvent(new w.Event("click", { bubbles: true }));
 
   console.log("\nLayout does not drift when the clue changes");
-  t("board and block widths are calculated, never measured", (() => {
+  t("the board width is calculated, never measured", (() => {
     /* offsetWidth reads the board as currently painted, and the read happened
        immediately after --cell changed — so it returned the previous size and
        the block landed a step behind. Selecting a clue re-ran it and the whole
@@ -965,8 +966,10 @@ server.listen(0, "127.0.0.1", async () => {
     const fit = js.slice(js.indexOf("function fitCells"), js.indexOf("var lastCellSize"))
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     return !/offsetWidth/.test(fit) &&
-      /frameCols \* size \+ wrapPadX/.test(fit) &&
-      /railW \+ pairGap \+ boardW/.test(fit);
+      /frameCols \* size \+ wrapPadX/.test(fit);
+      /* --block-w is gone with the rail: it was the rail plus the board, the
+         width the clue strip had to span to finish level with the pair. One
+         column, so the board's own width is the only measure there is. */
   })());
   t("the same puzzle at the same size gives the same widths every time", (() => {
     const root = d.documentElement;
@@ -1056,14 +1059,15 @@ server.listen(0, "127.0.0.1", async () => {
   })(), [...d.querySelector(".grid-panel").children]
     .map((n) => n.id || n.className.split(" ").pop()).join(" > "));
 
-  t("the board still gets a sensible width when the panel has no box", (() => {
-    /* .grid-panel is display:contents in the rail, so it has no box and
-       clientWidth is 0. Measuring the stage instead worked but was circular —
-       the stage's width derives from the board — so v07h sizes the board from
-       the viewport and a fixed rail width. Either way the requirement is the
-       same: the rail must not be counted as space the board can use. */
+  t("the board is sized from the panel it sits in, which always has a box", (() => {
+    /* .grid-panel used to be display:contents in the rail, so it had no box
+       and clientWidth was 0 — which is why the board was sized from the
+       viewport and a fixed rail width instead. The rail is gone and the panel
+       is an ordinary block again, so measuring it is both possible and
+       correct: it is the column the board actually lives in. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /railMode/.test(js) && /pairCap - railW - pairGap/.test(js);
+    return /availW = panel\.clientWidth - pp\.x - wp\.x/.test(js) &&
+      !/pairCap - railW/.test(js);
   })());
   t("the board and its clue strip survive the move", (() => {
     return !!$("nowClue") && !!d.querySelector(".grid-wrap") &&
