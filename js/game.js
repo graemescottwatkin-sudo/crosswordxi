@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v08m";
+  var BUILD = "v08n";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1004,12 +1004,14 @@
     var MIN_PLAYABLE = 18;          // below this a letter and clue number do not fit
     var fits = size >= MIN_PLAYABLE;
     size = Math.max(MIN_PLAYABLE, Math.min(52, size));
-    /* On a tall screen a board may exceed the fold and the page simply scrolls —
-       a substantial board is worth a little scrolling, which is why the 30px
-       floor exists. In landscape there is nothing to scroll to: the keyboard is
-       pinned to the bottom, so anything past the fold is behind it. */
+    /* The 30px tablet floor is gone. It was meant to stop a token-sized board on
+       a big screen, but availH/rows already gives a generous cell where there is
+       room — the floor only ever bit when the board did not fit, which is
+       exactly when it should not. At 820x1180 it forced 30px where 28px fitted:
+       two pixels of cell for twenty-three pixels of overflow, and a test that
+       passed or failed depending on how many rows the day's puzzle happened to
+       have. Fitting the space is deterministic; the floor was not. */
     var portrait = vh >= vw;
-    if (vw >= 700 && portrait && size < 30) size = 30;
     /* When even the minimum will not fit in landscape, say so rather than draw
        a board with half of it under the keyboard. */
     setRotatePrompt(!fits && !portrait);

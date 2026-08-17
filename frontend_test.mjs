@@ -248,15 +248,13 @@ server.listen(0, "127.0.0.1", async () => {
     return /@media \(orientation:landscape\) and \(max-height:1100px\)/.test(css) &&
       /@media \(orientation:landscape\) and \(max-height:820px\)/.test(css);
   })());
-  t("the board never shrinks to a token size on tablet and up, in portrait", (() => {
-    /* The 30px floor still applies where the page can scroll to reach the rest
-       of the board. It no longer applies in landscape: there the keyboard is
-       pinned to the bottom, so anything past the fold is behind it rather than
-       reachable, and forcing a floor was what put 292px of grid under the
-       keyboard at 844x390. */
+  t("no floor can force the board past the space available", (() => {
+    /* The 30px tablet floor is gone. It only ever bit when the board did not
+       fit, and at 820x1180 it forced 30px where 28px fitted — two pixels of
+       cell for twenty-three of overflow, and a check that passed or failed on
+       how many rows the day's puzzle happened to have. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /vw >= 700 && portrait && size < 30\) size = 30/.test(js) &&
-      /var portrait = vh >= vw/.test(js);
+    return !/size < 30\) size = 30/.test(js) && /var portrait = vh >= vw/.test(js);
   })());
   t("the height budget has no floor that can force an overflow", (() => {
     // availH was floored at 200px: an instruction to overflow, not a safety net.
