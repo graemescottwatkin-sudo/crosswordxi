@@ -72,14 +72,10 @@ jobs:
         with:
           node-version: 22
 
-      # playwright-core plus a browser that arrives in the npm tarball. The
-      # Playwright download host is not reachable from every runner — behind a
-      # proxy or an allowlist it simply fails, and without a browser this is
-      # the one suite that cannot run.
-      - name: Install Playwright and a browser
+      - name: Install Playwright and Chromium
         run: |
-          npm install -D playwright-core @sparticuz/chromium wrangler wait-on \
-            --no-audit --no-fund
+          npm install -D playwright wrangler wait-on --no-audit --no-fund
+          npx playwright install --with-deps chromium
 
       # The API has to answer or the board never loads and every measurement is
       # of an empty page. wrangler pages dev serves the Functions locally

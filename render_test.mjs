@@ -37,14 +37,7 @@
  * audit. Fix, re-run, and from then on it protects what you fixed.
  */
 
-import { chromium } from "playwright-core";
-/* playwright-core plus a browser that arrives in an npm tarball, rather than
-   playwright's own download. The download host is not always reachable —
-   behind a proxy, an allowlist or an offline runner it simply fails — and
-   without a browser this suite is the one that cannot run, which is exactly
-   the suite whose absence let three layout faults reach a real device.
-   PLAYWRIGHT_EXECUTABLE overrides it if a system Chromium is present. */
-import sparticuz from "@sparticuz/chromium";
+import { chromium } from "playwright";
 
 const BASE = process.env.BASE || "http://localhost:8788";
 const HEAD = process.env.HEAD === "1";
@@ -198,11 +191,17 @@ async function measure(page) { return page.evaluate(eval("(" + MEASURE + ")")); 
  * The gate
  * ------------------------------------------------------------------ */
 const run = async () => {
-  const exePath = process.env.PLAYWRIGHT_EXECUTABLE || await sparticuz.executablePath();
+  /* Playwright's own browser, installed by `npx playwright install chromium`.
+     PLAYWRIGHT_EXECUTABLE points somewhere else when there is a reason — a
+     runner that cannot reach the download host, say — but that is the special
+     case and it stays out of the way here. Defaulting to anything else made
+     the ordinary run fail on Windows for a constraint that was never yours. */
   const browser = await chromium.launch({
     headless: !HEAD,
-    executablePath: exePath,
-    args: [...(sparticuz.args || []), "--no-sandbox", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox"],
+    ...(process.env.PLAYWRIGHT_EXECUTABLE
+      ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE }
+      : {}),
   });
 
   /* ONLY=phone,tablet runs a subset. The full matrix takes minutes, and a
