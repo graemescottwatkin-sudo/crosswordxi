@@ -1292,3 +1292,37 @@ body.rotate-needed .rotate-prompt{
   font-size:12.5px;color:var(--ink-faint);display:flex;align-items:center;
   gap:6px;justify-content:center;margin-bottom:6px;
 }
+
+
+/* Where to post it. Quieter than the main Share button, which uses the phone's
+   own sheet and covers everything installed. */
+.share-to{display:flex;gap:6px;justify-content:center;margin:8px 0 4px}
+.share-to .btn{flex:1 1 0;font-size:12.5px;padding:0 8px}
+
+
+/* ============ THE LANDING SCREEN ============
+   Two choices, each one a target rather than a line of text, so neither can be
+   pressed by accident when the other was meant. */
+.home-card{max-width:430px}
+.home-choice{
+  display:block;width:100%;text-align:left;cursor:pointer;
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pitch);
+  border-radius:8px;padding:14px 16px;margin-bottom:10px;min-height:44px;
+}
+.home-choice:hover{border-color:var(--pitch);background:var(--sel-word)}
+.hc-title{
+  display:block;font-family:var(--disp);font-weight:700;font-size:17px;
+  letter-spacing:.02em;color:var(--ink);
+}
+.hc-note{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px;line-height:1.4}
+.hc-state{
+  display:block;font-family:var(--disp);font-weight:600;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--pitch);margin-top:6px;
+}
+.hc-state:empty{display:none}
+.home-links{margin-top:14px;font-size:13px;color:var(--ink-faint)}
+.home-links button{
+  background:none;border:none;color:var(--ink-faint);text-decoration:underline;
+  cursor:pointer;font-size:13px;min-height:44px;padding:0 4px;
+}
+.home-links button:hover{color:var(--pitch)}

@@ -3,7 +3,7 @@
    jsdom gets to opening it off disk. */
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
-const html = fs.readFileSync("../crosswordxi-preview-v09i.html", "utf8");
+const html = fs.readFileSync("../crosswordxi-preview-v10b.html", "utf8");
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 const errors = [];
@@ -26,6 +26,14 @@ t("it is one file — no local css or js references", (() => {
     links.every((h) => h.startsWith("https://fonts.googleapis.com"));
 })(), [...d.querySelectorAll("link[rel=stylesheet]")].length + " external stylesheet(s), fonts only");
 t("the game boots with no server", !!w.FCW && !!w.CROSSWORDXI_BUILD, w.CROSSWORDXI_BUILD);
+
+/* The landing screen loads nothing until a mode is chosen, so choose one — the
+   preview exists to prove the game runs from a file, and it cannot prove that
+   sitting on a menu. */
+t("it opens on the choice, not on a puzzle",
+  !!d.getElementById("homeOverlay") && d.querySelectorAll("#grid .cell").length === 0);
+d.getElementById("homeDaily").dispatchEvent(new w.Event("click", { bubbles: true }));
+await new Promise((r) => setTimeout(r, 2500));
 t("the grid renders", d.querySelectorAll("#grid .cell").length > 50, d.querySelectorAll("#grid .cell").length + " cells");
 t("clues render", d.querySelectorAll("#acrossList li").length + d.querySelectorAll("#downList li").length >= 10);
 t("the league table renders three rows",

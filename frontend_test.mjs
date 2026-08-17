@@ -83,7 +83,28 @@ server.listen(0, "127.0.0.1", async () => {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await wait(7000);
 
-  console.log("Loading");
+  /* The game now opens on a landing screen and loads nothing until a mode is
+     chosen — the point of the change, since guessing was starting the daily's
+     clock on a game nobody had picked. Everything below assumes a puzzle, so
+     choose the daily first, the way a player would. */
+  console.log("The landing screen");
+  t("nothing is loaded until a choice is made", (() => {
+    const home = $("homeOverlay");
+    return !!home && home.classList.contains("show") &&
+      d.querySelectorAll("#grid .cell").length === 0;
+  })(), d.querySelectorAll("#grid .cell").length + " cells before choosing");
+  t("both modes are offered as their own target", (() => {
+    return !!$("homeDaily") && !!$("homePractice");
+  })());
+  t("the daily says which phase it is", (() => {
+    const title = $("homeDailyTitle").textContent;
+    return /friendly|matchday/i.test(title);
+  })(), $("homeDailyTitle").textContent);
+
+  $("homeDaily").dispatchEvent(new w.Event("click", { bubbles: true }));
+  await wait(2500);
+
+  console.log("\nLoading");
   t("the page loads its stylesheet and scripts as separate files", (() => {
     // Match the path, not the whole attribute: the URLs carry a ?v= build tag.
     return !!d.querySelector('link[href^="css/style.css"]') &&
@@ -494,6 +515,54 @@ server.listen(0, "127.0.0.1", async () => {
       !/document\.cookie/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8"));
   })());
 
+  console.log("\nSharing a result");
+  t("a practice result links to that exact puzzle, so it can be beaten", (() => {
+    /* Each practice puzzle has a token and the API can serve that one, so
+       "beat this" is a real invitation. The daily needs no link — everybody
+       gets the same puzzle. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function shareLink/.test(js) && /SHARE_URL \+ "\/\?p=" \+ m\[1\]/.test(js) &&
+      /Beat it: /.test(js);
+  })());
+  t("and following that link opens the puzzle, not a menu", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /\[\?&\]p=\(\\d\+\)/.test(js) && /sharedToken = "practice:"/.test(js);
+  })());
+  t("the shared line claims nothing untrue about football", (() => {
+    /* "Arsenal finished 3rd in 2020/21" reads as a statement about a real
+       season, and it is not one — the table is history with your score dropped
+       into it. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function shareText"), js.indexOf("function shareFallback"));
+    return !/season\.season/.test(fn) && !/finished " \+/.test(fn);
+  })());
+  t("the share carries a link, which is the point of sharing", (() => {
+    /* The old text had none: somebody read "Arsenal finished 1st, 106/114" and
+       had no way to reach the game. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /SHARE_URL = "https:\/\/crossword\.thexigames\.com"/.test(js) &&
+      /var invite = mode === "daily" \? SHARE_URL/.test(js) &&
+      /name \+ "\\n" \+ line \+ "\\n" \+ invite/.test(js);
+  })());
+  t("and a picture that gives nothing away", (() => {
+    // A season of W/D/L. Recognisable at a glance, spoils no answer.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function shareStrip/.test(js) && /FCW\.seasonRecord/.test(js);
+  })());
+  t("no answer or clue text can reach the clipboard", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function shareText"), js.indexOf("function shareFallback"));
+    return !/\.grid|\.answer|clueText|entries\[/.test(fn);
+  })(), "a shared result must be safe to read before playing");
+  t("the phone's own share sheet is used where there is one", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /navigator\.share/.test(js) && /shareFallback\(text\)/.test(js);
+  })());
+  t("with named buttons for desktop, where there is not", (() => {
+    return !!d.getElementById("shareWhatsApp") && !!d.getElementById("shareX") &&
+      !!d.getElementById("shareReddit");
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS
@@ -737,24 +806,34 @@ server.listen(0, "127.0.0.1", async () => {
   })());
 
   console.log("\nRefreshing does not change what you are playing");
-  t("the mode in play is remembered", (() => {
+  t("boot chooses nothing at all", (() => {
+    /* Both older rules are gone. The first resumed practice only if letters
+       existed and the daily was finished; the second remembered the last mode.
+       Both were guesses, and a wrong guess started the daily's clock on a game
+       the player had not chosen. Now it asks. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /localStorage\.setItem\("fcw\.mode", mode\)/.test(js) &&
-      /localStorage\.getItem\("fcw\.mode"\)/.test(js);
+    /* A wider window: a shared practice link is handled first, so the choice
+       now sits further down the function. */
+    const at = js.indexOf("function boot()");
+    const boot = js.slice(at, at + 1400);
+    return /renderHome\(\)/.test(boot) && !/bootDaily\(\)/.test(boot) &&
+      !/last === "practice"/.test(boot);
   })());
-  t("boot no longer requires letters typed before resuming practice", (() => {
-    /* The old rule resumed practice only if letters existed *and* today's
-       daily was finished, so refreshing an untouched practice board dropped
-       you onto the daily. */
+  t("choosing a mode is what starts anything", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const boot = js.slice(js.indexOf("function boot()"), js.indexOf("function boot()") + 900);
-    return !/Object\.keys\(practice\.letters/.test(boot) &&
-      /last === "practice"/.test(boot);
+    return /function chooseMode/.test(js) &&
+      /on\("homeDaily", "click"/.test(js) && /on\("homePractice", "click"/.test(js);
   })());
-  t("the kick-off card offers both modes", (() => {
-    const alt = d.getElementById("kickAltBtn");
-    return !!alt && /practice|daily/i.test(alt.textContent);
-  })(), d.getElementById("kickAltBtn") && d.getElementById("kickAltBtn").textContent);
+  t("leaving a daily for the menu stops its clock", (() => {
+    /* Otherwise the timer runs on a puzzle nobody can see, which is the same
+       fault as before wearing different clothes. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf('on("menuBtn"'), js.indexOf('on("menuBtn"') + 500);
+    return /pauseGame\(\)/.test(fn);
+  })());
+  t("and there is a way back to the choice from inside a game", (() => {
+    return !!d.getElementById("menuBtn") && !!d.getElementById("kickBack");
+  })());
 
   console.log("\nWhat's live");
   t("the build badge is a button that opens the status panel", (() => {

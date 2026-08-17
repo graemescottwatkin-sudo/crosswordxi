@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09i";
+  var BUILD = "v10b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -489,6 +489,7 @@
       // the server refuses it, and today's daily is the right thing to open.
       return api("/api/daily");
     }
+    if (sharedToken) return api("/api/practice?token=" + encodeURIComponent(sharedToken));
     if (adminDay) return api("/api/admin/daily?n=" + adminDay);
     if (mode === "daily") return api("/api/daily");
     var qs = [];
@@ -1623,6 +1624,7 @@
      anyone can conjure one up from a console. */
   var isAdmin = false;
   var adminDay = null;          // set only while the owner previews another day
+  var sharedToken = null;       // set only while opening a shared practice link
 
   function adminMsg(text) {
     var el = $("adminMsg");
@@ -2662,16 +2664,64 @@
   on("viewGridBtn", "click", function () {
     $("doneOverlay").classList.remove("show"); // gold cells stay marked; input is locked
   });
-  on("shareBtn", "click", function () {
-    var res = FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
-                               revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
+  /* What gets shared.
+     The old version carried no link, which is the one thing a share has to do —
+     somebody reads "Arsenal finished 1st, 106/114" and has no way to reach the
+     game. It also had no picture. Wordle's grid works because it is instantly
+     recognisable and gives nothing away; the season record is this game's
+     equivalent, and it is already what the scoreboard is built around. */
+  var SHARE_URL = "https://crossword.thexigames.com";
+
+  function shareStrip(score) {
+    /* Ten squares, proportional to the season a score represents. Thirty-eight
+       is a wall of colour on a phone; ten reads at a glance and still tells a
+       good run from a poor one. */
+    var rec = FCW.seasonRecord(score);
+    var n = rec.marks.length || 1;
+    var out = "", used = 0;
+    var w = Math.round(rec.won / n * 10), d = Math.round(rec.drawn / n * 10);
+    for (var i = 0; i < w && used < 10; i++, used++) out += "\uD83D\uDFE9";
+    for (var j = 0; j < d && used < 10; j++, used++) out += "\uD83D\uDFE8";
+    while (used < 10) { out += "\uD83D\uDFE5"; used++; }
+    return out;
+  }
+
+  function shareResult() {
+    return FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
+                            revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
+  }
+
+  /* A practice puzzle can be handed to somebody else. Each one has a token, and
+     the API can serve that exact puzzle, so "beat this" is a real invitation
+     rather than a vague one — the daily needs no such link, because everybody
+     gets the same puzzle anyway. */
+  function shareLink() {
+    if (mode === "daily") return SHARE_URL;
+    var m = /^practice:(\d+)$/.exec(puzzleToken || "");
+    return m ? SHARE_URL + "/?p=" + m[1] : SHARE_URL;
+  }
+
+  function shareText() {
+    var res = shareResult();
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
     var name = mode === "daily"
-      ? "Crossword XI — " + FCW.dailyPhase(dailyNo).label : "Crossword XI (practice)";
-    var text = name + " \u2014 " + club + " finished " + FCW.ordinal(pos) +
-      (season ? " in " + season.season : "") +
-      " \u2014 " + res.score + "/114 pts \u26BD " + fmt(elapsed);
+      ? "Crossword XI \u00B7 " + FCW.dailyPhase(dailyNo).label
+      : "Crossword XI \u00B7 practice";
+    /* The season year is gone. "Arsenal finished 3rd in 2020/21" reads as a
+       claim about football rather than about a crossword, and it is not true —
+       the table is a real historical season with your score dropped into it.
+       "/114" is gone too: the squares already show how good a score is, and a
+       denominator asks a reader to do arithmetic before they can care.
+       Nothing here gives an answer away, which is what makes a result worth
+       posting: a reader sees how you did and can still play it cold. */
+    var line = shareStrip(res.score) + "\n" +
+      res.score + " pts \u00B7 " + FCW.ordinal(pos) + " \u00B7 " + fmt(elapsed);
+    var invite = mode === "daily" ? SHARE_URL : "Beat it: " + shareLink();
+    return name + "\n" + line + "\n" + invite;
+  }
+
+  function shareFallback(text) {
     function done(ok) {
       $("shareBtn").textContent = ok ? "Copied!" : "Copy failed";
       setTimeout(function () { $("shareBtn").textContent = "Share result"; }, 1800);
@@ -2684,7 +2734,41 @@
       try { done(document.execCommand("copy")); } catch (e) { done(false); }
       document.body.removeChild(ta);
     }
+  }
+
+  on("shareBtn", "click", function () {
+    var text = shareText();
+    /* The native sheet on a phone already offers WhatsApp, Messages and
+       everything else installed — better than a row of buttons guessing which
+       apps somebody has. Desktop has no such thing, so it copies instead. */
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function () { shareFallback(text); });
+      return;
+    }
+    shareFallback(text);
   });
+
+  /* Named buttons for where a result actually gets posted. Each opens that
+     platform's own composer with the text already in it. */
+  on("shareX", "click", function () {
+    window.open("https://twitter.com/intent/tweet?text=" +
+      encodeURIComponent(shareText()), "_blank", "noopener");
+  });
+  on("shareWhatsApp", "click", function () {
+    window.open("https://wa.me/?text=" + encodeURIComponent(shareText()),
+      "_blank", "noopener");
+  });
+  on("shareReddit", "click", function () {
+    /* Reddit takes a title and a link rather than a body, so the result becomes
+       the title and the game is the link. */
+    var res = shareResult();
+    var title = "Crossword XI \u2014 " +
+      (mode === "daily" ? FCW.dailyPhase(dailyNo).label : "practice") +
+      " \u2014 " + res.score + "/114 in " + fmt(elapsed);
+    window.open("https://reddit.com/submit?url=" + encodeURIComponent(SHARE_URL) +
+      "&title=" + encodeURIComponent(title), "_blank", "noopener");
+  });
+
   function startPractice() {
     mode = "practice";
     newPuzzle(); // fresh random seed
@@ -2737,6 +2821,80 @@
   var devToggle = $("devToggle");
   if (devToggle) devToggle.style.display = "none";
 
+  /* ---------- The landing screen ----------
+     Nothing is loaded and no clock exists until a choice is made. The card this
+     replaced opened straight onto the daily, so somebody who wanted practice
+     pressed Kick Off, started the daily's clock and lost points on a game they
+     had not chosen to play. */
+  function savedFor(which) {
+    try { return JSON.parse(localStorage.getItem(
+      which === "daily" ? "fcw.v04.daily" : "fcw.v04.practice")); } catch (e) { return null; }
+  }
+
+  function renderHome() {
+    var today = FCW.dailyNumber();
+    var phase = FCW.dailyPhase(today);
+    $("homeDailyTitle").textContent = phase.label;
+    $("homeDailyNote").textContent = phase.counts
+      ? "One a day, the same for everyone. The clock counts."
+      : "A friendly. Played and kept, but the season table starts on Matchday 1.";
+
+    var d = savedFor("daily");
+    var state = "";
+    if (d && d.dailyNo === today) {
+      if (d.complete) state = "Played \u00B7 " + (d.score != null ? d.score + "/114" : "done");
+      else if (Object.keys(d.letters || {}).length) state = "In progress \u00B7 " + fmt(d.elapsed || 0);
+    }
+    $("homeDailyState").textContent = state;
+
+    var p = savedFor("practice");
+    $("homePracticeState").textContent =
+      (p && !p.complete && Object.keys(p.letters || {}).length) ? "One in progress" : "";
+  }
+
+  function showHome() {
+    /* Stop anything running. Coming back to the menu must not leave a clock
+       ticking on a puzzle nobody is looking at. */
+    stopTimer();
+    renderHome();
+    $("startOverlay").classList.remove("show");
+    $("homeOverlay").classList.add("show");
+    document.querySelector(".stage").classList.add("prestart");
+  }
+
+  function chooseMode(which) {
+    mode = which;
+    try { localStorage.setItem("fcw.mode", which); } catch (e) {}
+    $("homeOverlay").classList.remove("show");
+    if (which === "daily") {
+      dailyNo = FCW.dailyNumber();
+      var saved = savedFor("daily");
+      newPuzzle(saved && saved.dailyNo === dailyNo && saved.seed != null ? saved.seed : FCW.dailySeed(dailyNo),
+                saved && saved.dailyNo === dailyNo ? saved : null);
+    } else {
+      var sp = savedFor("practice");
+      if (sp && !sp.complete && sp.seed != null) newPuzzle(sp.seed, sp);
+      else newPuzzle();
+    }
+  }
+
+  on("homeDaily", "click", function () { chooseMode("daily"); });
+  on("homePractice", "click", function () { chooseMode("practice"); });
+  on("homeSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
+  on("homeAccount", "click", function () { $("accountSheet").classList.add("show"); });
+  on("kickBack", "click", showHome);
+  /* From inside a game. Switching modes now goes through the menu rather than
+     a button that silently moves you between a scored daily and free practice. */
+  on("menuBtn", "click", function () {
+    if (mode === "daily" && started && !complete) {
+      /* Leaving a daily mid-play stops its clock, exactly as Pause does — the
+         alternative is a timer running on a puzzle nobody can see. */
+      pauseGame();
+      $("pauseOverlay").classList.remove("show");
+    }
+    showHome();
+  });
+
   /* ---------- Boot: today's daily first; unfinished practice resumes ---------- */
   (function boot() {
     /* Return to whatever was last being played. The old rule resumed practice
@@ -2744,15 +2902,22 @@
        refreshing on a practice board you had not written in yet dropped you
        onto the daily, and so did refreshing on practice with the daily still
        open. Refreshing should not change what you are playing. */
-    var last = null;
-    try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
-    var practice = loadSaved("practice");
-    if (last === "practice" && practice && !practice.complete) {
+    /* A shared practice link goes straight to that puzzle. Somebody following
+       "beat it" wants the puzzle, not a menu — and the link is the whole point
+       of the invitation. */
+    var shared = /[?&]p=(\d+)/.exec(location.search || "");
+    if (shared) {
       mode = "practice";
-      newPuzzle(practice.seed, practice);
-    } else {
-      bootDaily();
+      sharedToken = "practice:" + shared[1];
+      $("homeOverlay").classList.remove("show");
+      buildPuzzle(null).then(function () { sharedToken = null; })
+        .catch(function () { sharedToken = null; showHome(); });
+      return;
     }
+    /* Otherwise, straight to the choice. Guessing which mode somebody wants is
+       how the daily's clock ended up running on a game they had not picked. */
+    renderHome();
+    $("homeOverlay").classList.add("show");
   })();
 
   /* The sync lands after boot, so the Daily opens instantly and offline play is

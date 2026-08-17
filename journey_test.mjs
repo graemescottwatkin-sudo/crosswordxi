@@ -31,7 +31,8 @@ const t = (name, ok, detail) => {
 
 const phone = devices["iPhone 13"];
 
-async function openGame(ctx, { seed = null } = {}) {
+async function openGame(ctx, opts = {}) {
+  const { seed = null } = opts;
   const page = await ctx.newPage();
   page.setDefaultTimeout(8000);
   if (seed) {
@@ -40,7 +41,13 @@ async function openGame(ctx, { seed = null } = {}) {
     }, seed);
   }
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector("#kickOffBtn", { timeout: 15000 });
+  /* The game opens on a landing screen and loads nothing until a mode is
+     chosen. Pick the daily, the way a player would. */
+  await page.waitForSelector("#homeDaily", { timeout: 15000 });
+  if (!opts.stayOnHome) {
+    await page.click("#homeDaily", { timeout: 8000 });
+    await page.waitForSelector("#kickOffBtn", { timeout: 15000 });
+  }
   return page;
 }
 
@@ -120,6 +127,20 @@ async function section(name, fn) {
   }
 }
 
+
+/* ---------- 0. The landing screen ---------- */
+await section("Choosing what to play", async (ctx) => {
+  const page = await openGame(ctx, { stayOnHome: true });
+  t("nothing is loaded until a choice is made",
+    (await page.locator(".cell").count()) === 0,
+    `${await page.locator(".cell").count()} cells before choosing`);
+  const title = await page.textContent("#homeDailyTitle");
+  t("the daily says which phase it is", /friendly|matchday/i.test(title), title.trim());
+  await page.click("#homePractice", { timeout: 8000 });
+  await page.waitForTimeout(2500);
+  const mode = await page.evaluate(() => localStorage.getItem("fcw.mode"));
+  t("choosing practice puts you in practice, not the daily", mode === "practice", `mode=${mode}`);
+});
 
 /* ---------- 1. A full game, start to finish ---------- */
 await section("Playing a puzzle through to Full Time", async (ctx) => {

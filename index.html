@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v09i">
+<link rel="stylesheet" href="css/style.css?v=v10b">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -163,6 +163,9 @@
         <svg class="ic ic-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>
         <svg class="ic ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8a.8.8 0 0 0 1.22.68l8.4-5.4a.8.8 0 0 0 0-1.36l-8.4-5.4A.8.8 0 0 0 4.5 2.6Z"/></svg>
       </button>
+      <!-- Back to the choice. Switching between a scored daily and free practice
+           should be deliberate, not a side effect of pressing New. -->
+      <button class="btn outline" id="menuBtn" title="Back to the menu"><span class="lbl-full">Menu</span><span class="lbl-short">Menu</span></button>
       <button class="btn outline" id="dailyBtn" style="display:none" title="Return to today's daily puzzle"><span class="lbl-full">Today&rsquo;s puzzle</span><span class="lbl-short">Today</span></button>
       <button class="btn primary" id="newBtn"><span class="lbl-full">New puzzle</span><span class="lbl-short">New</span><span class="lbl-busy">Generating&hellip;</span></button>
     </div>
@@ -338,6 +341,36 @@
   </div>
 </div>
 
+<!-- The landing screen. You choose what you are playing before anything is
+     loaded and before any clock exists.
+     The card this replaces opened straight onto the daily, so somebody who
+     wanted a practice puzzle pressed Kick Off, started the daily's clock, and
+     lost points on a game they had not chosen to play. A choice you have to
+     undo is not a choice. -->
+<div class="overlay show" id="homeOverlay">
+  <div class="kick-card home-card">
+    <h2>Crossword XI</h2>
+    <div class="kick-mode" id="homeSub">The football crossword</div>
+
+    <button class="home-choice" id="homeDaily">
+      <span class="hc-title" id="homeDailyTitle">Today&rsquo;s puzzle</span>
+      <span class="hc-note" id="homeDailyNote">One a day, the same for everyone</span>
+      <span class="hc-state" id="homeDailyState"></span>
+    </button>
+
+    <button class="home-choice" id="homePractice">
+      <span class="hc-title">Practice</span>
+      <span class="hc-note">As many as you like. Nothing is recorded, no clock pressure.</span>
+      <span class="hc-state" id="homePracticeState"></span>
+    </button>
+
+    <div class="home-links">
+      <button id="homeSeason">My Season</button> &middot;
+      <button id="homeAccount">Account</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="startOverlay">
   <div class="kick-card">
     <h2>Kick Off</h2>
@@ -359,9 +392,7 @@
       </div>
     </div>
     <button class="btn primary" id="kickOffBtn">Kick Off</button>
-    <!-- Mode was only reachable from a footer link, so which game you were
-         about to play was never stated at the point of starting one. -->
-    <button class="btn outline kick-alt" id="kickAltBtn">Play a practice puzzle</button>
+    <button class="btn outline kick-alt" id="kickBack">Back</button>
     <div class="kick-note" id="kickNote">The clock starts at kick-off.</div>
   </div>
 </div>
@@ -396,6 +427,14 @@
       <table class="league"><tbody id="finalTableBody"></tbody></table>
     </div>
     <button class="btn secondary" id="shareBtn">Share result</button>
+    <!-- The platforms a football result actually gets posted to. On a phone the
+         native sheet covers all of these and more, so these matter most on
+         desktop, where there is no share sheet at all. -->
+    <div class="share-to">
+      <button class="btn outline" id="shareWhatsApp">WhatsApp</button>
+      <button class="btn outline" id="shareX">X</button>
+      <button class="btn outline" id="shareReddit">Reddit</button>
+    </div>
     <button class="btn primary" id="againBtn">New puzzle</button><br>
     <button class="view-grid" id="viewGridBtn">View the finished grid</button>
   </div>
@@ -417,7 +456,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v09i</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v10b</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -428,8 +467,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v09i"></script>
-<script src="js/engine.js?v=v09i"></script>
-<script src="js/game.js?v=v09i"></script>
+<script src="js/seasons.js?v=v10b"></script>
+<script src="js/engine.js?v=v10b"></script>
+<script src="js/game.js?v=v10b"></script>
 </body>
 </html>
