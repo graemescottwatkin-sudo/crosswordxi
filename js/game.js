@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v20a";
+  var BUILD = "v21";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1153,8 +1153,19 @@
        cells a third smaller than the screen could carry. Below the breakpoint
        the board is sized for the puzzle again, as it was.
        The number matches the CSS gate: change one and change the other. */
-    var wideFrame = vw >= 900;
-    var frameCols = wideFrame ? Math.max(MAX_COLS, puzzle.width) : puzzle.width;
+    var PLAYABLE = 18;              // matches MIN_PLAYABLE below
+    var frameCols = puzzle.width;
+    if (vw >= 900) {
+      /* Try the fixed frame, and keep it only if the board stays playable.
+         A landscape tablet is short rather than narrow: height is what binds,
+         and spending width on turf either side pushed the cell under the floor
+         and put the "turn your phone upright" card in front of a board that
+         would have been fine at its own width. The frame is a luxury for
+         screens with room, not a rule to be honoured into unplayability. */
+      var wide = Math.max(MAX_COLS, puzzle.width);
+      var trial = Math.floor(Math.min(availW / wide, availH / puzzle.height));
+      if (trial >= PLAYABLE) frameCols = wide;
+    }
     var size = Math.floor(Math.min(availW / frameCols, availH / puzzle.height));
     /* Cells stay 20–52px. Removing the sidebar freed a lot of width, and the
        temptation is to spend it on bigger cells — but a 64px cell on a 1920
@@ -1779,6 +1790,10 @@
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ event: "start", playId: playId, mode: mode,
         dailyNo: mode === "daily" ? dailyNo : null, phase: phase,
+        /* Which board, when it is a themed one. Still nothing about the
+           person: the play id is random per attempt, as it was. */
+        themeKey: mode === "theme" && themeWanted && themeWanted.theme
+          ? themeWanted.theme + "-" + themeWanted.no : null,
         total: puzzle.entries.length }),
     }).catch(function () {});          // never let counting break the game
   }
@@ -1980,9 +1995,23 @@
       if (!d.days.length) { adminMsg("Nobody has played yet."); return; }
       $("adminReportList").innerHTML = "";
       var lines = d.days.slice(0, 20).map(function (x) {
-        var name = x.mode === "practice" ? "Practice"
-          : (x.phase === "season" ? "Matchday " + (x.dailyNo - FCW.PRESEASON_DAYS)
-                                  : "Friendly #" + x.dailyNo);
+        /* Themed boards read as their own name and number, because that is how
+           they are shared and how they will be talked about. "man-united-3"
+           becomes "Manchester United #3". */
+        var name;
+        if (x.mode === "theme") {
+          var k = String(x.themeKey || "unknown");
+          var m = /^(.*)-(\d+)$/.exec(k);
+          name = m
+            ? m[1].replace(/-/g, " ").replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }) +
+              " #" + m[2]
+            : "Themed board";
+        } else if (x.mode === "practice") {
+          name = "Practice";
+        } else {
+          name = x.phase === "season" ? "Matchday " + (x.dailyNo - FCW.PRESEASON_DAYS)
+                                      : "Friendly #" + x.dailyNo;
+        }
         var out = name + ": " + x.started + " started, " + x.finished + " finished";
         if (x.medianSeconds) out += ", median " + Math.round(x.medianSeconds / 60) + " min";
         if (x.abandoned) {

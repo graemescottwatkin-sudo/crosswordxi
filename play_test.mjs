@@ -5,6 +5,7 @@
  * abandoned puzzle is still recorded, and that it collects nothing about
  * anybody.
  */
+import fs from "node:fs";
 import { readFileSync } from "node:fs";
 import { onRequestPost as play } from "./functions/api/play.js";
 
@@ -98,6 +99,35 @@ t("a play id is per attempt, not per person", (() => {
   const game = readFileSync("js/game.js", "utf8");
   return /playId = newPlayId\(\)/.test(game) && !/localStorage[^\n]*playId/.test(game);
 })());
+
+/* Themed boards are the ones designed to be passed between friends, so which
+   board gets played is the question worth being able to answer. They used to
+   be coerced into "practice" with nothing to say which one. */
+console.log("\nThemed boards are counted as themselves");
+{
+  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  t("theme is a mode in its own right, not folded into practice",
+    /body\.mode === "theme" \? "theme"/.test(src));
+  t("the board key is stored with the attempt",
+    /theme_key/.test(src) && /themeKey/.test(src));
+  t("and the key is validated rather than trusted", (() => {
+    /* It arrives from the browser and goes into the database, so it is checked
+       against the shape a slug has — "man-united-3" and nothing else. */
+    return /\^\[a-z0-9\]\[a-z0-9-\]\{0,48\}\$/.test(src);
+  })());
+  t("a themed attempt carries no more about the person than any other",
+    !/user|account|device|ip\b/i.test(
+      src.slice(src.indexOf("const themeKey"), src.indexOf("if (body.event"))));
+  const client = fs.readFileSync("js/game.js", "utf8");
+  t("the client sends the board it is actually on",
+    /themeKey: mode === "theme" && themeWanted/.test(client));
+  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  t("the funnel groups by board rather than heaping them together",
+    /"theme:" \+ \(r\.theme_key \|\| "unknown"\)/.test(admin));
+  const mig = fs.readFileSync("data/migrations/008-plays-theme.sql", "utf8");
+  t("the column is added by a migration, not assumed",
+    /ALTER TABLE plays ADD COLUMN theme_key TEXT/.test(mig));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

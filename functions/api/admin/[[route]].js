@@ -112,13 +112,21 @@ export async function onRequest({ request, env, params }) {
      problems, and the median clues solved says which. */
   if (route === "plays" && request.method === "GET") {
     const rows = await env.DB.prepare(
-      `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs
+      `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs,
+              ended_at, theme_key
          FROM plays ORDER BY started_at DESC LIMIT 2000`).all();
     const byDay = new Map();
     for (const r of rows.results || []) {
-      const key = r.mode === "daily" ? "daily:" + r.daily_no : "practice";
+      /* Themed boards group by board, not into one heap. Which board gets
+         played is the whole question: they are the ones passed between
+         friends, so "Bolton #1 thirty times, #4 twice" is the answer worth
+         being able to read. */
+      const key = r.mode === "daily" ? "daily:" + r.daily_no
+                : r.mode === "theme" ? "theme:" + (r.theme_key || "unknown")
+                : "practice";
       if (!byDay.has(key)) {
         byDay.set(key, { key, mode: r.mode, dailyNo: r.daily_no, phase: r.phase,
+                         themeKey: r.theme_key || null,
                          started: 0, finished: 0, times: [], stops: [] });
       }
       const d = byDay.get(key);
@@ -134,6 +142,7 @@ export async function onRequest({ request, env, params }) {
     };
     const days = [...byDay.values()].map((d) => ({
       key: d.key, mode: d.mode, dailyNo: d.dailyNo, phase: d.phase,
+      themeKey: d.themeKey,
       started: d.started, finished: d.finished, total: d.total,
       medianSeconds: mid(d.times),
       /* Where the ones who gave up had got to. A median of 2 of 11 says the

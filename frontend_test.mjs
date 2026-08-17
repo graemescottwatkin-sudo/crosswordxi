@@ -950,6 +950,17 @@ server.listen(0, "127.0.0.1", async () => {
   $("statusClose").dispatchEvent(new w.Event("click", { bubbles: true }));
 
   console.log("\nLayout does not drift when the clue changes");
+  /* Nothing may size the stage from a value fitCells publishes. fitCells
+     measures .grid-panel, which takes its width from .stage — so a stage sized
+     from --board-w means the board is sized from itself. The browser reported
+     it as "ResizeObserver loop completed with undelivered notifications",
+     seven times, on a tablet in landscape. */
+  t("no rule sizes the stage from the width the board publishes", (() => {
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    return !/\.stage\{[^}]*var\(--board-w/.test(flat);
+  })());
+
   t("the board width is calculated, never measured", (() => {
     /* offsetWidth reads the board as currently painted, and the read happened
        immediately after --cell changed — so it returned the previous size and

@@ -117,8 +117,14 @@ t("narrow landscape collapses the table, where there is no room for a rail",
    script as well as the stylesheet — half of either is worse than neither. */
 const landscapeWide = flatCss.slice(
   flatCss.indexOf("and (max-height:1100px) and (min-width:860px)"));
-t("wide landscape is one column, capped to the board",
-  /\.stage\{width:min\(100%,var\(--board-w,100%\)\);margin:0 auto\}/.test(landscapeWide));
+/* Deliberately NOT capped from --board-w. Sizing the stage from the value
+   fitCells publishes, while fitCells measures a child of the stage, is a loop —
+   and the browser said so seven times over. The blocks inside are capped
+   individually instead, which gives the same column without the board being
+   sized from itself. */
+t("wide landscape is one column and does not size itself from the board",
+  /\.stage\{margin:0 auto\}/.test(landscapeWide) &&
+  !/\.stage\{[^}]*var\(--board-w/.test(landscapeWide));
 t("nothing is placed into a grid that no longer exists", (() => {
   return !/display:contents/.test(flatCss) &&
     !/grid-template-columns:var\(--rail-w\)/.test(flatCss) &&
@@ -210,17 +216,24 @@ t("and the number buttons stay at the touch target while being square",
    came out with cells a third smaller than the screen could carry. */
 t("the fixed frame is gated to the same width in the CSS and the maths", (() => {
   const js = fs.readFileSync("js/game.js", "utf8");
-  const gate = /var wideFrame = vw >= (\d+)/.exec(js);
+  const gate = /if \(vw >= (\d+)\) \{/.exec(js);
   const css = /@media \(min-width:(\d+)px\)\{\.grid-wrap\{width:min\(100%,var\(--board-w/.exec(flatCss);
   return gate && css && gate[1] === css[1];
 })(), (() => {
   const js = fs.readFileSync("js/game.js", "utf8");
-  const g = /var wideFrame = vw >= (\d+)/.exec(js);
+  const g = /if \(vw >= (\d+)\) \{/.exec(js);
   return g ? "maths gated at " + g[1] : "no gate found";
 })());
-t("and a narrow screen sizes the board for the puzzle, not the frame",
-  /frameCols = wideFrame \? Math\.max\(MAX_COLS, puzzle\.width\) : puzzle\.width/
-    .test(fs.readFileSync("js/game.js", "utf8")));
+t("a narrow screen sizes the board for the puzzle, not the frame",
+  /var frameCols = puzzle\.width;/.test(fs.readFileSync("js/game.js", "utf8")));
+/* And the frame yields when honouring it would make the board unplayable. A
+   landscape tablet is short rather than narrow: spending width on turf either
+   side pushed the cell under the floor and raised "turn your phone upright" in
+   front of a board that was fine at its own width. */
+t("and the frame is dropped rather than made unplayable", (() => {
+  const js = fs.readFileSync("js/game.js", "utf8");
+  return /if \(trial >= PLAYABLE\) frameCols = wide;/.test(js);
+})());
 
 /* Arrangements that only work with room: the game row and the help row were
    both laid out for a wide screen and neither was gated, so a clock, a count

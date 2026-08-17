@@ -1206,7 +1206,14 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
    Landscape now uses the same single column as everything else, capped to the
    board's width like every other block. */
 @media (orientation:landscape) and (max-height:1100px) and (min-width:860px){
-  .stage{width:min(100%,var(--board-w,100%));margin:0 auto}
+  /* Nothing here sizes the stage from --board-w. It did, briefly, and that is
+     a loop: fitCells measures .grid-panel, .grid-panel takes its width from
+     .stage, and .stage was taking its width from the value fitCells had just
+     published. The browser reported it honestly — "ResizeObserver loop
+     completed with undelivered notifications", seven times. The blocks inside
+     are capped to the board individually, which gets the same column without
+     the board being sized from itself. */
+  .stage{margin:0 auto}
 }
 
 @media (orientation:landscape) and (max-height:820px){

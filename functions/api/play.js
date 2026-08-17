@@ -34,7 +34,18 @@ export async function onRequestPost({ request, env }) {
 
   const playId = String(body.playId || "").slice(0, 60);
   if (!playId || playId.length < 8) return bad("No play id.");
-  const mode = body.mode === "practice" ? "practice" : "daily";
+  /* Three modes, not two. Coercing everything that was not "practice" into
+     "daily" filed every themed board under practice, which is the one place
+     the number is least useful — a themed board is the thing designed to be
+     passed between friends. */
+  const mode = body.mode === "practice" ? "practice"
+             : body.mode === "theme" ? "theme"
+             : "daily";
+  /* "man-united-3": the same slug the share link carries, so a row here joins
+     to the link somebody actually sent. */
+  const themeKey = mode === "theme"
+    ? (/^[a-z0-9][a-z0-9-]{0,48}$/.test(String(body.themeKey || "")) ? body.themeKey : null)
+    : null;
 
   if (body.event === "start") {
     /* One row per play id. A retry, a double-fire on a flaky connection, or a
@@ -43,12 +54,12 @@ export async function onRequestPost({ request, env }) {
       .bind(playId).first();
     if (seen) return json({ ok: true, already: true });
     await env.DB.prepare(
-      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total)
-       VALUES (?,?,?,?,?,?)`)
+      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key)
+       VALUES (?,?,?,?,?,?,?)`)
       .bind(newId(), playId, mode,
             body.dailyNo ? int(body.dailyNo, 100000) : null,
             body.phase === "season" ? "season" : "preseason",
-            int(body.total, 50)).run();
+            int(body.total, 50), themeKey).run();
     return json({ ok: true });
   }
 
