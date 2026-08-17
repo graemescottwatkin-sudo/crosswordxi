@@ -25,6 +25,13 @@
 <!-- og:image wants 1200x630 artwork. Until there is some, the card renders as
      a text summary rather than something broken. -->
 
+<!-- Cloudflare Web Analytics. No cookies and no identifiers, so it needs no
+     consent banner and adds nothing to a privacy policy. It measures visits;
+     it cannot tell you how many people finished the daily, which is the
+     question that actually matters for a puzzle. That needs a play counter. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon='{"token": "051ace7e573e493ab312e88a3e5adf9d"}'></script>
+
 <!-- Search Console verification for the new property. Paste the token
      Google gives you and deploy; the tag can stay afterwards.
 <meta name="google-site-verification" content="PASTE_TOKEN_HERE">
@@ -32,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v09g">
+<link rel="stylesheet" href="css/style.css?v=v09h">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -409,7 +416,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v09g</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v09h</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -420,8 +427,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v09g"></script>
-<script src="js/engine.js?v=v09g"></script>
-<script src="js/game.js?v=v09g"></script>
+<script src="js/seasons.js?v=v09h"></script>
+<script src="js/engine.js?v=v09h"></script>
+<script src="js/game.js?v=v09h"></script>
 </body>
 </html>

@@ -134,6 +134,13 @@ const shim = `
 `;
 
 /* Inline the stylesheet and scripts, dropping the ?v= tags. */
+/* The analytics beacon is stripped: the preview must run from disk with no
+   network, and counting a page view from a file that says "do not upload" would
+   be wrong even if it worked. */
+html = html.replace(
+  /<script[^>]*cloudflareinsights[\s\S]*?<\/script>/g,
+  "<!-- analytics removed from the preview build -->");
+
 html = html.replace(/<link rel="stylesheet" href="css\/style\.css[^"]*">/,
   "<style>\n" + read("css/style.css") + "\n</style>");
 html = html.replace(/<meta name="viewport"([^>]*)>/,

@@ -479,6 +479,18 @@ server.listen(0, "127.0.0.1", async () => {
     return at !== -1 && /if \(err && err\.offline\)/.test(fn);
   })());
 
+  t("the analytics beacon is present and does not block the page", (() => {
+    /* defer, so it never delays the board appearing — a puzzle that loads a
+       tenth of a second later to count a visit is a bad trade. */
+    const tag = d.querySelector('script[src*="cloudflareinsights"]');
+    return !!tag && tag.hasAttribute("defer");
+  })());
+  t("it carries no cookie and no identifier of ours", (() => {
+    // Nothing to consent to, and nothing to put in a privacy policy.
+    return !html.includes("gtag") && !html.includes("google-analytics") &&
+      !/document\.cookie/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8"));
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS
