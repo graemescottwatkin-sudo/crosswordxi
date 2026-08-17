@@ -93,10 +93,28 @@ function norm(s) {
 /* A clue belongs to a club theme if the club is named in the clue, is the
    answer, or is the row's entity. Topic themes go by category, which is
    already a curated field and needs no guessing. */
+/* Named only to be ruled out. The city clues disambiguate with "— not X",
+   so "London — not Chelsea, Tottenham or Queens" mentions two big themes and
+   belongs to neither: the answer is West Ham, and Chelsea is there precisely
+   because it is the wrong answer. Naming a theme in order to exclude it is the
+   opposite of belonging to it, and putting that clue on the Chelsea board asks
+   a Chelsea supporter to not write Chelsea. */
+function namedOnlyToExclude(row, theme) {
+  const m = /[\u2014-]\s*not\s/i.exec(String(row.clue || ""));
+  if (!m) return false;
+  const before = norm(row.clue.slice(0, m.index));
+  const after = norm(row.clue.slice(m.index));
+  const hitsAfter = theme.keys.some((k) => after.indexOf(" " + k + " ") !== -1);
+  const hitsBefore = theme.keys.some((k) => before.indexOf(" " + k + " ") !== -1);
+  const isAnswer = theme.keys.some((k) => norm(row.answer).indexOf(" " + k + " ") !== -1);
+  return hitsAfter && !hitsBefore && !isAnswer;
+}
+
 function belongs(row, theme) {
   if (theme.cats) return theme.cats.indexOf(row.cat) !== -1;
   const hay = norm(row.clue) + "|" + norm(row.answer) + "|" + norm(row.entity);
   if (theme.not && theme.not.some((n) => hay.indexOf(" " + n + " ") !== -1)) return false;
+  if (namedOnlyToExclude(row, theme)) return false;
   return theme.keys.some((k) => hay.indexOf(" " + k + " ") !== -1);
 }
 
@@ -114,4 +132,4 @@ function poolFor(rows, theme) {
                             belongs(r, theme) && !isSelfAnswer(r, theme));
 }
 
-module.exports = { THEMES, belongs, poolFor, isSelfAnswer, norm };
+module.exports = { THEMES, belongs, poolFor, isSelfAnswer, namedOnlyToExclude, norm };

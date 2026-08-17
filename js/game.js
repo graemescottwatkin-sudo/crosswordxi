@@ -2768,7 +2768,11 @@
   function populateClubSelect(sel) {
     if (sel.options.length) return;
     var opt = document.createElement("option");
-    opt.value = "__random__"; opt.textContent = "Random club and season";
+    /* "Random club", not "Random club and season". The season is always drawn
+       from the puzzle seed whichever club you pick, so naming it here offered a
+       choice that does not exist and implied picking a club would pin the
+       season. */
+    opt.value = "__random__"; opt.textContent = "Random club";
     sel.appendChild(opt);
 
     var recent = recentClubs();

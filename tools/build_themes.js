@@ -48,8 +48,38 @@ const FCW = require(need("engine.js"));
 const rows = JSON.parse(fs.readFileSync(need("data.json"), "utf8"));
 const { THEMES, poolFor } = require("./themes.js");
 
+const CLUB = "club";   // matches the kind set in tools/themes.js
 const TARGET = 11;
+/* Transfers are capped at 3 everywhere, as they are on the Daily. On a club
+   board everything else is capped at 2 as well, because the same construction
+   three times reads as one question asked three ways: Chelsea #1 came out with
+   four Managers clues, Manchester City #1 with three "Who Am I", and Arsenal
+   with three of "Won the FA Cup in ____, beating Arsenal in the final".
+   Topic boards are exempt from the wildcard — on a Grounds board the category
+   *is* the theme, and capping it at two makes the board impossible. */
 const FAMILY_CAP = { Transfer: 3 };
+const CLUB_FAMILY_CAP = { "*": 2, Transfer: 3 };
+
+/* How often the theme appears only as the side that lost. One is colour — a
+   club's history includes being beaten. Three of eleven is a board about
+   everyone else's trophies, handed to that club's own supporters. */
+function beatenCount(puzzle, theme) {
+  if (!theme.keys) return 0;
+  let n = 0;
+  for (const e of puzzle.entries) {
+    const clue = String(e.row.clue || "");
+    const isAnswer = theme.keys.some((k) =>
+      k.replace(/[^a-z0-9]/g, "") === String(e.row.grid || "").toLowerCase());
+    if (isAnswer) continue;
+    for (const k of theme.keys) {
+      // "beating Arsenal in the final", "Arsenal ... runners-up"
+      if (new RegExp("(beating|beat|defeat\\w*|runners?[- ]up to)[^.]{0,40}" +
+                     k.replace(/[^a-z0-9 ]/g, ""), "i").test(clue)) { n++; break; }
+    }
+  }
+  return n;
+}
+const MAX_BEATEN = 1;
 const sqlStr = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 const salt = () => crypto.randomBytes(12).toString("hex");
 
@@ -62,14 +92,15 @@ function boardsFor(theme, want) {
   const usedIds = {};
   for (let n = 1; n <= want; n++) {
     let got = null;
-    for (let attempt = 0; attempt < 40 && !got; attempt++) {
+    for (let attempt = 0; attempt < 200 && !got; attempt++) {
       const seed = 7000000 + hash(theme.id) + n * 104729 + attempt * 7919;
       const filter = Object.keys(usedIds).length ? { excludeIds: usedIds } : {};
       let p;
+      const cap = theme.kind === CLUB ? CLUB_FAMILY_CAP : FAMILY_CAP;
       try {
-        p = FCW.generate(pool, { seed, filter, maxPerFamily: FAMILY_CAP });
+        p = FCW.generate(pool, { seed, filter, maxPerFamily: cap });
       } catch (e) { continue; }
-      if (p && p.entries.length === TARGET) got = p;
+      if (p && p.entries.length === TARGET && beatenCount(p, theme) <= MAX_BEATEN) got = p;
     }
     if (!got) break;                       // this theme is spent; stop cleanly
     got.entries.forEach((e) => { usedIds[e.row.id] = true; });
@@ -92,6 +123,19 @@ function validate(p, theme) {
   if (new Set(grids).size !== grids.length) faults.push("duplicate answer");
   const transfers = p.entries.filter((e) => e.row.cat.startsWith("Transfer")).length;
   if (transfers > FAMILY_CAP.Transfer) faults.push(`${transfers} transfers`);
+  const beaten = beatenCount(p, theme);
+  if (beaten > MAX_BEATEN) faults.push(`theme beaten ${beaten} times`);
+  if (theme.kind === CLUB) {
+    const fams = {};
+    p.entries.forEach((e) => {
+      const f = e.row.cat.split(" \u2192")[0];
+      fams[f] = (fams[f] || 0) + 1;
+    });
+    for (const [f, n] of Object.entries(fams)) {
+      const limit = f === "Transfer" ? 3 : 2;
+      if (n > limit) faults.push(`${n} x ${f}`);
+    }
+  }
   for (const e of p.entries) {
     const clue = " " + e.row.clue.toUpperCase().replace(/[^A-Z ]/g, " ").replace(/\s+/g, "") + " ";
     if (clue.indexOf(e.row.grid) !== -1) faults.push(`self-answering ${e.row.id}`);

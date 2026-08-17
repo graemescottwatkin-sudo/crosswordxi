@@ -176,10 +176,15 @@ header{
 .tb-match .match-clock,.tb-match .live-chip{
   border:none;background:none;box-shadow:none;padding:0;
 }
-/* Controls keep a face and an edge, and all of them are the same size. The
-   pause icon is the one exception: it is square by design. */
-.tb-controls .btn{min-width:104px;justify-content:center}
-.tb-controls .icon-btn{min-width:44px;width:44px}
+/* Controls keep a face and an edge, and all of them are the same size. Same
+   size means the same width, not the same minimum: min-width alone let each
+   button size to its own label, so "Today's puzzle" came out half again as
+   wide as "Menu" and the row read as three unrelated controls. flex:1 1 0
+   gives every button an identical basis and an equal share of what is left,
+   so the widths match whether three buttons are showing or four.
+   The pause icon is the one exception: it is square by design. */
+.tb-controls .btn{flex:1 1 0;min-width:104px;justify-content:center}
+.tb-controls .icon-btn{flex:0 0 auto;min-width:44px;width:44px}
 /* Help stacks into columns by kind: checking, revealing, substituting.
    Two rows, filled column-first, so Check sits above Check all and Reveal
    letter above Reveal answer without needing a wrapper per pair. */
@@ -1087,7 +1092,9 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
     background:none;border:none;padding:0;align-self:stretch;
   }
   .tb-readouts,.tb-controls{width:100%}
-  .tb-controls .btn{flex:1 1 auto;min-width:0}
+  /* flex:1 1 0, not auto: auto sizes from the label and the rail is narrow
+     enough that the difference shows as a ragged column. */
+  .tb-controls .btn{flex:1 1 0;min-width:0}
   /* Inside the rail the panels are the card's contents, not free-floating
      boxes: they lose their own background so the card reads as one panel, and
      a rule between them does the separating instead. */

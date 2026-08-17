@@ -20,10 +20,15 @@ const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "
 
 /* ---------- The generated boards ---------- */
 console.log("The boards");
+/* The plan holds answers, so it is not in the repository — it travels with the
+   generated SQL instead. Absent, these checks skip rather than fail: a suite
+   that always fails on a clean checkout is one people stop reading, and this
+   file still has the API half to run. */
 const planPath = path.join(DIR, "data", "themes-plan.json");
 const hasPlan = fs.existsSync(planPath);
-t("a build plan exists", hasPlan,
-  hasPlan ? "" : "run tools/build_themes.js first");
+if (!hasPlan) {
+  console.log("  --  the board checks need data/themes-plan.json; run tools/build_themes.js");
+}
 
 if (hasPlan) {
   const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
@@ -63,6 +68,12 @@ if (hasPlan) {
      caught here; club nicknames are, because a nickname is the club. */
   const { THEMES, isSelfAnswer } = await import("./tools/themes.js").then((m) => m.default || m);
   const themeById = Object.fromEntries(THEMES.map((x) => [x.id, x]));
+  /* The bank itself, so membership can be judged on the clue rather than the
+     answer — which is the only place the mistake is visible. */
+  const bankPath = path.join(DIR, "data.json");
+  const bankById = fs.existsSync(bankPath)
+    ? Object.fromEntries(JSON.parse(fs.readFileSync(bankPath, "utf8")).map((r) => [String(r.id), r]))
+    : {};
   const selfAnswers = [];
   for (const b of plan) {
     const th = themeById[b.theme];
@@ -74,6 +85,66 @@ if (hasPlan) {
   }
   t("no board's answer is the theme itself", selfAnswers.length === 0,
     selfAnswers.slice(0, 4).join("; ") || "none");
+
+  /* A theme named only to be ruled out does not belong to that theme. The city
+     clues disambiguate with "— not X", so "London — not Chelsea, Tottenham or
+     Queens" answers West Ham and named two big clubs purely as wrong answers;
+     both boards carried it before this. */
+  const { namedOnlyToExclude } = await import("./tools/themes.js").then((m) => m.default || m);
+  const excluded = [];
+  for (const b of plan) {
+    const th = themeById[b.theme];
+    if (!th || !th.keys) continue;
+    for (const id of b.clueIds) {
+      const row = bankById[String(id)];
+      if (row && namedOnlyToExclude(row, th)) excluded.push(`${b.name} #${b.no}: ${row.clue}`);
+    }
+  }
+  t("no board carries a clue that names its theme only to exclude it",
+    excluded.length === 0, excluded.slice(0, 3).join("; ") || "none");
+
+  /* One construction three times reads as one question asked three ways.
+     Chelsea #1 came out with four Managers clues and Arsenal with three of
+     "Won the FA Cup in ____, beating Arsenal in the final". Transfers keep
+     their cap of 3; everything else on a club board is capped at 2. Topic
+     boards are exempt, because there the category *is* the theme. */
+  const overFamily = [];
+  for (const b of plan) {
+    const th = themeById[b.theme];
+    if (!th || th.kind !== "club") continue;
+    const fams = {};
+    b.clueIds.forEach((id) => {
+      const r = bankById[String(id)];
+      if (!r) return;
+      const f = r.cat.split(" \u2192")[0];
+      fams[f] = (fams[f] || 0) + 1;
+    });
+    for (const [f, n] of Object.entries(fams)) {
+      if (n > (f === "Transfer" ? 3 : 2)) overFamily.push(`${b.name} #${b.no}: ${n} x ${f}`);
+    }
+  }
+  t("no club board asks the same kind of question three times",
+    overFamily.length === 0, overFamily.slice(0, 3).join("; ") || "none");
+
+  /* A club's history includes being beaten, and one such clue is colour. Three
+     of eleven is a board about everyone else's trophies handed to that club's
+     own supporters. */
+  const beaten = [];
+  for (const b of plan) {
+    const th = themeById[b.theme];
+    if (!th || !th.keys) continue;
+    let n = 0;
+    b.clueIds.forEach((id) => {
+      const r = bankById[String(id)];
+      if (!r) return;
+      const isAnswer = th.keys.some((k) => k.replace(/[^a-z0-9]/g, "") === String(r.grid).toLowerCase());
+      if (isAnswer) return;
+      if (th.keys.some((k) => new RegExp("beating[^.]{0,40}" + k.replace(/[^a-z0-9 ]/g, ""), "i").test(r.clue))) n++;
+    });
+    if (n > 1) beaten.push(`${b.name} #${b.no}: beaten ${n} times`);
+  }
+  t("no board shows its theme losing more than once",
+    beaten.length === 0, beaten.slice(0, 3).join("; ") || "none");
 
   t("board numbers run from 1 with no gaps",
     Object.values(byTheme).every((boards) => {
