@@ -147,3 +147,25 @@ CREATE TABLE IF NOT EXISTS clue_reports (
 );
 CREATE INDEX IF NOT EXISTS idx_reports_clue ON clue_reports (clue_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON clue_reports (status);
+
+
+-- Anonymous play counter. One row per attempt: no cookies, no account, nothing
+-- personal. The play id is random per attempt and identifies nobody; it exists
+-- only to pair a start with its finish.
+CREATE TABLE IF NOT EXISTS plays (
+  id           TEXT PRIMARY KEY,
+  play_id      TEXT NOT NULL,
+  mode         TEXT NOT NULL,
+  daily_no     INTEGER,
+  phase        TEXT,
+  solved       INTEGER DEFAULT 0,
+  total        INTEGER DEFAULT 0,
+  completed    INTEGER DEFAULT 0,
+  elapsed_secs INTEGER DEFAULT 0,
+  checks       INTEGER DEFAULT 0,
+  reveals      INTEGER DEFAULT 0,
+  started_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  ended_at     TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plays_play ON plays (play_id);
+CREATE INDEX IF NOT EXISTS idx_plays_day ON plays (mode, daily_no);

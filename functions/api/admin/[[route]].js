@@ -102,6 +102,45 @@ export async function onRequest({ request, env, params }) {
     return json({ ok: true, dailyNo: n });
   }
 
+  /* ---- How far people got ----
+     Started, finished, and how many clues the ones who stopped had solved.
+     "142 started, 12 finished" and "40 started, 38 finished" are different
+     problems, and the median clues solved says which. */
+  if (route === "plays" && request.method === "GET") {
+    const rows = await env.DB.prepare(
+      `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs
+         FROM plays ORDER BY started_at DESC LIMIT 2000`).all();
+    const byDay = new Map();
+    for (const r of rows.results || []) {
+      const key = r.mode === "daily" ? "daily:" + r.daily_no : "practice";
+      if (!byDay.has(key)) {
+        byDay.set(key, { key, mode: r.mode, dailyNo: r.daily_no, phase: r.phase,
+                         started: 0, finished: 0, times: [], stops: [] });
+      }
+      const d = byDay.get(key);
+      d.started++;
+      if (r.completed) { d.finished++; if (r.elapsed_secs) d.times.push(r.elapsed_secs); }
+      else if (r.ended_at !== null) d.stops.push(r.solved || 0);
+      d.total = r.total || d.total;
+    }
+    const mid = (a) => {
+      if (!a.length) return null;
+      const s = [...a].sort((x, y) => x - y);
+      return s[Math.floor(s.length / 2)];
+    };
+    const days = [...byDay.values()].map((d) => ({
+      key: d.key, mode: d.mode, dailyNo: d.dailyNo, phase: d.phase,
+      started: d.started, finished: d.finished, total: d.total,
+      medianSeconds: mid(d.times),
+      /* Where the ones who gave up had got to. A median of 2 of 11 says the
+         puzzle loses people at the start; 9 of 11 says it loses them at the
+         end, and those want different fixes. */
+      medianSolvedWhenStopped: mid(d.stops),
+      abandoned: d.stops.length,
+    })).sort((a, b) => (b.dailyNo || 0) - (a.dailyNo || 0));
+    return json({ days });
+  }
+
   /* ---- Clear my own record ---- */
   if (route === "reset-my-record" && request.method === "POST") {
     await env.DB.prepare("DELETE FROM results WHERE user_id = ?").bind(me.id).run();

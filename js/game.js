@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09h";
+  var BUILD = "v09i";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -872,6 +872,10 @@
   }
 
   function revealBoard() {
+    /* Counted from kick off, not from the board being built: a puzzle nobody
+       started is not an attempt, and counting it would make the completion
+       rate meaningless. */
+    playStart();
     resetViewScroll();
     /* Focusing a cell and the keyboard appearing both scroll the page after
        this point, so one reset at the top of the function is not enough — the
@@ -1558,6 +1562,60 @@
     refreshAdmin();
   }).catch(function () { renderAccount(); });
 
+  /* ---------- How far people get ----------
+     Two events per attempt. No cookie, no account, nothing derived from the
+     person: the play id is random, made when the puzzle starts and forgotten
+     when it ends. It pairs a start with its finish and identifies nobody. */
+  var playId = null, playSent = false;
+
+  function newPlayId() {
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    } catch (e) {}
+    return String(Date.now()) + "-" + Math.random().toString(36).slice(2, 12);
+  }
+
+  function playStart() {
+    if (!puzzle) return;
+    playId = newPlayId();
+    playSent = false;
+    var phase = mode === "daily" ? FCW.dailyPhase(dailyNo).phase : null;
+    fetch("/api/play", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: "start", playId: playId, mode: mode,
+        dailyNo: mode === "daily" ? dailyNo : null, phase: phase,
+        total: puzzle.entries.length }),
+    }).catch(function () {});          // never let counting break the game
+  }
+
+  function playEnd(done) {
+    if (!playId || playSent || !puzzle) return;
+    playSent = true;
+    var solved = 0;
+    puzzle.entries.forEach(function (e, i) { if (verified[i] === true) solved++; });
+    var payload = JSON.stringify({ event: "end", playId: playId, mode: mode,
+      solved: solved, completed: !!done, elapsed: elapsed,
+      checks: checksUsed, reveals: revealedLetterCount() + revealedAnswerCount() });
+    /* sendBeacon, because a normal fetch is cancelled when the tab closes —
+       and an abandoned puzzle is the case this whole thing exists to measure.
+       Losing exactly the interesting half would be worse than not counting. */
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/play", new Blob([payload], { type: "application/json" }));
+        return;
+      }
+    } catch (e) {}
+    fetch("/api/play", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: payload, keepalive: true }).catch(function () {});
+  }
+
+  /* pagehide rather than unload: unload is unreliable on iOS and does not fire
+     when a tab is put in the background and later discarded. */
+  window.addEventListener("pagehide", function () { playEnd(false); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") playEnd(false);
+  });
+
   /* ---------- Owner tools ----------
      Shown only when the server says this account is an admin. That is
      convenience, not security: every route behind the panel re-checks the flag
@@ -1691,6 +1749,26 @@
       }).join("");
     }).catch(function (err) { adminMsg(String(err.message || err)); });
   }
+
+  on("adminPlays", "click", function () {
+    apiAuth("/api/admin/plays").then(function (d) {
+      if (!d.days.length) { adminMsg("Nobody has played yet."); return; }
+      $("adminReportList").innerHTML = "";
+      var lines = d.days.slice(0, 20).map(function (x) {
+        var name = x.mode === "practice" ? "Practice"
+          : (x.phase === "season" ? "Matchday " + (x.dailyNo - FCW.PRESEASON_DAYS)
+                                  : "Friendly #" + x.dailyNo);
+        var out = name + ": " + x.started + " started, " + x.finished + " finished";
+        if (x.medianSeconds) out += ", median " + Math.round(x.medianSeconds / 60) + " min";
+        if (x.abandoned) {
+          out += "\n      " + x.abandoned + " stopped, typically after " +
+            x.medianSolvedWhenStopped + " of " + x.total + " clues";
+        }
+        return out;
+      });
+      adminMsg(lines.join("\n"));
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
 
   on("adminReports", "click", loadReports);
   on("adminShowDone", "change", loadReports);
@@ -2577,6 +2655,7 @@
     if (mode === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
     renderLeagueRows($("finalTableBody"), table, false); // Full Time: all 20
     var youRow = $("finalTableBody").querySelector("tr.you");
+    playEnd(true);
     $("doneOverlay").classList.add("show");
     if (youRow && youRow.scrollIntoView) youRow.scrollIntoView({ block: "center" });
   }

@@ -364,7 +364,10 @@ server.listen(0, "127.0.0.1", async () => {
        opening both scroll the page afterwards, and the measured scrollY was
        still 86 on a 320x568 screen. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const rb = js.slice(js.indexOf("function revealBoard"), js.indexOf("function revealBoard") + 600);
+    /* A fixed character window is brittle: adding a comment above the code
+       under test pushed it out of range and failed a check about scrolling. */
+    const at = js.indexOf("function revealBoard");
+    const rb = js.slice(at, js.indexOf("\n  }", at));
     return /requestAnimationFrame/.test(rb) && /setTimeout\(resetViewScroll/.test(rb);
   })());
   t("help collapses on narrow tablets too, not just phones", (() => {
