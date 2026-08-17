@@ -1266,3 +1266,29 @@ body.rotate-needed .rotate-prompt{
   background:var(--sel-word);border-color:var(--pitch);color:var(--pitch);
 }
 #flagClueText{font-style:italic;margin-bottom:14px}
+
+
+/* The flagged list. Each row can be closed on its own, because working through
+   them one at a time is how they actually get dealt with. */
+.report-list{text-align:left;max-height:280px;overflow-y:auto;margin-bottom:10px}
+.report-row{
+  border-bottom:1px solid var(--line);padding:8px 2px;font-size:13px;
+  display:flex;gap:8px;align-items:flex-start;
+}
+.report-row.done{opacity:.5}
+.report-row .rr-body{flex:1 1 auto;min-width:0}
+.report-row .rr-id{
+  font-family:var(--disp);font-size:11px;letter-spacing:.1em;color:var(--ink-faint);
+}
+.report-row .rr-clue{color:var(--ink);line-height:1.35}
+.report-row .rr-reason{color:var(--wrong);font-size:12px;margin-top:2px}
+.report-row .rr-done{
+  background:none;border:1px solid var(--line);border-radius:6px;
+  color:var(--ink-faint);font-size:15px;min-height:34px;min-width:34px;
+  cursor:pointer;flex:none;
+}
+.report-row .rr-done:hover{color:var(--pitch);border-color:var(--pitch)}
+.admin-check{
+  font-size:12.5px;color:var(--ink-faint);display:flex;align-items:center;
+  gap:6px;justify-content:center;margin-bottom:6px;
+}

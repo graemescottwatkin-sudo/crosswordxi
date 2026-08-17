@@ -96,12 +96,65 @@ export async function onRequest({ request, env, params }) {
 
   /* ---- Flagged clues ---- */
   if (route === "reports" && request.method === "GET") {
+    const url = new URL(request.url);
+    const all = url.searchParams.get("all") === "1";
     const rows = await env.DB.prepare(
-      `SELECT r.id, r.clue_id, r.reason, r.puzzle, r.created_at,
-              c.clue, c.answer, c.category
+      `SELECT r.id, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
+              c.clue, c.answer, c.category, c.enumeration, c.era, c.difficulty
          FROM clue_reports r LEFT JOIN clues c ON c.id = r.clue_id
-        ORDER BY r.created_at DESC LIMIT 200`).all();
+        ${all ? "" : "WHERE r.status = 'open'"}
+        ORDER BY r.created_at DESC LIMIT 500`).all();
     return json({ reports: rows.results || [] });
+  }
+
+  /* ---- The same thing as a file ----
+     Reading forty reports twelve at a time on a phone and retyping them into a
+     spreadsheet is the kind of friction that means it does not get done. */
+  if (route === "reports.csv" && request.method === "GET") {
+    const url = new URL(request.url);
+    const all = url.searchParams.get("all") === "1";
+    const rows = await env.DB.prepare(
+      `SELECT r.id, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
+              c.clue, c.answer, c.category, c.enumeration, c.era, c.difficulty
+         FROM clue_reports r LEFT JOIN clues c ON c.id = r.clue_id
+        ${all ? "" : "WHERE r.status = 'open'"}
+        ORDER BY r.created_at DESC LIMIT 2000`).all();
+    /* Quote everything and double any quote inside. Clue text contains commas
+       and apostrophes as a matter of course. */
+    const esc = (v) => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
+    const head = ["Report id", "Clue id", "Category", "Clue", "Answer",
+                  "Enumeration", "Era", "Difficulty", "Reason", "Puzzle",
+                  "Flagged", "Status"];
+    const lines = [head.map(esc).join(",")];
+    for (const r of rows.results || []) {
+      lines.push([r.id, r.clue_id, r.category, r.clue, r.answer, r.enumeration,
+                  r.era, r.difficulty, r.reason, r.puzzle, r.created_at, r.status]
+        .map(esc).join(","));
+    }
+    return new Response(lines.join("\r\n"), { headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="crosswordxi-flagged-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "Cache-Control": "no-store",
+    } });
+  }
+
+  /* ---- Mark as dealt with ---- */
+  if (route === "reports/reviewed" && request.method === "POST") {
+    let body = {};
+    try { body = await request.json(); } catch (e) {}
+    const now = new Date().toISOString();
+    if (body.id) {
+      await env.DB.prepare(
+        "UPDATE clue_reports SET status = ?, reviewed_at = ? WHERE id = ?")
+        .bind(body.open ? "open" : "done", now, String(body.id)).run();
+      return json({ ok: true, id: body.id });
+    }
+    /* Everything currently open. The button says how many it will close, so
+       this cannot quietly clear something that arrived while you were reading. */
+    const res = await env.DB.prepare(
+      "UPDATE clue_reports SET status = 'done', reviewed_at = ? WHERE status = 'open'")
+      .bind(now).run();
+    return json({ ok: true, closed: res.meta ? res.meta.changes : null });
   }
 
   if (route === "reports/clear" && request.method === "POST") {

@@ -138,6 +138,12 @@ CREATE TABLE IF NOT EXISTS clue_reports (
   reported_by TEXT REFERENCES users(id) ON DELETE SET NULL,
   reason      TEXT,
   puzzle      TEXT,
+  -- 'open' until dealt with, then 'done'. Kept rather than deleted: a clue you
+  -- decided to leave alone is worth remembering, or it gets re-flagged and
+  -- re-considered next month.
+  status      TEXT DEFAULT 'open',
+  reviewed_at TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_reports_clue ON clue_reports (clue_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON clue_reports (status);

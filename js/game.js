@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09c";
+  var BUILD = "v09d";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1618,16 +1618,65 @@
     }).catch(function (err) { adminMsg(String(err.message || err)); });
   });
 
-  on("adminReports", "click", function () {
-    apiAuth("/api/admin/reports").then(function (d) {
-      if (!d.reports.length) { adminMsg("Nothing flagged."); return; }
-      var lines = d.reports.slice(0, 12).map(function (r) {
-        return r.clue_id + "  " + (r.clue || "(clue not found)").slice(0, 40) +
-          " \u2192 " + (r.answer || "?") +
-          (r.reason ? "\n      " + r.reason : "\n      (no reason given)");
-      });
-      adminMsg(d.reports.length + " flagged:\n" + lines.join("\n"));
+  /* The list, one row per report, each closable on its own — working through
+     them one at a time is how they actually get dealt with, and marking the
+     whole lot done in one press is only useful once you have. */
+  function loadReports() {
+    var all = $("adminShowDone") && $("adminShowDone").checked;
+    apiAuth("/api/admin/reports" + (all ? "?all=1" : "")).then(function (d) {
+      var box = $("adminReportList");
+      var open = d.reports.filter(function (r) { return r.status !== "done"; }).length;
+      $("adminReviewed").style.display = open ? "" : "none";
+      $("adminReviewed").textContent = "Mark all " + open + " as reviewed";
+      if (!d.reports.length) {
+        box.innerHTML = "";
+        adminMsg(all ? "Nothing flagged." : "Nothing outstanding.");
+        return;
+      }
+      adminMsg("");
+      box.innerHTML = d.reports.map(function (r) {
+        return '<div class="report-row' + (r.status === "done" ? " done" : "") +
+          '" data-id="' + escapeHtml(r.id) + '">' +
+          '<div class="rr-body">' +
+            '<div class="rr-id">' + escapeHtml(r.clue_id) +
+              (r.category ? " \u00B7 " + escapeHtml(r.category) : "") + "</div>" +
+            '<div class="rr-clue">' + escapeHtml((r.clue || "(clue not found)")) +
+              " \u2192 " + escapeHtml(r.answer || "?") + "</div>" +
+            '<div class="rr-reason">' + escapeHtml(r.reason || "(no reason given)") + "</div>" +
+          "</div>" +
+          (r.status === "done" ? "" :
+            '<button class="rr-done" title="Mark as reviewed">\u2713</button>') +
+          "</div>";
+      }).join("");
     }).catch(function (err) { adminMsg(String(err.message || err)); });
+  }
+
+  on("adminReports", "click", loadReports);
+  on("adminShowDone", "change", loadReports);
+
+  on("adminReportList", "click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest(".rr-done") : null;
+    if (!btn) return;
+    var row = btn.closest(".report-row");
+    apiAuth("/api/admin/reports/reviewed", { id: row.getAttribute("data-id") })
+      .then(function () { loadReports(); renderAdmin(); })
+      .catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  on("adminReviewed", "click", function () {
+    apiAuth("/api/admin/reports/reviewed", {})
+      .then(function (r) {
+        adminMsg((r.closed === null ? "All" : r.closed) + " marked as reviewed.");
+        loadReports(); renderAdmin();
+      })
+      .catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* The download is a plain navigation, not fetch: the browser then handles the
+     file itself and the Content-Disposition header names it. */
+  on("adminExport", "click", function () {
+    var all = $("adminShowDone") && $("adminShowDone").checked;
+    window.location.href = "/api/admin/reports.csv" + (all ? "?all=1" : "");
   });
 
   /* Flag a clue while playing. Open to any signed-in player: whoever notices a

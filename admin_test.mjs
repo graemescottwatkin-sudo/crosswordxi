@@ -134,5 +134,44 @@ console.log("\nFlagging a clue");
     env: out }).then((r) => r.status)) === 401);
 }
 
+console.log("\nExporting and closing reports");
+{
+  const owner = makeEnv({ admin: 1 });
+  /* Seed two reports through the public endpoint, so the export is tested
+     against data the game actually writes. */
+  const post = (body) => report({ request: new Request("https://x/api/report-clue", {
+    method: "POST", body: JSON.stringify(body),
+    headers: { "X-Crossword-XI": "1", Cookie: "cxi_session=sess" },
+  }), env: owner });
+  await post({ clueId: "V30463", reason: 'Two answers fit, and it says "Queens"' });
+
+  const r = await call("reports.csv", {}, owner);
+  t("the export comes back as a downloadable file",
+    r.headers.get("Content-Type").indexOf("text/csv") === 0 &&
+    /attachment; filename="crosswordxi-flagged-\d{4}-\d{2}-\d{2}\.csv"/.test(
+      r.headers.get("Content-Disposition")),
+    r.headers.get("Content-Disposition"));
+
+  const csv = await r.text();
+  const lines = csv.split("\r\n");
+  t("with a header row and one row per report", lines.length === 2, `${lines.length} lines`);
+  t("every field is quoted, since clue text is full of commas",
+    lines[1].startsWith('"') && lines[1].endsWith('"'));
+  t("and a quote inside a reason does not break the row", (() => {
+    /* 'says "Queens"' must survive as doubled quotes, or the file falls apart
+       at exactly the row you most wanted to read. */
+    return lines[1].includes('""Queens""');
+  })(), lines[1].slice(-46));
+
+  t("a player cannot download it", (await call("reports.csv", {}, makeEnv({ admin: 0 }))).status === 404);
+
+  const closed = await (await call("reports/reviewed", { method: "POST", body: {} }, owner)).json();
+  t("marking everything reviewed reports how many it closed", closed.ok === true);
+  t("a player cannot close reports",
+    (await call("reports/reviewed", { method: "POST", body: {} }, makeEnv({ admin: 0 }))).status === 404);
+  t("closing still needs the anti-CSRF header",
+    (await call("reports/reviewed", { method: "POST", body: {}, csrf: false }, owner)).status === 403);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
