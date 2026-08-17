@@ -273,10 +273,14 @@ server.listen(0, "127.0.0.1", async () => {
       !/\.stage\{[^}]*grid-template-columns:auto/.test(css) &&
       !d.querySelector(".side");
   })());
-  t("the vertical flow is header, active clue, board, season, clues", (() => {
+  t("the vertical flow is active clue, board, controls, clues, season", (() => {
     const order = [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
       .map((n) => n.id || n.className.split(" ")[0]);
-    return order.join(">") === "toolbar>nowClue>grid-wrap>seasonPanel>clues";
+    /* Requested order: the clue you are answering, the board you answer it
+       on, the controls, the record of how it is going, then the full lists. */
+    /* The lists moved up to sit under Help, and are closed by default: the
+       clue being answered is already on screen, so they are a reference. */
+    return order.join(">") === "nowClue>grid-wrap>clues>seasonPanel";
   })(), [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
     .map((n) => n.id || n.className.split(" ")[0]).join(" > "));
   t("the active clue strip is still immediately above the board", (() => {
@@ -382,6 +386,25 @@ server.listen(0, "127.0.0.1", async () => {
     for (let i = 0; i < 2; i++) btn.dispatchEvent(new w.Event("click", { bubbles: true }));
     return forced === "light";
   })());
+  /* The lists open and close, and the state survives a reload — same shape as
+     the help toggle, which is the pattern already established here. */
+  t("the clue lists start closed and open on request", (() => {
+    const block = $("cluesBlock"), btn = $("cluesToggle");
+    if (!block || !btn) return false;
+    const shut = !block.classList.contains("open") &&
+      btn.getAttribute("aria-expanded") === "false";
+    btn.dispatchEvent(new w.Event("click", { bubbles: true }));
+    const open = block.classList.contains("open") &&
+      btn.getAttribute("aria-expanded") === "true" &&
+      w.localStorage.getItem("fcw.cluesOpen") === "1";
+    btn.dispatchEvent(new w.Event("click", { bubbles: true }));
+    return shut && open && !block.classList.contains("open");
+  })());
+  t("and the toggle is a real button, so it stays keyboard reachable", (() => {
+    const b = $("cluesToggle");
+    return !!b && b.tagName === "BUTTON" && b.getAttribute("aria-controls") === "clues";
+  })());
+
   t("help is a real button, so it stays keyboard reachable", (() => {
     const b = $("helpToggle");
     return !!b && b.tagName === "BUTTON" && b.hasAttribute("aria-expanded") &&
@@ -738,10 +761,13 @@ server.listen(0, "127.0.0.1", async () => {
     /* A 76-character clue is one line on a desktop card and three on a 390px
        phone. A character threshold therefore protects the wrong screen — it let
        exactly that clue push the answer boxes out of the card on an iPhone
-       while scaling nothing. */
+       while scaling nothing.
+       Four steps now, not three: capping the strip to the board width made four
+       lines reachable on a desktop, and a clue that reached them was sliced in
+       half by the bottom of the fixed-height card. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /Math\.ceil\(text\.length \/ Math\.max\(12, Math\.floor\(cardW \/ 8\)\)\)/.test(js) &&
-      /lines === 2/.test(js) && /lines >= 3/.test(js);
+      /lines === 2/.test(js) && /lines === 3/.test(js) && /lines >= 4/.test(js);
   })());
   t("and still never measures the text itself", (() => {
     /* The width read is the card's, which does not depend on the clue — so the
@@ -927,14 +953,17 @@ server.listen(0, "127.0.0.1", async () => {
     /* offsetWidth reads the board as currently painted, and the read happened
        immediately after --cell changed — so it returned the previous size and
        the block landed a step behind. Selecting a clue re-ran it and the whole
-       rail and board slid sideways inside a clue strip that had not moved. */
+       rail and board slid sideways inside a clue strip that had not moved.
+       The width is now built for MAX_COLS rather than this puzzle's width, so
+       the pitch is the same size whichever board is loaded — everything below
+       is capped to it, and a per-puzzle width moved the entire page. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     // Strip comments first: the comment explaining this fix mentions
     // offsetWidth, and matching prose rather than code fails on its own note.
     const fit = js.slice(js.indexOf("function fitCells"), js.indexOf("var lastCellSize"))
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     return !/offsetWidth/.test(fit) &&
-      /puzzle\.width \* size \+ wrapPadX/.test(fit) &&
+      /MAX_COLS \* size \+ wrapPadX/.test(fit) &&
       /railW \+ pairGap \+ boardW/.test(fit);
   })());
   t("the same puzzle at the same size gives the same widths every time", (() => {
@@ -1010,19 +1039,21 @@ server.listen(0, "127.0.0.1", async () => {
   })());
 
   console.log("\nLandscape tablet: the rail");
-  t("the toolbar moves into the stage so it can be a column of the board", (() => {
-    // matchMedia is stubbed false in this harness, so drive placeToolbar()
-    // through a real media-query result rather than a viewport guess.
-    const real = w.matchMedia;
-    w.matchMedia = (q) => ({ matches: /min-width:1000px/.test(q), addListener() {}, removeListener() {} });
-    w.dispatchEvent(new w.Event("resize"));
-    const stage = d.querySelector(".stage");
-    const moved = stage.contains($("toolbar")) && stage.firstElementChild === $("toolbar");
-    w.matchMedia = real;
-    w.dispatchEvent(new w.Event("resize"));
-    const back = !stage.contains($("toolbar"));
-    return moved && back;
-  })());
+  /* The toolbar is gone: its three boxes now sit in the board column in the order
+     they are read. Nothing is relocated at runtime, so there is nothing to
+     assert about where it moves to — only that it is not there. */
+  t("there is no toolbar to relocate; the blocks sit in the column in order", (() => {
+    const panel = d.querySelector(".grid-panel");
+    const ids = [...panel.children].map((n) => n.id || n.className.split(" ").pop());
+    return !$("toolbar") &&
+      ids.indexOf("nowClue") === 0 &&
+      ids.indexOf("grid-wrap") === 1 &&
+      ids.indexOf("tb-game") > ids.indexOf("grid-wrap") &&
+      ids.indexOf("tb-help") > ids.indexOf("tb-game") &&
+      ids.indexOf("seasonPanel") > ids.indexOf("tb-help");
+  })(), [...d.querySelector(".grid-panel").children]
+    .map((n) => n.id || n.className.split(" ").pop()).join(" > "));
+
   t("the board still gets a sensible width when the panel has no box", (() => {
     /* .grid-panel is display:contents in the rail, so it has no box and
        clientWidth is 0. Measuring the stage instead worked but was circular —
@@ -1047,11 +1078,16 @@ server.listen(0, "127.0.0.1", async () => {
     const panel = $("seasonPanel");
     const wrap = d.querySelector(".grid-wrap");
     return d.querySelector(".grid-panel").contains(panel) &&
-      !$("toolbar").contains(panel) &&
+      !$("toolbar") &&
       (wrap.compareDocumentPosition(panel) & 4) !== 0;   // board precedes it
   })());
-  t("the season record is sized from the board's published width, not its contents",
-    /\.grid-panel > \.board-table\{width:min\(100%,var\(--board-w,100%\)\)/.test(css));
+  /* Every block below the clue strip is capped to the same published width, so
+     the column has one edge rather than each element finding its own. */
+  /* One measure for the whole column, the clue strip included — it was the
+     last block sizing itself to the panel rather than the board, and overhung
+     the column on both sides. */
+  t("every block in the column is capped to the board's width, clue strip included",
+    /\.grid-panel > \.now-clue,[\s\S]{0,160}max-width:var\(--board-w,100%\)/.test(css));
   t("narrowing leaves it exactly where it was", (() => {
     Object.defineProperty(w, "innerWidth", { value: 390, writable: true, configurable: true });
     w.dispatchEvent(new w.Event("resize"));
@@ -1063,11 +1099,14 @@ server.listen(0, "127.0.0.1", async () => {
     const rows = [...d.querySelectorAll("#tablePanel #leagueBody tr")];
     return rows.length === 20 && rows.filter((r) => !r.classList.contains("faroff")).length === 3;
   })(), [...d.querySelectorAll("#tablePanel #leagueBody tr")].filter((r) => !r.classList.contains("faroff")).length + " visible");
-  t("and widening puts it back in the rail", (() => {
+  /* The table no longer moves at any width: it sits in the board column with
+     everything else, so there is nothing to relocate and nothing to get wrong
+     on resize. */
+  t("and widening leaves it exactly where it is", (() => {
     Object.defineProperty(w, "innerWidth", { value: 1400, writable: true, configurable: true });
     w.dispatchEvent(new w.Event("resize"));
     const panel = $("tablePanel");
-    return $("toolbar").contains(panel) && !panel.classList.contains("below-board");
+    return d.querySelector(".grid-panel").contains(panel);
   })());
 
   console.log("\nSelection still works from the lists below");

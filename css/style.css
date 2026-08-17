@@ -150,6 +150,88 @@ header{
    One bounded card, three zones: the match state (clock, position, progress),
    the point-costing help actions, and the game controls. Grouping is the point
    — a flat row of mixed-weight buttons gave no clue which ones cost you. */
+/* One column, one edge. Every block below the clue strip is capped to the
+   board's published width so the page has a single measure rather than each
+   element finding its own. */
+.grid-panel > .now-clue,
+.grid-panel > .tb-box,
+.grid-panel > .tb-table,
+.grid-panel > #seasonPanel{
+  width:100%;max-width:var(--board-w,100%);margin:8px auto 0;box-sizing:border-box;
+}
+/* The clue strip is the one block above the board, so it keeps its own top
+   margin — but it takes the same edge as everything below it. It was the last
+   element sizing itself to the panel rather than to the board, which is why it
+   overhung the column on both sides. */
+.grid-panel > .now-clue{margin:0 auto 8px}
+.grid-panel > .tb-help{margin-top:6px}
+/* The game controls are one row, as they read: pause, menu, and the two ways
+   to get a different puzzle. */
+/* One row: the readings, then the four controls. The buttons give up their
+   equal share so the clock and the count fit beside them — they were a
+   full-width panel of their own holding two short readings. */
+.grid-panel > .tb-game .tb-controls{
+  display:flex;flex-wrap:nowrap;width:100%;align-items:center;gap:6px;
+}
+.grid-panel > .tb-game .tb-controls .tb-readouts{
+  flex:0 0 auto;gap:10px;margin-right:2px;padding-right:10px;
+  border-right:1px solid var(--line);
+}
+.grid-panel > .tb-game .tb-controls .btn{flex:1 1 0;min-width:0;padding:0 8px}
+/* justify-content, not just padding:0. The base .btn is an inline-flex with no
+   justification, so zeroing the padding left the icon against the left edge
+   rather than centring it in the square. */
+.grid-panel > .tb-game .tb-controls .icon-btn{
+  flex:0 0 44px;padding:0;justify-content:center;
+}
+/* Readings, not controls: no border, no card face, whatever the row around
+   them is wearing. */
+.tb-controls .tb-readouts .match-clock,
+.tb-controls .tb-readouts .live-chip{
+  border:none;background:none;border-radius:0;padding:0;min-width:0;
+}
+.tb-controls .tb-readouts .match-clock{font-size:22px;text-align:left}
+.tb-controls .tb-readouts .match-clock small{font-size:9px;letter-spacing:.1em}
+.tb-controls .tb-readouts .live-chip{font-size:12px;white-space:nowrap}
+
+/* Help on one row. Three labelled groups side by side rather than three rows
+   stacked: the labels are what make "Check: Answer" and "Reveal: Answer"
+   different phrases, so they stay — they just sit beside their buttons now. */
+.grid-panel > .tb-help #helpRow{
+  display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;width:100%;
+}
+.grid-panel > .tb-help .tb-row{
+  display:flex;align-items:center;gap:5px;margin:0;grid-template-columns:none;
+}
+.grid-panel > .tb-help .tb-row .btn{min-width:0;padding:0 9px}
+.grid-panel > .tb-help .tb-sub{min-width:0;flex:0 0 auto}
+
+/* The season strip spans the column: nineteen columns, two rows, filling the
+   width. A flex row with equal shares should have done the same and did not —
+   the cells stayed at their content width and the run stopped a third of the
+   way across, reading as a season that had ended. A grid with a stated column
+   count cannot do that: nineteen tracks of 1fr are nineteen equal tracks
+   whatever the cells contain. */
+.grid-panel > #seasonPanel .season-strip{width:100%}
+.grid-panel > #seasonPanel .season-games{
+  display:grid;grid-template-columns:repeat(19,1fr);gap:3px;width:100%;
+}
+.grid-panel > #seasonPanel .game{width:auto;min-width:0;height:16px}
+
+/* The full lists, closed by default and opened when wanted. */
+.clues-block{width:100%;max-width:var(--board-w,100%);margin:8px auto 0}
+.clues-toggle{
+  width:100%;background:var(--paper);border:1px solid var(--line);
+  border-radius:9px;min-height:44px;cursor:pointer;
+  font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.clues-toggle:hover{color:var(--pitch);border-color:var(--pitch)}
+.clues-toggle::after{content:" \25BE";}
+.clues-block.open .clues-toggle::after{content:" \25B4";}
+.clues-block .clues{display:none;margin-top:10px}
+.clues-block.open .clues{display:grid}
+
 .toolbar{
   display:flex;align-items:stretch;justify-content:flex-start;
   gap:10px;flex-wrap:wrap;
@@ -210,8 +292,13 @@ header{
 }
 /* Pause is an icon: it is a single recognisable control and the word was
    taking the space of a label it did not need. */
-.icon-btn{width:38px;padding:0;justify-content:center}
-.icon-btn .ic{width:15px;height:15px;fill:currentColor;display:block}
+.icon-btn{
+  width:38px;padding:0;
+  /* Both axes, and stated here rather than inherited: this button holds a
+     glyph, not a word, so it has no text baseline to fall back on. */
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.icon-btn .ic{width:15px;height:15px;fill:currentColor;display:block;flex:0 0 auto}
 .icon-btn .ic-play{display:none}
 .icon-btn.playing .ic-pause{display:none}
 .icon-btn.playing .ic-play{display:block}
@@ -228,6 +315,9 @@ header{
 }
 .grid-panel > .board-table{
   width:min(100%,var(--board-w,100%));align-self:center;margin:0;
+  /* The grid is centred on a pitch built for the widest possible board, so a
+     narrow puzzle sits in the middle of the turf rather than against one edge. */
+  justify-items:center;
 }
 .tb-table table.league{font-size:12.5px}
 .tb-table table.league td{padding:2px 6px}
@@ -250,8 +340,15 @@ button.tb-label{
   background:none;border:none;padding:0;cursor:default;text-align:left;
 }
 @media (max-width:640px){ button.tb-label{cursor:pointer} }
-.toolbar .btn{padding:0 12px;min-height:44px;font-size:14px;white-space:nowrap;
-  display:inline-flex;align-items:center;gap:4px}
+/* Scoped to both homes. This was .toolbar-only, and when the banner was
+   dissolved the buttons in the board column stopped being flex at all — which
+   is why the pause icon sat off-centre on both axes: justify-content and
+   align-items have nothing to act on inside an inline-block. */
+.toolbar .btn,
+.grid-panel .tb-box .btn{
+  padding:0 12px;min-height:44px;font-size:14px;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+}
 .tb-sep{width:1px;height:26px;background:var(--line);margin:0 3px}
 .lbl-short{display:none}
 .lbl-busy{display:none}
@@ -341,16 +438,34 @@ button.tb-label{
    moved them across the card on every clue.
    Derived rather than typed: change --bank-cell and the reservation follows. */
 :root{
-  --bank-cell:26px;
-  --bank-gap:4px;
-  --bank-w:calc(15 * var(--bank-cell) + 14 * var(--bank-gap) + 27px);
+  /* Smaller than they were. The reservation is fifteen boxes wide whatever the
+     answer, and at 26px that claimed 473px of a strip now capped to the board
+     — leaving under 200px for the clue itself, which is what pushed long clues
+     to four lines and off the bottom of the card. The boxes are read one at a
+     time; the sentence is read whole, so the sentence gets the width. */
+  --bank-cell:21px;
+  --bank-gap:3px;
+  /* Slots reserved for the longest answer in *this* puzzle, not the longest
+     the engine could ever place. The point of the reservation is that the
+     boxes start in the same place on every clue — which only has to hold
+     within one puzzle, since that is the only time you switch between them.
+     Reserving fifteen when the longest answer is nine spent 130px of a strip
+     now capped to the board, and the clue text paid for it. Falls back to
+     fifteen before a puzzle is loaded. */
+  --bank-slots:15;
+  --bank-w:calc(var(--bank-slots) * var(--bank-cell) + (var(--bank-slots) - 1) * var(--bank-gap) + 27px);
 }
 /* Long clues are shrunk to fit rather than clipped or scrolled. The card
    height is fixed so the board never moves between clues; the text scales
    instead. A clue you have to scroll to read is a clue you will not read. */
 .nc-text.long{font-size:15px;line-height:1.35}
 .nc-text.xlong{font-size:13.5px;line-height:1.3}
-@media (max-width:1099px){ :root{--bank-cell:22px} }
+/* Four lines became reachable once the strip was capped to the board width,
+   and the card is a fixed 96px: "with Chile runners-up" was sliced in half
+   horizontally by the bottom edge. A clue cut off mid-word is unsolvable, not
+   untidy, so there is a step below xlong rather than a hard stop at three. */
+.nc-text.xxlong{font-size:12px;line-height:1.25}
+@media (max-width:1099px){ :root{--bank-cell:19px} }
 /* Below this there is not enough width for a sentence and fifteen boxes side
    by side, so the slots take their own row. They still start in the same place
    on every clue — the left edge — which is the point of the reservation. */
@@ -359,7 +474,7 @@ button.tb-label{
   .nc-main{flex-wrap:wrap}
   .bank{flex:0 0 100%;width:100%}
 }
-@media (max-width:560px){ .now-clue{height:132px} :root{--bank-cell:19px} }
+@media (max-width:560px){ .now-clue{height:132px} :root{--bank-cell:17px} }
 .nc-meta{
   font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.06em;
   color:var(--pitch);white-space:nowrap;flex:none;
@@ -414,6 +529,20 @@ button.tb-label{
      the board floats on. */
   position:relative;z-index:1;align-self:center;max-width:100%;
   padding:clamp(9px,1.6vw,20px) clamp(14px,2.2vw,30px);
+}
+/* Wide screens: the pitch is a fixed frame and the board sits in the middle of
+   it. --board-w is built for the widest board the generator makes, so the turf
+   is the same size whichever puzzle loads and every block below lines up with
+   it. The comment above records the opposite decision, taken when the pitch
+   stretched to an arbitrary content width and left the board looking lost — a
+   fixed frame is a different thing, and it is what the column needs to have
+   one edge.
+   Not on narrow screens: there the frame would be wider than the display and
+   everything would scale down to fit turf nobody asked for, so the pitch goes
+   back to hugging the board. */
+@media (min-width:900px){
+  .grid-wrap{width:min(100%,var(--board-w,100%));box-sizing:border-box}
+  .grid-wrap > .grid{width:max-content;margin-left:auto;margin-right:auto}
 }
 .pitch-bg{
   position:absolute;inset:0;z-index:0;border-radius:12px;
@@ -892,7 +1021,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   .clues{grid-template-columns:1fr;gap:8px}
   /* The toolbar was taking three rows before the puzzle appeared. */
   .toolbar{gap:5px;padding:8px 6px 5px}
-  .toolbar .btn{font-size:12.5px;padding:6px 8px;letter-spacing:.03em}
+  .toolbar .btn,.grid-panel .tb-box .btn{font-size:12.5px;padding:6px 8px;letter-spacing:.03em}
   .lbl-full{display:none}
   .lbl-short{display:inline}
   .toolbar .cost{font-size:10px;margin-left:2px}
@@ -958,7 +1087,7 @@ footer button{background:none;border:0;color:var(--ink-faint);text-decoration:un
   #tablePanel.below-board .club-bar{display:flex;margin-bottom:6px}
   #tablePanel.below-board .tb-season{display:block;margin-top:4px}
   .tb-label{font-size:8.5px;letter-spacing:.12em}
-  .toolbar .btn{min-height:44px}
+  .toolbar .btn,.grid-panel .tb-box .btn{min-height:44px}
   .icon-btn{width:34px}
   /* 132px of clue card is a lot of a phone screen. Two lines plus the bank
      still fit; the height stays fixed so the board does not jump. */

@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v11c";
+  var BUILD = "v17a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1073,6 +1073,12 @@
     }
     refreshLetters();
   }
+  /* The widest board the generator will build. headless_test reports 9–14
+     columns across a full run; the pitch is built for the maximum so its width
+     never changes between puzzles. If the generator's bounds ever move, this
+     moves with them — a board wider than this would overflow the turf. */
+  var MAX_COLS = 14;
+
   function fitCells() {
     // Measure the chrome that actually surrounds the grid rather than
     // guessing, so the board always fits above the on-screen keyboard.
@@ -1138,7 +1144,15 @@
        under the keyboard — measured at 292px on the live site. A floor here is
        not a safety net; it is an instruction to overflow. */
     var availH = vh - chrome;
-    var size = Math.floor(Math.min(availW / puzzle.width, availH / puzzle.height));
+    /* The pitch is a fixed width: sized for the widest board the generator can
+       produce, not for this puzzle. Measured across a full run, boards are
+       9–14 columns wide, so a box built for 14 always fits and a narrower
+       puzzle sits centred on it with turf either side. The alternative — a box
+       that shrinks to each puzzle — moved every element on the page each time
+       a new one loaded, because everything below is capped to this width.
+       Height still follows the puzzle: it is the width the layout lines up
+       against, and a fixed height would only add empty grass below. */
+    var size = Math.floor(Math.min(availW / MAX_COLS, availH / puzzle.height));
     /* Cells stay 20–52px. Removing the sidebar freed a lot of width, and the
        temptation is to spend it on bigger cells — but a 64px cell on a 1920
        monitor reads as oversized rather than substantial. The width goes to the
@@ -1187,8 +1201,18 @@
        Derived from the same numbers that chose the cell size, there is nothing
        left to drift: the same puzzle at the same viewport gives the same edges
        every time, whatever the clue card happens to contain. */
+    /* Publish how many slots this puzzle actually needs, so the reservation is
+       the longest answer here rather than the longest the engine can place.
+       The boxes still start in the same place on every clue in the puzzle,
+       which is the whole point of reserving the column. */
+    var longest = 0;
+    for (var li = 0; li < puzzle.entries.length; li++) {
+      longest = Math.max(longest, puzzle.entries[li].len || 0);
+    }
+    document.documentElement.style.setProperty("--bank-slots", Math.max(3, longest));
+
     var wrapPadX = boxPad(wrap).x;
-    var boardW = Math.round(puzzle.width * size + wrapPadX);
+    var boardW = Math.round(MAX_COLS * size + wrapPadX);
     document.documentElement.style.setProperty("--board-w", boardW + "px");
 
     var bar = $("toolbar"), stage = document.querySelector(".stage");
@@ -1351,7 +1375,11 @@
     var cardW = el.clientWidth || (window.innerWidth || 360) - 120;
     var lines = Math.ceil(text.length / Math.max(12, Math.floor(cardW / 8)));
     el.classList.toggle("long", lines === 2);
-    el.classList.toggle("xlong", lines >= 3);
+    el.classList.toggle("xlong", lines === 3);
+    /* Four lines fit in a 96px card only at this size. Reachable since the
+       strip was capped to the board width: the same clue that took three lines
+       across the old full-width card takes four across this one. */
+    el.classList.toggle("xxlong", lines >= 4);
     renderBank(e);
     /* Do not call scrollIntoView() when the selected clue changes. On iPad,
        especially with the software keyboard open, Safari may scroll the visual
@@ -1546,6 +1574,27 @@
     box.classList.toggle("collapsed", !helpOpen);
     if (btn) btn.setAttribute("aria-expanded", helpOpen ? "true" : "false");
   }
+  /* The full clue lists: closed by default, remembered per device. The clue
+     being answered is already at the top of the screen, so the lists are a
+     reference rather than the main event — and open, they push the season
+     strip and the table off the bottom of a laptop screen. Same shape as the
+     help toggle: a real button, aria-expanded kept in step, state in
+     localStorage under the existing fcw. prefix. */
+  var cluesOpen = false;
+  try { cluesOpen = localStorage.getItem("fcw.cluesOpen") === "1"; } catch (e) {}
+  function applyClues() {
+    var block = $("cluesBlock"), btn = $("cluesToggle");
+    if (!block || !btn) return;
+    block.classList.toggle("open", cluesOpen);
+    btn.setAttribute("aria-expanded", cluesOpen ? "true" : "false");
+  }
+  on("cluesToggle", "click", function () {
+    cluesOpen = !cluesOpen;
+    try { localStorage.setItem("fcw.cluesOpen", cluesOpen ? "1" : "0"); } catch (e) {}
+    applyClues();
+  });
+  applyClues();
+
   on("helpToggle", "click", function () {
     if (helpFits()) return;          // always open where there is room
     helpOpen = !helpOpen;

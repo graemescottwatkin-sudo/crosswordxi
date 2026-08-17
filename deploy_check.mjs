@@ -48,6 +48,35 @@ t("HTML comments are balanced, so none of them can render as text", (() => {
 })(), (read("index.html").match(/<!--/g) || []).length + " open, " +
       (read("index.html").match(/-->/g) || []).length + " close");
 
+/* Nesting, not just comment markers. Moving the league table left grid-wrap
+   and .grid-panel unclosed and the toolbar carrying a stray closing tag — so
+   the season panel rendered inside the board and the clue lists inside the
+   board column. The page still displayed, because browsers repair broken
+   markup silently, which is exactly why nothing caught it for three builds. */
+t("every <div> is closed, so no panel can end up inside another", (() => {
+  const html = read("index.html").replace(/<!--[\s\S]*?-->/g, "");
+  return (html.match(/<div\b/g) || []).length === (html.match(/<\/div>/g) || []).length;
+})(), (() => {
+  const html = read("index.html").replace(/<!--[\s\S]*?-->/g, "");
+  return (html.match(/<div\b/g) || []).length + " open, " +
+         (html.match(/<\/div>/g) || []).length + " close";
+})());
+
+/* The same check for the stylesheet. One unclosed brace silently swallows
+   every rule after it, and the page renders with no styling at all — which is
+   exactly what shipped once, while the preview suite reported 10 of 10 because
+   it checks behaviour and never asks whether the CSS parsed. */
+t("the stylesheet's braces and comments balance", (() => {
+  const css = read("css/style.css");
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  return (bare.match(/\{/g) || []).length === (bare.match(/\}/g) || []).length &&
+         (css.match(/\/\*/g) || []).length === (css.match(/\*\//g) || []).length;
+})(), (() => {
+  const bare = read("css/style.css").replace(/\/\*[\s\S]*?\*\//g, "");
+  return (bare.match(/\{/g) || []).length + " open, " +
+         (bare.match(/\}/g) || []).length + " close";
+})());
+
 t("no absolute or machine-specific paths",
   !/localhost/.test(html) && !/file:\/\//.test(html) && !/[A-Za-z]:\\/.test(html) &&
   !/(src|href)="\//.test(html));

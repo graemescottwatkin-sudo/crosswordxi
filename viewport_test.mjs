@@ -67,11 +67,13 @@ t("nothing re-forces two clue columns after the stacking rule",
    as the clock and the help buttons. What sits under the board is the season
    record — the run of results is what the score means, and it belongs against
    the thing that produced it. */
-t("the league table is in the rail, and the season record is under the board", (() => {
+/* There is no banner any more. Everything sits in one column under the clue
+   strip, in the order it is read: board, controls, help, season, table. */
+t("every block sits in the board column, not in a banner", (() => {
   const html = fs.readFileSync("index.html", "utf8");
-  const bar = html.slice(html.indexOf('<div class="toolbar"'), html.indexOf('<div class="stage"'));
-  const panel = html.slice(html.indexOf('<div class="grid-panel"'), html.indexOf('<div class="clues"'));
-  return bar.indexOf('id="tablePanel"') > -1 && panel.indexOf('id="seasonPanel"') > -1;
+  const panel = html.slice(html.indexOf('<div class="grid-panel"'), html.indexOf('<div class="osk"'));
+  return html.indexOf('<div class="toolbar"') === -1 &&
+    ["tb-game", "tb-help", 'id="seasonPanel"', 'id="tablePanel"'].every((k) => panel.indexOf(k) > -1);
 })());
 t("nothing collapses the table to a single row now that it has the board's width",
   !/#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));
@@ -124,8 +126,10 @@ t("the rail + board tracks are centred inside the page", (() => {
   return /width:min\(100%,var\(--block-w,[^)]*\)\)/.test(rail) && /margin:0 auto/.test(rail) &&
     /justify-content:center/.test(rail) &&
     /--block-w/.test(js) && /railW \+ pairGap \+ boardW/.test(js) &&
-    // Derived from the cell size, not read back off the painted board.
-    /puzzle\.width \* size \+ wrapPadX/.test(js);
+    /* Derived from the cell size, not read back off the painted board — and
+       from the widest board the generator builds, not this puzzle's width, so
+       the pitch does not resize under the column that lines up with it. */
+    /MAX_COLS \* size \+ wrapPadX/.test(js);
 })());
 t("nothing that spans both columns can widen them", (() => {
   // min-width:0 stops a long clue or a long list item forcing a track wider.
@@ -207,16 +211,37 @@ t("phone: and it shows the full three rows, not just yours", (() => {
 
 /* ---- The reserved slot column ----
    The boxes are a fixed column so they start in the same place on every clue.
-   The reservation is only correct if it is wide enough for the widest answer
-   the generator can actually place, and MAX_DIM in engine.js is what bounds
-   that — so the two are checked against each other rather than trusted. */
+   That only has to hold within a puzzle — the only time you switch between
+   clues — so the reservation is now the longest answer in the loaded puzzle
+   rather than the longest the engine could place. Reserving fifteen when the
+   longest answer was nine spent 130px of a strip capped to the board width,
+   and the clue text paid for it. MAX_DIM is still the ceiling and still worth
+   checking, because the fallback before a puzzle loads assumes it. */
+/* Rules scoped to a container that no longer exists stop applying silently.
+   Dissolving the banner left .toolbar .btn orphaned, so every button in the
+   board column lost display:inline-flex — and the pause icon sat off-centre on
+   both axes, because justify-content has nothing to act on inside an
+   inline-block. Nothing failed; it just looked wrong. */
+t("button layout rules reach the column the buttons actually live in", (() => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const stillHasToolbar = html.indexOf('<div class="toolbar"') > -1;
+  return stillHasToolbar || /\.grid-panel \.tb-box \.btn\{[^}]*display:inline-flex/.test(flatCss);
+})());
+t("and the icon button centres its glyph on both axes",
+  /\.icon-btn\{[^}]*align-items:center[^}]*justify-content:center/.test(flatCss));
+
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");
 const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);
 t("the generator still bounds the grid at the width the reservation assumes",
   maxDim === 15, "MAX_DIM = " + maxDim);
-t("the slot column is reserved from that bound, not a typed-in pixel value",
-  /--bank-w:calc\(15 \* var\(--bank-cell\) \+ 14 \* var\(--bank-gap\) \+ 27px\)/.test(flatCss));
+t("the reservation is derived from a slot count, not a typed-in pixel value",
+  /--bank-w:calc\(var\(--bank-slots\) \* var\(--bank-cell\)/.test(flatCss));
+t("and the fallback before a puzzle loads is the generator's own ceiling",
+  new RegExp("--bank-slots:" + maxDim + "[;\\s]").test(flatCss),
+  (/--bank-slots:(\d+)/.exec(flatCss) || [])[1] + " vs MAX_DIM " + maxDim);
+t("the loaded puzzle then sets it from its own longest answer",
+  /setProperty\("--bank-slots"/.test(fs.readFileSync("js/game.js", "utf8")));
 t("the slots take that reserved width rather than what the sentence leaves",
   /\.bank\{[^}]*flex:0 0 var\(--bank-w\);width:var\(--bank-w\)/.test(flatCss));
 t("a gap element is 9px, so three of them are the 27px reserved", (() => {

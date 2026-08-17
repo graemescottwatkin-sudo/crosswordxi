@@ -3,10 +3,30 @@
    jsdom gets to opening it off disk. */
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
-const html = fs.readFileSync("../crosswordxi-preview-v10f.html", "utf8");
+/* Find the newest preview rather than naming one. A hard-coded build number
+   here goes stale on the next build and the suite then fails on a file that no
+   longer exists — which is what it had been doing, still pointing at v10f. */
+const previewDir = "..";
+const previewFile = fs.readdirSync(previewDir)
+  .filter((f) => /^crosswordxi-preview-.*\.html$/.test(f))
+  .map((f) => ({ f, t: fs.statSync(previewDir + "/" + f).mtimeMs }))
+  .sort((a, b) => b.t - a.t)[0];
+if (!previewFile) {
+  console.log("  --  no preview built; run tools/build_preview.js");
+  process.exit(0);
+}
+console.log(`Testing ${previewFile.f}\n`);
+const html = fs.readFileSync(previewDir + "/" + previewFile.f, "utf8");
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 const errors = [];
+/* Did the stylesheet survive? A single unclosed brace swallows every rule
+   after it and the page renders bare, which this suite happily passed because
+   it only ever asked whether the game worked. Cheap to check here, where the
+   CSS is inlined and can be counted directly. */
+const inlineCss = (/<style>([\s\S]*?)<\/style>/.exec(html) || [, ""])[1];
+const bareCss = inlineCss.replace(/\/\*[\s\S]*?\*\//g, "");
+
 const dom = new JSDOM(html, {
   runScripts: "dangerously", pretendToBeVisual: true,
   beforeParse(w) {
@@ -54,6 +74,15 @@ const sizes = [...SAMPLE_PUZZLES.daily, ...SAMPLE_PUZZLES.practice]
   .map((p) => p.puzzle.entries.length);
 t("the development samples have eleven answers, like every other puzzle",
   sizes.every((n) => n === 11), [...new Set(sizes)].join(", ") + " answers");
+
+t("the preview carries a stylesheet at all", inlineCss.length > 10000,
+  inlineCss.length + " chars");
+t("and its braces balance, so no rule is swallowed",
+  (bareCss.match(/\{/g) || []).length === (bareCss.match(/\}/g) || []).length,
+  (bareCss.match(/\{/g) || []).length + " open, " + (bareCss.match(/\}/g) || []).length + " close");
+t("the board and the clue strip are actually styled", (() => {
+  return /\.now-clue\{/.test(bareCss) && /\.grid\{/.test(bareCss);
+})());
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

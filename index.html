@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v11c">
+<link rel="stylesheet" href="css/style.css?v=v17a">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -152,78 +152,6 @@
   </div>
 </div>
 
-<div class="toolbar" id="toolbar">
-  <!-- Three boxes, one treatment. The match readouts, the game controls and the
-       help actions were three different shapes — a bare clock, a loose row of
-       buttons, and a fenced panel — which read as three unrelated things and
-       left a band of empty card between them. Same border, same padding, same
-       label, and the only thing that varies is what is inside. -->
-  <div class="tb-group tb-box tb-match" role="group" aria-label="Match state">
-    <span class="tb-label">Match</span>
-    <div class="tb-readouts">
-      <div class="match-clock" id="matchClock" aria-label="Match clock">0'<small id="elapsedLine">0:00</small></div>
-      <div class="live-chip" id="progressChip" title="Answers solved">0 / 0</div>
-    </div>
-  </div>
-
-  <div class="tb-group tb-box tb-game" role="group" aria-label="Game">
-    <span class="tb-label">Game</span>
-    <!-- Readouts have no border and no background; controls have both. That is
-         the whole signal for what can be pressed, so it has to be carried
-         consistently — the clock used to wear the same card face as the buttons
-         beside it. -->
-    <div class="tb-controls">
-      <button class="btn outline icon-btn" id="pauseBtn" title="Stop the clock and hide the puzzle" aria-label="Pause">
-        <svg class="ic ic-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>
-        <svg class="ic ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8a.8.8 0 0 0 1.22.68l8.4-5.4a.8.8 0 0 0 0-1.36l-8.4-5.4A.8.8 0 0 0 4.5 2.6Z"/></svg>
-      </button>
-      <!-- Back to the choice. Switching between a scored daily and free practice
-           should be deliberate, not a side effect of pressing New. -->
-      <button class="btn outline" id="menuBtn" title="Back to the menu"><span class="lbl-full">Menu</span><span class="lbl-short">Menu</span></button>
-      <button class="btn outline" id="dailyBtn" style="display:none" title="Return to today's daily puzzle"><span class="lbl-full">Today&rsquo;s puzzle</span><span class="lbl-short">Today</span></button>
-      <button class="btn primary" id="newBtn"><span class="lbl-full">New puzzle</span><span class="lbl-short">New</span><span class="lbl-busy">Generating&hellip;</span></button>
-    </div>
-  </div>
-
-  <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs points">
-    <button class="tb-label help-toggle" id="helpToggle" aria-expanded="true" aria-controls="helpRow">Help &middot; costs points</button>
-    <!-- Two labelled pairs rather than four loose buttons. Section and button
-         read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
-         says what it acts on and the row says what it does. "All" and "Answer"
-         alone did not distinguish checking from revealing. -->
-    <div id="helpRow">
-      <div class="tb-row">
-        <span class="tb-sub">Check</span>
-        <button class="btn secondary" id="checkBtn" title="Check the selected answer — tells you which letters are wrong">Answer<span class="cost">&minus;3</span></button>
-        <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid">Grid<span class="cost">&minus;9</span></button>
-      </div>
-      <div class="tb-row">
-        <span class="tb-sub">Reveal</span>
-        <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter and lock it">Letter<span class="cost">&minus;2</span></button>
-        <button class="btn outline" id="revealBtn" title="Reveal the whole selected answer and lock it">Answer<span class="cost">&minus;9</span></button>
-      </div>
-      <div class="tb-row tb-row-sub">
-        <span class="tb-sub">Free</span>
-        <button class="btn outline" id="subBtn" style="display:none" title="Substitution: reveal the selected letter free of charge">Substitution<span class="cost" id="subCount"></span></button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Back in the rail beside the controls. It reads as part of the same
-       dashboard as the clock and the help buttons, and the crossword keeps its
-       own column: a table under the board pushed the clue lists down and put a
-       league position where the season record belongs. -->
-  <div class="tb-table" id="tablePanel">
-    <div class="club-bar">
-        <label for="clubSelect">Your club</label>
-        <select id="clubSelect" title="Choose your club (optional)"></select>
-      </div>
-      <table class="league"><tbody id="leagueBody"></tbody></table>
-      <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
-    </div>
-  </div>
-</div>
-
 <div class="stage">
   <div class="grid-panel">
     <div class="now-clue" id="nowClue">
@@ -273,6 +201,77 @@
            the board and the clue lists it went from no height to ~35px every
            time it appeared, shifting the page under the player's finger. -->
       <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
+    </div>
+
+
+    <!-- The order is deliberate and reads top to bottom as you play: the clue
+         you are answering, the board you answer it on, the controls, then the
+         record of how it is going, then the full lists. Everything below the
+         clue is capped to the board's width, so the column has one edge rather
+         than five. -->
+  <div class="tb-group tb-box tb-game" role="group" aria-label="Game">
+    <span class="tb-label">Game</span>
+    <!-- Readouts have no border and no background; controls have both. That is
+         the whole signal for what can be pressed, so it has to be carried
+         consistently — the clock used to wear the same card face as the buttons
+         beside it. -->
+    <div class="tb-controls">
+      <!-- The clock and the count lead the row rather than sitting in a panel
+           of their own. Two short readings did not need a full-width box, and
+           it was the emptiest block on the page. Readouts keep no border and no
+           background, so the row still says what is pressable. -->
+      <div class="tb-readouts">
+        <div class="match-clock" id="matchClock" aria-label="Match clock">0'<small id="elapsedLine">0:00</small></div>
+        <div class="live-chip" id="progressChip" title="Answers solved">0 / 0</div>
+      </div>
+      <button class="btn outline icon-btn" id="pauseBtn" title="Stop the clock and hide the puzzle" aria-label="Pause">
+        <svg class="ic ic-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>
+        <svg class="ic ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8a.8.8 0 0 0 1.22.68l8.4-5.4a.8.8 0 0 0 0-1.36l-8.4-5.4A.8.8 0 0 0 4.5 2.6Z"/></svg>
+      </button>
+      <!-- Back to the choice. Switching between a scored daily and free practice
+           should be deliberate, not a side effect of pressing New. -->
+      <button class="btn outline" id="menuBtn" title="Back to the menu"><span class="lbl-full">Menu</span><span class="lbl-short">Menu</span></button>
+      <button class="btn outline" id="dailyBtn" style="display:none" title="Return to today's daily puzzle"><span class="lbl-full">Today&rsquo;s puzzle</span><span class="lbl-short">Today</span></button>
+      <button class="btn primary" id="newBtn"><span class="lbl-full">New puzzle</span><span class="lbl-short">New</span><span class="lbl-busy">Generating&hellip;</span></button>
+    </div>
+  </div>
+
+  <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs points">
+    <button class="tb-label help-toggle" id="helpToggle" aria-expanded="true" aria-controls="helpRow">Help &middot; costs points</button>
+    <!-- Two labelled pairs rather than four loose buttons. Section and button
+         read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
+         says what it acts on and the row says what it does. "All" and "Answer"
+         alone did not distinguish checking from revealing. -->
+    <div id="helpRow">
+      <div class="tb-row">
+        <span class="tb-sub">Check</span>
+        <button class="btn secondary" id="checkBtn" title="Check the selected answer — tells you which letters are wrong">Answer<span class="cost">&minus;3</span></button>
+        <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid">Grid<span class="cost">&minus;9</span></button>
+      </div>
+      <div class="tb-row">
+        <span class="tb-sub">Reveal</span>
+        <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter and lock it">Letter<span class="cost">&minus;2</span></button>
+        <button class="btn outline" id="revealBtn" title="Reveal the whole selected answer and lock it">Answer<span class="cost">&minus;9</span></button>
+      </div>
+      <div class="tb-row tb-row-sub">
+        <span class="tb-sub">Free</span>
+        <button class="btn outline" id="subBtn" style="display:none" title="Substitution: reveal the selected letter free of charge">Substitution<span class="cost" id="subCount"></span></button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Below Help, and closed by default. The clue you are answering is
+         already at the top of the screen, so the full lists are a reference
+         rather than the main event — and open, they push the season strip and
+         the table off the bottom of a laptop screen. -->
+    <div class="clues-block" id="cluesBlock">
+      <button class="clues-toggle" id="cluesToggle" aria-expanded="false" aria-controls="clues">All clues</button>
+      <div class="clues" id="clues">
+        <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
+        <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
+      </div>
+    </div>
+
     <!-- Directly under the board. The season record is what the score means —
          eleven answers become a run of results — so it belongs against the
          thing that produced it rather than below the clue lists, where it was
@@ -287,13 +286,17 @@
     </div>
     <div class="table-note">Full table at Full Time</div>
   </div>
-  <!-- Clue lists sit under the board now, two columns on desktop, stacked when
-       the width would squeeze the text. The right-hand column is gone: it made
-       the page read as a dashboard rather than a crossword. -->
-  <div class="clues" id="clues">
-    <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
-    <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
-  </div>
+
+  <div class="tb-table" id="tablePanel">
+    <div class="club-bar">
+      <label for="clubSelect">Your club</label>
+      <select id="clubSelect" title="Choose your club (optional)"></select>
+    </div>
+    <table class="league"><tbody id="leagueBody"></tbody></table>
+    <span class="tb-label tb-season">League table <span id="tableSeason" class="season-tag"></span></span>
+    </div>
+  </div><!-- /grid-panel -->
+
 </div>
 
 <div class="osk" id="osk"></div>
@@ -540,7 +543,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v11c</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v17a</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -551,8 +554,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v11c"></script>
-<script src="js/engine.js?v=v11c"></script>
-<script src="js/game.js?v=v11c"></script>
+<script src="js/seasons.js?v=v17a"></script>
+<script src="js/engine.js?v=v17a"></script>
+<script src="js/game.js?v=v17a"></script>
 </body>
 </html>
