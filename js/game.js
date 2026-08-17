@@ -134,7 +134,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v09d";
+  var BUILD = "v09f";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1610,11 +1610,45 @@
     });
   });
 
+  /* Two different things, deliberately not one button.
+     Replay throws away today's saved game and its result so the same day can be
+     played again — the thing you want twenty times over four weeks of testing.
+     Clear my record wipes the history and leaves the game you are in, because
+     "record" means the history and a button should not lie about what it does. */
+  on("adminReplay", "click", function () {
+    var no = dailyNo;
+    apiAuth("/api/admin/replay-day", { dailyNo: no }).then(function () {
+      try {
+        // The saved game, and this day's entry in the local history.
+        localStorage.removeItem(mode === "daily" ? "fcw.v04.daily" : "fcw.v04.practice");
+        var list = loadResults().filter(function (r) { return r.dailyNo !== no; });
+        localStorage.setItem(RESULTS_KEY, JSON.stringify(list));
+      } catch (e) {}
+      $("adminSheet").classList.remove("show");
+      // Reload rather than patch the running game: elapsed time, help actions
+      // and the season strip all have to start again, and a reload is the one
+      // path that resets every one of them together.
+      location.reload();
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* Clearing the record clears the saved games too, and it has to.
+     Wiping the history while leaving today marked complete produces a state
+     that contradicts itself: the record says nothing was played, and the game
+     still refuses to let you play it. Of the two, the one the player can see is
+     the lie. So this is a full reset — history, saved games, and back to a
+     clean start. */
   on("adminReset", "click", function () {
     apiAuth("/api/admin/reset-my-record", {}).then(function () {
-      try { localStorage.removeItem(RESULTS_KEY); } catch (e) {}
-      adminMsg("Record cleared, here and on the account.");
-      renderStreak(); renderAdmin();
+      try {
+        localStorage.removeItem(RESULTS_KEY);
+        localStorage.removeItem("fcw.v04.daily");
+        localStorage.removeItem("fcw.v04.practice");
+        localStorage.removeItem("fcw.mode");
+      } catch (e) {}
+      // Reload, so the clock, the season strip and the board all start again
+      // together rather than one at a time.
+      location.reload();
     }).catch(function (err) { adminMsg(String(err.message || err)); });
   });
 

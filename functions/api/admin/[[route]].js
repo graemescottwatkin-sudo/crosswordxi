@@ -88,6 +88,20 @@ export async function onRequest({ request, env, params }) {
     });
   }
 
+  /* ---- Forget one day, so it can be played again ----
+     Separate from clearing the record: this removes a single day's result so
+     the same puzzle can be replayed, which is the thing wanted twenty times
+     over a month of testing. */
+  if (route === "replay-day" && request.method === "POST") {
+    let body = {};
+    try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
+    const n = parseInt(body.dailyNo, 10);
+    if (!Number.isInteger(n) || n < 1) return bad("Give a day number.");
+    await env.DB.prepare("DELETE FROM results WHERE user_id = ? AND daily_no = ?")
+      .bind(me.id, n).run();
+    return json({ ok: true, dailyNo: n });
+  }
+
   /* ---- Clear my own record ---- */
   if (route === "reset-my-record" && request.method === "POST") {
     await env.DB.prepare("DELETE FROM results WHERE user_id = ?").bind(me.id).run();

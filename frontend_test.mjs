@@ -450,6 +450,23 @@ server.listen(0, "127.0.0.1", async () => {
     return /Pick a reason or write one/.test(js);
   })());
 
+  t("clearing the record clears the saved games with it", (() => {
+    /* Wiping the history while leaving today marked complete produces a state
+       that contradicts itself: the record says nothing was played and the game
+       still refuses to let you play it. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf('on("adminReset"'), js.indexOf('on("adminReset"') + 700);
+    return /removeItem\(RESULTS_KEY\)/.test(fn) &&
+      /removeItem\("fcw\.v04\.daily"\)/.test(fn) &&
+      /removeItem\("fcw\.v04\.practice"\)/.test(fn);
+  })());
+  t("and replay still touches only the one day", (() => {
+    // The two must stay distinct, or there is no way to redo a single day.
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf('on("adminReplay"'), js.indexOf('on("adminReplay"') + 700);
+    return /r\.dailyNo !== no/.test(fn) && !/removeItem\(RESULTS_KEY\)/.test(fn);
+  })());
+
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS

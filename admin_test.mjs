@@ -173,5 +173,24 @@ console.log("\nExporting and closing reports");
     (await call("reports/reviewed", { method: "POST", body: {}, csrf: false }, owner)).status === 403);
 }
 
+console.log("\nReplaying a day");
+{
+  const owner = makeEnv({ admin: 1 });
+  const r = await (await call("replay-day", { method: "POST", body: { dailyNo: 2 } }, owner)).json();
+  t("the owner can forget one day", r.ok === true && r.dailyNo === 2);
+  t("a day number is required",
+    (await call("replay-day", { method: "POST", body: {} }, owner)).status === 400);
+  t("a player cannot",
+    (await call("replay-day", { method: "POST", body: { dailyNo: 2 } },
+      makeEnv({ admin: 0 }))).status === 404);
+  /* Replay and clear-my-record must stay distinct: one forgets a day so it can
+     be played again, the other wipes the history and leaves the game alone. */
+  const src = await import("node:fs").then((fs) =>
+    fs.readFileSync("functions/api/admin/[[route]].js", "utf8"));
+  t("replay only ever touches one day", /DELETE FROM results WHERE user_id = \? AND daily_no = \?/.test(src));
+  t("and clearing the record never touches the saved game",
+    /DELETE FROM results WHERE user_id = \?"/.test(src));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
