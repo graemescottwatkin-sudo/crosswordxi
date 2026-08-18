@@ -210,8 +210,21 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
     return /reveal_letters/.test(mig) && /reveal_answers/.test(mig) &&
       /revealLetters/.test(t) && /revealAnswers/.test(t) &&
-      /revealLetters/.test(js) && /" letters"/.test(js) && /" answers"/.test(js);
+      /revealLetters/.test(js) &&
+      /* Short forms, because spelled out one row was wider than the panel and
+         pushed the score off the edge. The key under the table gives the
+         prices, so the shorthand explains itself. */
+      /"L"/.test(js) && /"A"/.test(js) && /L letter/.test(js) && /A answer/.test(js);
   })());
+  t("nothing in the standings may wrap", (() => {
+    /* A long help list wrapped to three lines, pushed the score column off the
+       panel and split a name in half. A standings table is scanned. */
+    const css = fs.readFileSync("css/style.css", "utf8").replace(/\s*\n\s*/g, "");
+    return /\.challenge-table table\{[^}]*table-layout:fixed/.test(css) &&
+      /\.challenge-table td\{[^}]*white-space:nowrap/.test(css) &&
+      /\.challenge-table td\{[^}]*text-overflow:ellipsis/.test(css);
+  })());
+
   t("and existing entries keep a truthful, if vaguer, description", (() => {
     /* Rows written before the split carry only the merged total. Said plainly
        rather than guessed at. */

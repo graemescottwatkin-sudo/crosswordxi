@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v45";
+  var BUILD = "v45a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3443,30 +3443,35 @@
          revealed letter costs 2 and a revealed answer 9, so "2 reveals" meant
          either 4 points or 18 — and a legitimate score looked impossible
          beside a worse one. The words are the prices. */
+      /* Short forms. Spelled out, one row read "2 checks, 1 grid check, 17
+         letters, 3 answers" — wider than the panel, wrapping to three lines and
+         pushing the score off the edge. A standings table is scanned, not read:
+         the letter is the price, the number is the count.
+           C  check      G  grid check
+           L  letter     A  answer
+         The prices sit under the table so the shorthand explains itself. */
       var help = [];
       var ca = e.checkAnswers != null ? e.checkAnswers : e.checks;
-      if (ca) help.push(ca + (ca === 1 ? " check" : " checks"));
-      if (e.checkGrids) help.push(e.checkGrids +
-        (e.checkGrids === 1 ? " grid check" : " grid checks"));
-      if (e.revealLetters) help.push(e.revealLetters +
-        (e.revealLetters === 1 ? " letter" : " letters"));
-      if (e.revealAnswers) help.push(e.revealAnswers +
-        (e.revealAnswers === 1 ? " answer" : " answers"));
-      /* Older entries carry only the merged totals. Said plainly rather than
-         guessed at. */
-      if (!help.length && e.reveals) help.push(e.reveals + " reveals");
+      if (ca) help.push(ca + "C");
+      if (e.checkGrids) help.push(e.checkGrids + "G");
+      if (e.revealLetters) help.push(e.revealLetters + "L");
+      if (e.revealAnswers) help.push(e.revealAnswers + "A");
+      /* Older entries carry only the merged totals and cannot be split. */
+      if (!help.length && e.reveals) help.push(e.reveals + "?");
       var you = (youPlayId && e.playId === youPlayId) ||
         (!!mine && e.name.toLowerCase() === mine);
       return '<tr' + (you ? ' class="you"' : "") + '>' +
         '<td class="ct-pos">' + e.position + "</td>" +
         "<td>" + escapeHtml(e.name) + "</td>" +
         '<td class="ct-help">' + fmt(e.elapsedSeconds) +
-        (help.length ? " \u00B7 " + help.join(", ") : " \u00B7 no help") + "</td>" +
+        (help.length ? " \u00B7 " + help.join(" ") : "") + "</td>" +
         '<td class="ct-score">' + e.score + "</td></tr>";
     }).join("");
     box.innerHTML = "<h3>" + escapeHtml(d.creatorName) +
       (d.groupName ? " \u00B7 " + escapeHtml(d.groupName) : "") +
-      "</h3><table><tbody>" + rows + "</tbody></table>";
+      "</h3><table><tbody>" + rows + "</tbody></table>" +
+      '<div class="ct-key">C check \u00B73 \u00A0 G grid \u00B79 \u00A0 ' +
+      'L letter \u00B72 \u00A0 A answer \u00B79</div>';
   }
 
   function showChallengeTable() {
@@ -3485,7 +3490,7 @@
             '<td class="ct-pos">' + e.position + "</td>" +
             "<td>" + escapeHtml(e.name) + "</td>" +
             '<td class="ct-help">' + fmt(e.elapsedSeconds) +
-            (help.length ? " \u00B7 " + help.join(", ") : " \u00B7 no help") + "</td>" +
+            (help.length ? " \u00B7 " + help.join(" ") : "") + "</td>" +
             '<td class="ct-score">' + e.score + "</td></tr>";
         }).join("");
         /* Say when this score did not go on the board. One entry per person is

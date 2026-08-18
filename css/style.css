@@ -1611,12 +1611,27 @@ body.rotate-needed .rotate-prompt{
   margin:14px 0;padding:12px;border:1px solid var(--pitch);
   border-radius:10px;background:var(--card);
 }
-.challenge-table table{width:100%;border-collapse:collapse;font-size:13px}
-.challenge-table td{padding:6px 8px;border-bottom:1px solid var(--line)}
+/* The table is scanned, so nothing in it may wrap. A long help list pushed the
+   score off the panel and the name onto two lines. */
+.challenge-table table{
+  width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;
+}
+.challenge-table td{
+  padding:6px 4px;border-bottom:1px solid var(--line);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.challenge-table td:nth-child(2){width:38%}
+.challenge-table .ct-key{
+  margin-top:8px;font-size:10.5px;letter-spacing:.04em;color:var(--ink-faint);
+  text-align:center;
+}
 .challenge-table tr.you{background:var(--pitch-tint);font-weight:700}
 .challenge-table .ct-pos{width:28px;color:var(--ink-faint)}
 .challenge-table .ct-score{text-align:right;font-variant-numeric:tabular-nums}
-.challenge-table .ct-help{color:var(--ink-faint);font-size:11.5px;white-space:nowrap}
+.challenge-table .ct-help{
+  color:var(--ink-faint);font-size:11.5px;white-space:nowrap;text-align:right;
+}
+.challenge-table .ct-score{width:52px;font-weight:700}
 .challenge-table h3{
   font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--pitch-deep);margin:0 0 8px;
