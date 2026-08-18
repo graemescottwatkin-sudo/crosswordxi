@@ -154,7 +154,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v38a";
+  var BUILD = "v39";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3339,6 +3339,7 @@
         if (!saved) setTimeout(function () { $("chName").focus(); }, 60);
       })
       .catch(function () {
+        leaveChallenge();
         toast("That challenge could not be found", "The link may be wrong.", "loss");
         showHome();
       });
@@ -3429,6 +3430,26 @@
   });
   var challengeMade = false;
 
+  /* Take the challenge out of the address as well as out of the game. Leaving
+     it there means a refresh reopens the screen somebody has just declined —
+     and when a challenge fails to load, it means the only way back is editing
+     the URL by hand. */
+  function leaveChallenge() {
+    challenge = null;
+    try {
+      var u = new URL(location.href);
+      u.searchParams.delete("c");
+      history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    } catch (e) {}
+  }
+
+  on("chCancel", "click", function () {
+    $("challengeOverlay").classList.remove("show");
+    leaveChallenge();
+    mode = "practice"; themeWanted = null;
+    showHome();
+  });
+
   function themeNameFor(id) {
     return String(id || "").replace(/-/g, " ")
       .replace(/\b[a-z]/g, function (ch) { return ch.toUpperCase(); });
@@ -3467,7 +3488,7 @@
     themeWanted = { theme: challenge.theme, no: challenge.no, id: null };
     buildPuzzle(null).then(function () {
       if (puzzle) return;
-      challenge = null; themeWanted = null; mode = "practice";
+      leaveChallenge(); themeWanted = null; mode = "practice";
       toast("That board is not available", "It may not have been released yet.", "loss");
       showHome();
     });

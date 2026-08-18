@@ -1564,8 +1564,18 @@ body.rotate-needed .rotate-prompt{
 }
 .theme-mine .mine-drop:hover{color:var(--wrong)}
 /* Whether the score on screen is the server's or this device's guess at it. */
-/* The challenge screen: one field, and nothing else competing with it. */
-.challenge-overlay .overlay-card{max-width:440px;text-align:center}
+/* The challenge screen: one field, and nothing else competing with it.
+   The card needs its own panel — .overlay-card was a class this markup invented
+   and the stylesheet had never heard of, so the board showed straight through
+   the text. .result is the equivalent for the Full Time sheet; this is the same
+   idea, sized for one question. */
+.challenge-overlay{background:rgba(18,34,25,.82)}
+.challenge-overlay .overlay-card{
+  background:var(--card);border-radius:12px;max-width:440px;width:100%;
+  padding:28px 24px;text-align:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.28);
+  border-top:4px solid var(--pitch);box-sizing:border-box;
+}
 .ch-who{
   font-family:var(--disp);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--ink-faint);margin-bottom:6px;
@@ -1587,6 +1597,11 @@ body.rotate-needed .rotate-prompt{
 #chName:focus{border-color:var(--pitch);outline:none}
 .challenge-overlay .btn.primary{width:100%;min-height:52px;font-size:16px}
 .ch-note{font-size:12px;color:var(--ink-faint);margin-top:12px}
+#chCancel{
+  display:block;margin:14px auto 0;background:none;border:none;cursor:pointer;
+  color:var(--ink-soft);font-size:13px;text-decoration:underline;min-height:44px;
+}
+#chCancel:hover{color:var(--pitch)}
 
 /* The standings, after Full Time. Time and help beside every score, because a
    114 in thirty-eight seconds with no help is self-evidently what it is. */

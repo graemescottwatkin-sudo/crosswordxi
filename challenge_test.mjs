@@ -104,6 +104,14 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     return /challenged you/.test(bare) && /reached Full Time/.test(bare) &&
       !/score/i.test(bare);
   })());
+  t("the challenge card has a panel of its own", (() => {
+    /* .overlay-card was a class the markup invented and the stylesheet had
+       never heard of, so the board showed through the text. Any class used by
+       this screen has to exist. */
+    const css = fs.readFileSync("css/style.css", "utf8").replace(/\s*\n\s*/g, "");
+    return /\.challenge-overlay \.overlay-card\{[^}]*background:var\(--card\)/.test(css);
+  })());
+
   t("a name is required before the board opens",
     /name\.length < 2/.test(js) && /challenge\/start/.test(js));
   /* Two names, not one. The creator is a person; the group is who it is being
@@ -145,6 +153,29 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   })());
   t("and show time and help beside every score",
     /ct-help/.test(js) && /no help/.test(js));
+
+  t("there is a way out of the challenge screen", (() => {
+    /* Without one it is a one-way door: no back, and the challenge stays in the
+       address, so a refresh returns you to the screen you just declined. */
+    const html = fs.readFileSync("index.html", "utf8");
+    return /id="chCancel"/.test(html) && /on\("chCancel"/.test(js);
+  })());
+  t("and leaving takes the challenge out of the address too", (() => {
+    /* Otherwise the only way back from a challenge that will not load is
+       editing the URL by hand. */
+    return /searchParams\.delete\("c"\)/.test(js) &&
+      (js.match(/leaveChallenge\(\)/g) || []).length >= 3;
+  })());
+  t("every class on that screen exists in the stylesheet", (() => {
+    /* .overlay-card was invented by the markup once already and the card
+       rendered with no panel at all. A missing class fails silently. */
+    const html = fs.readFileSync("index.html", "utf8");
+    const css = fs.readFileSync("css/style.css", "utf8");
+    const block = html.slice(html.indexOf('id="challengeOverlay"'), html.indexOf('id="rotatePrompt"'));
+    const names = new Set();
+    for (const m of block.matchAll(/class="([^"]+)"/g)) m[1].split(/\s+/).forEach((n) => names.add(n));
+    return [...names].every((n) => css.includes(n));
+  })());
 
   t("the standings sit above the league table", (() => {
     /* The league table is a season the score is mapped onto; the challenge is
