@@ -18,6 +18,11 @@ import { onRequestGet as apiDaily } from "./functions/api/daily.js";
 import { onRequestGet as apiPractice } from "./functions/api/practice.js";
 import { onRequestGet as apiCategories } from "./functions/api/categories.js";
 import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
+/* The free background verification has its own endpoint now, so that the paid
+   check can be paid by definition — the server had to be told which was which,
+   and a browser that omitted the flag got its checks for nothing. */
+import { onRequestPost as apiVerify } from "./functions/api/verify.js";
+import { onRequestPost as apiFinish } from "./functions/api/finish.js";
 import { onRequestPost as apiReveal } from "./functions/api/reveal.js";
 import { onRequestGet as apiStatus } from "./functions/api/status.js";
 
@@ -31,6 +36,7 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css",
 const ROUTES = {
   "/api/daily": apiDaily, "/api/practice": apiPractice,
   "/api/categories": apiCategories, "/api/check-answer": apiCheck,
+  "/api/verify": apiVerify, "/api/finish": apiFinish,
   "/api/reveal": apiReveal, "/api/status": apiStatus,
 };
 
@@ -419,6 +425,27 @@ server.listen(0, "127.0.0.1", async () => {
      accumulates instructions for a design that no longer exists. */
   t("no rules remain for a collapsed state nothing can enter",
     !/\.tb-help\.collapsed/.test(css));
+
+  /* The free check and the paid check are different doors now. They were one
+     endpoint serving identical requests, so the server could not tell them
+     apart and had to be told — and a browser that omitted the flag got its
+     checks for nothing. */
+  t("the free verification and the paid check are separate endpoints", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const verify = fs.existsSync(path.join(DIR, "functions/api/verify.js"));
+    return verify && /api\/verify/.test(js) && !/paid: 1/.test(js);
+  })());
+  t("and the free one cannot buy what the paid one sells", (() => {
+    /* Which letters are wrong is what three points buys. If the free endpoint
+       answered that too, the paid one would be decorative. */
+    const src = fs.readFileSync(path.join(DIR, "functions/api/verify.js"), "utf8");
+    return !/detail/.test(src.replace(/\/\*[\s\S]*?\*\//g, ""));
+  })());
+  t("the paid check counts itself, without being told to", (() => {
+    const src = fs.readFileSync(path.join(DIR, "functions/api/check-answer.js"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return /await tally\(env, playId, "srv_checks"\)/.test(src) && !/paid/.test(src);
+  })());
 
   console.log("\nMeasured-defect fixes");
   t("no control sets a fixed height below 44px", (() => {

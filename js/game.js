@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v30";
+  var BUILD = "v32";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -264,7 +264,10 @@
       if (text === null) { verified[i] = false; delete verifySent[i]; return; }
       if (verifySent[i] === text) return;
       verifySent[i] = text;
-      jobs.push(api("/api/check-answer", { token: puzzleToken, entry: i, guess: text })
+      /* /api/verify, not /api/check-answer: this is the free background check
+         that marks an entry solved as you type. Sending it to the paid endpoint
+         is what made the server unable to tell the two apart. */
+      jobs.push(api("/api/verify", { token: puzzleToken, entry: i, guess: text })
         .then(function (r) { verified[i] = !!r.correct; setOffline(false); })
         .catch(function (err) {
           delete verifySent[i];       // so it is asked again
@@ -285,7 +288,8 @@
       // "How many letters are wrong" is free and always has been, but the
       // browser can no longer count it: ask once the grid is full.
       if (gridFull() && !complete) {
-        return api("/api/check-answer", { token: puzzleToken, grid: gridText(), detail: 1 })
+        return api("/api/check-answer", { token: puzzleToken, grid: gridText(), detail: 1,
+                                          playId: playId })
           .then(function (r) {
             gridStats.wrongCells = r.wrongCells || 0;
             updateNudge();
@@ -2564,7 +2568,8 @@
     if (!hasLetters) return; // nothing to check — no charge
     var idx = cur.entry;
     var typed = cells.map(function (c) { return letters[K(c.x, c.y)] || null; });
-    api("/api/check-answer", { token: puzzleToken, entry: idx, guess: typed, detail: 1 })
+    api("/api/check-answer", { token: puzzleToken, entry: idx, guess: typed, detail: 1,
+                               playId: playId })
       .then(function (r) {
         markWrongFromServer(idx, r.wrong || []);
         checksUsed++;
@@ -2594,7 +2599,8 @@
     // One request per entry, asking for detail because this is the paid check.
     var jobs = puzzle.entries.map(function (e, i) {
       var typed = e.cells.map(function (c) { return letters[K(c.x, c.y)] || null; });
-      return api("/api/check-answer", { token: puzzleToken, entry: i, guess: typed, detail: 1 })
+      return api("/api/check-answer", { token: puzzleToken, entry: i, guess: typed, detail: 1,
+                                        playId: playId })
         .then(function (r) { return { i: i, wrong: r.wrong || [] }; });
     });
     Promise.all(jobs).then(function (res) {
@@ -2672,7 +2678,7 @@
   /* A failed reveal must cost nothing. `charge` runs only after the letter
      arrives, so a stale token or a dropped connection leaves the score alone. */
   function revealFromServer(entryIdx, cellIdx, apply, charge) {
-    api("/api/reveal", { token: puzzleToken, entry: entryIdx, index: cellIdx })
+    api("/api/reveal", { token: puzzleToken, entry: entryIdx, index: cellIdx, playId: playId })
       .then(function (r) { apply(r.letter); if (charge) charge(); })
       .catch(function (err) { revealFailed(err); });
   }
@@ -2707,7 +2713,7 @@
        and the penalty used to be applied outside the promise — so a request
        that failed (a stale token after a pool re-import, a dropped
        connection) still cost nine points and filled in nothing. */
-    api("/api/reveal", { token: puzzleToken, entry: idx })
+    api("/api/reveal", { token: puzzleToken, entry: idx, playId: playId })
       .then(function (r) {
         e.cells.forEach(function (c, i) {
           var k = K(c.x, c.y);

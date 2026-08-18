@@ -13,6 +13,7 @@
  * calling the API directly, and each guess would leak far more per attempt.
  */
 import { normalise, json, bad, solutionString } from "../_lib/puzzle.js";
+import { tally } from "../_lib/tally.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
 import { isAdmin } from "../_lib/auth.js";
@@ -25,7 +26,13 @@ export async function onRequestPost({ request, env }) {
     return bad("Expected a JSON body.");
   }
 
-  const { token, entry, guess, grid, detail } = body || {};
+  const { token, entry, guess, grid, detail, playId } = body || {};
+  /* Paid by definition. This used to serve the free background verification
+     too — identical requests through one door — so the server had to be told
+     which kind it was looking at, and a browser that omitted the flag got its
+     checks for nothing. The free path is /api/verify now. Anything arriving
+     here is a check the player chose to spend points on, and the tally below is
+     the server's own count rather than the browser's word. */
 
   /* A daily token is only playable on its own day; see _lib/daily.js. The one
      exception is the owner previewing another day — otherwise the preview is a
@@ -60,6 +67,7 @@ export async function onRequestPost({ request, env }) {
     const got = chars.map((c) => c || " ").join("");
     const complete = chars.every((c) => c !== null);
     const allRight = complete && chars.every((c, i) => c === want[i]);
+    await tally(env, playId, "srv_check_alls");
     if (!detail) return json({ correct: allRight });
     /* The nudge ("six letters are wrong") is free information the game has
        always shown once the grid is full. It says how much, never where.
@@ -77,6 +85,7 @@ export async function onRequestPost({ request, env }) {
   const typed = asChars(guess, answer.length);
   const correct = typed.every((c, i) => c === answer[i]);
 
+  await tally(env, playId, "srv_checks");
   if (!detail) return json({ correct });
 
   // Positions that are filled and wrong. A blank square is not "wrong" — it has

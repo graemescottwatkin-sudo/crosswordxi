@@ -14,6 +14,7 @@
  * scope for a puzzle with no login.
  */
 import { normalise, json, bad } from "../_lib/puzzle.js";
+import { tally } from "../_lib/tally.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
 import { isAdmin } from "../_lib/auth.js";
@@ -26,7 +27,7 @@ export async function onRequestPost({ request, env }) {
     return bad("Expected a JSON body.");
   }
 
-  const { token, entry, index } = body || {};
+  const { token, entry, index, playId } = body || {};
   /* A daily token is only playable on its own day; see _lib/daily.js. The one
      exception is the owner previewing another day — otherwise the preview is a
      board that cannot be checked, revealed or finished, which is not much of a
@@ -46,6 +47,7 @@ export async function onRequestPost({ request, env }) {
   const answer = normalise(puzzle.entries[idx].row.grid);
 
   if (index === undefined || index === null) {
+    await tally(env, playId, "srv_reveal_answers");
     return json({ entry: idx, answer });
   }
 
@@ -53,5 +55,9 @@ export async function onRequestPost({ request, env }) {
   if (!Number.isInteger(i) || i < 0 || i >= answer.length) {
     return bad("That square is not part of this answer.");
   }
+  /* A substitution is free to the player but still a revealed letter, and it
+     comes through this same call. The server cannot tell the two apart and
+     should not try: what it counts is letters it handed over. */
+  await tally(env, playId, "srv_reveal_letters");
   return json({ entry: idx, index: i, letter: answer[i] });
 }
