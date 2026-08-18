@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v42">
+<link rel="stylesheet" href="css/style.css?v=v43">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -100,6 +100,7 @@
 
     <div class="admin-group">
       <button class="btn outline" id="adminPlays">How far people get</button>
+      <button class="btn outline" id="adminChallenges">Challenges</button>
       <button class="btn outline" id="adminSources">Where players came from</button>
       <button class="btn outline" id="adminPlaysCsv">Attempts as CSV</button>
 
@@ -193,6 +194,11 @@
     <div class="sheet-note" id="chMsg"></div>
     <!-- A way out. Without it the screen is a one-way door: no back, and the
          challenge stays in the address, so a refresh returns you to it. -->
+    <!-- Shown only to somebody who has already scored here. They cannot act on
+         it — one entry each, and theirs is set — so it gives nothing away, and
+         the alternative was sending a challenge and being unable to see how
+         anyone was getting on without replaying the board. -->
+    <div id="chStandings" class="challenge-table" hidden></div>
     <button id="chCancel">Not now &mdash; play something else</button>
   </div>
 </div>
@@ -643,7 +649,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v42</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v43</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -654,8 +660,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v42"></script>
-<script src="js/engine.js?v=v42"></script>
-<script src="js/game.js?v=v42"></script>
+<script src="js/seasons.js?v=v43"></script>
+<script src="js/engine.js?v=v43"></script>
+<script src="js/game.js?v=v43"></script>
 </body>
 </html>

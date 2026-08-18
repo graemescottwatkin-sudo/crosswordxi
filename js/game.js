@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v42";
+  var BUILD = "v43";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2188,6 +2188,21 @@
   /* One row per attempt, rather than the per-board summary the panel shows. */
   /* Which places sent people who actually played. Deliberately separate from
      the board funnel: those answer different questions. */
+  on("adminChallenges", "click", function () {
+    apiAuth("/api/admin/challenges").then(function (d) {
+      var rows = d.challenges || [];
+      if (!rows.length) { adminMsg("Nobody has created a challenge yet."); return; }
+      adminMsg(rows.map(function (c) {
+        return (c.hidden ? "[hidden] " : "") + c.creator_name +
+          (c.group_name ? " \u00B7 " + c.group_name : "") +
+          " \u2014 " + c.theme_id + " #" + c.board_no +
+          ": " + c.started + " started, " + c.finished + " finished" +
+          (c.best === null ? "" : ", best " + c.best) +
+          "  /?c=" + c.id;
+      }).join("\n"));
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
   on("adminSources", "click", function () {
     apiAuth("/api/admin/sources").then(function (d) {
       var rows = d.sources || [];
@@ -3376,6 +3391,16 @@
           $("chName").disabled = false;
         }
         $("challengeOverlay").classList.add("show");
+        /* Already played? Then show the standings here. Nothing competitive
+           before you have played is the rule; this is after. */
+        apiAuth("/api/challenge/table", { id: id, entrantKey: entrantKey() })
+          .then(function (t) {
+            if (!t || !t.played) return;
+            renderStandings($("chStandings"), t, null);
+            $("chStandings").hidden = false;
+            $("chPlay").textContent = "Play it again";
+          })
+          .catch(function () {});
         /* Focus the box when there is something to type into it. `saved` used
            to hold a remembered name and was removed when the prefill went; the
            reference stayed, threw a ReferenceError after the fetch had already
@@ -3408,6 +3433,28 @@
      score: a 114 in thirty-eight seconds with no help is self-evidently what it
      is, and among people who know each other that deters more than any
      validation could. */
+  /* The standings, drawn the same way wherever they appear. */
+  function renderStandings(box, d, youPlayId) {
+    if (!box) return;
+    var mine = (challenge && challenge.name || "").toLowerCase();
+    var rows = (d.entries || []).map(function (e) {
+      var help = [];
+      if (e.checks) help.push(e.checks + (e.checks === 1 ? " check" : " checks"));
+      if (e.reveals) help.push(e.reveals + (e.reveals === 1 ? " reveal" : " reveals"));
+      var you = (youPlayId && e.playId === youPlayId) ||
+        (!!mine && e.name.toLowerCase() === mine);
+      return '<tr' + (you ? ' class="you"' : "") + '>' +
+        '<td class="ct-pos">' + e.position + "</td>" +
+        "<td>" + escapeHtml(e.name) + "</td>" +
+        '<td class="ct-help">' + fmt(e.elapsedSeconds) +
+        (help.length ? " \u00B7 " + help.join(", ") : " \u00B7 no help") + "</td>" +
+        '<td class="ct-score">' + e.score + "</td></tr>";
+    }).join("");
+    box.innerHTML = "<h3>" + escapeHtml(d.creatorName) +
+      (d.groupName ? " \u00B7 " + escapeHtml(d.groupName) : "") +
+      "</h3><table><tbody>" + rows + "</tbody></table>";
+  }
+
   function showChallengeTable() {
     var box = $("challengeTable");
     if (!box || !challenge) return;

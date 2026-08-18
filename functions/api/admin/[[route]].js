@@ -264,6 +264,42 @@ export async function onRequest({ request, env, params }) {
     })) });
   }
 
+  /* Every challenge, with how it is going. The tables are public to anybody
+     holding a link, so this adds no exposure — what it adds is the owner being
+     able to see the whole picture rather than one link at a time. */
+  if (route === "challenges" && request.method === "GET") {
+    const rows = await env.DB.prepare(
+      `SELECT c.id, c.theme_id, c.board_no, c.creator_name, c.group_name,
+              c.created_at, c.hidden,
+              (SELECT COUNT(*) FROM challenge_starts s WHERE s.challenge_id = c.id) AS started,
+              (SELECT COUNT(*) FROM challenge_entries e
+                WHERE e.challenge_id = c.id AND e.hidden = 0) AS finished,
+              (SELECT MAX(score) FROM challenge_entries e
+                WHERE e.challenge_id = c.id AND e.hidden = 0) AS best
+         FROM challenges c
+        ORDER BY c.created_at DESC LIMIT 200`).all();
+    return json({ challenges: rows.results || [] });
+  }
+
+  /* Take a name off a page without losing the record of it. The only remedy
+     when somebody types something that should not be published, and the reason
+     entries carry a hidden flag rather than being deleted. */
+  if (route === "challenge-hide" && request.method === "POST") {
+    let body;
+    try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
+    const hide = body.hidden ? 1 : 0;
+    if (body.entryId) {
+      await env.DB.prepare("UPDATE challenge_entries SET hidden = ? WHERE id = ?")
+        .bind(hide, String(body.entryId)).run();
+    } else if (body.id) {
+      await env.DB.prepare("UPDATE challenges SET hidden = ? WHERE id = ?")
+        .bind(hide, String(body.id)).run();
+    } else {
+      return bad("Name a challenge or an entry.");
+    }
+    return json({ ok: true, hidden: hide });
+  }
+
   if (route === "plays.csv" && request.method === "GET") {
     const rows = await env.DB.prepare(
       `SELECT started_at, ended_at, mode, daily_no, theme_key, phase,

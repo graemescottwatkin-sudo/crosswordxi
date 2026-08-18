@@ -202,6 +202,32 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /err && err\.handled/.test(js);
   })());
 
+  t("somebody who has already played can see how it is going", (() => {
+    /* Otherwise you send a challenge and cannot check on it without replaying
+       the board. They cannot act on the standings — one entry each, and theirs
+       is set — so the rule that nothing competitive comes before play holds. */
+    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    return /onRequestPost/.test(t) && /played: false/.test(t) &&
+      /apiAuth\("\/api\/challenge\/table"/.test(js);
+  })());
+  t("and someone who has not played gets nothing back", (() => {
+    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const fn = t.slice(t.indexOf("onRequestPost"), t.indexOf("onRequestGet"));
+    return /if \(!mine\) return json\(\{ played: false \}\);/.test(fn);
+  })());
+  t("the entrant key travels in a body, not a query string", (() => {
+    /* Identifiers in URLs end up in logs, referrers and shared links. */
+    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const fn = t.slice(t.indexOf("onRequestPost"), t.indexOf("onRequestGet"));
+    return /body\.entrantKey/.test(fn) && !/searchParams\.get\("entrantKey"\)/.test(t);
+  })());
+  t("the owner can see every challenge, and hide a name", (() => {
+    const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+    return /route === "challenges"/.test(admin) &&
+      /route === "challenge-hide"/.test(admin) &&
+      /UPDATE challenge_entries SET hidden/.test(admin);
+  })());
+
   t("there is a way out of the challenge screen", (() => {
     /* Without one it is a one-way door: no back, and the challenge stays in the
        address, so a refresh returns you to the screen you just declined. */
