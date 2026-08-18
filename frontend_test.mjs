@@ -464,6 +464,25 @@ server.listen(0, "127.0.0.1", async () => {
   /* A verified score has to reconcile with the sum printed under it. Updating
      the headline and leaving the penalty rows showing the browser's working
      printed 114 minus 26 minus 12 minus 18 under a heading saying 60. */
+  /* The device's own record has to hold the verified number too. recordDaily
+     and recordThemed run when the puzzle finishes, before the server has
+     answered, so the board badge showed 81 for a game whose Full Time said 82.
+     One game, one score, wherever it appears. */
+  t("the device's record is rewritten with the verified score", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
+    return /recordThemed\(lastPosition, r\.score\)/.test(fn) &&
+      /recordDaily\(lastPosition, r\.score/.test(fn);
+  })());
+  t("and a verified score may lower a recorded one", (() => {
+    /* The best-of-several-attempts guard must not also prefer an unverified
+       figure to the server's, or the badge keeps a number the game no longer
+       stands behind. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function recordThemed"), js.indexOf("function themeResults"));
+    return /prev\.playId === playId/.test(fn);
+  })());
+
   t("the breakdown is replaced along with the score, so the sum still adds up", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
@@ -487,6 +506,36 @@ server.listen(0, "127.0.0.1", async () => {
     /* Otherwise a finished board could be resubmitted until the clock suited. */
     const src = fs.readFileSync(path.join(DIR, "functions/api/finish.js"), "utf8");
     return /srv_score !== null/.test(src) && /already: true/.test(src);
+  })());
+
+  /* "Clear everything" has to clear everything it claims to. The themed results
+     key was added months after the reset was written and never added to it, so
+     clearing everything left themed boards still marked as played — a record of
+     nothing that still refused to let you play it. */
+  t("the reset clears every key that records what somebody did", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const list = /var WIPE_KEYS = \[([\s\S]*?)\];/.exec(js);
+    if (!list) return false;
+    return ["fcw.results.v1", "fcw.themeResults.v1", "fcw.streak", "fcw.pre",
+            "fcw.recent", "fcw.usedClues.v1", "fcw.v04.daily", "fcw.v04.practice",
+            "fcw.v04.theme"].every((k) => list[1].includes(k));
+  })());
+  t("and leaves preferences alone, which it does not claim to touch", (() => {
+    /* Wiping a record is not resetting a device: the club you play as and the
+       pitch you play on are not history. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const list = /var WIPE_KEYS = \[([\s\S]*?)\];/.exec(js);
+    return list && !/fcw\.clubPref|fcw\.pitch|fcw\.bank|fcw\.clueStyle/.test(list[1]);
+  })());
+  t("the reset uses that list rather than keeping its own", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    /* To a real boundary. indexOf finds the FIRST location.reload() in the
+       file, which is earlier than this handler — so the window came out empty
+       and the check passed or failed for the wrong reason. */
+    const start = js.indexOf('on("adminReset"');
+    const h = js.slice(start, js.indexOf("function loadReports", start))
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return /WIPE_KEYS\.forEach/.test(h) && !/removeItem\("fcw\./.test(h);
   })());
 
   console.log("\nMeasured-defect fixes");
@@ -599,9 +648,14 @@ server.listen(0, "127.0.0.1", async () => {
     /* To a real boundary, not a character count: a comment added above the
        code under test used to push it out of a fixed window. */
     const fn = js.slice(js.indexOf('on("adminReset"'), js.indexOf('function loadReports'));
-    return /removeItem\(RESULTS_KEY\)/.test(fn) &&
-      /removeItem\("fcw\.v04\.daily"\)/.test(fn) &&
-      /removeItem\("fcw\.v04\.practice"\)/.test(fn);
+    /* The handler clears WIPE_KEYS rather than naming keys itself, so this
+       checks the list is used and the list carries the saved games. Naming them
+       here as well would mean two lists to keep in step, which is the fault
+       this replaced. */
+    const list = /var WIPE_KEYS = \[([\s\S]*?)\];/.exec(js);
+    return /WIPE_KEYS\.forEach/.test(fn) && list &&
+      ["fcw.results.v1", "fcw.v04.daily", "fcw.v04.practice", "fcw.v04.theme"]
+        .every((k) => list[1].includes(k));
   })());
   t("and replay still touches only the one day", (() => {
     // The two must stay distinct, or there is no way to redo a single day.

@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v35a";
+  var BUILD = "v36";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2054,11 +2054,13 @@
     apiAuth("/api/admin/reset-my-record", {}).then(function () {
       standDown();          // as above: no writes between here and the reload
       try {
-        localStorage.removeItem(RESULTS_KEY);
-        localStorage.removeItem("fcw.v04.daily");
-        localStorage.removeItem("fcw.v04.practice");
-        localStorage.removeItem("fcw.v04.theme");
-        localStorage.removeItem("fcw.mode");
+        /* Every key the game writes, listed in one place. The themed results
+           key was added months after this reset was written and never got added
+           to it, so "clear everything" left themed boards still marked as
+           played — a record of nothing that still refused to let you play, and
+           exactly the contradiction the button exists to prevent.
+           Anything new that survives a reload belongs on this list. */
+        WIPE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
       } catch (e) {}
       // Reload, so the clock, the season strip and the board all start again
       // together rather than one at a time.
@@ -2749,6 +2751,28 @@
      derived from these, and the shape is stable enough for a future optional
      account sync to consume unchanged. */
   var RESULTS_KEY = "fcw.results.v1";
+  /* What "clear everything" clears: history and saved games, and nothing else.
+     Preferences stay — the club you play as, the pitch, the letter bank, the
+     clue style — because wiping a record is not the same as resetting a
+     device, and somebody clearing their results does not expect their settings
+     to change underneath them.
+     This list is here rather than inside the handler because it is the thing
+     that goes stale: the themed results key was added months after the reset
+     was written and never got added to it, so clearing everything left themed
+     boards still marked as played. Anything new that survives a reload and
+     records what somebody did belongs here. */
+  var WIPE_KEYS = [
+    "fcw.results.v1",        // daily and practice results
+    "fcw.themeResults.v1",   // themed boards, and what was marked as played
+    "fcw.streak",            // the run
+    "fcw.pre",               // the pre-season record
+    "fcw.recent",            // recent answers, so they are not repeated
+    "fcw.usedClues.v1",      // clue circulation
+    "fcw.v04.daily",         // the three saved games
+    "fcw.v04.practice",
+    "fcw.v04.theme",
+    "fcw.mode",
+  ];
   function loadResults() {
     try {
       var r = JSON.parse(localStorage.getItem(RESULTS_KEY));
@@ -2824,9 +2848,17 @@
     for (var i = 0; i < list.length; i++) {
       if (list[i] && list[i].themeKey === key) { prev = list[i]; break; }
     }
+    /* A verified score replaces whatever is there, even when it is lower. The
+       guard below keeps the best of several attempts; it must not also keep an
+       unverified figure in preference to the server's, or the badge goes on
+       showing a number the game no longer stands behind. */
+    if (prev && prev.playId && prev.playId === playId) prev = null, list = list.filter(function (x) {
+      return !(x && x.themeKey === key);
+    });
     if (prev && (prev.score || 0) >= score) return list;
     var rec = {
       themeKey: key, themeLabel: themeLabel, date: FCW.localDateKey(),
+      playId: playId,          // so a verified rewrite replaces its own row
       club: club, season: season ? season.season : null,
       score: score, position: pos,
       elapsedSeconds: elapsed, matchMinute: FCW.matchMinute(elapsed),
@@ -3211,6 +3243,7 @@
                                revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
+    lastPosition = pos;
     if ($("rClockNote")) $("rClockNote").style.display = "none";
     showPauseNote();
     updateScoreUI();
@@ -3254,6 +3287,9 @@
      unverified so the two are never confused. Only a verified score is fit for
      anything other people can see. */
   var verifiedScore = null;
+  /* Where the score put you, so a rewritten record carries the right position
+     rather than the one the browser's arithmetic implied. */
+  var lastPosition = null;
   function verifyScore() {
     var note = $("rVerified");
     if (note) { note.textContent = "checking\u2026"; note.className = "verify-note"; }
@@ -3292,6 +3328,14 @@
         $("bAnswers").textContent = footballPhrase("answer", r.revealedAnswers || 0, b.answerPenalty || 0);
         $("bAnswerPen").textContent = "\u2212" + (b.answerPenalty || 0);
         $("rFinal").textContent = r.score + " / " + FCW.SCORING.MAX_SCORE;
+
+        /* The device's own record is rewritten too. recordDaily and
+           recordThemed run when the puzzle finishes, before the server has
+           answered, so they stored the browser's figure — and the board badge
+           then showed 81 for a game whose Full Time said 82. One game, one
+           score, wherever it appears. */
+        if (mode === "theme") recordThemed(lastPosition, r.score);
+        else if (mode === "daily") recordDaily(lastPosition, r.score, r.breakdown || {});
 
         if (r.score !== Number($("rScore").textContent)) {
           var table = FCW.buildTable(club, r.score, season);
