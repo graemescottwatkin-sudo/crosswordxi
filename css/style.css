@@ -553,20 +553,32 @@ button.tb-label{
 /* The readings hold their width so the boxes do not shift left and right as
    the clock ticks past a digit or the count reaches ten. */
 .bank-strip .tb-readouts{
-  flex:0 0 auto;display:flex;align-items:center;gap:12px;
-  padding-left:12px;border-left:1px solid var(--line);
+  /* margin-left:auto rather than relying on justify-content. The strip is a
+     flex row and the boxes wrap, so whichever way the main axis is being
+     distributed, this pins the readings to the right edge and leaves the gap
+     between them and the last box. They were touching. */
+  flex:0 0 auto;margin-left:auto;
+  display:flex;align-items:center;gap:14px;
+  padding-left:18px;border-left:1px solid var(--line);
 }
-.bank-strip .match-clock,.bank-strip .live-chip{
-  border:none;background:none;border-radius:0;padding:0;min-width:0;
+/* And the boxes hold the left edge. */
+.bank-strip .bank{margin-right:18px}
+/* Readings, not controls: no card face, whatever the base rules say. Written
+   with the strip and the wrapper in the selector so it beats anything scoped
+   less tightly, rather than relying on source order. */
+.bank-strip .tb-readouts .match-clock,
+.bank-strip .tb-readouts .live-chip{
+  border:none;background:none;border-radius:0;padding:0;min-width:0;box-shadow:none;
 }
-.bank-strip .match-clock{font-size:21px;text-align:right;line-height:1}
-.bank-strip .match-clock small{font-size:9px;letter-spacing:.1em}
-.bank-strip .live-chip{font-size:12px;white-space:nowrap}
+.bank-strip .tb-readouts .match-clock{font-size:21px;text-align:right;line-height:1}
+.bank-strip .tb-readouts .match-clock small{font-size:9px;letter-spacing:.1em}
+.bank-strip .tb-readouts .live-chip{font-size:12px;white-space:nowrap}
 @media (max-width:560px){
   .bank-strip{gap:8px}
-  .bank-strip .tb-readouts{gap:8px;padding-left:8px}
-  .bank-strip .match-clock{font-size:18px}
-  .bank-strip .live-chip{font-size:11px}
+  .bank-strip .bank{margin-right:10px}
+  .bank-strip .tb-readouts{gap:10px;padding-left:10px}
+  .bank-strip .tb-readouts .match-clock{font-size:18px}
+  .bank-strip .tb-readouts .live-chip{font-size:11px}
 }
 .bank-cell{
   width:var(--bank-cell);height:calc(var(--bank-cell) + 4px);

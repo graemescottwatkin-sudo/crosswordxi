@@ -279,6 +279,13 @@ t("and they sit at opposite ends of it",
    clock passes a digit. */
 t("the readings do not push the boxes about as they change",
   /\.bank-strip \.tb-readouts\{[^}]*flex:0 0 auto/.test(flatCss));
+/* They were touching the last box. margin-left:auto pins them to the right
+   edge whatever the main axis is doing, which justify-content alone did not
+   manage once the boxes wrapped. */
+t("and they are pinned to the right edge, not merely distributed",
+  /\.bank-strip \.tb-readouts\{[^}]*margin-left:auto/.test(flatCss));
+t("the readings carry no card face inside the strip",
+  /\.bank-strip \.tb-readouts \.match-clock,[\s\S]{0,80}\{[^}]*border:none/.test(flatCss));
 
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");
