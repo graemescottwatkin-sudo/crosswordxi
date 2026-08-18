@@ -64,3 +64,16 @@ export function accountDisplayName(user) {
   const at = email.indexOf("@");
   return at > 1 ? cleanName(email.slice(0, at)) : null;
 }
+
+/* The one place that decides who an entrant is.
+ *
+ * A signed-in player is their account; a guest is a key their device keeps. It
+ * was worked out separately at every call site, and the read used the device
+ * key while the write had used the account — so a signed-in creator asking to
+ * see their own standings matched nothing and was told they had not played.
+ * Written once so the two cannot disagree again.
+ */
+export function entrantKeyFor(user, bodyKey) {
+  if (user && user.id) return "u:" + user.id;
+  return validEntrantKey(bodyKey);
+}

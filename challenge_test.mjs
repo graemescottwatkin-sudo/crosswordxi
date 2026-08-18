@@ -202,6 +202,21 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /err && err\.handled/.test(js);
   })());
 
+  t("who an entrant is, is decided in one place", (() => {
+    /* A signed-in player is their account; a guest is their device key. Worked
+       out separately at each call site, the read used the device key while the
+       write had used the account — so a signed-in creator asking for their own
+       standings matched nothing and was told they had not played. */
+    const files = ["index", "start", "entry", "table"].map((n) =>
+      fs.readFileSync("functions/api/challenge/" + n + ".js", "utf8"));
+    return files.every((f) => /entrantKeyFor/.test(f)) &&
+      !files.some((f) => /user \? "u:" \+ user\.id/.test(f));
+  })());
+  t("and reading uses the same rule as writing", (() => {
+    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    return /currentUser\(request, env\)/.test(t) && /entrantKeyFor\(user/.test(t);
+  })());
+
   t("somebody who has already played can see how it is going", (() => {
     /* Otherwise you send a challenge and cannot check on it without replaying
        the board. They cannot act on the standings — one entry each, and theirs

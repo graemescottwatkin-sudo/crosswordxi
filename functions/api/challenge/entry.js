@@ -7,7 +7,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import { currentUser, newId, csrfOk } from "../../_lib/auth.js";
-import { cleanName, validEntrantKey, accountDisplayName } from "../../_lib/names.js";
+import { cleanName, validEntrantKey, accountDisplayName , entrantKeyFor } from "../../_lib/names.js";
 
 export async function onRequestPost({ request, env }) {
   if (!csrfOk(request)) return bad("Missing request header.", 403);
@@ -38,7 +38,7 @@ export async function onRequestPost({ request, env }) {
   const user = await currentUser(request, env);
   const name = accountDisplayName(user) || cleanName(body.name);
   if (!name) return bad("Choose a name of at least two characters.", 400);
-  const key = user ? "u:" + user.id : validEntrantKey(body.entrantKey);
+  const key = entrantKeyFor(user, body.entrantKey);
   if (!key) return bad("Missing entrant key.", 400);
 
   const a = Date.parse((play.started_at || "").replace(" ", "T") + "Z");

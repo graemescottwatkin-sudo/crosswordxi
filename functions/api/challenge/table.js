@@ -7,6 +7,8 @@
  */
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
+import { currentUser } from "../../_lib/auth.js";
+import { entrantKeyFor } from "../../_lib/names.js";
 
 /* POST with an entrant key: "have I already played this, and if so, show me."
  *
@@ -25,7 +27,12 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
   const id = /^[a-z0-9]{6,16}$/.test(String(body.id || "")) ? String(body.id) : null;
   if (!id) return bad("Unknown challenge.", 404);
-  const key = String(body.entrantKey || "");
+  /* The same rule as the write: a signed-in player is their account, a guest is
+     their device key. Reading with the device key while the entry had been
+     written with the account matched nothing, and a signed-in creator was told
+     they had not played their own challenge. */
+  const user = await currentUser(request, env);
+  const key = entrantKeyFor(user, body.entrantKey);
 
   const mine = await env.DB.prepare(
     `SELECT id FROM challenge_entries WHERE challenge_id = ? AND entrant_key = ?`)

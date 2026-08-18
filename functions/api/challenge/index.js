@@ -18,7 +18,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import { currentUser, newId, csrfOk } from "../../_lib/auth.js";
-import { cleanName, validEntrantKey, shortId, accountDisplayName } from "../../_lib/names.js";
+import { cleanName, validEntrantKey, shortId, accountDisplayName , entrantKeyFor } from "../../_lib/names.js";
 
 const okId = (v) => (/^[a-z0-9]{6,16}$/.test(String(v || "")) ? String(v) : null);
 
@@ -119,7 +119,7 @@ export async function onRequestPost({ request, env }) {
 
   /* The creator's own result seeds the table, or the page opens empty and reads
      as broken rather than as new. */
-  const key = user ? "u:" + user.id : validEntrantKey(body.entrantKey);
+  const key = entrantKeyFor(user, body.entrantKey);
   if (key) {
     await env.DB.prepare(
       `INSERT OR IGNORE INTO challenge_entries
