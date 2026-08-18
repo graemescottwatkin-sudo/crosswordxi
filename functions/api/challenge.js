@@ -18,7 +18,7 @@
 import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
 import { currentUser, newId, csrfOk } from "../_lib/auth.js";
-import { cleanName, validEntrantKey, shortId } from "../_lib/names.js";
+import { cleanName, validEntrantKey, shortId, accountDisplayName } from "../_lib/names.js";
 
 const okId = (v) => (/^[a-z0-9]{6,16}$/.test(String(v || "")) ? String(v) : null);
 
@@ -93,7 +93,7 @@ export async function onRequestPost({ request, env }) {
      is one, typed otherwise. The group is who it is being sent to, and is
      optional: a challenge to one friend does not need a label, and demanding
      one would put a form between somebody and sending a link. */
-  const name = user && user.name ? cleanName(user.name) : cleanName(body.name);
+  const name = accountDisplayName(user) || cleanName(body.name);
   if (!name) return bad("Choose a name of at least two characters.", 400);
   const groupName = body.groupName ? cleanName(body.groupName) : null;
 

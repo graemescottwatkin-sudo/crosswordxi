@@ -137,6 +137,24 @@
   var CH_NAME_KEY = "fcw.chName";      // remembered, so a returning player presses Play
   var CH_KEY_KEY = "fcw.entrant";      // one entry each: an id this device keeps
 
+  /* The signed-in player's name. The session returns displayName — the field is
+     display_name in the database — and three places asked for account.name,
+     which is always undefined. So a signed-in player was treated as a guest
+     everywhere it mattered: their own name offered as editable text, and the
+     last name typed on the device filled in instead.
+     One function, so the next place to need it cannot ask for the wrong field.
+     Falls back to the part of the email before the @ rather than to nothing,
+     because an account with no display name still belongs to somebody. */
+  function accountName() {
+    if (!account) return null;
+    var n = (account.displayName || "").trim();
+    if (n.length >= 2) return n;
+    var e = String(account.email || "");
+    var at = e.indexOf("@");
+    var from = at > 1 ? e.slice(0, at) : "";
+    return from.length >= 2 ? from : null;
+  }
+
   function entrantKey() {
     var k = null;
     try { k = localStorage.getItem(CH_KEY_KEY); } catch (e) {}
@@ -154,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v39";
+  var BUILD = "v39a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3296,7 +3314,7 @@
        Remembering this one is right — it is theirs, and they will use it again. */
     var from = $("chFrom");
     if (from) {
-      if (account && account.name) { from.value = account.name; from.disabled = true; }
+      if (accountName()) { from.value = accountName(); from.disabled = true; }
       else {
         from.disabled = false;
         if (!from.value) { try { from.value = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {} }
@@ -3328,8 +3346,8 @@
            device, offered the sender's own name back to the person answering.
            A wrong suggestion is worse than an empty box: an empty box asks a
            question, a wrong one answers it for you. */
-        if (account && account.name) {
-          $("chName").value = account.name;
+        if (accountName()) {
+          $("chName").value = accountName();
           $("chName").disabled = true;
         } else {
           $("chName").value = "";
@@ -3402,13 +3420,13 @@
       out.textContent = "A challenge needs a verified score. Check your connection and finish again.";
       return;
     }
-    var name = account && account.name ? account.name : ($("chFrom").value || "").trim();
+    var name = accountName() || ($("chFrom").value || "").trim();
     if (name.length < 2) {
       out.textContent = "Your name, at least two characters.";
       $("chFrom").focus();
       return;
     }
-    if (!account) { try { localStorage.setItem(CH_NAME_KEY, name); } catch (e) {} }
+    if (!accountName()) { try { localStorage.setItem(CH_NAME_KEY, name); } catch (e) {} }
     var group = ($("chGroup").value || "").trim();
     out.textContent = "Creating\u2026";
     apiAuth("/api/challenge", {
@@ -3458,7 +3476,7 @@
   on("chPlay", "click", function () {
     if (!challenge) return;
     var name = ($("chName").value || "").trim();
-    if (!account && name.length < 2) {
+    if (!accountName() && name.length < 2) {
       $("chMsg").textContent = "Please enter a name of at least two characters.";
       $("chName").focus();
       return;

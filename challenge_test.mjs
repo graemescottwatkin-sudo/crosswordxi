@@ -81,7 +81,7 @@ t("names are cleaned before they are stored", /cleanName/.test(src.entry) && /cl
 t("markup characters are removed rather than escaped later", /\[<>&/.test(src.names));
 t("zero-width and direction marks are stripped", /200b/.test(src.names));
 t("a signed-in player's name comes from the account",
-  /user && user\.name \? cleanName\(user\.name\)/.test(src.challenge));
+  /accountDisplayName\(user\) \|\| cleanName\(body\.name\)/.test(src.challenge));
 t("and an entry can be hidden without being deleted",
   /hidden       INTEGER DEFAULT 0/.test(src.migration) && /hidden = 0/.test(src.table));
 
@@ -117,6 +117,26 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   /* Two names, not one. The creator is a person; the group is who it is being
      sent to. One field doing both jobs meant a group name typed at Full Time
      came back as "Test challenged you" over a board sent by somebody else. */
+  /* A signed-in player's name is display_name, not name. Three endpoints and
+     three places in the browser asked for the field that does not exist, so a
+     signed-in player was silently treated as a guest — their own name offered
+     back as editable text and the last name typed on the device filled in. */
+  t("the account's name is read from the field that exists", (() => {
+    const bad = [src.challenge, src.start, src.entry]
+      .some((f) => /user && user\.name|user\.name \?/.test(f));
+    return !bad && /accountDisplayName/.test(src.challenge) &&
+      /accountDisplayName/.test(src.start) && /accountDisplayName/.test(src.entry);
+  })());
+  t("and in the browser too, in one function rather than three places", (() => {
+    return !/account && account\.name/.test(js) &&
+      /function accountName\(\)/.test(js) && /account\.displayName/.test(js);
+  })());
+  t("an account with no display name still gets a name", (() => {
+    /* The part before the @: an account without a display name still belongs to
+       somebody, and falling back to nothing would make them type one. */
+    return /email\.slice\(0, at\)/.test(src.names);
+  })());
+
   t("the sender's name and the group's are separate fields", (() => {
     const html = fs.readFileSync("index.html", "utf8");
     return /id="chFrom"/.test(html) && /id="chGroup"/.test(html) &&

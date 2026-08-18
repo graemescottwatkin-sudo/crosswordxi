@@ -48,3 +48,19 @@ export function shortId() {
   for (const b of bytes) out += alphabet[b % alphabet.length];
   return out;
 }
+
+/* The name a signed-in player goes by. currentUser returns the database row, so
+   the field is display_name — user.name is always undefined, and asking for it
+   quietly turned every signed-in player into a guest whose name came from the
+   request body. Written once here so the next endpoint to need it cannot ask
+   for the wrong field.
+   Falls back to the part of the email before the @: an account with no display
+   name still belongs to somebody. */
+export function accountDisplayName(user) {
+  if (!user) return null;
+  const n = cleanName(user.display_name);
+  if (n) return n;
+  const email = String(user.email || "");
+  const at = email.indexOf("@");
+  return at > 1 ? cleanName(email.slice(0, at)) : null;
+}
