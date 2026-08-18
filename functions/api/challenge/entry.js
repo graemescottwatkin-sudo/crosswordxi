@@ -58,11 +58,18 @@ export async function onRequestPost({ request, env }) {
      the cheat their real attempt. */
   const res = await env.DB.prepare(
     `INSERT OR IGNORE INTO challenge_entries
-       (id, challenge_id, play_id, name, score, elapsed_secs, checks, reveals, entrant_key)
-     VALUES (?,?,?,?,?,?,?,?,?)`)
+       (id, challenge_id, play_id, name, score, elapsed_secs, checks, reveals, entrant_key,
+        reveal_letters, reveal_answers, check_answers, check_grids)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .bind(newId(), id, play.play_id, name, play.srv_score, elapsed,
           (play.srv_checks || 0) + (play.srv_check_alls || 0),
-          (play.srv_reveal_letters || 0) + (play.srv_reveal_answers || 0), key).run();
+          (play.srv_reveal_letters || 0) + (play.srv_reveal_answers || 0),
+          key,
+          /* And separately, because a letter costs 2 and an answer costs 9:
+             merged into one number, "2 reveals" meant either 4 points or 18,
+             and a legitimate score looked impossible beside a worse one. */
+          play.srv_reveal_letters || 0, play.srv_reveal_answers || 0,
+          play.srv_checks || 0, play.srv_check_alls || 0).run();
 
   const added = !!(res.meta && res.meta.changes);
   return json({ ok: true, added, score: play.srv_score });

@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v44a";
+  var BUILD = "v45";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3439,9 +3439,22 @@
     if (!box) return;
     var mine = (challenge && challenge.name || "").toLowerCase();
     var rows = (d.entries || []).map(function (e) {
+      /* What was actually done, not how many times something happened. A
+         revealed letter costs 2 and a revealed answer 9, so "2 reveals" meant
+         either 4 points or 18 — and a legitimate score looked impossible
+         beside a worse one. The words are the prices. */
       var help = [];
-      if (e.checks) help.push(e.checks + (e.checks === 1 ? " check" : " checks"));
-      if (e.reveals) help.push(e.reveals + (e.reveals === 1 ? " reveal" : " reveals"));
+      var ca = e.checkAnswers != null ? e.checkAnswers : e.checks;
+      if (ca) help.push(ca + (ca === 1 ? " check" : " checks"));
+      if (e.checkGrids) help.push(e.checkGrids +
+        (e.checkGrids === 1 ? " grid check" : " grid checks"));
+      if (e.revealLetters) help.push(e.revealLetters +
+        (e.revealLetters === 1 ? " letter" : " letters"));
+      if (e.revealAnswers) help.push(e.revealAnswers +
+        (e.revealAnswers === 1 ? " answer" : " answers"));
+      /* Older entries carry only the merged totals. Said plainly rather than
+         guessed at. */
+      if (!help.length && e.reveals) help.push(e.reveals + " reveals");
       var you = (youPlayId && e.playId === youPlayId) ||
         (!!mine && e.name.toLowerCase() === mine);
       return '<tr' + (you ? ' class="you"' : "") + '>' +

@@ -67,7 +67,8 @@ async function tableFor(env, id) {
 
   /* Score first, then the faster of two equal scores. */
   const rows = await env.DB.prepare(
-    `SELECT name, score, elapsed_secs, checks, reveals, play_id, created_at
+    `SELECT name, score, elapsed_secs, checks, reveals, play_id, created_at,
+            reveal_letters, reveal_answers, check_answers, check_grids
        FROM challenge_entries
       WHERE challenge_id = ? AND hidden = 0
       ORDER BY score DESC, elapsed_secs ASC
@@ -90,6 +91,11 @@ async function tableFor(env, id) {
       elapsedSeconds: r.elapsed_secs,
       checks: r.checks,
       reveals: r.reveals,
+      /* Separately, so the table can say what was actually done. */
+      revealLetters: r.reveal_letters || 0,
+      revealAnswers: r.reveal_answers || 0,
+      checkAnswers: r.check_answers || 0,
+      checkGrids: r.check_grids || 0,
       playId: r.play_id,
     })),
   };

@@ -202,6 +202,22 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /err && err\.handled/.test(js);
   })());
 
+  t("the table says which kind of help was taken", (() => {
+    /* A revealed letter costs 2 and a revealed answer 9. Merged into one
+       number, "2 reveals" meant either 4 points or 18 — and a legitimate score
+       looked impossible beside a worse one. */
+    const mig = fs.readFileSync("data/migrations/014-entry-help.sql", "utf8");
+    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    return /reveal_letters/.test(mig) && /reveal_answers/.test(mig) &&
+      /revealLetters/.test(t) && /revealAnswers/.test(t) &&
+      /revealLetters/.test(js) && /" letters"/.test(js) && /" answers"/.test(js);
+  })());
+  t("and existing entries keep a truthful, if vaguer, description", (() => {
+    /* Rows written before the split carry only the merged total. Said plainly
+       rather than guessed at. */
+    return /if \(!help\.length && e\.reveals\)/.test(js);
+  })());
+
   t("an entry is timed over the span its score was computed for", (() => {
     /* ended_at is written when the tab closes or the page is hidden, which can
        be minutes later. Timing an entry to it while the score was computed to
