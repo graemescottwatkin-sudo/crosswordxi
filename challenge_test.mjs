@@ -11,7 +11,7 @@ let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 
 const src = {
-  challenge: fs.readFileSync("functions/api/challenge.js", "utf8"),
+  challenge: fs.readFileSync("functions/api/challenge/index.js", "utf8"),
   start: fs.readFileSync("functions/api/challenge/start.js", "utf8"),
   entry: fs.readFileSync("functions/api/challenge/entry.js", "utf8"),
   table: fs.readFileSync("functions/api/challenge/table.js", "utf8"),
@@ -19,6 +19,17 @@ const src = {
   migration: fs.readFileSync("data/migrations/012-challenges.sql", "utf8"),
 };
 const bare = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+/* A file and a directory of the same name collide: /api/challenge resolved to
+   the directory, found no index, and answered 404 for a challenge created
+   seconds earlier. */
+t("the endpoint is a directory index, not a file beside the directory", () => true);
+{
+  const both = fs.existsSync("functions/api/challenge.js") &&
+               fs.existsSync("functions/api/challenge");
+  t("there is no challenge.js beside the challenge directory", !both);
+  t("and the directory has an index", fs.existsSync("functions/api/challenge/index.js"));
+}
 
 console.log("Nothing competitive before the board is played");
 t("the pre-play endpoint returns no score", (() => {
@@ -143,7 +154,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /groupName: group \|\| null/.test(js);
   })());
   t("the group is optional", (() => {
-    const api = fs.readFileSync("functions/api/challenge.js", "utf8");
+    const api = fs.readFileSync("functions/api/challenge/index.js", "utf8");
     return /body\.groupName \? cleanName\(body\.groupName\) : null/.test(api);
   })());
   t("the person answering starts with an empty box, not somebody else's name", (() => {

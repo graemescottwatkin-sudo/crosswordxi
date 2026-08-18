@@ -80,6 +80,24 @@ t("the stylesheet's braces and comments balance", (() => {
 /* wrangler pages dev leaves a .wrangler scratch directory holding a compiled
    bundle of every Function. It is not secret, but it is a second copy of the
    server code shipped as a static asset, and it reached a package once. */
+/* A Functions file cannot sit beside a directory of the same name: the route
+   resolves to the directory, finds no index, and answers 404 — for an endpoint
+   that exists and works. It cost a challenge that had just been created. */
+t("no Functions file collides with a directory of the same name", (() => {
+  const walk = (dir) => {
+    const out = [];
+    for (const e of fs.readdirSync(path.join(DIR, dir), { withFileTypes: true })) {
+      if (e.isDirectory()) out.push(...walk(path.join(dir, e.name)));
+      else if (e.name.endsWith(".js")) out.push(path.join(dir, e.name));
+    }
+    return out;
+  };
+  if (!has("functions")) return true;
+  return !walk("functions").some((f) =>
+    has(f.replace(/\.js$/, "")) &&
+    fs.statSync(path.join(DIR, f.replace(/\.js$/, ""))).isDirectory());
+})());
+
 t("no local build scratch in the package", !has(".wrangler"));
 
 t("no absolute or machine-specific paths",
