@@ -214,8 +214,27 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /* Short forms, because spelled out one row was wider than the panel and
          pushed the score off the edge. The key under the table gives the
          prices, so the shorthand explains itself. */
-      /"L"/.test(js) && /"A"/.test(js) && /L letter/.test(js) && /A answer/.test(js);
+      /"L"/.test(js) && /"A"/.test(js) &&
+      /* The key names them as the buttons do: Check Answer, Check Grid, Reveal
+         Letter, Reveal Answer. "check" and "letter" alone describe nothing. */
+      /C check word/.test(js) && /G check grid/.test(js) &&
+      /L reveal letter/.test(js) && /A reveal answer/.test(js);
   })());
+  t("everything explaining a score sits beside the score", (() => {
+    /* Right to left: the score, the time it took, the help taken. The eye
+       should not have to travel the width of the table to connect a number to
+       what produced it. */
+    /* From the row builder to the end of the map callback. An end marker with
+       escaped quotes in it is fragile to read and was matching nothing, so the
+       window came out empty and the check failed for its own reasons rather
+       than the code's. */
+    const start = js.indexOf("return '<tr'");
+    const row = js.slice(start, start + 500);
+    const order = ["ct-pos", "ct-name", "ct-help", "ct-time", "ct-score"];
+    let at = -1;
+    return order.every((c) => { const i = row.indexOf(c); const ok = i > at; at = i; return ok; });
+  })());
+
   t("nothing in the standings may wrap", (() => {
     /* A long help list wrapped to three lines, pushed the score column off the
        panel and split a name in half. A standings table is scanned. */

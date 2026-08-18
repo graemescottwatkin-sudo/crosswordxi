@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v45a";
+  var BUILD = "v45c";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3460,18 +3460,26 @@
       if (!help.length && e.reveals) help.push(e.reveals + "?");
       var you = (youPlayId && e.playId === youPlayId) ||
         (!!mine && e.name.toLowerCase() === mine);
+      /* Time hard against the score, help in brackets before it. Everything
+         that explains the score sits beside the score, so a row reads right to
+         left as "91, over 4:19, having used two letters" rather than making the
+         eye travel the width of the table to connect the two. */
       return '<tr' + (you ? ' class="you"' : "") + '>' +
         '<td class="ct-pos">' + e.position + "</td>" +
-        "<td>" + escapeHtml(e.name) + "</td>" +
-        '<td class="ct-help">' + fmt(e.elapsedSeconds) +
-        (help.length ? " \u00B7 " + help.join(" ") : "") + "</td>" +
+        '<td class="ct-name">' + escapeHtml(e.name) + "</td>" +
+        '<td class="ct-help">' + (help.length ? "(" + help.join(" ") + ")" : "") + "</td>" +
+        '<td class="ct-time">' + fmt(e.elapsedSeconds) + "</td>" +
         '<td class="ct-score">' + e.score + "</td></tr>";
     }).join("");
     box.innerHTML = "<h3>" + escapeHtml(d.creatorName) +
       (d.groupName ? " \u00B7 " + escapeHtml(d.groupName) : "") +
       "</h3><table><tbody>" + rows + "</tbody></table>" +
-      '<div class="ct-key">C check \u00B73 \u00A0 G grid \u00B79 \u00A0 ' +
-      'L letter \u00B72 \u00A0 A answer \u00B79</div>';
+      /* Named as the buttons are named. "check" and "letter" describe nothing —
+         the four are Check Answer, Check Grid, Reveal Letter and Reveal Answer,
+         and a reader who has played will recognise them straight away. */
+      '<div class="ct-key">' +
+      'C check word \u00B73 \u00A0 G check grid \u00B79 \u00A0 ' +
+      'L reveal letter \u00B72 \u00A0 A reveal answer \u00B79</div>';
   }
 
   function showChallengeTable() {
