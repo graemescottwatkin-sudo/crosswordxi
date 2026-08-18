@@ -1622,7 +1622,12 @@ body.rotate-needed .rotate-prompt{
 }
 /* The name takes what is left; everything explaining the score is pinned to
    the right of it, next to the score. */
-.challenge-table .ct-name{width:auto}
+/* Left aligned, hard against the position. Centred, every name floated in the
+   middle of whatever space was left and the column had no edge to read down —
+   a list of names is scanned vertically, and that needs them to start in the
+   same place. */
+.challenge-table .ct-name{width:auto;text-align:left;padding-left:2px}
+.challenge-table .ct-pos{text-align:right;padding-right:8px}
 .challenge-table .ct-time{
   width:56px;text-align:right;font-variant-numeric:tabular-nums;
   color:var(--ink-soft);font-size:12px;
@@ -1635,8 +1640,12 @@ body.rotate-needed .rotate-prompt{
 .challenge-table .ct-pos{width:28px;color:var(--ink-faint)}
 .challenge-table .ct-score{text-align:right;font-variant-numeric:tabular-nums}
 .challenge-table .ct-help{
+  /* A real width. width:1% asks a fixed-layout table for the narrowest column
+     it can give, which is none — and overflow:hidden then clipped the text to
+     nothing. It was in the page all along, which is why copying the table
+     showed penalties the eye could not see. */
   color:var(--ink-faint);font-size:11px;white-space:nowrap;text-align:right;
-  width:1%;padding-right:6px;
+  width:104px;padding-right:8px;
 }
 .challenge-table .ct-score{width:52px;font-weight:700}
 .challenge-table h3{

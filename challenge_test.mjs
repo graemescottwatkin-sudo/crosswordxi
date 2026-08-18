@@ -235,6 +235,26 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     return order.every((c) => { const i = row.indexOf(c); const ok = i > at; at = i; return ok; });
   })());
 
+  t("names start in the same place, so the column can be scanned", (() => {
+    const css = fs.readFileSync("css/style.css", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    return /\.challenge-table \.ct-name\{[^}]*text-align:left/.test(css);
+  })());
+
+  t("every column in the standings has room to be seen", (() => {
+    /* width:1% asks a fixed-layout table for the narrowest column possible,
+       which is none, and overflow:hidden clipped the penalties to nothing. The
+       text was in the page the whole time — copying the table showed what the
+       eye could not. A column with content needs a width that can hold it. */
+    /* Comments stripped first. The explanation sits between the selector and
+       the declarations, so matching the raw file captured the comment and not
+       the rule. Third time tonight — §5 of the handover. */
+    const css = fs.readFileSync("css/style.css", "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    const help = /\.challenge-table \.ct-help\{([^}]*)\}/.exec(css);
+    return help && /width:\d{2,}px/.test(help[1]) && !/width:1%/.test(help[1]);
+  })());
+
   t("nothing in the standings may wrap", (() => {
     /* A long help list wrapped to three lines, pushed the score column off the
        panel and split a name in half. A standings table is scanned. */
