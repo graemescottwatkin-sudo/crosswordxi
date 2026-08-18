@@ -461,6 +461,21 @@ server.listen(0, "127.0.0.1", async () => {
     return /\$\("rScore"\)\.textContent = r\.score/.test(fn) &&
       /verifiedScore = r\.score/.test(fn);
   })());
+  /* A verified score has to reconcile with the sum printed under it. Updating
+     the headline and leaving the penalty rows showing the browser's working
+     printed 114 minus 26 minus 12 minus 18 under a heading saying 60. */
+  t("the breakdown is replaced along with the score, so the sum still adds up", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
+    return ["bTimePen", "bCheckPen", "bCheckAllPen", "bLetterPen", "bAnswerPen", "rFinal"]
+      .every((id) => fn.includes('$("' + id + '")'));
+  })());
+  t("and the times shown are the server's, not the paused local clock", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
+    return /fmt\(r\.elapsedSeconds\)/.test(fn) && /matchClockLabel\(r\.elapsedSeconds\)/.test(fn);
+  })());
+
   t("an unreachable server leaves the local figure, marked as unverified", (() => {
     /* A finished puzzle must always say how you did. What it must not do is
        pass off a number the browser worked out as one the server confirmed. */

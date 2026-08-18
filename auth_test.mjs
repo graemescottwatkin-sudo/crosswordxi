@@ -5,6 +5,7 @@
  * the code verifies it exactly as it would verify Google's. The forgery cases
  * are signed with a *different* key, which is what an attacker actually has.
  */
+import fs from "node:fs";
 import crypto from "node:crypto";
 import {
   verifyGoogleIdToken, findOrCreateUser, createSession, currentUser,
@@ -281,6 +282,18 @@ t("signing out clears the same cookie scope it was set with", (() => {
   const domainOf = (c) => (c.match(/Domain=([^;]+)/) || [])[1] || "(host only)";
   return domainOf(set) === domainOf(clear);
 })(), (sessionCookie("x", new Date().toISOString()).match(/Domain=([^;]+)/) || [])[1] || "host-only for now");
+
+/* Signing out has to look like something happened. The button Google renders is
+   drawn once into an element and is not restored when the session it was drawn
+   for ends, so the sheet showed a signed-out account with no way back in until
+   the page was reloaded. */
+{
+  const js = fs.readFileSync("js/game.js", "utf8");
+  const out = js.slice(js.indexOf('on("acctSignOut"'), js.indexOf('on("acctSave"'));
+  t("signing out rebuilds the sign-in button", /loadGoogle\(accountsAvailable\)/.test(out));
+  t("and re-renders what depends on the session",
+    /renderAccount\(\)/.test(out) && /refreshAdmin\(\)/.test(out) && /renderHome\(\)/.test(out));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

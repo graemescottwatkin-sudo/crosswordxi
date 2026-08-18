@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v35";
+  var BUILD = "v35a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1780,6 +1780,15 @@
     apiAuth("/api/auth/signout", {}).then(function () {
       account = null; isAdmin = false;
       renderAccount(); refreshAdmin();
+      /* The Google button has to be rebuilt, or the sheet shows a signed-out
+         account with no way back in until the page is reloaded. Google's
+         library renders the button once into an element and does not restore it
+         when the session it was rendered for ends. */
+      if (accountsAvailable) loadGoogle(accountsAvailable);
+      /* And the footer, the owner tools and anything else that reads the
+         session are re-rendered here rather than on the next refresh: signing
+         out should look like something that happened, not like nothing did. */
+      if (typeof renderHome === "function") renderHome();
     }).catch(function () {});
   });
   on("acctSave", "click", function () {
@@ -3265,6 +3274,25 @@
         /* The two can differ honestly: the verified clock runs from the moment
            the board was pulled and does not pause. Say so rather than letting
            it read as a fault. */
+        /* The breakdown comes from the server too, whether or not the total
+           changed. Updating the headline and leaving the penalty rows showing
+           the browser's working printed a sum that did not add up to the score
+           above it — 114 minus 26 minus 12 minus 18 is 58, under a heading
+           saying 60. A number nobody can check is worse than no number. */
+        var b = r.breakdown || {};
+        $("bTime").textContent = fmt(r.elapsedSeconds);
+        $("bClock").textContent = FCW.matchClockLabel(r.elapsedSeconds);
+        $("bTimePen").textContent = "\u2212" + (b.timePenalty || 0);
+        $("bChecks").textContent = footballPhrase("check", r.checks || 0, b.checkPenalty || 0);
+        $("bCheckPen").textContent = "\u2212" + (b.checkPenalty || 0);
+        $("bCheckAlls").textContent = footballPhrase("answer", r.checkAlls || 0, b.checkAllPenalty || 0);
+        $("bCheckAllPen").textContent = "\u2212" + (b.checkAllPenalty || 0);
+        $("bLetters").textContent = footballPhrase("draw", r.revealedLetters || 0, b.letterPenalty || 0);
+        $("bLetterPen").textContent = "\u2212" + (b.letterPenalty || 0);
+        $("bAnswers").textContent = footballPhrase("answer", r.revealedAnswers || 0, b.answerPenalty || 0);
+        $("bAnswerPen").textContent = "\u2212" + (b.answerPenalty || 0);
+        $("rFinal").textContent = r.score + " / " + FCW.SCORING.MAX_SCORE;
+
         if (r.score !== Number($("rScore").textContent)) {
           var table = FCW.buildTable(club, r.score, season);
           var pos = FCW.playerPosition(table);
