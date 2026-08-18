@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v36">
+<link rel="stylesheet" href="css/style.css?v=v37">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -176,6 +176,24 @@
 <!-- Shown only when a landscape phone cannot fit a legible board above the
      keyboard. Better to ask for a rotation than to draw a board with half of it
      hidden — measured at 292px of a 570px grid on an 844x390 screen. -->
+<!-- The challenge screen. Everything on it is social proof and nothing on it is
+     competitive: no score, no standings, no fastest time. A visible target lets
+     somebody price the round — two checks and finish inside twelve minutes —
+     and tells a casual player they have already lost before they start. -->
+<div id="challengeOverlay" class="overlay challenge-overlay">
+  <div class="overlay-card">
+    <div class="ch-who" id="chWho">Someone challenged you</div>
+    <h2 class="ch-board" id="chBoard">&nbsp;</h2>
+    <div class="ch-count" id="chCount"></div>
+    <label class="ch-label" for="chName">What&rsquo;s your name?</label>
+    <input id="chName" type="text" maxlength="20" autocomplete="nickname"
+           placeholder="Dave" aria-label="Your name for the table">
+    <button class="btn primary" id="chPlay">Play</button>
+    <div class="ch-note">The clock starts when the board opens. It does not pause.</div>
+    <div class="sheet-note" id="chMsg"></div>
+  </div>
+</div>
+
 <div id="rotatePrompt" class="rotate-prompt">
   <div class="rotate-card">
     <div class="rotate-icon" aria-hidden="true">&#8635;</div>
@@ -570,6 +588,15 @@
          the server cannot be reached the local figure is shown instead, marked
          as unverified rather than passed off. -->
     <div class="verify-note" id="rVerified"></div>
+
+    <!-- The standings, when this game was somebody's challenge. Shown here and
+         nowhere earlier: a target before play turns solving into arithmetic. -->
+    <div id="challengeTable" class="challenge-table" hidden></div>
+
+    <!-- The loop. Creating a challenge from the result just earned, without
+         replaying the board — which is what turns a single hop into a chain. -->
+    <button class="btn secondary" id="challengeBtn">Challenge someone</button>
+    <div class="sheet-note" id="challengeOut"></div>
     <button class="btn secondary" id="shareBtn">Share result</button>
     <!-- The platforms a football result actually gets posted to. On a phone the
          native sheet covers all of these and more, so these matter most on
@@ -600,7 +627,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v36</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v37</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -611,8 +638,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v36"></script>
-<script src="js/engine.js?v=v36"></script>
-<script src="js/game.js?v=v36"></script>
+<script src="js/seasons.js?v=v37"></script>
+<script src="js/engine.js?v=v37"></script>
+<script src="js/game.js?v=v37"></script>
 </body>
 </html>

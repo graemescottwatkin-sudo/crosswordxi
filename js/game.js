@@ -131,6 +131,21 @@
      is what the server said, not something rebuilt here — the name on the board
      and the name in the share message must not be able to drift apart. */
   var themeWanted = null;
+  /* The challenge being played, if any. Set before the board is built and read
+     again at Full Time, when the score has been verified and can join a table. */
+  var challenge = null;
+  var CH_NAME_KEY = "fcw.chName";      // remembered, so a returning player presses Play
+  var CH_KEY_KEY = "fcw.entrant";      // one entry each: an id this device keeps
+
+  function entrantKey() {
+    var k = null;
+    try { k = localStorage.getItem(CH_KEY_KEY); } catch (e) {}
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(k || "")) {
+      k = "d" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      try { localStorage.setItem(CH_KEY_KEY, k); } catch (e) {}
+    }
+    return k;
+  }
   var themeLabel = "";
   var dailyNo = FCW.dailyNumber();
   var cellEls = {};
@@ -139,7 +154,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v36";
+  var BUILD = "v37";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3278,6 +3293,154 @@
     verifyScore();
   }
 
+  /* Opening a challenge: who set it, which board, how many have tried — and a
+     name, before the board opens.
+     The name is asked for first on the owner's decision, taken against my
+     advice. The argument that won: a name typed before playing is a commitment,
+     people finish what they have put something into, and it makes "six have
+     taken this" a real number rather than an estimate. */
+  function openChallenge(id) {
+    $("homeOverlay").classList.remove("show");
+    api("/api/challenge?id=" + encodeURIComponent(id))
+      .then(function (c) {
+        challenge = { id: c.id, theme: c.themeId, no: c.boardNo, creator: c.creatorName };
+        $("chWho").textContent = c.creatorName + " challenged you";
+        $("chBoard").textContent = themeNameFor(c.themeId) + " #" + c.boardNo;
+        $("chCount").textContent = c.started
+          ? c.started + (c.started === 1 ? " person has" : " people have") + " taken this. " +
+            c.finished + " reached Full Time."
+          : "Nobody has played this yet.";
+        var saved = "";
+        try { saved = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {}
+        if (account && account.name) { saved = account.name; $("chName").disabled = true; }
+        $("chName").value = saved;
+        $("challengeOverlay").classList.add("show");
+        if (!saved) setTimeout(function () { $("chName").focus(); }, 60);
+      })
+      .catch(function () {
+        toast("That challenge could not be found", "The link may be wrong.", "loss");
+        showHome();
+      });
+  }
+
+  function submitChallengeEntry() {
+    apiAuth("/api/challenge/entry", {
+      id: challenge.id, playId: playId,
+      name: challenge.name || "", entrantKey: entrantKey(),
+    }).then(function () { showChallengeTable(); })
+      .catch(function () { showChallengeTable(); });   // the table is worth showing regardless
+  }
+
+  /* The standings, at Full Time and nowhere earlier. Time and help beside every
+     score: a 114 in thirty-eight seconds with no help is self-evidently what it
+     is, and among people who know each other that deters more than any
+     validation could. */
+  function showChallengeTable() {
+    var box = $("challengeTable");
+    if (!box || !challenge) return;
+    api("/api/challenge/table?id=" + encodeURIComponent(challenge.id))
+      .then(function (d) {
+        var mine = (challenge.name || "").toLowerCase();
+        var rows = (d.entries || []).map(function (e) {
+          var help = [];
+          if (e.checks) help.push(e.checks + (e.checks === 1 ? " check" : " checks"));
+          if (e.reveals) help.push(e.reveals + (e.reveals === 1 ? " reveal" : " reveals"));
+          var you = e.playId === playId ||
+            (!!mine && e.name.toLowerCase() === mine);
+          return '<tr' + (you ? ' class="you"' : "") + '>' +
+            '<td class="ct-pos">' + e.position + "</td>" +
+            "<td>" + escapeHtml(e.name) + "</td>" +
+            '<td class="ct-help">' + fmt(e.elapsedSeconds) +
+            (help.length ? " \u00B7 " + help.join(", ") : " \u00B7 no help") + "</td>" +
+            '<td class="ct-score">' + e.score + "</td></tr>";
+        }).join("");
+        box.innerHTML = "<h3>" + escapeHtml(d.creatorName) + "\u2019s challenge \u00B7 " +
+          d.started + " played</h3><table><tbody>" + rows + "</tbody></table>";
+        box.hidden = false;
+      })
+      .catch(function () {});
+  }
+
+  /* The loop: a new challenge from the result just earned, without replaying.
+     Chains rather than single hops are the point — challenge, play, challenge
+     again — so this is the strongest thing to offer at Full Time. */
+  on("challengeBtn", "click", function () {
+    var out = $("challengeOut");
+    if (verifiedScore === null) {
+      out.textContent = "A challenge needs a verified score. Check your connection and finish again.";
+      return;
+    }
+    var name = account && account.name ? account.name : "";
+    if (!name) {
+      try { name = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {}
+      name = (window.prompt("What name should the challenge go out under?", name) || "").trim();
+      if (name.length < 2) { out.textContent = "A name of at least two characters, please."; return; }
+      try { localStorage.setItem(CH_NAME_KEY, name); } catch (e) {}
+    }
+    out.textContent = "Creating\u2026";
+    apiAuth("/api/challenge", {
+      playId: playId, name: name, entrantKey: entrantKey(),
+      /* Asked for by name, so a board can go to one group of friends and then
+         to another without replaying it. A double-tap still returns the link
+         that already exists. */
+      another: challengeMade ? 1 : 0,
+    }).then(function (r) {
+      challengeMade = true;
+      var url = SHARE_URL + "/?c=" + r.id;
+      out.textContent = url;
+      try {
+        navigator.clipboard.writeText(url);
+        toast("Challenge link copied", "Send it to whoever you want to beat.", "win");
+      } catch (e) {}
+      $("challengeBtn").textContent = "Challenge another group";
+    }).catch(function (err) { out.textContent = String(err.message || err); });
+  });
+  var challengeMade = false;
+
+  function themeNameFor(id) {
+    return String(id || "").replace(/-/g, " ")
+      .replace(/\b[a-z]/g, function (ch) { return ch.toUpperCase(); });
+  }
+
+  on("chPlay", "click", function () {
+    if (!challenge) return;
+    var name = ($("chName").value || "").trim();
+    if (!account && name.length < 2) {
+      $("chMsg").textContent = "Please enter a name of at least two characters.";
+      $("chName").focus();
+      return;
+    }
+    $("chMsg").textContent = "";
+    try { if (name) localStorage.setItem(CH_NAME_KEY, name); } catch (e) {}
+    apiAuth("/api/challenge/start",
+            { id: challenge.id, name: name, entrantKey: entrantKey() })
+      .then(function (r) {
+        challenge.name = r.name;
+        /* Already scored on this challenge: the board still opens, because
+           refusing to let somebody play is worse than a second score that does
+           not count. It simply will not replace the entry they have. */
+        challenge.alreadyScored = !!r.alreadyScored;
+        if (r.alreadyScored) {
+          toast("You have already set a score here",
+                "Play again if you like — the table keeps your first result.", "info");
+        }
+        startChallengeBoard();
+      })
+      .catch(function (err) { $("chMsg").textContent = String(err.message || err); });
+  });
+
+  function startChallengeBoard() {
+    $("challengeOverlay").classList.remove("show");
+    mode = "theme";
+    themeWanted = { theme: challenge.theme, no: challenge.no, id: null };
+    buildPuzzle(null).then(function () {
+      if (puzzle) return;
+      challenge = null; themeWanted = null; mode = "practice";
+      toast("That board is not available", "It may not have been released yet.", "loss");
+      showHome();
+    });
+  }
+
   /* The server's score, which is the real one.
      Everything it uses is beyond the browser's reach: the answers to mark the
      grid, its own count of the help it served, and the clock it started when
@@ -3334,6 +3497,9 @@
            answered, so they stored the browser's figure — and the board badge
            then showed 81 for a game whose Full Time said 82. One game, one
            score, wherever it appears. */
+        /* A verified score is the only kind that may join a challenge table.
+           Submitted here rather than at Full Time for exactly that reason. */
+        if (challenge) submitChallengeEntry();
         if (mode === "theme") recordThemed(lastPosition, r.score);
         else if (mode === "daily") recordDaily(lastPosition, r.score, r.breakdown || {});
 
@@ -3830,6 +3996,13 @@
     /* A themed link names the board in words: /?t=man-united-3. Handled before
        the practice link because the two cannot both be present and this one is
        the readable form somebody was given deliberately. */
+    /* A challenge link. Handled before the themed link because a challenge names
+       its own board, and the two must not both act. */
+    var chLink = /[?&]c=([a-z0-9]{6,16})/.exec(location.search || "");
+    if (chLink) {
+      openChallenge(chLink[1]);
+      return;
+    }
     var themed = /[?&]t=([a-z0-9-]+)-(\d+)/.exec(location.search || "");
     if (themed) {
       mode = "theme";

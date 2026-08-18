@@ -92,11 +92,18 @@ export async function onRequestPost({ request, env }) {
   const name = user && user.name ? cleanName(user.name) : cleanName(body.name);
   if (!name) return bad("Choose a name of at least two characters.", 400);
 
-  /* One challenge per verified play, so pressing the button twice does not
-     produce two links to the same result. */
-  const already = await env.DB.prepare(
-    "SELECT id FROM challenges WHERE play_id = ?").bind(play.play_id).first();
-  if (already) return json({ id: already.id, already: true });
+  /* Pressing the button twice returns the link you already have, so a
+     double-tap cannot produce two tables for one game. A second table is a
+     different intention — the same board sent to a different group of people —
+     and has to be asked for by name. Making somebody replay a board to send it
+     to their family after sending it to their five-a-side lot would be friction
+     for nothing: the result would be identical either way. */
+  if (!body.another) {
+    const already = await env.DB.prepare(
+      "SELECT id FROM challenges WHERE play_id = ? ORDER BY created_at LIMIT 1")
+      .bind(play.play_id).first();
+    if (already) return json({ id: already.id, already: true });
+  }
 
   const id = shortId();
   await env.DB.prepare(

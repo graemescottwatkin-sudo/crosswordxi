@@ -54,6 +54,22 @@ t("the entrant is told whether they have already scored",
 t("uniqueness is per entrant per challenge",
   /UNIQUE \(challenge_id, entrant_key\)/.test(src.migration));
 
+console.log("\nOne board, more than one group of friends");
+t("pressing the button twice returns the link you already have",
+  /if \(!body\.another\)/.test(src.challenge) && /already: true/.test(src.challenge));
+t("but a second table can be asked for by name", (() => {
+  /* Sending a board to your five-a-side lot and then to your family is the
+     ordinary case. Requiring a replay first would be friction for nothing —
+     the result would be identical either way. */
+  const b = bare(src.challenge);
+  return /body\.another/.test(b);
+})());
+t("and the creator's result seeds every table they make", (() => {
+  const b = bare(src.challenge);
+  return /INSERT OR IGNORE INTO challenge_entries/.test(b) &&
+    b.indexOf("INSERT OR IGNORE INTO challenge_entries") > b.indexOf("INSERT INTO challenges");
+})());
+
 console.log("\nA result cannot be posted to the wrong board");
 t("the play's board must match the challenge's",
   /String\(play\.theme_key\) !== c\.theme_id \+ "-" \+ c\.board_no/.test(src.entry));
@@ -68,6 +84,51 @@ t("a signed-in player's name comes from the account",
   /user && user\.name \? cleanName\(user\.name\)/.test(src.challenge));
 t("and an entry can be hidden without being deleted",
   /hidden       INTEGER DEFAULT 0/.test(src.migration) && /hidden = 0/.test(src.table));
+
+console.log("\nThe interface keeps the same promise as the endpoints");
+{
+  const js = fs.readFileSync("js/game.js", "utf8");
+  const html = fs.readFileSync("index.html", "utf8");
+
+  t("a challenge link opens the challenge screen, not the board", (() => {
+    const boot = js.slice(js.indexOf("var chLink"), js.indexOf("var themed ="));
+    return /openChallenge\(chLink\[1\]\)/.test(boot);
+  })());
+  t("the screen shows who and which board, and no score", (() => {
+    /* To the end of the function, not to the next name that happens to sort
+       after it — new functions were inserted between the two and the window
+       quietly grew to include them. */
+    const start = js.indexOf("function openChallenge");
+    const fn = js.slice(start, js.indexOf("function submitChallengeEntry", start));
+    const bare = fn.replace(/\/\*[\s\S]*?\*\//g, "");
+    return /challenged you/.test(bare) && /reached Full Time/.test(bare) &&
+      !/score/i.test(bare);
+  })());
+  t("a name is required before the board opens",
+    /name\.length < 2/.test(js) && /challenge\/start/.test(js));
+  t("and is remembered, so a returning player presses Play",
+    /localStorage\.setItem\(CH_NAME_KEY/.test(js));
+  t("a signed-in player does not type one", /account && account\.name/.test(js));
+
+  t("the standings appear only after Full Time", (() => {
+    /* showChallengeTable is called from the verification path, which runs when
+       the puzzle is finished — never from the challenge screen. */
+    const start = js.indexOf("function openChallenge");
+    const open = js.slice(start, js.indexOf("function submitChallengeEntry", start));
+    const play = js.slice(js.indexOf('on("chPlay"'), js.indexOf("function startChallengeBoard"));
+    return !/showChallengeTable/.test(open) && !/showChallengeTable/.test(play) &&
+      /if \(challenge\) submitChallengeEntry\(\)/.test(js);
+  })());
+  t("and show time and help beside every score",
+    /ct-help/.test(js) && /no help/.test(js));
+
+  t("only a verified score may be offered to a table",
+    /if \(verifiedScore === null\)/.test(js));
+  t("the follow-on creates a challenge without replaying the board",
+    /challengeBtn/.test(html) && /apiAuth\("\/api\/challenge", \{/.test(js));
+  t("a second group can be challenged on the same board",
+    /another: challengeMade \? 1 : 0/.test(js));
+}
 
 console.log("\nThe chain can be followed");
 t("a play records the challenge it came from",

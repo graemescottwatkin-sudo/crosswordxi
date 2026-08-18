@@ -1564,6 +1564,44 @@ body.rotate-needed .rotate-prompt{
 }
 .theme-mine .mine-drop:hover{color:var(--wrong)}
 /* Whether the score on screen is the server's or this device's guess at it. */
+/* The challenge screen: one field, and nothing else competing with it. */
+.challenge-overlay .overlay-card{max-width:440px;text-align:center}
+.ch-who{
+  font-family:var(--disp);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-faint);margin-bottom:6px;
+}
+.ch-board{
+  font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.02em;
+  color:var(--pitch-deep);margin:0 0 8px;
+}
+.ch-count{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+.ch-label{
+  display:block;font-family:var(--disp);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;
+}
+#chName{
+  width:100%;min-height:52px;font-size:17px;text-align:center;
+  border:1px solid var(--line);border-radius:9px;background:var(--card);
+  color:var(--ink);margin-bottom:12px;box-sizing:border-box;
+}
+#chName:focus{border-color:var(--pitch);outline:none}
+.challenge-overlay .btn.primary{width:100%;min-height:52px;font-size:16px}
+.ch-note{font-size:12px;color:var(--ink-faint);margin-top:12px}
+
+/* The standings, after Full Time. Time and help beside every score, because a
+   114 in thirty-eight seconds with no help is self-evidently what it is. */
+.challenge-table{margin:12px 0}
+.challenge-table table{width:100%;border-collapse:collapse;font-size:13px}
+.challenge-table td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.challenge-table tr.you{background:var(--pitch-tint);font-weight:700}
+.challenge-table .ct-pos{width:28px;color:var(--ink-faint)}
+.challenge-table .ct-score{text-align:right;font-variant-numeric:tabular-nums}
+.challenge-table .ct-help{color:var(--ink-faint);font-size:11.5px;white-space:nowrap}
+.challenge-table h3{
+  font-family:var(--disp);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 6px;
+}
+
 .verify-note{
   font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.1em;
   text-transform:uppercase;color:var(--ink-faint);margin:6px 0 10px;
