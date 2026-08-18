@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v25";
+  var BUILD = "v28";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -528,6 +528,8 @@
         excludeIds: builtExcludeIds,
         helpActions: helpActions,
         club: club, clubMode: clubMode,
+        // The reference for this sitting, so a refresh continues it.
+        playId: playId, playNo: playNo,
         // Which themed board this is, so it can be resumed rather than restarted.
         themeKey: themeWanted && themeWanted.theme
           ? themeWanted.theme + "-" + themeWanted.no : null
@@ -742,6 +744,10 @@
       checksUsed = restore.checks || 0;
       checkAllsUsed = restore.checkAlls || 0;
       elapsed = restore.elapsed || 0;
+      /* The sitting continues: same reference, same row. Without this a
+         refresh mid-puzzle became a second attempt with a second number. */
+      playId = restore.playId || null;
+      playNo = restore.playNo || null;
       pauseCount = restore.pauseCount || 0;
       pausedMs = restore.pausedMs || 0;
       helpActions = restore.helpActions || [];
@@ -1034,7 +1040,7 @@
     /* Counted from kick off, not from the board being built: a puzzle nobody
        started is not an attempt, and counting it would make the completion
        rate meaningless. */
-    playStart();
+    playStart(true);   // keep the reference if the game was restored
     resetViewScroll();
     /* Focusing a cell and the keyboard appearing both scroll the page after
        this point, so one reset at the top of the function is not enough — the
@@ -1280,7 +1286,30 @@
       /* The panel always has a box now: it stopped being display:contents when
          the rail went, so there is no layout in which observing it is unsafe. */
       if (panel) {
-        fitObserver = new ResizeObserver(function () { fitCells(); });
+        /* Guarded twice, because fitCells changes the size of what is being
+           observed: it sets --cell, the grid gets taller, the observer fires,
+           and the browser reports "ResizeObserver loop completed with
+           undelivered notifications" — which is what rotating a tablet did.
+           Only the panel's *width* is an input to the fit; height changes are
+           this function's own output and must not feed back into it. And the
+           callback is deferred to the next frame, which is what turns a loop
+           into a second pass. */
+        var lastPanelW = 0, queued = false;
+        fitObserver = new ResizeObserver(function (entries) {
+          var w = Math.round((entries[0] && entries[0].contentRect.width) || 0);
+          if (w === lastPanelW) return;
+          lastPanelW = w;
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(function () {
+            queued = false;
+            fitCells();
+            scaleClue();
+            /* The boxes are laid out per clue, so a width change has to redraw
+               them as well as the board. */
+            if (puzzle && cur.entry != null) renderBank(puzzle.entries[cur.entry]);
+          });
+        });
         fitObserver.observe(panel);
       }
     }
@@ -1790,7 +1819,66 @@
      Two events per attempt. No cookie, no account, nothing derived from the
      person: the play id is random, made when the puzzle starts and forgotten
      when it ends. It pairs a start with its finish and identifies nobody. */
-  var playId = null, playSent = false;
+  /* The reference for this attempt. Kept with the saved game rather than in a
+     variable: it lived only in memory, so a refresh threw it away and started a
+     fresh row — one person reloading twice counted as three players, which is
+     most of why the practice figures ran ahead of reality.
+     Six digits. A board reaching 999,999 attempts would be a very good problem,
+     and a shorter number reads as a score rather than a reference. */
+  /* ---------- Where this visit came from ----------
+     Read once on arrival, kept for the session, attached to every attempt made
+     during it. sessionStorage rather than localStorage on purpose: this dies
+     with the tab, so it is not an identifier that follows anyone between days
+     or between games. That version needs consent and is a separate decision.
+
+     Values are normalised to lowercase slugs before they are stored, because
+     the one thing that cannot be repaired later is a report split across
+     Reddit, reddit.com, r/reddit and reddit-social. */
+  var ATTR_KEY = "fcw.attr";
+  var ATTR_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+
+  function slugify(v) {
+    return String(v || "").toLowerCase()
+      .replace(/^https?:\/\//, "")        // reddit.com/r/gunners -> reddit.com...
+      .replace(/^www\./, "")
+      .replace(/\.(com|co\.uk|org|net|io)\b.*$/, "")   // ...-> reddit
+      .replace(/^r\//, "")                // r/gunners -> gunners
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40);
+  }
+
+  function readAttribution() {
+    var have = null;
+    try { have = JSON.parse(sessionStorage.getItem(ATTR_KEY)); } catch (e) {}
+    var q = new URLSearchParams(location.search || "");
+    var fresh = {}, any = false;
+    ATTR_FIELDS.forEach(function (f) {
+      var v = slugify(q.get(f));
+      if (v) { fresh[f] = v; any = true; }
+    });
+    /* A link with campaign tags starts a new attribution; without them, keep
+       whatever this session already had. So moving from the landing page into
+       a puzzle does not lose where the visit came from. */
+    if (!any) return have || null;
+    /* The referring page, only where the browser offers it and only its host —
+       the full URL can carry a search query or a path that identifies a person,
+       and the host is what the report is grouped by anyway. */
+    try {
+      var ref = document.referrer || "";
+      if (ref) fresh.referrer = slugify(new URL(ref).hostname);
+    } catch (e) {}
+    try { sessionStorage.setItem(ATTR_KEY, JSON.stringify(fresh)); } catch (e) {}
+    return fresh;
+  }
+
+  var attribution = readAttribution();
+
+  var playId = null, playSent = false, playNo = null;
+  var PLAY_DIGITS = 6;
+  function playRef() {
+    return playNo ? String(playNo).padStart(PLAY_DIGITS, "0") : null;
+  }
 
   function newPlayId() {
     try {
@@ -1799,9 +1887,13 @@
     return String(Date.now()) + "-" + Math.random().toString(36).slice(2, 12);
   }
 
-  function playStart() {
+  function playStart(keep) {
     if (!puzzle) return;
-    playId = newPlayId();
+    /* keep: a game restored from the save brings its own reference back, so
+       the sitting continues rather than becoming a new one. The server hands
+       the same number back for a play id it has already seen, so a resend is
+       safe either way. */
+    if (!keep || !playId) { playId = newPlayId(); playNo = null; }
     playSent = false;
     var phase = mode === "daily" ? FCW.dailyPhase(dailyNo).phase : null;
     fetch("/api/play", {
@@ -1812,8 +1904,15 @@
            person: the play id is random per attempt, as it was. */
         themeKey: mode === "theme" && themeWanted && themeWanted.theme
           ? themeWanted.theme + "-" + themeWanted.no : null,
-        total: puzzle.entries.length }),
-    }).catch(function () {});          // never let counting break the game
+        total: puzzle.entries.length,
+        /* Kept separate from the board on purpose: somebody playing the Arsenal
+           board may have arrived from anywhere, including another page here. */
+        attribution: attribution }),
+    }).then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.playNo) { playNo = d.playNo; saveSoon(); }
+      })
+      .catch(function () {});          // never let counting break the game
   }
 
   function playEnd(done) {
@@ -1899,6 +1998,7 @@
   }
 
   on("adminToggle", "click", function () {
+    fillLinkBoards();
     $("adminSheet").classList.add("show");
     adminMsg("");
     renderAdmin();
@@ -2053,6 +2153,61 @@
   /* What people have asked for, most-wanted first, and a way to clear it down.
      A tally of everything ever asked answers "what has been asked"; what is
      worth reading is "what should I write next". */
+  /* One row per attempt, rather than the per-board summary the panel shows. */
+  /* Which places sent people who actually played. Deliberately separate from
+     the board funnel: those answer different questions. */
+  on("adminSources", "click", function () {
+    apiAuth("/api/admin/sources").then(function (d) {
+      var rows = d.sources || [];
+      if (!rows.length) { adminMsg("No attributed visits yet."); return; }
+      adminMsg(rows.map(function (r) {
+        var who = r.source + (r.community ? " / " + r.community : "") +
+          (r.campaign ? " (" + r.campaign + ")" : "");
+        return who + ": " + r.started + " started, " + r.finished + " finished (" +
+          r.completionPct + "%), " + r.solvedPct + "% of answers, ~" +
+          r.avgMinutes + " min";
+      }).join("\n"));
+    }).catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* The campaign link builder. Every value is normalised on the way out, so a
+     link cannot introduce a spelling the reports then split on. */
+  on("linkMake", "click", function () {
+    var board = $("linkBoard").value;
+    var q = new URLSearchParams();
+    q.set("utm_source", slugify($("linkSource").value));
+    q.set("utm_medium", "social");
+    q.set("utm_campaign", slugify($("linkCampaign").value));
+    var content = slugify($("linkContent").value);
+    if (content) q.set("utm_content", content);
+    var url = SHARE_URL + "/" + (board ? "?t=" + board + "&" : "?") + q.toString();
+    $("linkOut").textContent = url;
+    try {
+      navigator.clipboard.writeText(url);
+      adminMsg("Link built and copied.");
+    } catch (e) { adminMsg("Link built — copy it from below."); }
+  });
+
+  on("adminPlaysCsv", "click", function () {
+    window.location.href = "/api/admin/plays.csv";
+  });
+
+  /* The boards a link can point at: whatever is released, plus the daily. */
+  function fillLinkBoards() {
+    var sel = $("linkBoard");
+    if (!sel || sel.options.length) return;
+    loadThemes().then(function (d) {
+      var opts = ['<option value="">Today\u2019s daily</option>'];
+      (d.themes || []).forEach(function (t) {
+        t.boards.forEach(function (b) {
+          opts.push('<option value="' + escapeHtml(t.id + "-" + b.no) + '">' +
+            escapeHtml(t.name) + " #" + b.no + "</option>");
+        });
+      });
+      sel.innerHTML = opts.join("");
+    }).catch(function () {});
+  }
+
   on("adminThemeReqs", "click", function () {
     apiAuth("/api/admin/theme-requests").then(function (d) {
       var rows = d.requests || [];

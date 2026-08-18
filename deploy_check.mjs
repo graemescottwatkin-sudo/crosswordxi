@@ -77,6 +77,11 @@ t("the stylesheet's braces and comments balance", (() => {
          (bare.match(/\}/g) || []).length + " close";
 })());
 
+/* wrangler pages dev leaves a .wrangler scratch directory holding a compiled
+   bundle of every Function. It is not secret, but it is a second copy of the
+   server code shipped as a static asset, and it reached a package once. */
+t("no local build scratch in the package", !has(".wrangler"));
+
 t("no absolute or machine-specific paths",
   !/localhost/.test(html) && !/file:\/\//.test(html) && !/[A-Za-z]:\\/.test(html) &&
   !/(src|href)="\//.test(html));

@@ -160,5 +160,100 @@ console.log("\nOwner attempts are siloed");
     /ALTER TABLE plays ADD COLUMN by_owner INTEGER DEFAULT 0/.test(mig));
 }
 
+/* A refresh continues the sitting rather than starting a new one. The play id
+   lived in a variable, so reloading threw it away and opened a second row —
+   one person reloading twice counted as three players, which is most of why the
+   practice figures ran ahead of reality. */
+console.log("\nOne sitting, one row");
+{
+  const client = fs.readFileSync("js/game.js", "utf8");
+  t("the reference is kept with the saved game, not in a variable",
+    /playId: playId, playNo: playNo,/.test(client));
+  t("and a restored game brings it back",
+    /playId = restore\.playId \|\| null;/.test(client) &&
+    /playNo = restore\.playNo \|\| null;/.test(client));
+  t("so a restore does not issue a new one",
+    /playStart\(true\)/.test(client) &&
+    /if \(!keep \|\| !playId\) \{ playId = newPlayId\(\); playNo = null; \}/.test(client));
+  t("the reference is six digits, zero padded",
+    /PLAY_DIGITS = 6/.test(client) && /padStart\(PLAY_DIGITS, "0"\)/.test(client));
+
+  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  t("numbers run per board, so each board starts at one", (() => {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, "");
+    return /mode='daily' AND daily_no = \?/.test(code) &&
+      /mode='theme' AND theme_key = \?/.test(code);
+  })());
+  t("a play id the server has seen gets the same number back, not a new one",
+    /SELECT play_no FROM plays WHERE play_id = \?/.test(src));
+
+  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  t("attempts can be exported one row each",
+    /route === "plays.csv"/.test(admin) && /Reference/.test(admin));
+  t("and the export is behind the admin gate like everything else", (() => {
+    /* requireAdmin runs before the route table, so this is inherited rather
+       than repeated — worth asserting that the gate is still first. */
+    return admin.indexOf("requireAdmin") < admin.indexOf('route === "plays.csv"');
+  })());
+}
+
+/* Where a visit came from, kept for the session and no longer. The value of
+   this is entirely in the reports grouping cleanly, so normalisation is the
+   part that matters — a split across Reddit, reddit.com and r/reddit cannot be
+   repaired afterwards. */
+console.log("\nAttribution");
+{
+  const client = fs.readFileSync("js/game.js", "utf8");
+
+  t("attribution is held for the session, not persisted", (() => {
+    /* sessionStorage dies with the tab. localStorage here would be a tracking
+       identifier and a consent decision, which is deliberately not being taken
+       yet. */
+    const code = client.slice(client.indexOf("var ATTR_KEY"), client.indexOf("var playId"));
+    return /sessionStorage\.setItem\(ATTR_KEY/.test(code) &&
+      !/localStorage/.test(code);
+  })());
+
+  t("all six fields are captured", (() => {
+    const fields = /ATTR_FIELDS = \[([^\]]+)\]/.exec(client);
+    return fields && ["utm_source", "utm_medium", "utm_campaign",
+                      "utm_content", "utm_term"].every((f) => fields[1].includes(f)) &&
+      /fresh\.referrer = slugify/.test(client);
+  })());
+
+  t("only the referring host is kept, not the whole URL", (() => {
+    /* A full referrer can carry a search query or a path that identifies a
+       person; the host is what the report groups by anyway. */
+    return /new URL\(ref\)\.hostname/.test(client);
+  })());
+
+  t("a link without campaign tags does not wipe what the session had",
+    /if \(!any\) return have \|\| null;/.test(client));
+
+  t("values are normalised to slugs before they are stored", (() => {
+    const fn = client.slice(client.indexOf("function slugify"), client.indexOf("function readAttribution"));
+    return /toLowerCase\(\)/.test(fn) && /\^r\\\//.test(fn) &&
+      /\[\^a-z0-9\]\+/.test(fn);
+  })());
+
+  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  t("the server rejects a value that is not already a slug rather than repairing it",
+    /\/\^\[a-z0-9\]\[a-z0-9-\]\*\$\/\.test\(x\) \? x : null/.test(src));
+  t("and records which kind of attribution the row carries, for when first-touch arrives",
+    /"session"\)\.run\(\)/.test(src));
+
+  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  t("the source report excludes the owner's own testing",
+    /FROM plays\s+WHERE by_owner = 0/.test(admin));
+  t("and reports completion rate, not just clicks",
+    /completionPct/.test(admin));
+  t("the attempts CSV carries the source columns",
+    /"Source", "Medium", "Campaign", "Content", "Term", "Referrer"/.test(admin));
+
+  const mig = fs.readFileSync("data/migrations/010-attribution.sql", "utf8");
+  t("the columns are added by a migration",
+    (mig.match(/ALTER TABLE plays ADD COLUMN/g) || []).length === 7);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

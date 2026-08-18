@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v25">
+<link rel="stylesheet" href="css/style.css?v=v28">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -100,6 +100,37 @@
 
     <div class="admin-group">
       <button class="btn outline" id="adminPlays">How far people get</button>
+      <button class="btn outline" id="adminSources">Where players came from</button>
+      <button class="btn outline" id="adminPlaysCsv">Attempts as CSV</button>
+
+      <!-- The campaign link builder. Normalising here is the point: a report
+           split across Reddit, reddit.com and r/reddit cannot be repaired
+           afterwards, and hand-typed links are where that starts. -->
+      <div class="admin-links">
+        <span class="tb-label">Campaign link</span>
+        <select id="linkBoard" title="Which board the link opens"></select>
+        <select id="linkSource" title="Where the link is being posted">
+          <option value="reddit">Reddit</option>
+          <option value="x">X</option>
+          <option value="facebook">Facebook</option>
+          <option value="tiktok">TikTok</option>
+          <option value="instagram">Instagram</option>
+          <option value="youtube">YouTube</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="linkCampaign" title="What the link is for">
+          <option value="launch">Launch</option>
+          <option value="daily">Daily</option>
+          <option value="matchday">Matchday</option>
+          <option value="club-campaign">Club campaign</option>
+          <option value="special-event">Special event</option>
+        </select>
+        <input id="linkContent" type="text" placeholder="Community, e.g. gunners"
+               maxlength="40" title="The specific community or post">
+        <button class="btn outline" id="linkMake">Build</button>
+      </div>
+      <div class="sheet-note" id="linkOut"></div>
       <button class="btn outline" id="adminThemeReqs">Theme requests</button>
       <button class="btn outline" id="adminReports">Show flagged clues</button>
       <button class="btn outline" id="adminExport">Download as CSV</button>
@@ -179,6 +210,15 @@
          is sized for words alone and the boxes for boxes alone. -->
     <div class="bank-strip">
       <div class="bank" id="letterBank"></div>
+      <!-- The clock and the count, on the right of the same strip. The boxes
+           only ever fill part of its width — eleven letters at most, usually
+           fewer — and the two readings are the things glanced at while solving,
+           so they belong beside the thing being solved rather than in a row of
+           controls below the board. -->
+      <div class="tb-readouts" aria-label="Match state">
+        <div class="match-clock" id="matchClock" aria-label="Match clock">0'<small id="elapsedLine">0:00</small></div>
+        <div class="live-chip" id="progressChip" title="Answers solved">0 / 0</div>
+      </div>
     </div>
 
     <div class="grid-wrap">
@@ -226,14 +266,6 @@
          consistently — the clock used to wear the same card face as the buttons
          beside it. -->
     <div class="tb-controls">
-      <!-- The clock and the count lead the row rather than sitting in a panel
-           of their own. Two short readings did not need a full-width box, and
-           it was the emptiest block on the page. Readouts keep no border and no
-           background, so the row still says what is pressable. -->
-      <div class="tb-readouts">
-        <div class="match-clock" id="matchClock" aria-label="Match clock">0'<small id="elapsedLine">0:00</small></div>
-        <div class="live-chip" id="progressChip" title="Answers solved">0 / 0</div>
-      </div>
       <button class="btn outline icon-btn" id="pauseBtn" title="Stop the clock and hide the puzzle" aria-label="Pause">
         <svg class="ic ic-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="9" y="2.5" width="3.5" height="11" rx="1"/></svg>
         <svg class="ic ic-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8a.8.8 0 0 0 1.22.68l8.4-5.4a.8.8 0 0 0 0-1.36l-8.4-5.4A.8.8 0 0 0 4.5 2.6Z"/></svg>
@@ -558,7 +590,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v25</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v28</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -569,8 +601,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v25"></script>
-<script src="js/engine.js?v=v25"></script>
-<script src="js/game.js?v=v25"></script>
+<script src="js/seasons.js?v=v28"></script>
+<script src="js/engine.js?v=v28"></script>
+<script src="js/game.js?v=v28"></script>
 </body>
 </html>

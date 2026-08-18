@@ -59,14 +59,51 @@ export async function onRequestPost({ request, env }) {
        refresh mid-puzzle must not become three plays. */
     const seen = await env.DB.prepare("SELECT id FROM plays WHERE play_id = ?")
       .bind(playId).first();
-    if (seen) return json({ ok: true, already: true });
+    /* Already numbered: hand the same number back rather than issuing another.
+       This is what makes a refresh keep its reference. */
+    if (seen) {
+      const had = await env.DB.prepare("SELECT play_no FROM plays WHERE play_id = ?")
+        .bind(playId).first();
+      return json({ ok: true, already: true, playNo: (had && had.play_no) || null });
+    }
+    /* The next number for this board. Counted rather than kept in a counter
+       table: one query, no second thing to keep in step, and at this scale a
+       simultaneous pair getting the same number is both unlikely and harmless —
+       the reference is for reading, not for joining on. */
+    const scope = mode === "daily"
+      ? await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='daily' AND daily_no = ?")
+          .bind(body.dailyNo ? int(body.dailyNo, 100000) : null).first()
+      : mode === "theme"
+        ? await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='theme' AND theme_key = ?")
+            .bind(themeKey).first()
+        : await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='practice'").first();
+    const playNo = ((scope && scope.n) || 0) + 1;
+
+    /* Where this visit came from. Validated to the same slug shape the client
+       normalises to, and rejected rather than repaired if it does not match:
+       a value that had to be cleaned up is a value that will not group with
+       the others, which is the whole failure this is trying to avoid. */
+    const attr = body.attribution && typeof body.attribution === "object"
+      ? body.attribution : {};
+    const slug = (v) => {
+      const x = String(v == null ? "" : v).slice(0, 40);
+      return /^[a-z0-9][a-z0-9-]*$/.test(x) ? x : null;
+    };
+
     await env.DB.prepare(
-      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key, by_owner)
-       VALUES (?,?,?,?,?,?,?,?)`)
+      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key,
+                          by_owner, play_no,
+                          utm_source, utm_medium, utm_campaign, utm_content,
+                          utm_term, referrer, attribution_scope)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(newId(), playId, mode,
             body.dailyNo ? int(body.dailyNo, 100000) : null,
             body.phase === "season" ? "season" : "preseason",
-            int(body.total, 50), themeKey, byOwner).run();
+            int(body.total, 50), themeKey, byOwner, playNo,
+            slug(attr.utm_source), slug(attr.utm_medium), slug(attr.utm_campaign),
+            slug(attr.utm_content), slug(attr.utm_term), slug(attr.referrer),
+            "session").run();
+    return json({ ok: true, playNo });
     return json({ ok: true });
   }
 

@@ -261,6 +261,25 @@ t("and that strip is only as tall as the boxes need",
 t("the sentence now has the whole clue card",
   /\.grid-panel > \.now-clue \.nc-clue\{flex:1 1 100%\}/.test(flatCss));
 
+/* The boxes are as wide as the answer needs and no wider, so the right of the
+   strip was empty on every clue. The clock and the count now sit there —
+   beside the thing being solved rather than in a row of controls below the
+   board. */
+t("the answer boxes and the readings share the strip, boxes first", (() => {
+  const html = fs.readFileSync("index.html", "utf8");
+  const strip = html.slice(html.indexOf('class="bank-strip"'),
+                           html.indexOf('class="grid-wrap"'));
+  return strip.indexOf('id="letterBank"') > -1 &&
+    strip.indexOf('id="matchClock"') > strip.indexOf('id="letterBank"') &&
+    strip.indexOf('id="progressChip"') > -1;
+})());
+t("and they sit at opposite ends of it",
+  /\.bank-strip\{[^}]*justify-content:space-between/.test(flatCss));
+/* Fixed width on the readings, or the boxes shuffle sideways every time the
+   clock passes a digit. */
+t("the readings do not push the boxes about as they change",
+  /\.bank-strip \.tb-readouts\{[^}]*flex:0 0 auto/.test(flatCss));
+
 console.log("\nThe letter slots");
 const engine = fs.readFileSync("js/engine.js", "utf8");
 const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);

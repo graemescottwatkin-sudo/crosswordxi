@@ -68,8 +68,15 @@ const KEYS = ["fcw.v04.daily", "fcw.v04.practice", "fcw.mode", "fcw.results.v1",
 /* A daily part way through: three letters down and getting on for three
    minutes gone. The shape is whatever save() writes; only the fields the
    guards read have to be right. */
+/* Today's number, not a fixed one. Seeded with dailyNo: 2 this passed all day
+   and failed after midnight, because renderHome only shows a saved game as in
+   progress when it belongs to today — correctly. A fixture that expires is a
+   test that reports a fault in the code when the fault is in the fixture. */
+const DAILY_EPOCH = Date.UTC(2026, 7, 16);
+const TODAY_NO = Math.max(1, Math.floor((Date.now() - DAILY_EPOCH) / 86400000) + 1);
+
 const IN_PROGRESS = JSON.stringify({
-  mode: "daily", dailyNo: 2, seed: 1463034884,
+  mode: "daily", dailyNo: TODAY_NO, seed: 1463034884,
   letters: { "3,4": "B", "3,5": "U", "3,6": "R" },
   elapsed: 163, complete: false,
   revealedCells: [], revealAnswerCells: [], revealedEntries: [],

@@ -229,6 +229,73 @@ export async function onRequest({ request, env, params }) {
   /* ---- The same thing as a file ----
      Reading forty reports twelve at a time on a phone and retyping them into a
      spreadsheet is the kind of friction that means it does not get done. */
+  /* Every attempt, one row each — not the per-board summary the panel shows.
+     "Somebody started Bolton #2 and got 7 of 11" is a row here; the summary
+     can only say how many did. No identity in it, because there is none in the
+     table: the reference is per board, so 000001 on the daily and 000001 on a
+     themed board are not the same person. */
+  /* How each source performed. The board funnel answers "which puzzles get
+     played"; this answers "which places send people who play them" — and they
+     are deliberately different questions, because somebody on the Arsenal board
+     may have arrived from anywhere. */
+  if (route === "sources" && request.method === "GET") {
+    const rows = await env.DB.prepare(
+      `SELECT COALESCE(utm_source, '(direct)') AS source,
+              COALESCE(utm_campaign, '') AS campaign,
+              COALESCE(utm_content, '') AS community,
+              COUNT(*) AS started,
+              SUM(completed) AS finished,
+              SUM(solved) AS solved,
+              SUM(total) AS answers,
+              AVG(elapsed_secs) AS avg_secs
+         FROM plays
+        WHERE by_owner = 0
+        GROUP BY source, campaign, community
+        ORDER BY started DESC
+        LIMIT 200`).all();
+    return json({ sources: (rows.results || []).map((r) => ({
+      source: r.source, campaign: r.campaign, community: r.community,
+      started: r.started, finished: r.finished || 0,
+      /* The quality signal the whole exercise is for: a source sending twice as
+         many people who finish half as often is not the better source. */
+      completionPct: r.started ? Math.round((100 * (r.finished || 0)) / r.started) : 0,
+      solvedPct: r.answers ? Math.round((100 * r.solved) / r.answers) : 0,
+      avgMinutes: r.avg_secs ? Math.round(r.avg_secs / 60) : 0,
+    })) });
+  }
+
+  if (route === "plays.csv" && request.method === "GET") {
+    const rows = await env.DB.prepare(
+      `SELECT started_at, ended_at, mode, daily_no, theme_key, phase,
+              play_no, solved, total, completed, elapsed_secs, checks, reveals,
+              by_owner, utm_source, utm_medium, utm_campaign, utm_content,
+              utm_term, referrer
+         FROM plays ORDER BY started_at DESC LIMIT 20000`).all();
+    const esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    const head = ["Started", "Ended", "Mode", "Board", "Reference", "Solved",
+                  "Of", "Finished", "Seconds", "Checks", "Reveals", "Owner test",
+                  "Source", "Medium", "Campaign", "Content", "Term", "Referrer"];
+    const lines = [head.map(esc).join(",")];
+    for (const r of rows.results || []) {
+      const board = r.mode === "daily" ? "#" + r.daily_no
+                  : r.mode === "theme" ? (r.theme_key || "") : "practice";
+      lines.push([
+        r.started_at, r.ended_at || "", r.mode, board,
+        r.play_no ? String(r.play_no).padStart(6, "0") : "",
+        r.solved, r.total, r.completed ? "yes" : "no",
+        r.elapsed_secs, r.checks, r.reveals, r.by_owner ? "yes" : "",
+        r.utm_source || "", r.utm_medium || "", r.utm_campaign || "",
+        r.utm_content || "", r.utm_term || "", r.referrer || "",
+      ].map(esc).join(","));
+    }
+    return new Response(lines.join("\n"), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="crosswordxi-plays-${new Date().toISOString().slice(0, 10)}.csv"`,
+      },
+    });
+  }
+
   if (route === "reports.csv" && request.method === "GET") {
     const url = new URL(request.url);
     const all = url.searchParams.get("all") === "1";

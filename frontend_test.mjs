@@ -775,6 +775,19 @@ server.listen(0, "127.0.0.1", async () => {
      changes width while the text keeps its old size — and the card is a fixed
      height with nowhere to put the difference. Zoomed in, four lines spilled
      over the answer boxes; zoomed out, the last line was sliced in half. */
+  /* fitCells sets --cell, the grid gets taller, and an observer watching the
+     panel fires again — "ResizeObserver loop completed with undelivered
+     notifications", which is what rotating a tablet produced. Width is an input
+     to the fit; height is its output and must not feed back in. */
+  t("the fit observer cannot feed its own output back into itself", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const blk = js.slice(js.indexOf("fitObserver = new ResizeObserver"),
+                         js.indexOf("fitObserver.observe(panel)"));
+    return /contentRect\.width/.test(blk) &&
+      /if \(w === lastPanelW\) return;/.test(blk) &&
+      /requestAnimationFrame/.test(blk);
+  })());
+
   t("the clue is re-scaled when the viewport changes, not only when selected", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     /* Matched loosely on purpose: the point is that every handler which
