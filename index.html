@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v37">
+<link rel="stylesheet" href="css/style.css?v=v38a">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -580,6 +580,12 @@
       <div class="row"><span>Revealed answers</span><div><b id="bAnswers">0</b><b class="pen" id="bAnswerPen">&minus;0</b></div></div>
       <div class="res-final"><span>Final score</span><span id="rFinal">0 / 114</span></div>
     </div>
+    <!-- The standings, when this game was somebody's challenge — above the
+         league table, because the league table is a season the score is mapped
+         onto and this is the people who actually played. Shown here and nowhere
+         earlier: a target before play turns solving into arithmetic. -->
+    <div id="challengeTable" class="challenge-table" hidden></div>
+
     <div class="res-table-wrap">
       <table class="league"><tbody id="finalTableBody"></tbody></table>
     </div>
@@ -589,13 +595,20 @@
          as unverified rather than passed off. -->
     <div class="verify-note" id="rVerified"></div>
 
-    <!-- The standings, when this game was somebody's challenge. Shown here and
-         nowhere earlier: a target before play turns solving into arithmetic. -->
-    <div id="challengeTable" class="challenge-table" hidden></div>
 
     <!-- The loop. Creating a challenge from the result just earned, without
          replaying the board — which is what turns a single hop into a chain. -->
-    <button class="btn secondary" id="challengeBtn">Challenge someone</button>
+    <!-- Two fields, because they are two different things: who is sending it,
+         and who it is going to. Signed in, the first is the account's and is not
+         asked for. The group is optional — a challenge to one friend does not
+         need a label. -->
+    <div class="ch-make">
+      <input id="chFrom" type="text" maxlength="20" placeholder="Your name"
+             autocomplete="nickname" aria-label="Your name">
+      <input id="chGroup" type="text" maxlength="20" placeholder="Who to? e.g. five-a-side"
+             aria-label="Who you are sending it to">
+      <button class="btn secondary" id="challengeBtn">Challenge</button>
+    </div>
     <div class="sheet-note" id="challengeOut"></div>
     <button class="btn secondary" id="shareBtn">Share result</button>
     <!-- The platforms a football result actually gets posted to. On a phone the
@@ -627,7 +640,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v37</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v38a</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -638,8 +651,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v37"></script>
-<script src="js/engine.js?v=v37"></script>
-<script src="js/game.js?v=v37"></script>
+<script src="js/seasons.js?v=v38a"></script>
+<script src="js/engine.js?v=v38a"></script>
+<script src="js/game.js?v=v38a"></script>
 </body>
 </html>

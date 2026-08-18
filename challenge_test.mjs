@@ -106,9 +106,33 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   })());
   t("a name is required before the board opens",
     /name\.length < 2/.test(js) && /challenge\/start/.test(js));
-  t("and is remembered, so a returning player presses Play",
+  /* Two names, not one. The creator is a person; the group is who it is being
+     sent to. One field doing both jobs meant a group name typed at Full Time
+     came back as "Test challenged you" over a board sent by somebody else. */
+  t("the sender's name and the group's are separate fields", (() => {
+    const html = fs.readFileSync("index.html", "utf8");
+    return /id="chFrom"/.test(html) && /id="chGroup"/.test(html) &&
+      /groupName: group \|\| null/.test(js);
+  })());
+  t("the group is optional", (() => {
+    const api = fs.readFileSync("functions/api/challenge.js", "utf8");
+    return /body\.groupName \? cleanName\(body\.groupName\) : null/.test(api);
+  })());
+  t("the person answering starts with an empty box, not somebody else's name", (() => {
+    /* It used to be filled from the last name typed on this device, which on
+       the sender's own device offered them their own name back. A wrong
+       suggestion is worse than an empty box. */
+    const fn = js.slice(js.indexOf("function openChallenge"),
+                        js.indexOf("function submitChallengeEntry"));
+    return /\$\("chName"\)\.value = "";/.test(fn) && !/CH_NAME_KEY/.test(fn);
+  })());
+  t("unless they are signed in, when it is theirs and fixed", (() => {
+    const fn = js.slice(js.indexOf("function openChallenge"),
+                        js.indexOf("function submitChallengeEntry"));
+    return /\$\("chName"\)\.disabled = true/.test(fn);
+  })());
+  t("and the sender's own name is remembered, because it is theirs",
     /localStorage\.setItem\(CH_NAME_KEY/.test(js));
-  t("a signed-in player does not type one", /account && account\.name/.test(js));
 
   t("the standings appear only after Full Time", (() => {
     /* showChallengeTable is called from the verification path, which runs when
@@ -121,6 +145,18 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   })());
   t("and show time and help beside every score",
     /ct-help/.test(js) && /no help/.test(js));
+
+  t("the standings sit above the league table", (() => {
+    /* The league table is a season the score is mapped onto; the challenge is
+       the people who actually played. */
+    const html = fs.readFileSync("index.html", "utf8");
+    return html.indexOf('id="challengeTable"') < html.indexOf('id="finalTableBody"');
+  })());
+  t("and say so when a repeat finish did not replace an entry", (() => {
+    /* One entry each is what stops reveal-then-replay, but somebody who has
+       just finished and cannot see their number needs telling why. */
+    return /challenge\.alreadyScored/.test(js) && /still stands/.test(js);
+  })());
 
   t("only a verified score may be offered to a table",
     /if \(verifiedScore === null\)/.test(js));

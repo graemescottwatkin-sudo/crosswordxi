@@ -74,7 +74,28 @@ export async function onRequestPost({ request, env }) {
        An empty square is not wrong — it has not been answered. */
     let wrongCells = 0;
     for (let i = 0; i < want.length; i++) if (chars[i] && chars[i] !== want[i]) wrongCells++;
-    return json({ correct: allRight, wrongCells, total: want.length });
+
+    /* How many answers those wrong squares spoil. The browser asked for this
+       and nothing ever sent it, so the nudge read "2 squares are wrong, across
+       0 answers" — a contradiction, and worse than saying nothing, because the
+       reader has to decide which half to believe.
+       Counted here because it needs the answers and the browser has none. The
+       keys are sorted to match solutionString, which is how a cell's position
+       in the string is found. */
+    const order = Object.keys(puzzle.cells).sort();
+    const at = {};
+    order.forEach((k, i) => { at[k] = i; });
+    let wrongEntries = 0;
+    for (const e of puzzle.entries) {
+      let complete = true, bad = false;
+      for (const c of e.cells) {
+        const i = at[c.x + "," + c.y];
+        if (i === undefined || !chars[i]) { complete = false; break; }
+        if (chars[i] !== want[i]) bad = true;
+      }
+      if (complete && bad) wrongEntries++;
+    }
+    return json({ correct: allRight, wrongCells, wrongEntries, total: want.length });
   }
 
   const idx = Number(entry);

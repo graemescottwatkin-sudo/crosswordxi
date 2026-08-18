@@ -1,3 +1,4 @@
+import fs from "node:fs";
 /* Exercises the Functions the way Pages will: real modules, no D1 binding,
    so this proves the development-data fallback path works end to end. */
 import { onRequestGet as daily } from "./functions/api/daily.js";
@@ -106,6 +107,25 @@ t("practice: a junk token is refused",
     method: "POST", body: JSON.stringify({ token: "daily:999", entry: 0, guess: ["A"] }),
   }), env: noSession });
   t("a stranger still cannot check another day", r.status === 403, "status " + r.status);
+}
+
+/* "2 squares are wrong, across 0 answers" — a contradiction the game showed for
+   as long as the nudge existed. The browser asked for wrongEntries and nothing
+   ever sent it, so it read zero every time. It has to be counted here: it needs
+   the answers, and the browser has none. */
+console.log("\nThe grid nudge counts both things");
+{
+  const src = fs.readFileSync("functions/api/check-answer.js", "utf8");
+  t("the whole-grid check returns spoiled answers as well as wrong squares",
+    /wrongEntries/.test(src) && /correct: allRight, wrongCells, wrongEntries/.test(src));
+  t("an incomplete answer is not counted as wrong", (() => {
+    /* An empty square has not been answered. Counting its entry as spoiled
+       would report an error before anybody had made one. */
+    const b = src.replace(/\/\*[\s\S]*?\*\//g, "");
+    return /if \(i === undefined \|\| !chars\[i\]\) \{ complete = false; break; \}/.test(b);
+  })());
+  t("and the browser stores what it is sent",
+    /gridStats\.wrongEntries = r\.wrongEntries/.test(fs.readFileSync("js/game.js", "utf8")));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

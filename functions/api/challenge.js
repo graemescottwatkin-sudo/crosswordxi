@@ -52,7 +52,7 @@ export async function onRequestGet({ request, env }) {
   if (!id) return bad("Unknown challenge.", 404);
 
   const c = await env.DB.prepare(
-    `SELECT id, theme_id, board_no, creator_name, created_at
+    `SELECT id, theme_id, board_no, creator_name, group_name, created_at
        FROM challenges WHERE id = ? AND hidden = 0`).bind(id).first();
   if (!c) return bad("Unknown challenge.", 404);
 
@@ -68,6 +68,7 @@ export async function onRequestGet({ request, env }) {
     boardNo: c.board_no,
     token: "theme:" + c.theme_id + "-" + c.board_no,
     creatorName: c.creator_name,
+    groupName: c.group_name || null,
     started: (counts && counts.started) || 0,
     finished: (counts && counts.finished) || 0,
   });
@@ -88,9 +89,13 @@ export async function onRequestPost({ request, env }) {
   if (!board) return bad("Unknown board.", 400);
 
   const user = await currentUser(request, env);
-  /* A signed-in player's name comes from the account; a guest types one. */
+  /* Two names, not one. The creator is a person — from the account where there
+     is one, typed otherwise. The group is who it is being sent to, and is
+     optional: a challenge to one friend does not need a label, and demanding
+     one would put a form between somebody and sending a link. */
   const name = user && user.name ? cleanName(user.name) : cleanName(body.name);
   if (!name) return bad("Choose a name of at least two characters.", 400);
+  const groupName = body.groupName ? cleanName(body.groupName) : null;
 
   /* Pressing the button twice returns the link you already have, so a
      double-tap cannot produce two tables for one game. A second table is a
@@ -107,9 +112,10 @@ export async function onRequestPost({ request, env }) {
 
   const id = shortId();
   await env.DB.prepare(
-    `INSERT INTO challenges (id, theme_id, board_no, created_by, creator_name, play_id)
-     VALUES (?,?,?,?,?,?)`)
-    .bind(id, board.theme_id, board.board_no, user ? user.id : null, name, play.play_id).run();
+    `INSERT INTO challenges (id, theme_id, board_no, created_by, creator_name, play_id, group_name)
+     VALUES (?,?,?,?,?,?,?)`)
+    .bind(id, board.theme_id, board.board_no, user ? user.id : null, name,
+          play.play_id, groupName).run();
 
   /* The creator's own result seeds the table, or the page opens empty and reads
      as broken rather than as new. */

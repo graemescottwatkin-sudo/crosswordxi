@@ -154,7 +154,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v37";
+  var BUILD = "v38a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -307,6 +307,7 @@
                                           playId: playId })
           .then(function (r) {
             gridStats.wrongCells = r.wrongCells || 0;
+            gridStats.wrongEntries = r.wrongEntries || 0;
             updateNudge();
           }).catch(function () {});
       }
@@ -3291,6 +3292,16 @@
        finished puzzle showing nothing on a slow connection, and a puzzle that
        will not tell you how you did is worse than one that tells you twice. */
     verifyScore();
+    /* The sender's own name: the account's, or the last one they used here.
+       Remembering this one is right — it is theirs, and they will use it again. */
+    var from = $("chFrom");
+    if (from) {
+      if (account && account.name) { from.value = account.name; from.disabled = true; }
+      else {
+        from.disabled = false;
+        if (!from.value) { try { from.value = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {} }
+      }
+    }
   }
 
   /* Opening a challenge: who set it, which board, how many have tried — and a
@@ -3304,16 +3315,26 @@
     api("/api/challenge?id=" + encodeURIComponent(id))
       .then(function (c) {
         challenge = { id: c.id, theme: c.themeId, no: c.boardNo, creator: c.creatorName };
-        $("chWho").textContent = c.creatorName + " challenged you";
+        $("chWho").textContent = c.groupName
+          ? c.creatorName + " challenged " + c.groupName
+          : c.creatorName + " challenged you";
         $("chBoard").textContent = themeNameFor(c.themeId) + " #" + c.boardNo;
         $("chCount").textContent = c.started
           ? c.started + (c.started === 1 ? " person has" : " people have") + " taken this. " +
             c.finished + " reached Full Time."
           : "Nobody has played this yet.";
-        var saved = "";
-        try { saved = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {}
-        if (account && account.name) { saved = account.name; $("chName").disabled = true; }
-        $("chName").value = saved;
+        /* Blank unless signed in. It used to be filled from the last name typed
+           on this device — which, when the challenge was made on the same
+           device, offered the sender's own name back to the person answering.
+           A wrong suggestion is worse than an empty box: an empty box asks a
+           question, a wrong one answers it for you. */
+        if (account && account.name) {
+          $("chName").value = account.name;
+          $("chName").disabled = true;
+        } else {
+          $("chName").value = "";
+          $("chName").disabled = false;
+        }
         $("challengeOverlay").classList.add("show");
         if (!saved) setTimeout(function () { $("chName").focus(); }, 60);
       })
@@ -3354,8 +3375,18 @@
             (help.length ? " \u00B7 " + help.join(", ") : " \u00B7 no help") + "</td>" +
             '<td class="ct-score">' + e.score + "</td></tr>";
         }).join("");
-        box.innerHTML = "<h3>" + escapeHtml(d.creatorName) + "\u2019s challenge \u00B7 " +
-          d.started + " played</h3><table><tbody>" + rows + "</tbody></table>";
+        /* Say when this score did not go on the board. One entry per person is
+           what stops reveal-then-replay, but somebody who has just finished and
+           cannot see their number needs telling why — otherwise the table looks
+           broken rather than principled. */
+        var note = "";
+        if (challenge.alreadyScored) {
+          note = '<div class="ct-note">Your first result here still stands. ' +
+            "One score each keeps the table honest.</div>";
+        }
+        box.innerHTML = "<h3>" + escapeHtml(d.creatorName) +
+          (d.groupName ? " \u00B7 " + escapeHtml(d.groupName) : "") +
+          "</h3><table><tbody>" + rows + "</tbody></table>" + note;
         box.hidden = false;
       })
       .catch(function () {});
@@ -3370,16 +3401,17 @@
       out.textContent = "A challenge needs a verified score. Check your connection and finish again.";
       return;
     }
-    var name = account && account.name ? account.name : "";
-    if (!name) {
-      try { name = localStorage.getItem(CH_NAME_KEY) || ""; } catch (e) {}
-      name = (window.prompt("What name should the challenge go out under?", name) || "").trim();
-      if (name.length < 2) { out.textContent = "A name of at least two characters, please."; return; }
-      try { localStorage.setItem(CH_NAME_KEY, name); } catch (e) {}
+    var name = account && account.name ? account.name : ($("chFrom").value || "").trim();
+    if (name.length < 2) {
+      out.textContent = "Your name, at least two characters.";
+      $("chFrom").focus();
+      return;
     }
+    if (!account) { try { localStorage.setItem(CH_NAME_KEY, name); } catch (e) {} }
+    var group = ($("chGroup").value || "").trim();
     out.textContent = "Creating\u2026";
     apiAuth("/api/challenge", {
-      playId: playId, name: name, entrantKey: entrantKey(),
+      playId: playId, name: name, groupName: group || null, entrantKey: entrantKey(),
       /* Asked for by name, so a board can go to one group of friends and then
          to another without replaying it. A double-tap still returns the link
          that already exists. */

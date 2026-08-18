@@ -16,7 +16,8 @@ export async function onRequestGet({ request, env }) {
   if (!id) return bad("Unknown challenge.", 404);
 
   const c = await env.DB.prepare(
-    `SELECT id, theme_id, board_no, creator_name FROM challenges WHERE id = ? AND hidden = 0`)
+    `SELECT id, theme_id, board_no, creator_name, group_name
+       FROM challenges WHERE id = ? AND hidden = 0`)
     .bind(id).first();
   if (!c) return bad("Unknown challenge.", 404);
 
@@ -34,6 +35,7 @@ export async function onRequestGet({ request, env }) {
   return json({
     id: c.id,
     creatorName: c.creator_name,
+    groupName: c.group_name || null,
     boardNo: c.board_no,
     themeId: c.theme_id,
     started: (started && started.n) || 0,
