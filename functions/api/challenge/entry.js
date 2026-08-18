@@ -41,8 +41,16 @@ export async function onRequestPost({ request, env }) {
   const key = entrantKeyFor(user, body.entrantKey);
   if (!key) return bad("Missing entrant key.", 400);
 
+  /* Timed to the moment the score was computed, not to ended_at.
+     ended_at is written when the tab closes or the page is hidden, which can be
+     long afterwards — one entry showed 1:51 against a score worked out over
+     111 seconds while ended_at sat twelve minutes later. The table then showed
+     a time that could not produce the score beside it, and nobody reading it
+     could reconcile the two.
+     srv_verified_at is when /api/finish ran, which is exactly the span the
+     score was calculated over. Time and score now agree by construction. */
   const a = Date.parse((play.started_at || "").replace(" ", "T") + "Z");
-  const b = Date.parse((play.ended_at || play.srv_verified_at || "").replace(" ", "T") + "Z");
+  const b = Date.parse((play.srv_verified_at || play.ended_at || "").replace(" ", "T") + "Z");
   const elapsed = Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, Math.round((b - a) / 1000)) : 0;
 
   /* One scored result each. IGNORE rather than REPLACE, so a second finish

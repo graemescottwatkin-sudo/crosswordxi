@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v43a";
+  var BUILD = "v44a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -710,6 +710,7 @@
       }
       renderCirculation();
       verified = {}; verifySent = {}; gridStats = { wrongCells: 0, wrongEntries: 0 };
+      verifiedScore = null; verifiedBreakdown = null;   // last game's, not this one's
       showLoading(false);
       finishBuild(restore);
     }).catch(function (err) {
@@ -3601,6 +3602,9 @@
      unverified so the two are never confused. Only a verified score is fit for
      anything other people can see. */
   var verifiedScore = null;
+  /* The server's own breakdown, kept whole. The share text needs the same
+     shape computeScore returns, not just the total. */
+  var verifiedBreakdown = null;
   /* Where the score put you, so a rewritten record carries the right position
      rather than the one the browser's arithmetic implied. */
   var lastPosition = null;
@@ -3617,6 +3621,7 @@
           return;
         }
         verifiedScore = r.score;
+        verifiedBreakdown = Object.assign({}, r.breakdown || {}, { score: r.score });
         if (note) {
           note.textContent = "verified by the server";
           note.className = "verify-note verified";
@@ -3702,6 +3707,15 @@
   }
 
   function shareResult() {
+    /* The verified score where there is one. This recomputed locally every
+       time, so a shared result carried the browser's arithmetic while the card
+       above it showed the server's — the same number off by one, sent to
+       everybody the player knows.
+       One game, one score, wherever it appears: on the card, on the board
+       badge, in the season record, and in what gets shared. */
+    if (verifiedScore !== null && verifiedBreakdown) {
+      return verifiedBreakdown;
+    }
     return FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
                             revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
   }

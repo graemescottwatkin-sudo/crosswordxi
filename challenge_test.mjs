@@ -202,6 +202,17 @@ console.log("\nThe interface keeps the same promise as the endpoints");
       /err && err\.handled/.test(js);
   })());
 
+  t("an entry is timed over the span its score was computed for", (() => {
+    /* ended_at is written when the tab closes or the page is hidden, which can
+       be minutes later. Timing an entry to it while the score was computed to
+       srv_verified_at gave a table whose times could not produce the scores
+       beside them — 1:51 against a score worked out over 111 seconds, with
+       ended_at sitting twelve minutes further on. */
+    return [src.entry, src.challenge].every((f) =>
+      /srv_verified_at \|\| (play|row)\.ended_at/.test(f) &&
+      !/\(play\.ended_at \|\| play\.srv_verified_at/.test(f));
+  })());
+
   t("who an entrant is, is decided in one place", (() => {
     /* A signed-in player is their account; a guest is their device key. Worked
        out separately at each call site, the read used the device key while the

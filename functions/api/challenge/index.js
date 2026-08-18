@@ -39,9 +39,12 @@ function boardOf(themeKey) {
   return m ? { theme_id: m[1], board_no: Number(m[2]) } : null;
 }
 
+/* To the moment the score was computed, not to ended_at — which is written when
+   the tab closes and can be minutes later, leaving a table whose times cannot
+   produce the scores beside them. */
 function elapsedOf(row) {
   const a = Date.parse((row.started_at || "").replace(" ", "T") + "Z");
-  const b = Date.parse((row.ended_at || row.srv_verified_at || "").replace(" ", "T") + "Z");
+  const b = Date.parse((row.srv_verified_at || row.ended_at || "").replace(" ", "T") + "Z");
   return Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, Math.round((b - a) / 1000)) : 0;
 }
 

@@ -473,6 +473,21 @@ server.listen(0, "127.0.0.1", async () => {
      and recordThemed run when the puzzle finishes, before the server has
      answered, so the board badge showed 81 for a game whose Full Time said 82.
      One game, one score, wherever it appears. */
+  /* One game, one score, wherever it appears. The share text recomputed
+     locally, so a shared result carried the browser's arithmetic while the card
+     above it showed the server's — the same number, off by one, sent to
+     everybody the player knows. */
+  t("what gets shared is the verified score, not a fresh calculation", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function shareResult"), js.indexOf("function shareLink"));
+    return /verifiedScore !== null && verifiedBreakdown/.test(fn) &&
+      /return verifiedBreakdown;/.test(fn);
+  })());
+  t("and last game's verified score cannot leak into the next one", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /verifiedScore = null; verifiedBreakdown = null;/.test(js);
+  })());
+
   t("the device's record is rewritten with the verified score", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
