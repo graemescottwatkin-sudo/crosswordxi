@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v28a";
+  var BUILD = "v29a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1458,6 +1458,15 @@
     el.innerHTML = "";
     if (!bankOn || !started || paused) return;
     var brk = breakCells(e);
+    /* Boxes are grouped into words rather than laid out as one flat run.
+       Flat, the row wrapped wherever it ran out of width, so "Sporting Lisbon"
+       broke as SPORTING LI / SBON — the second word straddling the wrap, which
+       reads as a different answer entirely. A word is a group, groups wrap
+       between themselves, and only a word too long for the strip on its own
+       can now be split. */
+    var word = document.createElement("div");
+    word.className = "bank-word";
+    el.appendChild(word);
     e.cells.forEach(function (c, i) {
       var k = K(c.x, c.y);
       var d = document.createElement("div");
@@ -1466,11 +1475,11 @@
         (revealedCells[k] ? " gold" : (revealAnswerCells[k] ? " gold-ans" : "")) +
         (i === cur.cell ? " here" : "");
       d.textContent = ch;
-      el.appendChild(d);
-      if (brk[i]) { // mirror the enumeration's word boundaries
-        var g = document.createElement("div");
-        g.className = "bank-gap";
-        el.appendChild(g);
+      word.appendChild(d);
+      if (brk[i]) {          // mirror the enumeration's word boundaries
+        word = document.createElement("div");
+        word.className = "bank-word";
+        el.appendChild(word);
       }
     });
   }

@@ -539,30 +539,35 @@ button.tb-label{
    board must not jump between clues; the boxes have no such constraint, and
    sharing that height was what forced the text to be scaled to fit. */
 .bank-strip{
-  /* Boxes left, readings right. The boxes are as wide as the answer needs and
-     no wider, so the space to their right was empty on every clue. */
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  /* Two stated columns rather than two things sharing a row: two thirds for the
+     answer, one third for the clock and the count. Letting them negotiate meant
+     a long answer took the space and pushed the readings outside the rounded
+     border — and even when it fitted, the boxes shifted about as the clock
+     passed a digit. Stated tracks cannot do either: the boxes wrap inside their
+     own column and the readings stay where they are. */
+  display:grid;grid-template-columns:2fr 1fr;align-items:center;
+  gap:8px 12px;overflow:hidden;
   background:var(--card);border:1px solid var(--line);border-radius:8px;
   padding:6px 9px;margin:0 auto 8px;box-sizing:border-box;
   min-height:calc(var(--bank-cell) + 18px);
 }
 .bank{
-  display:flex;gap:var(--bank-gap);flex-wrap:wrap;align-items:center;
-  justify-content:flex-start;flex:1 1 auto;width:auto;min-width:0;
+  /* Wraps between words, not between letters. The gap between groups is the
+     word break the enumeration describes, so it no longer needs an element of
+     its own. min-width:0 so a long answer wraps inside its column rather than
+     widening it — a grid track will otherwise grow to fit its contents. */
+  display:flex;gap:4px 14px;flex-wrap:wrap;align-items:center;
+  justify-content:flex-start;min-width:0;
 }
+.bank-word{display:flex;gap:var(--bank-gap);align-items:center}
 /* The readings hold their width so the boxes do not shift left and right as
    the clock ticks past a digit or the count reaches ten. */
 .bank-strip .tb-readouts{
-  /* margin-left:auto rather than relying on justify-content. The strip is a
-     flex row and the boxes wrap, so whichever way the main axis is being
-     distributed, this pins the readings to the right edge and leaves the gap
-     between them and the last box. They were touching. */
-  flex:0 0 auto;margin-left:auto;
-  display:flex;align-items:center;gap:14px;
-  padding-left:18px;border-left:1px solid var(--line);
+  /* Its own column now, so it needs no pushing: right-aligned within it, with
+     the rule marking the boundary. */
+  display:flex;align-items:center;justify-content:flex-end;gap:14px;
+  min-width:0;padding-left:18px;border-left:1px solid var(--line);
 }
-/* And the boxes hold the left edge. */
-.bank-strip .bank{margin-right:18px}
 /* Readings, not controls: no card face, whatever the base rules say. Written
    with the strip and the wrapper in the selector so it beats anything scoped
    less tightly, rather than relying on source order. */
@@ -574,9 +579,14 @@ button.tb-label{
 .bank-strip .tb-readouts .match-clock small{font-size:9px;letter-spacing:.1em}
 .bank-strip .tb-readouts .live-chip{font-size:12px;white-space:nowrap}
 @media (max-width:560px){
-  .bank-strip{gap:8px}
-  .bank-strip .bank{margin-right:10px}
-  .bank-strip .tb-readouts{gap:10px;padding-left:10px}
+  /* One third of a phone is not enough for "15:34 elapsed" beside a count, so
+     below this the two stack instead of being squeezed. */
+  .bank-strip{grid-template-columns:1fr;gap:8px}
+  .bank-strip .tb-readouts{
+    justify-content:flex-start;padding-left:0;padding-top:8px;
+    border-left:none;border-top:1px solid var(--line);
+  }
+  .bank-strip .tb-readouts{gap:10px}
   .bank-strip .tb-readouts .match-clock{font-size:18px}
   .bank-strip .tb-readouts .live-chip{font-size:11px}
 }

@@ -273,17 +273,21 @@ t("the answer boxes and the readings share the strip, boxes first", (() => {
     strip.indexOf('id="matchClock"') > strip.indexOf('id="letterBank"') &&
     strip.indexOf('id="progressChip"') > -1;
 })());
-t("and they sit at opposite ends of it",
-  /\.bank-strip\{[^}]*justify-content:space-between/.test(flatCss));
-/* Fixed width on the readings, or the boxes shuffle sideways every time the
-   clock passes a digit. */
-t("the readings do not push the boxes about as they change",
-  /\.bank-strip \.tb-readouts\{[^}]*flex:0 0 auto/.test(flatCss));
-/* They were touching the last box. margin-left:auto pins them to the right
-   edge whatever the main axis is doing, which justify-content alone did not
-   manage once the boxes wrapped. */
-t("and they are pinned to the right edge, not merely distributed",
-  /\.bank-strip \.tb-readouts\{[^}]*margin-left:auto/.test(flatCss));
+/* Two stated columns, two thirds and one third. Letting the two negotiate a
+   shared row meant a long answer took the space and pushed the readings outside
+   the rounded border — and even when it fitted, the boxes shifted about as the
+   clock passed a digit. A grid track cannot do either. */
+t("the strip is two stated columns, two thirds and one third",
+  /\.bank-strip\{[^}]*grid-template-columns:2fr 1fr/.test(flatCss));
+t("the boxes wrap inside their column rather than widening it", (() => {
+  /* Without min-width:0 a grid track grows to fit its contents, and a long
+     answer would take the readings' third back. */
+  return /\.bank\{[^}]*min-width:0/.test(flatCss);
+})());
+t("the readings are right-aligned in their own column",
+  /\.bank-strip \.tb-readouts\{[^}]*justify-content:flex-end/.test(flatCss));
+t("and stack below the boxes on a phone, where a third is not enough",
+  /@media \(max-width:560px\)\{[\s\S]{0,200}\.bank-strip\{grid-template-columns:1fr/.test(flatCss));
 t("the readings carry no card face inside the strip",
   /\.bank-strip \.tb-readouts \.match-clock,[\s\S]{0,80}\{[^}]*border:none/.test(flatCss));
 
@@ -301,10 +305,21 @@ t("the loaded puzzle then sets it from its own longest answer",
   /setProperty\("--bank-slots"/.test(fs.readFileSync("js/game.js", "utf8")));
 t("the slots take that reserved width rather than what the sentence leaves",
   /\.bank\{[^}]*flex:0 0 var\(--bank-w\);width:var\(--bank-w\)/.test(flatCss));
-t("a gap element is 9px, so three of them are the 27px reserved", (() => {
-  const m = /\.bank-gap\{width:(\d+)px\}/.exec(flatCss);
-  return m && Number(m[1]) * 3 === 27;
+/* The word break is the gap between groups now, not an element in the run.
+   Boxes are grouped into words so the row wraps between words rather than
+   mid-word: flat, "Sporting Lisbon" broke as SPORTING LI / SBON, which reads
+   as a different answer. */
+t("boxes are grouped into words, so a wrap cannot fall inside one", (() => {
+  const js = fs.readFileSync("js/game.js", "utf8");
+  return /word\.className = "bank-word"/.test(js) &&
+    /word\.appendChild\(d\)/.test(js);
 })());
+t("and the group spacing carries the word break",
+  /\.bank-word\{display:flex;gap:var\(--bank-gap\)/.test(flatCss));
+/* A long answer on a narrow board left no room for both, and the readings
+   rendered outside the rounded border, beside it on the page. */
+t("nothing can render outside the strip",
+  /\.bank-strip\{[^}]*overflow:hidden/.test(flatCss));
 t("cells are sized from the same variable, so the reservation cannot drift",
   /\.bank-cell\{width:var\(--bank-cell\)/.test(flatCss));
 t("long clues shrink to fit instead of scrolling", (() => {
