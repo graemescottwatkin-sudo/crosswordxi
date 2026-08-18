@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v45e";
+  var BUILD = "v46";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3487,32 +3487,20 @@
     if (!box || !challenge) return;
     api("/api/challenge/table?id=" + encodeURIComponent(challenge.id))
       .then(function (d) {
-        var mine = (challenge.name || "").toLowerCase();
-        var rows = (d.entries || []).map(function (e) {
-          var help = [];
-          if (e.checks) help.push(e.checks + (e.checks === 1 ? " check" : " checks"));
-          if (e.reveals) help.push(e.reveals + (e.reveals === 1 ? " reveal" : " reveals"));
-          var you = e.playId === playId ||
-            (!!mine && e.name.toLowerCase() === mine);
-          return '<tr' + (you ? ' class="you"' : "") + '>' +
-            '<td class="ct-pos">' + e.position + "</td>" +
-            "<td>" + escapeHtml(e.name) + "</td>" +
-            '<td class="ct-help">' + fmt(e.elapsedSeconds) +
-            (help.length ? " \u00B7 " + help.join(" ") : "") + "</td>" +
-            '<td class="ct-score">' + e.score + "</td></tr>";
-        }).join("");
-        /* Say when this score did not go on the board. One entry per person is
-           what stops reveal-then-replay, but somebody who has just finished and
-           cannot see their number needs telling why — otherwise the table looks
-           broken rather than principled. */
-        var note = "";
+        /* One renderer. This built its own rows, so every change to the
+           standings had to be made twice — and was not: the challenge screen
+           got left-aligned names and a penalties column while Full Time kept
+           the old markup and the old classes, which is why the same table
+           looked different depending on where you saw it. */
+        renderStandings(box, d, playId);
         if (challenge.alreadyScored) {
-          note = '<div class="ct-note">Your first result here still stands. ' +
-            "One score each keeps the table honest.</div>";
+          /* One entry per person is what stops reveal-then-replay, but somebody
+             who has just finished and cannot see their number needs telling
+             why, or the table looks broken rather than principled. */
+          box.insertAdjacentHTML("beforeend",
+            '<div class="ct-note">Your first result here still stands. ' +
+            "One score each keeps the table honest.</div>");
         }
-        box.innerHTML = "<h3>" + escapeHtml(d.creatorName) +
-          (d.groupName ? " \u00B7 " + escapeHtml(d.groupName) : "") +
-          "</h3><table><tbody>" + rows + "</tbody></table>" + note;
         box.hidden = false;
       })
       .catch(function () {});

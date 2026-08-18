@@ -235,6 +235,14 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     return order.every((c) => { const i = row.indexOf(c); const ok = i > at; at = i; return ok; });
   })());
 
+  t("the standings are built in one place, not two", (() => {
+    /* There were two row builders — one for the challenge screen, one for Full
+       Time — so every change to the table had to be made twice, and was not.
+       The same table looked different depending on where you saw it. */
+    return (js.match(/var rows = \(d\.entries/g) || []).length === 1 &&
+      /renderStandings\(box, d, playId\)/.test(js);
+  })());
+
   t("names start in the same place, so the column can be scanned", (() => {
     const css = fs.readFileSync("css/style.css", "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
