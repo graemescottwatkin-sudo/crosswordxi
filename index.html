@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v29a">
+<link rel="stylesheet" href="css/style.css?v=v30">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -279,7 +279,11 @@
   </div>
 
   <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs points">
-    <button class="tb-label help-toggle" id="helpToggle" aria-expanded="true" aria-controls="helpRow">Help &middot; costs points</button>
+    <!-- A label, not a control. Help used to collapse because it sat above the
+         board and its five rows pushed the grid 70px down a phone screen. It
+         sits below the board now, so hiding it protects nothing and only asks
+         somebody to find it. -->
+    <span class="tb-label">Help &middot; costs points</span>
     <!-- Two labelled pairs rather than four loose buttons. Section and button
          read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
          says what it acts on and the row says what it does. "All" and "Answer"
@@ -302,12 +306,13 @@
     </div>
   </div>
 
-    <!-- Below Help, and closed by default. The clue you are answering is
-         already at the top of the screen, so the full lists are a reference
-         rather than the main event — and open, they push the season strip and
-         the table off the bottom of a laptop screen. -->
+    <!-- Below Help, and always open. They were collapsed on the reasoning that
+         the clue being answered is already on screen — but a crossword whose
+         clue list is hidden behind a button is a crossword people think has no
+         clue list, and the friction of finding it costs more than the scrolling
+         it saved. -->
     <div class="clues-block" id="cluesBlock">
-      <button class="clues-toggle" id="cluesToggle" aria-expanded="false" aria-controls="clues">All clues</button>
+      <h2 class="clues-head">All clues</h2>
       <div class="clues" id="clues">
         <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
         <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
@@ -590,7 +595,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v29a</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v30</span> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -601,8 +606,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v29a"></script>
-<script src="js/engine.js?v=v29a"></script>
-<script src="js/game.js?v=v29a"></script>
+<script src="js/seasons.js?v=v30"></script>
+<script src="js/engine.js?v=v30"></script>
+<script src="js/game.js?v=v30"></script>
 </body>
 </html>

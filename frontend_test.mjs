@@ -388,28 +388,19 @@ server.listen(0, "127.0.0.1", async () => {
   })());
   /* The lists open and close, and the state survives a reload — same shape as
      the help toggle, which is the pattern already established here. */
-  t("the clue lists start closed and open on request", (() => {
-    const block = $("cluesBlock"), btn = $("cluesToggle");
-    if (!block || !btn) return false;
-    const shut = !block.classList.contains("open") &&
-      btn.getAttribute("aria-expanded") === "false";
-    btn.dispatchEvent(new w.Event("click", { bubbles: true }));
-    const open = block.classList.contains("open") &&
-      btn.getAttribute("aria-expanded") === "true" &&
-      w.localStorage.getItem("fcw.cluesOpen") === "1";
-    btn.dispatchEvent(new w.Event("click", { bubbles: true }));
-    return shut && open && !block.classList.contains("open");
-  })());
-  t("and the toggle is a real button, so it stays keyboard reachable", (() => {
-    const b = $("cluesToggle");
-    return !!b && b.tagName === "BUTTON" && b.getAttribute("aria-controls") === "clues";
-  })());
+  /* Nothing on this page hides behind a control any more. Help collapsed
+     because it used to sit above the board, where five rows of 44px controls
+     pushed the grid 70px down a phone screen. It is below the board now, so
+     collapsing it costs the board nothing — and a crossword whose clue list is
+     behind a button is a crossword people think has no clue list. */
+  t("neither the help buttons nor the clue lists can be hidden", (() => {
+    const help = d.querySelector(".tb-help");
+    const clues = $("clues");
+    return help && !help.classList.contains("collapsed") &&
+      !$("helpToggle") && !$("cluesToggle") &&
+      clues && clues.querySelectorAll("li").length > 0;
+  })(), $("clues") ? $("clues").querySelectorAll("li").length + " clues listed" : "none");
 
-  t("help is a real button, so it stays keyboard reachable", (() => {
-    const b = $("helpToggle");
-    return !!b && b.tagName === "BUTTON" && b.hasAttribute("aria-expanded") &&
-      b.getAttribute("aria-controls") === "helpRow";
-  })());
   t("help reads as section plus target, not four loose buttons", (() => {
     /* "All" and "Answer" beside each other gave no clue which was a check and
        which a reveal. Section plus button now reads as one phrase. */
@@ -423,23 +414,13 @@ server.listen(0, "127.0.0.1", async () => {
   })(), [...d.querySelectorAll("#helpRow .tb-row")].map(
     (r) => r.querySelector(".tb-sub").textContent + ": " +
       [...r.querySelectorAll("button")].map((b) => b.id).join(",")).join(" | "));
-  t("help collapses on phones only, and is open where there is room",
-    /\.tb-help\.collapsed \.tb-row\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")) &&
-    !d.querySelector(".tb-help").classList.contains("collapsed"));
+  /* And nothing left over describing a state nothing sets: rules for a
+     collapsed help box outlived the collapsing, which is how a stylesheet
+     accumulates instructions for a design that no longer exists. */
+  t("no rules remain for a collapsed state nothing can enter",
+    !/\.tb-help\.collapsed/.test(css));
 
   console.log("\nMeasured-defect fixes");
-  t("help starts closed on a phone, so the board keeps its height", (() => {
-    /* 44px controls added 14px to each of five toolbar rows — 70px, which is
-       exactly how far the grid moved down between builds. Cells shrank and the
-       board still ended lower, because it started lower. */
-    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /var helpOpen = helpFits\(\)/.test(js) && /fcw\.helpOpen/.test(js);
-  })());
-  t("reopening help re-fits the board rather than waiting for a resize", (() => {
-    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const h = js.slice(js.indexOf('on("helpToggle"'), js.indexOf('on("helpToggle"') + 420);
-    return /fitCells\(\)/.test(h);
-  })());
   t("no control sets a fixed height below 44px", (() => {
     /* height beats min-height, so four rules were quietly overriding the touch
        target sizes — the stylesheet said 44 while the buttons measured 30. */
@@ -465,14 +446,6 @@ server.listen(0, "127.0.0.1", async () => {
     const rb = js.slice(at, js.indexOf("\n  }", at));
     return /requestAnimationFrame/.test(rb) && /setTimeout\(resetViewScroll/.test(rb);
   })());
-  t("help collapses on narrow tablets too, not just phones", (() => {
-    // 744x1133 overflowed its viewport by 6px with three 44px help rows open.
-    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8");
-    return /innerWidth \|\| 360\) > 760/.test(js) &&
-      /@media \(max-width:760px\)/.test(css);
-  })());
-
   t("on the shortest screens the toolbar moves below the board", (() => {
     /* Measured live at 320x568: header, clue card and toolbar took ~335px
        before the board started, so a 15-row grid finished 37px past the fold.

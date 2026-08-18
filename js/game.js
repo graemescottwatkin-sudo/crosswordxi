@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v29a";
+  var BUILD = "v30";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1625,51 +1625,20 @@
   /* 744x1133 overflowed its viewport by 6px with help open — three 44px rows
      is more than that screen can spare above a keyboard. The threshold is the
      narrowest tablet, not the widest phone. */
-  function helpFits() { return (window.innerWidth || 360) > 760; }
-  var helpOpen = helpFits();
-  try {
-    var saved = localStorage.getItem("fcw.helpOpen");
-    if (saved !== null) helpOpen = saved === "1";
-  } catch (e) {}
+  /* Help is always open. It collapsed because it used to sit above the board,
+     where five rows of 44px controls pushed the grid 70px down a phone screen —
+     which is exactly how far the board moved between builds. It is below the
+     board now, so collapsing it costs the board nothing and costs the player a
+     control they have to discover. */
   function applyHelp() {
     var box = document.querySelector(".tb-help");
-    var btn = $("helpToggle");
-    if (!box) return;
-    box.classList.toggle("collapsed", !helpOpen);
-    if (btn) btn.setAttribute("aria-expanded", helpOpen ? "true" : "false");
+    if (box) box.classList.remove("collapsed");
   }
-  /* The full clue lists: closed by default, remembered per device. The clue
-     being answered is already at the top of the screen, so the lists are a
-     reference rather than the main event — and open, they push the season
-     strip and the table off the bottom of a laptop screen. Same shape as the
-     help toggle: a real button, aria-expanded kept in step, state in
-     localStorage under the existing fcw. prefix. */
-  var cluesOpen = false;
-  try { cluesOpen = localStorage.getItem("fcw.cluesOpen") === "1"; } catch (e) {}
-  function applyClues() {
-    var block = $("cluesBlock"), btn = $("cluesToggle");
-    if (!block || !btn) return;
-    block.classList.toggle("open", cluesOpen);
-    btn.setAttribute("aria-expanded", cluesOpen ? "true" : "false");
-  }
-  on("cluesToggle", "click", function () {
-    cluesOpen = !cluesOpen;
-    try { localStorage.setItem("fcw.cluesOpen", cluesOpen ? "1" : "0"); } catch (e) {}
-    applyClues();
-  });
-  applyClues();
-
-  on("helpToggle", "click", function () {
-    if (helpFits()) return;          // always open where there is room
-    helpOpen = !helpOpen;
-    try { localStorage.setItem("fcw.helpOpen", helpOpen ? "1" : "0"); } catch (e) {}
-    applyHelp();
-    if (puzzle) fitCells();          // the board gets the space back immediately
-  });
-  window.addEventListener("resize", function () {
-    if (helpFits() && !helpOpen) { helpOpen = true; applyHelp(); }
-  });
   applyHelp();
+  /* fcw.helpOpen and fcw.cluesOpen are left in localStorage rather than
+     cleared. They are two small strings on devices that already have them, and
+     removing a key nobody reads is a write to everybody's storage to tidy
+     something invisible. */
 
   /* ---------- Accounts (Phase 1) ----------
      Deliberately self-contained. Nothing in the game loop calls into this, and
