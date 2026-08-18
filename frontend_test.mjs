@@ -543,6 +543,20 @@ server.listen(0, "127.0.0.1", async () => {
     return /WIPE_KEYS\.forEach/.test(h) && !/removeItem\("fcw\./.test(h);
   })());
 
+  /* The board takes every letter and calls preventDefault, so any text field on
+     the page could not be typed into: the keystroke went to the crossword and
+     never reached the input. Invisible until Full Time grew fields of its own. */
+  t("typing into a field is not stolen by the board", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const h = js.slice(js.indexOf('document.addEventListener("keydown"'), js.indexOf("typeLetter(ev.key"));
+    return /el\.tagName === "INPUT"/.test(h) && /isContentEditable/.test(h);
+  })());
+  t("and the guard comes before the letter is consumed", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const start = js.indexOf('document.addEventListener("keydown"');
+    return js.indexOf('el.tagName === "INPUT"', start) < js.indexOf("typeLetter(ev.key", start);
+  })());
+
   console.log("\nMeasured-defect fixes");
   t("no control sets a fixed height below 44px", (() => {
     /* height beats min-height, so four rules were quietly overriding the touch

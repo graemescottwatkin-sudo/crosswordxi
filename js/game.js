@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v41";
+  var BUILD = "v42";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2561,6 +2561,14 @@
 
   document.addEventListener("keydown", function (ev) {
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    /* Not while somebody is typing into a field. This handler takes every
+       letter for the grid and calls preventDefault, so a text box could not be
+       typed into at all — the keystroke went to the crossword and never reached
+       the input. It only became visible when Full Time grew fields of its own,
+       but it applies to every input on the page. */
+    var el = ev.target;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" ||
+               el.tagName === "SELECT" || el.isContentEditable)) return;
     if (!started || paused) return;
     if (/^[a-zA-Z]$/.test(ev.key)) { typeLetter(ev.key.toUpperCase()); startTimer(); ev.preventDefault(); }
     else if (ev.key === "Backspace") { backspace(); ev.preventDefault(); }
@@ -3368,11 +3376,22 @@
           $("chName").disabled = false;
         }
         $("challengeOverlay").classList.add("show");
-        if (!saved) setTimeout(function () { $("chName").focus(); }, 60);
+        /* Focus the box when there is something to type into it. `saved` used
+           to hold a remembered name and was removed when the prefill went; the
+           reference stayed, threw a ReferenceError after the fetch had already
+           succeeded, and the single catch below reported it as a challenge that
+           could not be found. The link was fine every time. */
+        if (!$("chName").disabled) setTimeout(function () { $("chName").focus(); }, 60);
       })
-      .catch(function () {
+      .catch(function (err) {
+        if (err && err.handled) return;      // the request failure, already reported
+        /* Anything that goes wrong drawing the screen is a different fault and
+           says so, with the real error. One catch around both the request and
+           the render named the wrong cause for an hour. */
+        console.error("Challenge screen failed:", err);
         leaveChallenge();
-        toast("That challenge could not be found", "The link may be wrong.", "loss");
+        toast("That challenge could not be opened",
+              String((err && err.message) || err), "loss");
         showHome();
       });
   }

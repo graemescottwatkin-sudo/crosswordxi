@@ -185,6 +185,23 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   t("and show time and help beside every score",
     /ct-help/.test(js) && /no help/.test(js));
 
+  t("the challenge screen references nothing that no longer exists", (() => {
+    /* A variable removed in one change left a reference behind in another, and
+       it threw AFTER the fetch had succeeded — so the single catch around both
+       reported a challenge that could not be found, for a link that was fine
+       every time. Names used but never declared here are the fault class. */
+    let fn = js.slice(js.indexOf("function openChallenge"),
+                      js.indexOf("function submitChallengeEntry"))
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return !/\bsaved\b/.test(fn);
+  })());
+  t("a failed request and a failed render are reported differently", (() => {
+    /* An error naming the wrong cause is worse than none: it sends everybody
+       looking in the wrong place, and it did for an hour. */
+    return /could not be opened/.test(js) && /could not be found/.test(js) &&
+      /err && err\.handled/.test(js);
+  })());
+
   t("there is a way out of the challenge screen", (() => {
     /* Without one it is a one-way door: no back, and the challenge stays in the
        address, so a refresh returns you to the screen you just declined. */
