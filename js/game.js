@@ -139,7 +139,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v32";
+  var BUILD = "v35";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3229,6 +3229,63 @@
     playEnd(true);
     $("doneOverlay").classList.add("show");
     if (youRow && youRow.scrollIntoView) youRow.scrollIntoView({ block: "center" });
+    /* Full Time appears immediately with the score worked out here, then the
+       server's verdict replaces it when it arrives. Waiting would mean a
+       finished puzzle showing nothing on a slow connection, and a puzzle that
+       will not tell you how you did is worse than one that tells you twice. */
+    verifyScore();
+  }
+
+  /* The server's score, which is the real one.
+     Everything it uses is beyond the browser's reach: the answers to mark the
+     grid, its own count of the help it served, and the clock it started when
+     the board was pulled. What the page shows is a display of that number.
+     The local score stays for the case where the server cannot be reached — a
+     finished puzzle should always say how you did — and is marked as
+     unverified so the two are never confused. Only a verified score is fit for
+     anything other people can see. */
+  var verifiedScore = null;
+  function verifyScore() {
+    var note = $("rVerified");
+    if (note) { note.textContent = "checking\u2026"; note.className = "verify-note"; }
+    api("/api/finish", { token: puzzleToken, playId: playId, letters: letters })
+      .then(function (r) {
+        if (!r || !r.verified || typeof r.score !== "number") {
+          if (note) {
+            note.textContent = "not verified \u2014 this device's own count";
+            note.className = "verify-note unverified";
+          }
+          return;
+        }
+        verifiedScore = r.score;
+        if (note) {
+          note.textContent = "verified by the server";
+          note.className = "verify-note verified";
+        }
+        /* The two can differ honestly: the verified clock runs from the moment
+           the board was pulled and does not pause. Say so rather than letting
+           it read as a fault. */
+        if (r.score !== Number($("rScore").textContent)) {
+          var table = FCW.buildTable(club, r.score, season);
+          var pos = FCW.playerPosition(table);
+          $("rScore").textContent = r.score;
+          $("rPos").textContent = (FCW.ordinal(pos) + " \u2014 " + r.score + " pts").toUpperCase();
+          $("rFinal").textContent = r.score + " / " + FCW.SCORING.MAX_SCORE;
+          $("rMsg").textContent = FCW.outcomeMessage(club, pos);
+          renderSeason("rSeasonGames", "rSeasonWdl", r.score);
+          renderLeagueRows($("finalTableBody"), table, false);
+          if (note) {
+            note.textContent = "verified \u2014 timed from when the board was opened, " +
+              "which does not pause";
+          }
+        }
+      })
+      .catch(function () {
+        if (note) {
+          note.textContent = "not verified \u2014 this device's own count";
+          note.className = "verify-note unverified";
+        }
+      });
   }
   on("viewGridBtn", "click", function () {
     $("doneOverlay").classList.remove("show"); // gold cells stay marked; input is locked

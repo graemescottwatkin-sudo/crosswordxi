@@ -447,6 +447,33 @@ server.listen(0, "127.0.0.1", async () => {
     return /await tally\(env, playId, "srv_checks"\)/.test(src) && !/paid/.test(src);
   })());
 
+  /* The score on screen is the server's. Everything it uses is beyond the
+     browser's reach: the answers to mark the grid, the server's own count of
+     the help it served, and a clock started when the board was pulled. */
+  t("Full Time asks the server to score it", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /function verifyScore\(\)/.test(js) &&
+      /api\("\/api\/finish", \{ token: puzzleToken, playId: playId, letters: letters \}\)/.test(js);
+  })());
+  t("and shows the verified number rather than its own when it arrives", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
+    return /\$\("rScore"\)\.textContent = r\.score/.test(fn) &&
+      /verifiedScore = r\.score/.test(fn);
+  })());
+  t("an unreachable server leaves the local figure, marked as unverified", (() => {
+    /* A finished puzzle must always say how you did. What it must not do is
+       pass off a number the browser worked out as one the server confirmed. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
+    return /catch\(/.test(fn) && (fn.match(/unverified/g) || []).length >= 2;
+  })());
+  t("the server refuses to score the same finish twice", (() => {
+    /* Otherwise a finished board could be resubmitted until the clock suited. */
+    const src = fs.readFileSync(path.join(DIR, "functions/api/finish.js"), "utf8");
+    return /srv_score !== null/.test(src) && /already: true/.test(src);
+  })());
+
   console.log("\nMeasured-defect fixes");
   t("no control sets a fixed height below 44px", (() => {
     /* height beats min-height, so four rules were quietly overriding the touch

@@ -173,6 +173,7 @@ node tabs_test.mjs         # 13 — more than one window open on the same game
 node themes_test.mjs      # 29 — the themed boards, the API and the release guard
 node themes_ui_test.mjs   # 19 — the Themed section in a browser
 node scoring_test.mjs     # 19 — the server's arithmetic against the browser's
+node challenge_test.mjs   # 18 — challenge endpoints: no score before play, none accepted
 
 # Themed boards: build them, then make them reviewable
 node tools/build_themes.js  --source ../crosswordxi-source --launch-on 2026-08-21

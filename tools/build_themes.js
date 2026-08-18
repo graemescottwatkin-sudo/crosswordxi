@@ -207,6 +207,10 @@ const LAUNCH_SPEC = [
      their Fridays — a theme with four boards and nothing to wait for is an
      archive rather than a series. */
   ["bolton", 2],
+  /* Three live from the start. The Other 14 is an audience rather than a club —
+     the supporters of everyone else — so it is the one theme where a single
+     board on the shelf would look like a token rather than a section. */
+  ["other14", 3],
 ];
 const first = [], rest = [];
 const quota = {};

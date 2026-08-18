@@ -84,6 +84,14 @@ const THEMES = [
     keys: ["leicester", "king power", "filbert street", "foxes"],
     self: ["leicester city", "leicester", "foxes"] },
 
+  /* The Other 14 — the supporters who define themselves as not the Big Six.
+     A topic rather than a club theme: it spans twenty-seven clubs, and the
+     thing it is about is the absence of six others. Membership comes from its
+     own set rather than from matching text, because "not one of six clubs" is
+     not something a keyword can express. */
+  { id: "other14", name: "The Other 14", kind: TOPIC,
+    entities: ["The Other 14"], notes: "The Other 14 set" },
+
   { id: "grounds", name: "Grounds", kind: TOPIC,
     cats: ["City → Stadium", "Nickname → Stadium", "Stadium → City", "Club → Stadium",
            "Stadium → Club", "Stadium → Nickname", "Stadiums & Club History"] },
@@ -137,6 +145,10 @@ function namedOnlyToExclude(row, theme) {
 }
 
 function belongs(row, theme) {
+  /* A set written for one theme, marked as such when it was imported. Matching
+     on text cannot express "any club except these six", and matching on
+     category would sweep in every ground and nickname in the bank. */
+  if (theme.notes) return String(row.notes || "") === theme.notes;
   if (theme.cats) return theme.cats.indexOf(row.cat) !== -1;
   const hay = norm(row.clue) + "|" + norm(row.answer) + "|" + norm(row.entity);
   if (theme.not && theme.not.some((n) => hay.indexOf(" " + n + " ") !== -1)) return false;

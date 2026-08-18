@@ -17,6 +17,7 @@ data/themes-review.csv
 # Bespoke clue material, converted from the validated spreadsheet. Clues and
 # answers, so it travels with the generated SQL rather than the repository.
 data/bolton.json
+data/other14.json
 
 # Preview builds inline the answers so they can run offline — the exact thing
 # moving the bank to D1 removed. Never commit one.

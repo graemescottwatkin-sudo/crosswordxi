@@ -1563,6 +1563,14 @@ body.rotate-needed .rotate-prompt{
   font-size:16px;line-height:1;min-width:44px;min-height:44px;
 }
 .theme-mine .mine-drop:hover{color:var(--wrong)}
+/* Whether the score on screen is the server's or this device's guess at it. */
+.verify-note{
+  font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint);margin:6px 0 10px;
+}
+.verify-note.verified{color:var(--pitch)}
+.verify-note.unverified{color:var(--ink-soft)}
+
 .admin-links{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
 .admin-links select,.admin-links input{
   min-height:44px;border:1px solid var(--line);border-radius:6px;
