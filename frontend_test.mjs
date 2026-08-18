@@ -441,10 +441,15 @@ server.listen(0, "127.0.0.1", async () => {
     const src = fs.readFileSync(path.join(DIR, "functions/api/verify.js"), "utf8");
     return !/detail/.test(src.replace(/\/\*[\s\S]*?\*\//g, ""));
   })());
-  t("the paid check counts itself, without being told to", (() => {
+  t("the paid check counts itself, without being told whether it was paid", (() => {
+    /* checkGrid says which KIND of press it was — a grid check is one press
+       that takes eleven requests — but nothing tells the server whether to
+       charge at all. Anything arriving here is paid by virtue of the door it
+       came through. */
     const src = fs.readFileSync(path.join(DIR, "functions/api/check-answer.js"), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "");
-    return /await tally\(env, playId, "srv_checks"\)/.test(src) && !/paid/.test(src);
+    return /await tally\(env, playId, checkGrid \? "srv_check_alls" : "srv_checks"\)/.test(src) &&
+      !/\bpaid\b/.test(src);
   })());
 
   /* The score on screen is the server's. Everything it uses is beyond the

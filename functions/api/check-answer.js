@@ -26,7 +26,7 @@ export async function onRequestPost({ request, env }) {
     return bad("Expected a JSON body.");
   }
 
-  const { token, entry, guess, grid, detail, playId } = body || {};
+  const { token, entry, guess, grid, detail, playId, checkGrid } = body || {};
   /* Paid by definition. This used to serve the free background verification
      too — identical requests through one door — so the server had to be told
      which kind it was looking at, and a browser that omitted the flag got its
@@ -106,7 +106,12 @@ export async function onRequestPost({ request, env }) {
   const typed = asChars(guess, answer.length);
   const correct = typed.every((c, i) => c === answer[i]);
 
-  await tally(env, playId, "srv_checks");
+  /* A grid check is one press that happens to take eleven requests — the player
+     is owed the positions of every wrong letter, and each entry is a separate
+     question. Only the first request carries a play id, and it says which kind
+     of press it was, so this counts one grid check rather than eleven single
+     ones. Charged at nine points, it was costing thirty-six. */
+  await tally(env, playId, checkGrid ? "srv_check_alls" : "srv_checks");
   if (!detail) return json({ correct });
 
   // Positions that are filled and wrong. A blank square is not "wrong" — it has

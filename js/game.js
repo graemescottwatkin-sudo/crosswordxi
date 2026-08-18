@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v39a";
+  var BUILD = "v40a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -321,8 +321,13 @@
       // "How many letters are wrong" is free and always has been, but the
       // browser can no longer count it: ask once the grid is full.
       if (gridFull() && !complete) {
-        return api("/api/check-answer", { token: puzzleToken, grid: gridText(), detail: 1,
-                                          playId: playId })
+        /* /api/verify, and no play id. This is the free nudge — "the grid is
+           full but something is off" — and it fires by itself every time the
+           last square is filled. Sent to the paid endpoint with a play id, it
+           was tallied as a grid check each time: four automatic fires charged
+           as four nine-point presses the player never made. Free information
+           goes through the free door. */
+        return api("/api/verify", { token: puzzleToken, grid: gridText(), detail: 1 })
           .then(function (r) {
             gridStats.wrongCells = r.wrongCells || 0;
             gridStats.wrongEntries = r.wrongEntries || 0;
@@ -2641,12 +2646,21 @@
     checkAllsUsed++;
     helpActions.push("checkAll");
     consecutiveChecks = 0;
-    // One request per entry, asking for detail because this is the paid check.
+    /* One request per entry, because the player is owed the positions of every
+       wrong letter and each entry is a separate question.
+       Only the first carries the play id. The server counts a paid check per
+       request, so eleven requests were charged as eleven checks — a grid check
+       priced at nine points cost thirty-six. The count belongs to the press of
+       the button, not to the traffic it happens to take.
+       checkGrid says which kind of press it was, so the server adds one to the
+       grid-check tally rather than eleven to the single-check one. */
     var jobs = puzzle.entries.map(function (e, i) {
       var typed = e.cells.map(function (c) { return letters[K(c.x, c.y)] || null; });
-      return api("/api/check-answer", { token: puzzleToken, entry: i, guess: typed, detail: 1,
-                                        playId: playId })
-        .then(function (r) { return { i: i, wrong: r.wrong || [] }; });
+      return api("/api/check-answer", {
+        token: puzzleToken, entry: i, guess: typed, detail: 1,
+        playId: i === 0 ? playId : null,
+        checkGrid: 1,
+      }).then(function (r) { return { i: i, wrong: r.wrong || [] }; });
     });
     Promise.all(jobs).then(function (res) {
       var total = 0;

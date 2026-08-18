@@ -128,5 +128,53 @@ console.log("\nThe grid nudge counts both things");
     /gridStats\.wrongEntries = r\.wrongEntries/.test(fs.readFileSync("js/game.js", "utf8")));
 }
 
+/* A grid check is one press that takes eleven requests, because the player is
+   owed the positions of every wrong letter. The server counted a paid check per
+   request, so a nine-point grid check was charged as eleven three-point ones —
+   thirty-six points for a single press. */
+console.log("\nA press is charged once, whatever traffic it takes");
+{
+  const src = fs.readFileSync("functions/api/check-answer.js", "utf8");
+  const js = fs.readFileSync("js/game.js", "utf8");
+  t("a grid check is tallied as one grid check, not many single ones",
+    /tally\(env, playId, checkGrid \? "srv_check_alls" : "srv_checks"\)/.test(src));
+  t("and only one of its requests carries the play id", (() => {
+    /* The tally is keyed on the play id, so the other ten cannot count even if
+       the flag were ever lost. Two guards, because this one was expensive. */
+    const fn = js.slice(js.indexOf('on("checkGridBtn"') > -1
+      ? js.indexOf('on("checkGridBtn"') : js.indexOf("checkAllsUsed++"), js.length);
+    return /playId: i === 0 \? playId : null/.test(fn.slice(0, 2000));
+  })());
+  t("the single check is still charged as a single check",
+    /checkGrid \? "srv_check_alls" : "srv_checks"/.test(src));
+}
+
+/* The free nudge fires by itself every time the last square is filled. Sent to
+   the paid endpoint it was tallied as a grid check the player never pressed —
+   four automatic fires charged as four nine-point presses. */
+console.log("\nFree information goes through the free door");
+{
+  const js = fs.readFileSync("js/game.js", "utf8");
+  const verify = fs.readFileSync("functions/api/verify.js", "utf8");
+  t("the grid-full nudge asks the free endpoint",
+    /api\("\/api\/verify", \{ token: puzzleToken, grid: gridText\(\)/.test(js));
+  t("and carries no play id, so nothing can tally it", (() => {
+    const at = js.indexOf('api("/api/verify", { token: puzzleToken, grid:');
+    return at > -1 && !/playId/.test(js.slice(at, at + 200));
+  })());
+  t("the free endpoint answers how much, never where", (() => {
+    /* Positions are what nine points buys. If the free door returned them the
+       paid one would be decorative. */
+    const b = verify.replace(/\/\*[\s\S]*?\*\//g, "");
+    return /wrongCells/.test(b) && /wrongEntries/.test(b) && !/wrong:/.test(b);
+  })());
+  t("and nothing in it tallies anything", (() => {
+    /* Comments stripped: this failed on the file's own explanation, which uses
+       the word "tally" to say it does not. Sixth time in this project — §5 of
+       the handover. */
+    return !/tally/.test(verify.replace(/\/\*[\s\S]*?\*\//g, ""));
+  })());
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
