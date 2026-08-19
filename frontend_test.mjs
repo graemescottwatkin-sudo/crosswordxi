@@ -572,6 +572,34 @@ server.listen(0, "127.0.0.1", async () => {
     return js.indexOf('el.tagName === "INPUT"', start) < js.indexOf("typeLetter(ev.key", start);
   })());
 
+  /* Typing over crossings. With "_ _ _ A _ E _" for SHEARER, every crossing
+     makes you retype a letter the board already knows, and one mistyped repeat
+     overwrites a letter that was right. */
+  t("typing can be set to step over squares already filled", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /var skipFilled = false;/.test(js) && /function passOver\(e, i\)/.test(js) &&
+      /localStorage\.setItem\("fcw\.skip"/.test(js);
+  })());
+  t("it is off unless asked for", (() => {
+    /* It changes what the keyboard does, and somebody who has played a
+       crossword expects a letter to go where the cursor is. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /skipFilled = localStorage\.getItem\("fcw\.skip"\) === "on"/.test(js);
+  })());
+  t("and it never leaves an entry that cannot be typed into", (() => {
+    /* With no empty square left, skipping would mean the keys did nothing and a
+       wrong answer could never be corrected. */
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function passOver"), js.indexOf("function typeLetter"));
+    return /return false;\s*\/\/ nothing empty left/.test(fn) &&
+      /if \(!locked\(kk\) && !letters\[kk\]\)/.test(fn);
+  })());
+  t("revealed squares are still never typed over", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function passOver"), js.indexOf("function typeLetter"));
+    return /if \(locked\(k\)\) return true;/.test(fn);
+  })());
+
   console.log("\nMeasured-defect fixes");
   t("no control sets a fixed height below 44px", (() => {
     /* height beats min-height, so four rules were quietly overriding the touch
@@ -1169,16 +1197,26 @@ server.listen(0, "127.0.0.1", async () => {
   })(), d.documentElement.style.getPropertyValue("--board-w") || "(unset in jsdom)");
 
   console.log("\nNothing moves the page when a button is pressed");
-  t("the nudge is inside the board, not between it and the clue lists", (() => {
+  /* It used to sit inside the board, positioned over it — which put the message
+     on top of the squares it was describing whenever the grid reached the
+     bottom of the pitch. It is below the board now, in a row whose height is
+     always reserved: the reason it was moved out of the flow in the first place
+     was that it grew from nothing to 35px and shifted the page under a moving
+     finger, and a permanent row prevents both faults at once. */
+  t("the nudge is below the board, in a row of its own", (() => {
     const nudge = $("gridNudge");
-    return !!nudge && nudge.parentNode.className.indexOf("grid-wrap") !== -1;
+    return !!nudge && nudge.parentNode.className.indexOf("nudge-row") !== -1 &&
+      !$("grid").contains(nudge);
   })());
   t("the nudge is taken out of the flow, so showing it shifts nothing", (() => {
     /* It used to toggle display none/block — no height to ~35px — on every
        Check, every Check All, and twice per New Puzzle. On touch that can move
        a control out from under a finger between press and release. */
-    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
-    return /\.nudge\{[^}]*position:absolute/.test(flat) &&
+    const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
+    /* The row holds the space whether or not there is a message in it, so only
+       the contents change and nothing below can move. */
+    return /\.nudge-row\{[^}]*min-height:\d+px/.test(flat) &&
       /\.nudge\{[^}]*visibility:hidden/.test(flat) &&
       !/\.nudge\{[^}]*display:none/.test(flat) &&
       /\.nudge\.show\{opacity:1;visibility:visible\}/.test(flat);
@@ -1186,17 +1224,18 @@ server.listen(0, "127.0.0.1", async () => {
   t("it cannot swallow a tap aimed at the board",
     /\.nudge\{[^}]*pointer-events:none/.test(
       fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "")));
-  t("showing and hiding it leaves the board where it was", (() => {
-    const wrap = d.querySelector(".grid-wrap");
+  t("showing and hiding it leaves everything else where it was", (() => {
+    /* jsdom has no layout, so this checks the structural precondition: the row
+       is always present with its height reserved, and only the message inside
+       it is shown or hidden. Nothing is added to or removed from the flow. */
+    const row = d.querySelector(".nudge-row");
     const nudge = $("gridNudge");
-    const before = wrap.childElementCount;
+    const before = row.childElementCount;
     nudge.classList.add("show");
     nudge.textContent = "Six letters are wrong";
-    const during = wrap.childElementCount;
+    const during = row.childElementCount;
     nudge.classList.remove("show");
-    // jsdom has no layout, so this checks the structural precondition: the
-    // nudge is a child of the board box and never added or removed from flow.
-    return before === during && wrap.contains(nudge);
+    return before === during && row.contains(nudge) && row.childElementCount === before;
   })());
 
   console.log("\nAccounts stay out of the way");

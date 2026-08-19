@@ -295,5 +295,25 @@ t("signing out clears the same cookie scope it was set with", (() => {
     /renderAccount\(\)/.test(out) && /refreshAdmin\(\)/.test(out) && /renderHome\(\)/.test(out));
 }
 
+/* Signing in was one of three links in a row of small text, which is where a
+   thing goes when nobody is meant to find it — and it is what carries a streak
+   between devices and puts a name on a challenge without typing one. */
+{
+  const html = fs.readFileSync("index.html", "utf8");
+  const js = fs.readFileSync("js/game.js", "utf8");
+  t("sign-in has a control of its own on the landing screen",
+    /id="homeSignIn"/.test(html) && /home-signin/.test(html));
+  t("which disappears once there is an account", (() => {
+    /* An account button is only interesting until you have one. */
+    const fn = js.slice(js.indexOf("function syncSignInPrompt"), js.indexOf("function renderAccount"));
+    return /b\.hidden = !!account/.test(fn);
+  })());
+  t("and is not offered when sign-in is not configured", (() => {
+    /* Offering something that cannot work is worse than not offering it. */
+    const fn = js.slice(js.indexOf("function syncSignInPrompt"), js.indexOf("function renderAccount"));
+    return /!accountsAvailable/.test(fn);
+  })());
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

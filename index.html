@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v46">
+<link rel="stylesheet" href="css/style.css?v=v47">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -274,9 +274,16 @@
         </svg>
       </div>
       <div class="grid" id="grid" role="grid" aria-label="Crossword grid"></div>
-      <!-- Inside the board, and positioned over it: as a block element between
-           the board and the clue lists it went from no height to ~35px every
-           time it appeared, shifting the page under the player's finger. -->
+    </div>
+
+    <!-- Under the board, with its height always reserved.
+         It used to float over the board, and on a grid that reaches the bottom
+         of the pitch it covered the squares it was telling you about. Putting
+         it back in the flow was the original problem — it grew from nothing to
+         35px and shifted the page under a moving finger — so the row is always
+         there and only its contents appear. Costs a strip of empty space and
+         nothing moves. -->
+    <div class="nudge-row">
       <div class="nudge" id="gridNudge" role="status" aria-live="polite"></div>
     </div>
 
@@ -529,6 +536,16 @@
       <select id="homeClubSelect" title="Choose your club (optional)"></select>
     </div>
 
+    <!-- Signing in is one of three links in a row of small text, which is where
+         a thing goes when nobody is meant to find it. It is what carries a
+         streak between a phone and a laptop and what puts a name on a challenge
+         without typing one, so it gets a control of its own — and disappears
+         once it has been done, because an account button is only interesting
+         until you have one. -->
+    <button class="btn outline home-signin" id="homeSignIn" hidden>
+      Sign in to keep your results across devices
+    </button>
+
     <div class="home-links">
       <button id="homeSeason">My Season</button> &middot;
       <button id="homeThemes">Themes</button> &middot;
@@ -649,7 +666,8 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v46</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v47</span> &middot;
+  <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
   <button id="themeToggle">theme: auto</button> &middot;
@@ -660,8 +678,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v46"></script>
-<script src="js/engine.js?v=v46"></script>
-<script src="js/game.js?v=v46"></script>
+<script src="js/seasons.js?v=v47"></script>
+<script src="js/engine.js?v=v47"></script>
+<script src="js/game.js?v=v47"></script>
 </body>
 </html>

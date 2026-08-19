@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v46";
+  var BUILD = "v47";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1497,6 +1497,16 @@
      in the grid — it just saves tracing the row or column by eye. */
   var bankOn = true;
   try { bankOn = localStorage.getItem("fcw.bank") !== "off"; } catch (e) {}
+
+  /* Skip squares that are already filled.
+     With crossings in place, "_ _ _ A _ E _" for SHEARER means typing S, H, E,
+     then landing on the A you did not type, then R, R. Every crossing makes you
+     retype a letter the board already knows, and one mistyped repeat overwrites
+     a letter that was right.
+     Off by default: it changes what the keyboard does, and somebody who has
+     played a crossword before expects a letter to go where the cursor is. */
+  var skipFilled = false;
+  try { skipFilled = localStorage.getItem("fcw.skip") === "on"; } catch (e) {}
   function renderBank(e) {
     var el = $("letterBank");
     el.innerHTML = "";
@@ -1713,7 +1723,16 @@
     });
   }
 
+  function syncSignInPrompt() {
+    var b = $("homeSignIn");
+    if (!b) return;
+    /* Hidden when there is an account, and when sign-in is not configured at
+       all — offering something that cannot work is worse than not offering it. */
+    b.hidden = !!account || !accountsAvailable;
+  }
+
   function renderAccount() {
+    syncSignInPrompt();
     var toggle = $("accountToggle");
     if (toggle) toggle.textContent = account ? "account" : "sign in";
     var sub = $("acctSub");
@@ -2448,6 +2467,21 @@
   on("buildBadge", "click", showStatus);
   on("statusClose", "click", function () { $("statusSheet").classList.remove("show"); });
 
+  on("skipToggle", "click", function () {
+    skipFilled = !skipFilled;
+    try { localStorage.setItem("fcw.skip", skipFilled ? "on" : "off"); } catch (e) {}
+    $("skipToggle").textContent = "skip filled: " + (skipFilled ? "on" : "off");
+    /* Move to a square typing would now use, so the cursor does not sit on a
+       letter the setting has just decided to step over. */
+    if (puzzle && started) {
+      var e = puzzle.entries[cur.entry];
+      var i = cur.cell;
+      while (i < e.len && passOver(e, i)) i++;
+      if (i < e.len) cur.cell = i;
+      updateSelection();
+    }
+  });
+
   on("bankToggle", "click", function () {
     bankOn = !bankOn;
     try { localStorage.setItem("fcw.bank", bankOn ? "on" : "off"); } catch (e) {}
@@ -2455,6 +2489,7 @@
     updateSelection();
   });
   if ($("bankToggle")) $("bankToggle").textContent = "letter bank: " + (bankOn ? "on" : "off");
+  if ($("skipToggle")) $("skipToggle").textContent = "skip filled: " + (skipFilled ? "on" : "off");
 
   function entryFilled(i) {
     return puzzle.entries[i].cells.every(function (c) { return letters[K(c.x, c.y)]; });
@@ -2499,17 +2534,33 @@
       lastSolved[i] = ok;
     });
   }
+  /* Which squares typing steps over. Revealed squares always — they cannot be
+     overwritten. Filled ones only when the setting is on, and only while the
+     entry still has an empty square to reach: with none left, skipping would
+     mean the keys did nothing at all and a wrong answer could never be
+     corrected. */
+  function passOver(e, i) {
+    var k = K(e.cells[i].x, e.cells[i].y);
+    if (locked(k)) return true;
+    if (!skipFilled) return false;
+    for (var j = 0; j < e.len; j++) {
+      var kk = K(e.cells[j].x, e.cells[j].y);
+      if (!locked(kk) && !letters[kk]) return !!letters[k];
+    }
+    return false;                       // nothing empty left: behave normally
+  }
+
   function typeLetter(ch) {
     if (complete || !started || paused) return;
     var e = puzzle.entries[cur.entry];
-    // Locked (revealed) cells cannot be overwritten: land on the next editable cell.
-    while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y))) cur.cell++;
+    // Land on the next square typing is allowed to fill.
+    while (cur.cell < e.len && passOver(e, cur.cell)) cur.cell++;
     if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); updateSelection(); return; }
     var c = e.cells[cur.cell];
     var k = K(c.x, c.y);
     letters[k] = ch;
     delete wrong[k];
-    do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
+    do { cur.cell++; } while (cur.cell < e.len && passOver(e, cur.cell));
     if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
     refreshLetters(); updateSelection(); saveSoon();
     verifySoon();   // the server judges the entry; flashSolved() follows from it
@@ -4149,6 +4200,7 @@
   on("homePractice", "click", function () { chooseMode("practice"); });
   on("homeSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
   on("homeAccount", "click", function () { $("accountSheet").classList.add("show"); });
+  on("homeSignIn", "click", function () { $("accountSheet").classList.add("show"); });
   on("kickBack", "click", showHome);
   /* From inside a game. Switching modes now goes through the menu rather than
      a button that silently moves you between a scored daily and free practice. */
