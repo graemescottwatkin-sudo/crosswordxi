@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v47";
+  var BUILD = "v47a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -749,7 +749,7 @@
     $("strapText").innerHTML = mode === "daily"
       ? "Premier League &middot; " + FCW.dailyPhase(dailyNo).label
       : (mode === "theme" && themeLabel
-          ? "Themed board &middot; " + escapeHtml(themeLabel)
+          ? "Club or theme &middot; " + escapeHtml(themeLabel)
           : "Premier League &middot; Practice");
     $("dailyBtn").style.display = mode === "daily" ? "none" : "";
     document.title = mode === "daily"
@@ -2183,7 +2183,7 @@
           name = m
             ? m[1].replace(/-/g, " ").replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }) +
               " #" + m[2]
-            : "Themed board";
+            : "Club or theme";
         } else if (x.mode === "practice") {
           name = "Practice";
         } else {
@@ -2445,13 +2445,13 @@
              but every one dated ahead of today. All three look identical from
              inside the section — an empty list. */
           if (d.themeBoards === null || d.themeBoards === undefined) {
-            rows.push(statusRow("Themed boards", "no table \u2014 run migration 006", false));
+            rows.push(statusRow("Clubs and themes", "no table \u2014 run migration 006", false));
           } else if (!d.themeBoards) {
-            rows.push(statusRow("Themed boards", "none imported", false));
+            rows.push(statusRow("Clubs and themes", "none imported", false));
           } else {
-            rows.push(statusRow("Themed boards", d.themeLive + " live of " + d.themeBoards,
+            rows.push(statusRow("Clubs and themes", d.themeLive + " live of " + d.themeBoards,
               d.themeLive > 0));
-            if (d.themeNext) rows.push(statusRow("Next themed board", d.themeNext));
+            if (d.themeNext) rows.push(statusRow("Next board", d.themeNext));
           }
           rows.push(statusRow("Sign-in", d.accounts ? "configured" : "not configured", !!d.accounts));
           rows.push(statusRow("Accounts", d.users === null ? "\u2014" : d.users));

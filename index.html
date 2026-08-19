@@ -39,7 +39,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v47">
+<link rel="stylesheet" href="css/style.css?v=v47a">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -452,14 +452,17 @@
   </div>
 </div>
 
-<!-- The Themed section. Three panels, each answering a different question:
+<!-- Clubs and themes. Three panels, each answering a different question:
+     (The markup ids and the "theme" mode keep their old names. Those are what
+     the database calls it, and renaming a column to match a heading is a
+     migration in exchange for nothing.)
      what can I play, what is coming, and how do I ask for mine.
      The schedule publishes names and dates only. Knowing that Manchester
      United #3 lands on 2 October gives nothing away; the board itself would
      give away eleven answers, so it is not sent until its release date. -->
 <div class="sheet" id="themeSheet">
   <div class="sheet-card">
-    <h2>Themed boards</h2>
+    <h2>Clubs and themes</h2>
     <div class="sheet-sub" id="themeSub">A new board every Friday</div>
 
     <h3>Available now</h3>
@@ -523,7 +526,7 @@
          arriving in November should not have to wait for Newcastle's turn to
          come round again. -->
     <button class="home-choice" id="homeThemed">
-      <span class="hc-title">Themed boards</span>
+      <span class="hc-title">Clubs and themes</span>
       <span class="hc-note">A new one every Friday. Play any that have been released.</span>
       <span class="hc-state" id="homeThemedState"></span>
     </button>
@@ -548,7 +551,7 @@
 
     <div class="home-links">
       <button id="homeSeason">My Season</button> &middot;
-      <button id="homeThemes">Themes</button> &middot;
+      <button id="homeThemes">Clubs and themes</button> &middot;
       <button id="homeAccount">Account</button>
     </div>
   </div>
@@ -666,7 +669,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v47</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v47a</span> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
@@ -678,8 +681,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v47"></script>
-<script src="js/engine.js?v=v47"></script>
-<script src="js/game.js?v=v47"></script>
+<script src="js/seasons.js?v=v47a"></script>
+<script src="js/engine.js?v=v47a"></script>
+<script src="js/game.js?v=v47a"></script>
 </body>
 </html>

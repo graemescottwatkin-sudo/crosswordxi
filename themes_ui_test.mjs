@@ -304,6 +304,19 @@ server.listen(0, "127.0.0.1", async () => {
   w.close();
 
   server.close();
-  console.log(`\n${pass} passed, ${fail} failed`);
+  /* The section is called Clubs and themes. The ids, classes and the "theme" mode
+   keep their old names on purpose: those are what the database calls it, and
+   renaming a column to match a heading is a migration in exchange for nothing.
+   What matters is that nothing a player reads still says "Themed boards". */
+{
+  const html = fs.readFileSync("index.html", "utf8");
+  const visible = html.replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\sid="[^"]*"/g, "").replace(/\sclass="[^"]*"/g, "");
+  t("the section is named Clubs and themes", /Clubs and themes/.test(visible));
+  t("and nothing a player reads still says Themed boards",
+    !/Themed boards?/.test(visible), (/Themed boards?/.exec(visible) || [""])[0] || "clean");
+}
+
+console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 });
