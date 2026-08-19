@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v47a";
+  var BUILD = "v48";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1199,8 +1199,13 @@
     /* The toolbar only counts as chrome when it is above the board. In the
        landscape rail it sits beside it, and on short screens below it — in
        both cases counting its height would size the board for space it has. */
-    var barAbove = false;      // nothing sits above the board but the clue strip
-    var measured = h("header") + h(".now-clue") + h(".osk") + (barAbove ? h(".toolbar") : 0);
+    /* Everything in the column that is not the board.
+       The answer boxes and the message row were added above and below it and
+       neither was counted, so the board was sized for space that two other
+       elements had already taken — 31px over the bottom of a 1366x768 laptop.
+       Anything else that joins this column belongs in this line. */
+    var measured = h("header") + h(".now-clue") + h(".bank-strip") + h(".nudge-row") +
+                   h(".osk");
     var isTouch = document.body.classList.contains("touch");
     var chrome = (measured > 80 ? measured : (isTouch ? 330 : 230)) + 46 + padY;
     /* C1/C2 — the real remaining height, with no floor.

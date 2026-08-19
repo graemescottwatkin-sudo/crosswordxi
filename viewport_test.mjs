@@ -286,8 +286,13 @@ t("the boxes wrap inside their column rather than widening it", (() => {
 })());
 t("the readings are right-aligned in their own column",
   /\.bank-strip \.tb-readouts\{[^}]*justify-content:flex-end/.test(flatCss));
-t("and stack below the boxes on a phone, where a third is not enough",
-  /@media \(max-width:560px\)\{[\s\S]{0,200}\.bank-strip\{grid-template-columns:1fr/.test(flatCss));
+/* At 700px, not 560. A third of a 568px landscape phone cannot hold "15:34
+   elapsed" beside a count either, and at 560 the strip burst its column and
+   widened the page to 685px — horizontal scrolling on a 568px screen. */
+t("and stack below the boxes wherever a third is not enough",
+  /@media \(max-width:700px\)\{[\s\S]{0,240}\.bank-strip\{grid-template-columns:1fr/.test(flatCss));
+t("and nothing in the column may be wider than the column",
+  /\.grid-panel > \*\{max-width:100%;min-width:0\}/.test(flatCss));
 t("the readings carry no card face inside the strip",
   /\.bank-strip \.tb-readouts \.match-clock,[\s\S]{0,80}\{[^}]*border:none/.test(flatCss));
 

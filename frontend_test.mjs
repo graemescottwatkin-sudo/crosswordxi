@@ -635,13 +635,21 @@ server.listen(0, "127.0.0.1", async () => {
     return /function toolbarBelow/.test(js) && /vh <= 600/.test(js) &&
       /panel\.parentNode\.insertBefore\(bar, panel\.nextSibling\)/.test(js);
   })());
-  t("and nothing above the board is counted as chrome but the clue strip", (() => {
+  t("every element in the column is counted against the board's height", (() => {
     /* There is no toolbar above the board any more — the controls are in the
        column beneath it — so nothing between the header and the board can be
        counted against the space the board has. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /var barAbove = false/.test(js) &&
-      /barAbove \? h\("\.toolbar"\) : 0/.test(js);
+    /* Everything in the column that is not the board, measured by name. The
+       answer boxes and the message row were added above and below it and
+       neither was counted, so the board was sized for space two other elements
+       had already taken — 31px past the bottom of a 1366x768 laptop. */
+    /* barAbove is gone with the toolbar it described. What replaced it is the
+       list itself: measured by name, so adding an element to the column and
+       forgetting this line is the fault that shows up as a board 31px past the
+       bottom of the screen. */
+    return /h\("\.bank-strip"\)/.test(js) && /h\("\.nudge-row"\)/.test(js) &&
+      !/barAbove/.test(js);
   })());
 
   t("signing in during pre-season explains why nothing carried over", (() => {
@@ -740,10 +748,20 @@ server.listen(0, "127.0.0.1", async () => {
   })());
 
   t("the analytics beacon is present and does not block the page", (() => {
-    /* defer, so it never delays the board appearing — a puzzle that loads a
-       tenth of a second later to count a visit is a bad trade. */
-    const tag = d.querySelector('script[src*="cloudflareinsights"]');
-    return !!tag && tag.hasAttribute("defer");
+    /* Checked in the source, not the DOM. It is injected rather than declared,
+       and only on the production hostname: a <script src> tag runs wherever the
+       page is opened, and in jsdom the incomplete Performance API made the
+       beacon throw during boot — indistinguishable, to the suite, from one of
+       our own errors.
+       defer still, so it never delays the board appearing. */
+    return /static\.cloudflareinsights\.com\/beacon\.min\.js/.test(html) &&
+      /s\.defer = true;/.test(html);
+  })());
+  t("and it does not run anywhere but the real site", (() => {
+    /* Not in the test DOM, and not from 127.0.0.1 during the browser checks,
+       where the request is cross-origin and fails noisily for no benefit. */
+    return /location\.hostname !== "crossword\.thexigames\.com"/.test(html) &&
+      !d.querySelector('script[src*="cloudflareinsights"]');
   })());
   t("it carries no cookie and no identifier of ours", (() => {
     // Nothing to consent to, and nothing to put in a privacy policy.

@@ -573,10 +573,27 @@ button.tb-label{
 .bank-strip .tb-readouts .match-clock{font-size:21px;text-align:right;line-height:1}
 .bank-strip .tb-readouts .match-clock small{font-size:9px;letter-spacing:.1em}
 .bank-strip .tb-readouts .live-chip{font-size:12px;white-space:nowrap}
-@media (max-width:560px){
-  /* One third of a phone is not enough for "15:34 elapsed" beside a count, so
-     below this the two stack instead of being squeezed. */
+/* Nothing in the column may be wider than the column.
+   The board can be 284px on a short landscape phone, and neither a clock beside
+   a count nor a twenty-club league table fits in that — both burst the panel
+   and widened the page to 685px, which is horizontal scrolling on a screen
+   568px across. They are allowed to scroll inside themselves instead. */
+.grid-panel > *{max-width:100%;min-width:0}
+.grid-panel > .tb-table{overflow-x:auto}
+.bank-strip{min-width:0}
+.bank-strip > *{min-width:0}
+
+@media (max-width:700px){
+  /* A third of a narrow screen cannot hold "15:34 elapsed" beside a count.
+     Stacking is the only arrangement that fits, at any height. */
   .bank-strip{grid-template-columns:1fr;gap:8px}
+  .bank-strip .tb-readouts{
+    justify-content:flex-start;padding-left:0;padding-top:8px;
+    border-left:none;border-top:1px solid var(--line);
+  }
+}
+
+@media (max-width:560px){
   .bank-strip .tb-readouts{
     justify-content:flex-start;padding-left:0;padding-top:8px;
     border-left:none;border-top:1px solid var(--line);
