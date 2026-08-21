@@ -2296,7 +2296,15 @@ body.flex-layout .tbar-right{margin-left:auto;display:flex;gap:6px;align-items:c
   padding:9px 10px;border-radius:6px;min-height:40px;
 }
 .tbar-pop button:hover{background:var(--sel-word)}
-.tbar-pop button[disabled]{opacity:.4}
+/* Greyed, not gone. A missing item reads as a thing that does not exist; a
+   greyed one with a reason beside it reads as a thing that is not available to
+   you yet, which is the truth in both cases here. */
+.tbar-pop button[disabled]{opacity:.45;cursor:default}
+.tbar-pop button[disabled]:hover{background:none}
+.tbar-pop .pc.soon{
+  text-transform:uppercase;letter-spacing:.06em;font-size:10px;
+  border:1px solid var(--line);border-radius:999px;padding:2px 6px;
+}
 .tbar-pop .pc{margin-left:auto;font-size:12px;color:var(--ink-faint);
   font-variant-numeric:tabular-nums}
 .tbar-pop button.danger{color:var(--wrong)}

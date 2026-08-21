@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v65";
+  var BUILD = "v67";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1223,7 +1223,16 @@
      out on every clue. It holds a comfortable magnification instead and only
      moves the board when the answer is not already in view, which is the thing
      the mode is actually for: never losing the word you are typing into. */
-  var fxMode = "board";
+  /* Follow word on a phone, whole board on anything bigger.
+
+     On a phone the clue lists are gone and the board is the only thing on
+     screen, so keeping the answer being typed framed is what the mode is for.
+     On a tablet or a laptop the lists are beside the board and there is room to
+     see all of it, so the whole board is the better resting state.
+
+     Overridden by whatever was last chosen, so this is a first-run default and
+     not a rule. */
+  var fxMode = (window.innerWidth || 400) < 860 ? "word" : "board";
   var FX_WORD_K = 1.6;               // magnification held in word mode
 
   function fxWordBox() {
@@ -4959,8 +4968,14 @@
     var fm = localStorage.getItem("fcw.fxmode");
     if (fm === "word" || fm === "manual" || fm === "board") fxMode = fm;
     fxLabel();
-    if (localStorage.getItem("fcw.layout") === "flex") setLayout(true);
-    else { var lb = $("layoutToggle"); if (lb) lb.textContent = "layout: classic"; }
+    /* Flex is the layout now. Classic is still there, still complete, and one
+       press away in the settings panel — but somebody arriving for the first
+       time gets the new one.
+
+       Only an explicit "classic" opts out, so anybody who chose it during the
+       opt-in period keeps it and is not overridden by the default changing
+       under them. */
+    setLayout(localStorage.getItem("fcw.layout") !== "classic");
   } catch (e) {}
 
   /* ---------- Toolbar ----------
@@ -5022,16 +5037,29 @@
       if (c) c.textContent = left ? "\u2212" + cost : "\u2014";
       var ra = document.querySelector('[data-act="reveal-all"]');
       if (ra) ra.disabled = !left;
-      /* The free substitution only exists when one is available. */
-      var sb = $("subBtn"), item = $("tbSub");
-      if (item) item.hidden = !(sb && sb.style.display !== "none");
+      /* Substitutions belong to practice levels. Shown either way, but greyed
+         and labelled where they do not apply — an item that vanishes reads as
+         a feature that does not exist, rather than one you cannot use here. */
+      var sb = $("subBtn"), item = $("tbSub"), note = $("tbSubNote");
+      if (item) {
+        var have = sb && sb.style.display !== "none" && !sb.disabled;
+        item.disabled = !have;
+        if (note) {
+          note.textContent = have
+            ? ($("subCount") ? $("subCount").textContent : "")
+            : (mode === "practice" ? "None left" : "Practice only");
+        }
+      }
       /* Practice is the only mode where clearing is offered. A daily or a
          themed board can be sent as a challenge, and wiping one is a way to
          lose a run somebody else is measuring themselves against. */
       var cl = $("tbClear");
       if (cl) cl.hidden = mode !== "practice";
+      /* Practice is suspended while the clue bank is rebuilt. Left in the menu
+         so the track is visibly coming rather than quietly missing — the same
+         reasoning as the Coming soon tile on the landing screen. */
       var pr = $("tbPractice");
-      if (pr) pr.disabled = false;
+      if (pr) pr.disabled = true;
       var lab = $("tbModeLabel");
       if (lab) {
         lab.textContent = mode === "daily" ? "Daily"
@@ -5048,7 +5076,7 @@
       closePops(null);
       var a = b.getAttribute("data-act");
       if (a === "daily") click("dailyBtn");
-      else if (a === "practice") chooseMode("practice");
+      else if (a === "practice") return;      // suspended; the item is disabled
       else if (a === "themes") { renderThemes(); $("themeSheet").classList.add("show"); }
       else if (a === "new") click("newBtn");
       else if (a === "menu") click("menuBtn");
