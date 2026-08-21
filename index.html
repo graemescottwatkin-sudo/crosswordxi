@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v95">
+<link rel="stylesheet" href="css/style.css?v=v98">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -381,6 +381,17 @@
         <button id="fxIn" type="button" aria-label="Zoom in">+</button>
       </div>
       <button class="fx-fit" id="fxFit" type="button">Fit board</button>
+      <!-- Offered once, and only when it would help.
+
+           A control nobody finds is a control that does not exist, but a tip on
+           arrival is read by nobody — they are looking at the puzzle. This waits
+           until somebody is typing into cells small enough for it to be worth
+           saying, which is the only moment the answer means anything. -->
+      <div class="fx-tip" id="fxTip" hidden>
+        <span id="fxTipText"></span>
+        <button class="btn secondary" id="fxTipYes" type="button">Try it</button>
+        <button class="fx-tip-x" id="fxTipNo" type="button" aria-label="No thanks">&times;</button>
+      </div>
     </div>
 
     <!-- Under the board, with its height always reserved.
@@ -841,7 +852,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v95</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v98</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -854,8 +865,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v95"></script>
-<script src="js/engine.js?v=v95"></script>
-<script src="js/game.js?v=v95"></script>
+<script src="js/seasons.js?v=v98"></script>
+<script src="js/engine.js?v=v98"></script>
+<script src="js/game.js?v=v98"></script>
 </body>
 </html>

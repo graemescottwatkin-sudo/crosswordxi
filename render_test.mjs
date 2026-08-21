@@ -282,7 +282,18 @@ const run = async () => {
     const label = `${name} ${w}x${h}`;
 
     try {
-      await page.goto(BASE, { waitUntil: "networkidle", timeout: 15000 });
+      /* Tagged, so these attempts can be told from a player's.
+
+         The gate plays a real puzzle on the real site sixteen times a run and
+         never finishes one. Untagged that landed as 49 daily plays with zero
+         completions on a day the daily had one genuine player — a number that
+         reads as a broken daily rather than as a test suite.
+
+         by_owner does not help: it is set from the session, and the gate is not
+         signed in. ?r= is the short campaign tag, so the rows carry
+         utm_campaign='gate' and any report can exclude them. */
+      const url = BASE + (BASE.indexOf("?") > -1 ? "&" : "?") + "r=gate";
+      await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
 
       /* Only scroll if the player would actually have to. CrosswordXI's start
          overlay is position:fixed and centred, so Kick Off is always reachable

@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v95";
+  var BUILD = "v98";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1232,7 +1232,16 @@
 
      Overridden by whatever was last chosen, so this is a first-run default and
      not a rule. */
-  var fxMode = (window.innerWidth || 400) < 860 ? "word" : "board";
+  /* The whole board, everywhere, until somebody asks for otherwise.
+
+     Phones defaulted to Follow word, which since the modes were coupled also
+     hides everything except the answer being typed. That is a good way to solve
+     and a bad way to arrive: most people reach this from a link somebody sent
+     them, and a first screen showing one word does not tell them they have a
+     crossword. Show them the thing, let them narrow it.
+
+     A first-run default, not a rule — whatever was last chosen still wins. */
+  var fxMode = "board";
   var FX_WORD_K = 1.6;               // magnification held in word mode
 
   function fxWordBox() {
@@ -2851,6 +2860,7 @@
       advanceToNextEntry();
     }
     refreshLetters(); updateSelection(); saveSoon();
+    maybeOfferFollowWord();
     verifySoon();   // the server judges the entry; flashSolved() follows from it
   }
   function backspace() {
@@ -4429,6 +4439,45 @@
     box.style.display = "";
   }
 
+  /* The Follow word tip: offered once, and only where it earns its interruption.
+
+     Four conditions, all of them about the moment rather than the person:
+       the flex layout, since that is where the mode exists
+       Fit board, or there is nothing to suggest
+       cells under 32px, which is a board with more columns than this screen
+         comfortably carries
+       three letters typed, so they are solving rather than arriving
+
+     Shown once ever. A tip that returns is an advert. */
+  var TIP_KEY = "fcw.tip.followword";
+  var tipShown = false;
+
+  function maybeOfferFollowWord() {
+    if (tipShown || !flexOn || fxMode !== "board" || !puzzle) return;
+    var box = $("fxTip");
+    if (!box || !box.hidden) return;
+    try { if (localStorage.getItem(TIP_KEY)) { tipShown = true; return; } } catch (e) {}
+    if (Object.keys(letters).length < 3) return;
+
+    /* The cell as it is actually drawn, which is FX_BASE through the transform
+       — not FX_BASE, which is the size before any of the fitting happens. */
+    var cell = FX_BASE * fxScale;
+    if (cell >= 32) return;
+
+    tipShown = true;
+    /* Says what it does, not that something is wrong. The board is fine; this
+       is an option, and a tip that opens by diagnosing a problem the player has
+       not noticed invents one. */
+    $("fxTipText").textContent =
+      "Follow word zooms to the answer you are typing, one at a time.";
+    box.hidden = false;
+  }
+  function closeTip(remember) {
+    var box = $("fxTip");
+    if (box) box.hidden = true;
+    if (remember) { try { localStorage.setItem(TIP_KEY, "1"); } catch (e) {} }
+  }
+
   function showTodayRank(mine) {
     var el = $("rRank");
     if (!el) return;
@@ -5400,6 +5449,15 @@
      cog, which drives the real control.
 
      "It is only one line" is exactly how a second implementation starts. */
+  on("fxTipYes", "click", function (ev) {
+    ev.stopPropagation();
+    closeTip(true);
+    fxMode = "word";
+    applyFxMode();
+    try { localStorage.setItem("fcw.fxmode", fxMode); } catch (e) {}
+  });
+  on("fxTipNo", "click", function (ev) { ev.stopPropagation(); closeTip(true); });
+
   on("tbSignIn", "click", function (ev) {
     ev.stopPropagation();
     var b = $("accountToggle");
