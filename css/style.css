@@ -1185,6 +1185,11 @@ body.touch .osk{display:block}
   background:var(--card);border-radius:12px;max-width:400px;width:100%;
   padding:26px 26px 24px;text-align:center;border-top:6px solid var(--pitch);
   animation:pop .35s cubic-bezier(.2,1.4,.4,1);
+  /* The same shape as the challenge card: a twenty-row league table under a
+     score, and nothing stopping the card growing past the screen. Caught while
+     fixing the challenge screen rather than after somebody met it. */
+  max-height:100%;overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
 }
 @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.result{animation:none}}
@@ -1729,6 +1734,20 @@ body.rotate-needed .rotate-prompt{
   padding:28px 24px;text-align:center;
   box-shadow:0 18px 50px rgba(0,0,0,.28);
   border-top:4px solid var(--pitch);box-sizing:border-box;
+  /* The card cannot grow past the screen.
+
+     The standings table has no fixed length — this one already has thirty-two
+     finishers — so the card grew with it and pushed Play and the way out off
+     the bottom, on a challenge somebody had just been sent. A card whose
+     controls cannot be reached is a dead end.
+
+     The card holds still and the table scrolls inside it; see below. */
+  /* The overlay is fixed to the viewport with 20px of padding, so its content
+     box is already the space available — 100% of that is the right cap, and a
+     dvh figure would have to guess at the padding and would be wrong by 40px.
+     The svh/dvh line is only a fallback for browsers without a sized parent. */
+  max-height:100%;
+  display:flex;flex-direction:column;
 }
 .ch-who{
   font-family:var(--disp);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
@@ -1764,7 +1783,27 @@ body.rotate-needed .rotate-prompt{
 .challenge-table{
   margin:14px 0;padding:12px;border:1px solid var(--pitch);
   border-radius:10px;background:var(--card);
+  /* The one thing in the card allowed to be long, so it is the one thing that
+     scrolls. Everything above and below it stays put and stays reachable —
+     including the name field, Play, and the way out. */
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  flex:0 1 auto;
+  -webkit-overflow-scrolling:touch;
 }
+/* The heading names whose table it is, and the key explains the shorthand in
+   the rows. Both stay put while the rows move — a legend you have to scroll to
+   is a legend nobody reads, and thirty-two rows is a long way to scroll back
+   to find out whose challenge this was. */
+.challenge-table h3{
+  position:sticky;top:-12px;margin-top:0;
+  background:var(--card);z-index:1;padding:4px 0;
+}
+.challenge-table .ct-key{
+  position:sticky;bottom:-12px;
+  background:var(--card);z-index:1;padding-top:6px;
+}
+/* Everything that is not the table keeps its size when the card is short. */
+.challenge-overlay .overlay-card > :not(.challenge-table){flex:none}
 /* The table is scanned, so nothing in it may wrap. A long help list pushed the
    score off the panel and the name onto two lines. */
 .challenge-table table{
