@@ -2220,34 +2220,18 @@ body.flex-layout .tb-game{order:3;flex:none}
 body.flex-layout .tb-help{order:4;flex:none}
 body.flex-layout .nudge-row{order:5;flex:none}
 
-/* The league table, on a phone: beside the clock, not below it.
+/* The league table is not shown on a phone.
 
-   Stacked it cost the board a whole row of height for three rows of a
-   twenty-team table. The strip and the table are separate blocks in a column,
-   so sharing a row means the column becomes a grid for those two — everything
-   else still spans both tracks and reads as a column.
+   Two goes at fitting it: stacked under the letter bank, which cost the board a
+   whole row of height, and beside the clock as a second grid track, which did
+   not lay out cleanly. Neither earned its space next to a board that is the
+   whole point of the screen.
 
-   The table already carries the running score and the position, which is why a
-   chip repeating them was removed long ago. */
+   The running score chip covers what the table was there for, and the season
+   table is a sheet away. Worth another attempt another day, not at the cost of
+   the board. */
 @media (max-width:859px){
-  body.flex-layout .grid-panel{
-    display:grid;
-    grid-template-columns:1fr auto;
-    grid-template-rows:1fr auto auto auto auto auto;
-  }
-  body.flex-layout .grid-wrap{grid-column:1 / -1;grid-row:1}
-  body.flex-layout .bank-strip{grid-column:1;grid-row:2}
-  body.flex-layout .tb-table{
-    grid-column:2;grid-row:2;align-self:stretch;
-    display:flex;align-items:center;
-    margin:0;max-width:none;width:auto;
-    border-radius:0;border-right:0;border-top:0;border-bottom:0;
-    border-left:1px solid var(--line);padding:2px 8px;
-  }
-  body.flex-layout .tb-game{grid-column:1 / -1;grid-row:3}
-  body.flex-layout .tb-help{grid-column:1 / -1;grid-row:4}
-  body.flex-layout .nudge-row{grid-column:1 / -1;grid-row:5}
-  body.flex-layout .now-clue{grid-column:1 / -1;grid-row:6}
+  body.flex-layout .tb-table{display:none}
 }
 body.flex-layout .tb-table .club-bar,
 body.flex-layout .tb-table .tb-season{display:none}
@@ -2498,10 +2482,17 @@ body.flex-layout .tb-help{display:none}
 /* The running score, beside the clock. Only in the flex layout: the classic one
    still shows the league table, where the number already lives. */
 .live-score{display:none}
-body.flex-layout.has-table .live-score{display:none}
+/* The chip stands down only where the table is actually there to replace it.
+
+   has-table means a club has been chosen, not that the table is on screen — and
+   on a phone it is not. Hiding the chip on that class alone left a phone player
+   with a club and no score anywhere, which is the regression this chip exists
+   to fix. Scoped to the width where the table renders. */
+@media (min-width:860px){
+  body.flex-layout.has-table .live-score{display:none}
+}
 /* No club, no table: renderLeagueRows never runs without one, so the panel
-   would be an empty box taking room from the board. The score chip covers that
-   case instead. */
+   would be an empty box taking room from the board. */
 body.flex-layout:not(.has-table) .tb-table{display:none}
 body.flex-layout .live-score{
   display:inline-flex;align-items:baseline;gap:3px;
