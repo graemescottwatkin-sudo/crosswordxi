@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v89";
+  var BUILD = "v90";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2108,6 +2108,28 @@
       var v = slugify(q.get(f));
       if (v) { fresh[f] = v; any = true; }
     });
+
+    /* ?r=a1 — a short alias for a campaign tag.
+
+       utm_source=reddit&utm_campaign=arsenal-match-thread is fifty characters
+       of machinery hanging off a link somebody is deciding whether to click,
+       and a long ugly URL is one people skip. A two-character code does the
+       same job: it groups the arrivals from one post, and it is opaque to
+       whoever reads it.
+
+       It fills the campaign field, with the source marked "ref" so a short-link
+       arrival is distinguishable from a tagged one. What a1 meant is a note you
+       keep, not something the site needs to know — a lookup table here would be
+       a second place to maintain for no gain.
+
+       An explicit utm_campaign still wins: this is the shorthand, not a
+       replacement. */
+    var short = slugify(q.get("r"));
+    if (short && !fresh.utm_campaign) {
+      fresh.utm_campaign = short;
+      if (!fresh.utm_source) fresh.utm_source = "ref";
+      any = true;
+    }
     /* A link with campaign tags starts a new attribution; without them, keep
        whatever this session already had. So moving from the landing page into
        a puzzle does not lose where the visit came from. */
