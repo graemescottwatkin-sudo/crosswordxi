@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v70";
+  var BUILD = "v73";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1920,6 +1920,32 @@
     }
     if ($("acctSignedIn")) $("acctSignedIn").style.display = account ? "" : "none";
     if ($("acctSignedOut")) $("acctSignedOut").style.display = account ? "none" : "";
+    /* The toolbar control and the Full Time offer follow the same state, from
+       here — the one place that already knows whether there is an account.
+
+       The toolbar shows either. Signed in it is the name, which is worth having
+       on screen: it answers "am I saving this?" without opening anything, and
+       it is how somebody notices they are signed in as the wrong person on a
+       shared device. Signed out it is the way in.
+
+       Hidden entirely when accounts are not configured, because offering a
+       sign-in that cannot happen is worse than not offering one. */
+    var who = $("tbSignIn"), label = $("tbSignInLabel");
+    if (who) {
+      who.style.display = (account || accountsAvailable) ? "" : "none";
+      who.classList.toggle("signed-in", !!account);
+      if (label) {
+        /* accountName() already falls back to the part of the email before the
+           @, so a signed-in player always has something to be called. */
+        label.textContent = account
+          ? (accountName() || "Account")
+          : "Log in / register";
+      }
+      who.title = account ? "Your account" : "Save your results across devices";
+    }
+    if ($("resSignIn")) {
+      $("resSignIn").style.display = (!account && accountsAvailable) ? "" : "none";
+    }
     if ($("acctUnavailable")) {
       $("acctUnavailable").style.display = accountsAvailable ? "none" : "";
     }
@@ -2688,6 +2714,9 @@
     cur.entry = target;
     var te = puzzle.entries[target];
     cur.cell = te.cells.findIndex(function (cc) { return cc.x === x && cc.y === y; });
+    /* Tapping a square is a deliberate act: from here typing overwrites rather
+       than skipping, however skip-filled is set. */
+    skipExempt = target;
     updateSelection(); startTimer();
     ev.preventDefault();
   }
@@ -2714,9 +2743,21 @@
      entry still has an empty square to reach: with none left, skipping would
      mean the keys did nothing at all and a wrong answer could never be
      corrected. */
+  /* Which entry, if any, is currently exempt from skip-filled.
+
+     Skipping over letters already in the grid is right while an answer is being
+     filled — it is what the setting is for. It is wrong the moment somebody
+     taps a filled square, because the only reason to do that is to change what
+     is there, and skipping past it means the correction lands somewhere else.
+
+     Exempt for that answer only, and only until the selection moves on. The
+     setting is not changed and nothing has to be put back. */
+  var skipExempt = -1;
+
   function passOver(e, i) {
     var k = K(e.cells[i].x, e.cells[i].y);
     if (locked(k)) return true;
+    if (skipExempt === cur.entry) return false;
     if (!skipFilled) return false;
     for (var j = 0; j < e.len; j++) {
       var kk = K(e.cells[j].x, e.cells[j].y);
@@ -2778,7 +2819,7 @@
     var pos = order.indexOf(cur.entry);
     for (var s = 1; s <= order.length; s++) {
       var i = order[(pos + s) % order.length];
-      if (!entryFilled(i)) { cur.entry = i; cur.cell = firstEmptyCell(i); return; }
+      if (!entryFilled(i)) { cur.entry = i; cur.cell = firstEmptyCell(i); clearSkipExempt(); return; }
     }
   }
   /* Jump straight to another unanswered clue.
@@ -2827,6 +2868,8 @@
     m.setAttribute("aria-expanded", opening ? "true" : "false");
   }
 
+  function clearSkipExempt() { skipExempt = -1; }
+
   function stepClue(delta) {
     /* The edge zones are on screen before a puzzle is. Guarded here rather
        than at each caller: stepClue is reached from the zones, the keyboard,
@@ -2837,6 +2880,7 @@
     var pos = order.indexOf(cur.entry);
     cur.entry = order[(pos + delta + order.length) % order.length];
     cur.cell = firstEmptyCell(cur.entry);
+    clearSkipExempt();
     updateSelection(); startTimer();
   }
   function moveArrow(dx, dy) {
@@ -4778,6 +4822,7 @@
     e.stopPropagation();
     cur.entry = Number(b.getAttribute("data-entry"));
     cur.cell = firstEmptyCell(cur.entry);
+    clearSkipExempt();
     closeJump();
     updateSelection();
     startTimer();
@@ -5207,6 +5252,16 @@
 
     refreshMenus();
   })();
+
+  /* Both routes open the account sheet, which is where signing in actually
+     happens — no second implementation of it. */
+  on("tbSignIn", "click", function (ev) {
+    ev.stopPropagation();
+    $("accountSheet").classList.add("show");
+  });
+  on("resSignInBtn", "click", function () {
+    $("accountSheet").classList.add("show");
+  });
 
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
   on("themeShowSoon", "click", function () {
