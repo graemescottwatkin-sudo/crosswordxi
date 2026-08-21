@@ -1755,3 +1755,55 @@ body.rotate-needed .rotate-prompt{
   font-size:15px;color:var(--ink);background:var(--card);
   border:1px solid var(--line);border-radius:7px;padding:0 8px;
 }
+
+/* Clubs and themes: Core / Special / General bands. A club shows every Core
+   category, greyed where no board exists yet — hiding an empty one tells a
+   supporter their club has nothing, greying it says the category exists and
+   has not been written. */
+.theme-club {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.theme-club:last-child { border-bottom: 0; }
+
+.club-name {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+
+.theme-band { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+
+.band-label {
+  flex: 0 0 62px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .65;
+  padding-top: 6px;
+}
+
+.band-chips { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 6px; }
+
+.theme-board.ghost {
+  opacity: .38;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tb-soon {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .8;
+}
+
+@media (max-width: 420px) {
+  .theme-band { flex-direction: column; gap: 4px; }
+  .band-label { flex: none; padding-top: 0; }
+}

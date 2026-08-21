@@ -4059,6 +4059,25 @@
       .catch(function (err) { $("themeRequestMsg").textContent = String(err.message || err); });
   });
 
+  var CORE_SLOTS = [
+    { slug: "goalkeepers",  label: "Goalkeepers" },
+    { slug: "defenders",    label: "Defenders" },
+    { slug: "midfielders",  label: "Midfielders" },
+    { slug: "strikers",     label: "Strikers" },
+    { slug: "captains",     label: "Captains" },
+    { slug: "managers",     label: "Managers" },
+    { slug: "legends",      label: "Legends" },
+    { slug: "rivalries",    label: "Rivalries" },
+    { slug: "in-the-cups",  label: "In the Cups" },
+    { slug: "europe",       label: "Europe" },
+    { slug: "grounds",      label: "Grounds" },
+    { slug: "1990s",        label: "1990s" },
+    { slug: "2000s",        label: "2000s" },
+    { slug: "2010s",        label: "2010s" },
+    { slug: "2020s",        label: "2020s" },
+    { slug: "way-back-when", label: "Way Back When" }
+  ];
+
   function renderThemes() {
     var box = $("themeAvailable"), next = $("themeUpcoming");
     if (!box) return;
@@ -4075,28 +4094,28 @@
         next.innerHTML = '<div class="sheet-empty">Nothing scheduled yet.</div>';
         return;
       }
+
       var done = themeResults();
       var asked = {};
       (d.mine || []).forEach(function (k) { asked[k] = true; });
-      box.innerHTML = d.themes.map(function (t) {
-        var boards = t.boards.map(function (b) {
-          var key = t.id + "-" + b.no;
-          var r = done[key];
-          return '<button class="theme-board' + (r ? " played" : "") +
-            '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b.no +
-            '" data-id="' + b.boardId + '">#' + b.no +
-            (r && r.score != null ? '<span class="tb-score">' + r.score + '</span>' : "") +
-            "</button>";
-        }).join("");
-        /* Standing in for an email. Somebody who asked for this theme is told
-           the week it lands, without an address, a scheduler or an
-           unsubscribe — and it reaches everyone who comes back, which is most
-           of the people an email would have reached anyway. */
-        var flag = asked[t.id]
-          ? '<span class="theme-asked">You asked for this</span>' : "";
-        return '<div class="theme-group"><div class="theme-name">' +
-          escapeHtml(t.name) + flag + '</div><div class="theme-boards">' + boards + "</div></div>";
-      }).join("");
+
+      /* Clubs and topics are different things and are drawn differently.
+         A club gets the three bands; a topic keeps its numbered boards, because
+         Grounds and Nicknames are not clubs and the bands would mean nothing on
+         them. A club theme is one whose club is set — the column, not a guess
+         from the id. */
+      var clubs = {}, clubOrder = [], topics = [];
+      d.themes.forEach(function (t) {
+        if (!t.club) { topics.push(t); return; }
+        if (!clubs[t.club]) { clubs[t.club] = []; clubOrder.push(t.club); }
+        clubs[t.club].push(t);
+      });
+
+      var html = clubOrder.map(function (c) { return clubBlock(c, clubs[c], done, asked); })
+        .concat(topics.map(function (t) { return topicBlock(t, done, asked); }))
+        .join("");
+
+      box.innerHTML = html || '<div class="sheet-empty">No themed boards yet.</div>';
 
       next.innerHTML = d.upcoming.length
         ? d.upcoming.map(function (u) {
@@ -4105,10 +4124,106 @@
           }).join("")
         : '<div class="sheet-empty">Nothing scheduled yet.</div>';
 
-
     }).catch(function () {
       box.innerHTML = '<div class="sheet-empty">Could not load the themed boards.</div>';
     });
+  }
+
+  /* One club, three bands. */
+  function clubBlock(club, themes, done, asked) {
+    var byId = {};
+    themes.forEach(function (t) { byId[t.id] = t; });
+
+    /* The club's display name comes off whichever theme is at hand, with the
+       category trimmed. Falls back to the club id so a club always has a name
+       even if every theme it owns is named unexpectedly. */
+    var name = clubName(themes, club);
+
+    var core = CORE_SLOTS.map(function (slot) {
+      var t = byId[club + "-" + slot.slug];
+      return t ? liveSlot(t, slot.label, done, asked) : ghostSlot(slot.label);
+    }).join("");
+
+    var special = themes.filter(function (t) { return t.family === "special"; })
+      .map(function (t) { return liveSlot(t, categoryOf(t, name), done, asked); }).join("");
+
+    var general = themes.filter(function (t) { return t.family === "general"; })
+      .map(function (t) { return liveSlot(t, "", done, asked); }).join("");
+
+    return '<div class="theme-club">' +
+      '<div class="club-name">' + escapeHtml(name) + "</div>" +
+      band("Core", core) +
+      (special ? band("Special", special) : "") +
+      (general ? band("General", general) : "") +
+      "</div>";
+  }
+
+  function band(label, inner) {
+    return '<div class="theme-band"><div class="band-label">' + label +
+      '</div><div class="band-chips">' + inner + "</div></div>";
+  }
+
+  /* A category with boards. One button per board, numbered, so a category with
+     three boards reads "Strikers 1 2 3" rather than three separate headings. */
+  function liveSlot(t, label, done, asked) {
+    var chips = t.boards.map(function (b) {
+      var r = done[t.id + "-" + b.no];
+      return '<button class="theme-board' + (r ? " played" : "") +
+        '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b.no +
+        '" data-id="' + b.boardId + '">' +
+        (label ? escapeHtml(label) + " " : "#") + b.no +
+        (r && r.score != null ? '<span class="tb-score">' + r.score + "</span>" : "") +
+        "</button>";
+    }).join("");
+    var flag = asked[t.club] || asked[t.id]
+      ? '<span class="theme-asked">You asked for this</span>' : "";
+    return chips + flag;
+  }
+
+  /* A Core category with nothing behind it yet.
+
+     Greyed rather than hidden. Hiding it tells a supporter their club has
+     nothing; greying it says the category exists and has not been written yet,
+     which is both truer and kinder. Not a button — there is nothing to open, and
+     a disabled button invites the click that does nothing. */
+  function ghostSlot(label) {
+    return '<span class="theme-board ghost" aria-disabled="true">' +
+      escapeHtml(label) + '<span class="tb-soon">soon</span></span>';
+  }
+
+  /* Topics keep numbered boards: they are not clubs and the bands would mean
+     nothing on them. This is the original renderer, unchanged. */
+  function topicBlock(t, done, asked) {
+    var boards = t.boards.map(function (b) {
+      var r = done[t.id + "-" + b.no];
+      return '<button class="theme-board' + (r ? " played" : "") +
+        '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b.no +
+        '" data-id="' + b.boardId + '">#' + b.no +
+        (r && r.score != null ? '<span class="tb-score">' + r.score + "</span>" : "") +
+        "</button>";
+    }).join("");
+    var flag = asked[t.id] ? '<span class="theme-asked">You asked for this</span>' : "";
+    return '<div class="theme-group"><div class="theme-name">' +
+      escapeHtml(t.name) + flag + '</div><div class="theme-boards">' + boards + "</div></div>";
+  }
+
+  /* "Arsenal — Goalkeepers" -> "Arsenal". Display only: nothing keys on the
+     result, so an unexpected name degrades to the club id rather than to
+     nothing. */
+  function clubName(themes, club) {
+    for (var i = 0; i < themes.length; i++) {
+      var cut = String(themes[i].name).split(/\s+[\u2014-]\s+/)[0];
+      if (cut && cut !== themes[i].name) return cut;
+    }
+    return themes.length ? themes[0].name : club;
+  }
+
+  /* "Arsenal — Wenger Era" -> "Wenger Era", for a Special chip that should not
+     repeat the club name it already sits under. */
+  function categoryOf(t, clubNameStr) {
+    var n = String(t.name);
+    var parts = n.split(/\s+[\u2014-]\s+/);
+    return parts.length > 1 ? parts.slice(1).join(" \u2014 ") : n.replace(clubNameStr, "").trim() || n;
   }
 
   function slug(name) {
