@@ -2099,14 +2099,21 @@ body.flex-layout .grid-panel{
 
 /* Column order. The clue sits directly above the keyboard, where the thumb
    already is, rather than at the top of the screen above the board. */
+/* The clue is the LAST thing before the keyboard.
+
+   It sat above the controls, which put two rows of buttons between the clue
+   and the thumb — the clue was near the bottom rather than at it. The whole
+   reason for moving it off the top of the screen is that the eye and the thumb
+   should not have to travel between reading the clue and typing the answer, and
+   a control row in between undoes most of that. */
 body.flex-layout .grid-wrap{order:1;flex:1 1 auto;min-height:0}
 body.flex-layout .bank-strip{order:2;flex:none;border-radius:0;
   border-left:0;border-right:0}
-body.flex-layout .nudge-row{order:3;flex:none}
-body.flex-layout .now-clue{order:4;flex:none;border-radius:0;
+body.flex-layout .tb-game{order:3;flex:none}
+body.flex-layout .tb-help{order:4;flex:none}
+body.flex-layout .nudge-row{order:5;flex:none}
+body.flex-layout .now-clue{order:6;flex:none;border-radius:0;
   border-left-width:4px;border-right:0}
-body.flex-layout .tb-game{order:5;flex:none}
-body.flex-layout .tb-help{order:6;flex:none}
 
 /* Full width, every one of them.
 
@@ -2137,13 +2144,15 @@ body.flex-layout .nudge-row{
   }
   body.flex-layout .grid-wrap{grid-column:1;grid-row:1;min-height:0}
   body.flex-layout .bank-strip{grid-column:1;grid-row:2}
+  body.flex-layout .tb-game{grid-column:1;grid-row:3}
+  body.flex-layout .tb-help{grid-column:1;grid-row:4}
   /* Given a row rather than hidden: this is where a wrong letter is reported,
      and a game that stops telling you when you are wrong is worse than one
      with an empty strip in it. */
-  body.flex-layout .nudge-row{grid-column:1;grid-row:3}
-  body.flex-layout .now-clue{grid-column:1;grid-row:4}
-  body.flex-layout .tb-game{grid-column:1;grid-row:5}
-  body.flex-layout .tb-help{grid-column:1;grid-row:6}
+  body.flex-layout .nudge-row{grid-column:1;grid-row:5}
+  /* Last again, so the clue sits against the keyboard on a touch screen and
+     against the bottom of the window on a desktop. */
+  body.flex-layout .now-clue{grid-column:1;grid-row:6}
   body.flex-layout .clues-block{
     display:block;grid-column:2;grid-row:1 / -1;
     min-height:0;overflow-y:auto;overscroll-behavior:contain;
