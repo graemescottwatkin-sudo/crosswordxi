@@ -2089,7 +2089,32 @@ body.flex-layout{
   display:flex;flex-direction:column;overflow:hidden;
 }
 body.flex-layout header{flex:none}
-body.flex-layout footer{display:none}
+/* The footer holds the layout switch, the privacy link, sign-in and owner
+   tools. Hiding it in a layout it cannot be reached from stranded every one of
+   them — including the control that switches back, which is the worst of the
+   set to lose.
+
+   It becomes a panel instead, off screen until the header's more button opens
+   it, so it costs no height and nothing goes missing. */
+body.flex-layout footer{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;
+  background:var(--card);border-top:1px solid var(--line);
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  max-height:60vh;overflow-y:auto;text-align:left;line-height:2.1;
+  transform:translateY(101%);transition:transform .18s ease;
+  box-shadow:0 -8px 24px rgba(0,0,0,.18);
+}
+body.flex-layout.more-open footer{transform:none}
+body.flex-layout.more-open::after{
+  content:"";position:fixed;inset:0;z-index:69;background:rgba(0,0,0,.25);
+}
+.hdr-more{display:none}
+body.flex-layout .hdr-more{
+  display:block;position:absolute;right:8px;top:6px;z-index:2;
+  width:34px;height:30px;border:1px solid var(--line);border-radius:7px;
+  background:transparent;color:var(--ink-soft);font-size:17px;line-height:1;
+}
+body.flex-layout header{position:relative}
 body.flex-layout .stage{
   flex:1 1 auto;min-height:0;max-width:none;padding:0;gap:0;overflow:hidden;
 }
@@ -2231,3 +2256,57 @@ body.flex-layout.focus-word .cell:not(.in-word){
   opacity:0;pointer-events:none;
 }
 body.flex-layout.focus-word .cell{transition:opacity .12s linear}
+
+/* ============ TOOLBAR ============
+   Above the board: where you are on the left, what you can do to the puzzle on
+   the right. Only in the flex layout — the classic one already has its control rows
+   below the board and two sets would be two places to keep in step. */
+.tbar{display:none}
+/* A sibling of .grid-panel, not a child of it.
+
+   It began inside the panel and frontend_test caught it: that test pins the
+   panel'''s child order, guarding against a toolbar that used to be relocated at
+   runtime. Outside the panel the order it protects is untouched, and the strip
+   spans the full width above both the board and the clue list. */
+body.flex-layout .tbar{
+  flex:none;display:flex;align-items:center;gap:6px;
+  padding:5px 8px;border-bottom:1px solid var(--line);background:var(--paper);
+}
+body.flex-layout .tbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.tbar-menu{position:relative}
+.tbar-btn{
+  font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;padding:6px 10px;min-height:34px;
+  border:1px solid var(--line);border-radius:7px;background:var(--card);
+  color:var(--ink);white-space:nowrap;
+}
+.tbar-btn[aria-expanded="true"]{border-color:var(--pitch);color:var(--pitch)}
+#tbMode::after,#tbCheck::after,#tbReveal::after{content:" \25BE";font-size:.8em;opacity:.6}
+.tbar-cog{font-size:16px;padding:6px 9px;letter-spacing:0}
+.tbar-pop{
+  position:absolute;top:calc(100% + 5px);z-index:80;min-width:190px;
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  box-shadow:0 8px 24px rgba(0,0,0,.16);padding:4px;
+}
+.tbar-menu:last-child .tbar-pop,.tbar-right .tbar-pop{right:0}
+.tbar-pop[hidden]{display:none}
+.tbar-pop button{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  border:0;background:none;color:var(--ink);font:inherit;font-size:14px;
+  padding:9px 10px;border-radius:6px;min-height:40px;
+}
+.tbar-pop button:hover{background:var(--sel-word)}
+.tbar-pop button[disabled]{opacity:.4}
+.tbar-pop .pc{margin-left:auto;font-size:12px;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums}
+.tbar-pop button.danger{color:var(--wrong)}
+.tbar-pop button.danger .pc{color:var(--wrong)}
+
+/* In flex the old control rows are gone: the toolbar does their job and two
+   sets of the same buttons is two things to keep in step. */
+body.flex-layout .tb-game,
+body.flex-layout .tb-help{display:none}
+
+@media (max-width:420px){
+  .tbar-btn{font-size:12px;padding:5px 8px}
+}

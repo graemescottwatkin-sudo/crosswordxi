@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v63";
+  var BUILD = "v65";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4912,6 +4912,20 @@
       ((v && v.height) || window.innerHeight) + "px");
   }
   on("layoutToggle", "click", function () { setLayout(!flexOn); });
+  on("hdrMore", "click", function (ev) {
+    ev.stopPropagation();
+    var open = !document.body.classList.contains("more-open");
+    document.body.classList.toggle("more-open", open);
+    this.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  /* Anything else closes it, including a tap on the dimmed board behind. */
+  document.addEventListener("click", function (ev) {
+    if (!document.body.classList.contains("more-open")) return;
+    if (ev.target.closest && ev.target.closest("footer, #hdrMore")) return;
+    document.body.classList.remove("more-open");
+    var b = $("hdrMore");
+    if (b) b.setAttribute("aria-expanded", "false");
+  });
 
   /* Its own switch, not tied to Follow word.
 
@@ -4948,6 +4962,166 @@
     if (localStorage.getItem("fcw.layout") === "flex") setLayout(true);
     else { var lb = $("layoutToggle"); if (lb) lb.textContent = "layout: classic"; }
   } catch (e) {}
+
+  /* ---------- Toolbar ----------
+     Every item drives the button that already does the job. Nothing here
+     reimplements checking, revealing or scoring — a second implementation is
+     two things that have to agree forever, and this codebase has been bitten by
+     exactly that shape more than once. */
+  (function () {
+    var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop"];
+    function closePops(except) {
+      POPS.forEach(function (id) {
+        var p = $(id);
+        if (!p || id === except) return;
+        p.hidden = true;
+        var b = $(id.replace("Pop", ""));
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+    }
+    function toggle(btnId, popId) {
+      on(btnId, "click", function (ev) {
+        ev.stopPropagation();
+        var p = $(popId);
+        if (!p) return;
+        var opening = p.hidden;
+        closePops(opening ? popId : null);
+        p.hidden = !opening;
+        this.setAttribute("aria-expanded", opening ? "true" : "false");
+        if (opening) refreshMenus();
+      });
+    }
+    toggle("tbMode", "tbModePop");
+    toggle("tbCheck", "tbCheckPop");
+    toggle("tbReveal", "tbRevealPop");
+    document.addEventListener("click", function () { closePops(null); });
+
+    function click(id) { var el = $(id); if (el) el.click(); }
+
+    /* What is left to reveal, and what that would cost. Nine a word, the same
+       as revealing them one at a time — this is a shortcut, not a discount. */
+    function unsolvedEntries() {
+      if (!puzzle) return [];
+      var out = [];
+      puzzle.entries.forEach(function (e, i) {
+        if (!entryFilled(i)) out.push(i);
+        else {
+          /* A filled answer that was typed rather than revealed still counts:
+             revealing it would still correct it. */
+          var anyOpen = e.cells.some(function (c) { return !locked(K(c.x, c.y)); });
+          if (anyOpen) out.push(i);
+        }
+      });
+      return out;
+    }
+
+    function refreshMenus() {
+      var left = unsolvedEntries().length;
+      var cost = left * 9;
+      var c = $("tbRevealAllCost");
+      if (c) c.textContent = left ? "\u2212" + cost : "\u2014";
+      var ra = document.querySelector('[data-act="reveal-all"]');
+      if (ra) ra.disabled = !left;
+      /* The free substitution only exists when one is available. */
+      var sb = $("subBtn"), item = $("tbSub");
+      if (item) item.hidden = !(sb && sb.style.display !== "none");
+      /* Practice is the only mode where clearing is offered. A daily or a
+         themed board can be sent as a challenge, and wiping one is a way to
+         lose a run somebody else is measuring themselves against. */
+      var cl = $("tbClear");
+      if (cl) cl.hidden = mode !== "practice";
+      var pr = $("tbPractice");
+      if (pr) pr.disabled = false;
+      var lab = $("tbModeLabel");
+      if (lab) {
+        lab.textContent = mode === "daily" ? "Daily"
+          : mode === "practice" ? "Practice"
+          : mode === "theme" ? "Clubs & themes" : "Puzzle";
+      }
+    }
+    window.addEventListener("cxi:mode", refreshMenus);
+
+    on("tbModePop", "click", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-act]");
+      if (!b) return;
+      ev.stopPropagation();
+      closePops(null);
+      var a = b.getAttribute("data-act");
+      if (a === "daily") click("dailyBtn");
+      else if (a === "practice") chooseMode("practice");
+      else if (a === "themes") { renderThemes(); $("themeSheet").classList.add("show"); }
+      else if (a === "new") click("newBtn");
+      else if (a === "menu") click("menuBtn");
+    });
+
+    on("tbCheckPop", "click", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-act]");
+      if (!b) return;
+      ev.stopPropagation();
+      closePops(null);
+      click(b.getAttribute("data-act") === "check-word" ? "checkBtn" : "checkAllBtn");
+    });
+
+    on("tbRevealPop", "click", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-act]");
+      if (!b || b.disabled) return;
+      ev.stopPropagation();
+      var a = b.getAttribute("data-act");
+      closePops(null);
+      if (a === "reveal-letter") return click("revealLetterBtn");
+      if (a === "reveal-word") return click("revealBtn");
+      if (a === "sub") return click("subBtn");
+      if (a !== "reveal-all") return;
+
+      /* Revealing everything is giving up, and it is one press away from the
+         two harmless items above it. Said plainly, with the number, and framed
+         as what it is — a points deduction, not a hint. A mis-press here would
+         end the puzzle. */
+      var left = unsolvedEntries();
+      if (!left.length) return;
+      var cost = left.length * 9;
+      var ok = window.confirm(
+        "Reveal everything left?\n\n" +
+        left.length + " answer" + (left.length === 1 ? "" : "s") +
+        " at 9 points each: a " + cost + " point deduction.\n\n" +
+        "That finishes the puzzle for you. There is no way back from it.");
+      if (!ok) return;
+      /* One at a time through the button that already exists, so the server
+         accounting is the same as if they had been revealed by hand. */
+      left.forEach(function (i) {
+        cur.entry = i;
+        cur.cell = 0;
+        updateSelection();
+        click("revealBtn");
+      });
+    });
+
+    on("tbClear", "click", function (ev) {
+      ev.stopPropagation();
+      if (mode !== "practice") return;
+      if (!window.confirm("Clear every letter you have typed?\n\n" +
+        "Revealed letters stay. Nothing is scored for this.")) return;
+      Object.keys(letters).forEach(function (k) {
+        if (!locked(k)) delete letters[k];
+      });
+      Object.keys(wrong).forEach(function (k) { delete wrong[k]; });
+      refreshLetters();
+      updateSelection();
+      saveSoon();
+    });
+
+    on("tbSettings", "click", function (ev) {
+      ev.stopPropagation();
+      closePops(null);
+      /* The footer holds every display setting there is. Rather than a second
+         panel that has to be kept in step with it, the cog opens that one. */
+      document.body.classList.add("more-open");
+      var b = $("hdrMore");
+      if (b) b.setAttribute("aria-expanded", "true");
+    });
+
+    refreshMenus();
+  })();
 
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
   on("themeShowSoon", "click", function () {

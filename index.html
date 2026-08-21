@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v63">
+<link rel="stylesheet" href="css/style.css?v=v65">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -185,6 +185,12 @@
   <div class="masthead">Crossword <span class="xi">XI</span></div>
   <div class="brandline">The Football Crossword <span class="by">by The <span class="xi">XI</span> Games</span></div>
   <div class="strap" id="strapText">Premier League &middot; Puzzle</div>
+  <!-- Everything in the footer, reachable from the header in the flex layout.
+       The footer is the column's last row and there is no room for it there —
+       but it holds the layout switch itself, the privacy link, sign-in and
+       owner tools, so hiding it stranded all of them. -->
+  <button class="hdr-more" id="hdrMore" type="button" aria-expanded="false"
+          aria-label="More">&#8943;</button>
 </header>
 
 <div id="errStrip" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99;background:#7a1f1f;color:#f5efe0;font:12px/1.5 monospace;padding:6px 34px 6px 10px;white-space:pre-wrap;word-break:break-all"><button id="errStripX" style="position:absolute;right:6px;top:4px;background:none;border:1px solid #f5efe0;color:#f5efe0;border-radius:4px;cursor:pointer">&times;</button><span id="errStripMsg"></span></div>
@@ -231,6 +237,53 @@
 </div>
 
 <div class="stage">
+    <!-- Toolbar, above the board. Where you are, and the things that act on the
+       puzzle, in one strip.
+
+       Every item here drives an existing button rather than repeating what it
+       does. The scoring, the server calls and the accounting stay in exactly
+       one place — a second implementation of "reveal a letter" is two things
+       that have to agree forever. -->
+  <div class="tbar" id="tbar">
+    <div class="tbar-menu">
+      <button class="tbar-btn" id="tbMode" aria-expanded="false" aria-haspopup="menu">
+        <span id="tbModeLabel">Daily</span></button>
+      <div class="tbar-pop" id="tbModePop" role="menu" hidden>
+        <button role="menuitem" data-act="daily">Daily</button>
+        <button role="menuitem" data-act="practice" id="tbPractice">Practice</button>
+        <button role="menuitem" data-act="themes">Clubs &amp; themes</button>
+        <button role="menuitem" data-act="new">New puzzle</button>
+        <button role="menuitem" data-act="menu">Back to menu</button>
+      </div>
+    </div>
+
+    <div class="tbar-right">
+      <div class="tbar-menu">
+        <button class="tbar-btn" id="tbCheck" aria-expanded="false" aria-haspopup="menu">Check</button>
+        <div class="tbar-pop" id="tbCheckPop" role="menu" hidden>
+          <button role="menuitem" data-act="check-word">Selected word<span class="pc">&minus;3</span></button>
+          <button role="menuitem" data-act="check-all">Full board<span class="pc">&minus;9</span></button>
+        </div>
+      </div>
+
+      <div class="tbar-menu">
+        <button class="tbar-btn" id="tbReveal" aria-expanded="false" aria-haspopup="menu">Reveal</button>
+        <div class="tbar-pop" id="tbRevealPop" role="menu" hidden>
+          <button role="menuitem" data-act="reveal-letter">Selected letter<span class="pc">&minus;2</span></button>
+          <button role="menuitem" data-act="reveal-word">Selected word<span class="pc">&minus;9</span></button>
+          <button role="menuitem" data-act="reveal-all" class="danger">Everything left<span class="pc" id="tbRevealAllCost"></span></button>
+          <button role="menuitem" data-act="sub" id="tbSub" hidden>Free substitution</button>
+        </div>
+      </div>
+
+      <!-- Practice only. A daily or a themed board can be sent as a challenge,
+           and wiping the grid on one of those is a way to lose a run that
+           somebody else is comparing themselves against. -->
+      <button class="tbar-btn" id="tbClear" hidden>Clear</button>
+
+      <button class="tbar-btn tbar-cog" id="tbSettings" aria-label="Settings" title="Settings">&#9881;</button>
+    </div>
+  </div>
   <div class="grid-panel">
     <div class="now-clue" id="nowClue">
       <button class="nc-arrow" id="prevClue" aria-label="Previous clue">&#8249;</button>
@@ -739,7 +792,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v63</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v65</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -754,8 +807,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v63"></script>
-<script src="js/engine.js?v=v63"></script>
-<script src="js/game.js?v=v63"></script>
+<script src="js/seasons.js?v=v65"></script>
+<script src="js/engine.js?v=v65"></script>
+<script src="js/game.js?v=v65"></script>
 </body>
 </html>
