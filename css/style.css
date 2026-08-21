@@ -10,6 +10,7 @@
   --block:#1B211C;          /* blocked cells — near-black, faint green cast */
   --block-line:#1B211C;     /* same as the fill so adjacent blocks merge solid */
   --cell-line:#DFE3DD;      /* thin cell borders */
+  --sel-line:#6BA681;       /* and on the selected word, where the fill is darker */
   /* The selected word and the square being typed into.
 
      These were #EAF3ED and #CFE6D8: 1.13:1 against a white cell and 1.05:1
@@ -72,6 +73,8 @@
     --block:#070907;
     --block-line:#070907;
     --cell-line:#8D9788;
+  --sel-line:#5E8E70;
+    --sel-line:#5E8E70;
     --sel-word:#47513F;
     --sel-cell:#6E8564;
     --wrong:#E3695A;
@@ -786,13 +789,35 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
   font-family:var(--body);font-weight:600;font-size:calc(var(--cell) * .22);
   color:var(--ink-faint);
 }
-.cell.in-word{background:var(--sel-word)}
+.cell.in-word{
+  background:var(--sel-word);
+  /* Darker separators on the selected word.
+
+     --cell-line is tuned for a white cell, where it measures 1.30:1 — quiet on
+     purpose. Against the deepened selection it fell to 1.06:1, a six percent
+     difference, so the letters ran together into one bar and you could not see
+     where one square ended and the next began.
+
+     2.05:1 here: still a hairline rather than a grid of boxes, but a hairline
+     you can actually see. */
+  border-right-color:var(--sel-line);
+  border-bottom-color:var(--sel-line);
+}
+/* The neighbours matter too: a cell to the left of the selection draws the
+   border between them, so without this the first separator of the word is the
+   only faint one. */
+.cell.in-word + .cell:not(.in-word){border-left-color:var(--sel-line)}
 /* Colour and a ring, not colour alone. A fill difference is the first thing
    lost to a dim screen, sunlight, or colour vision deficiency — the ring
    carries the same information as a shape. */
 .cell.active{
   background:var(--sel-cell);
   box-shadow:inset 0 0 0 3px var(--pitch-deep);
+  /* The active square has a darker fill again, so the separator that works on
+     the rest of the word disappears into it. Darker still here — the ring
+     already marks the square, this is only about seeing its edges. */
+  border-right-color:var(--pitch-deep);
+  border-bottom-color:var(--pitch-deep);
 }
 .cell.wrong{color:var(--wrong-ink);background:var(--wrong-bg)}
 .cell.wrong::after{
@@ -822,6 +847,20 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
    not decoration — it should read as firmly as the grid edge does. */
 .cell.brk-r{border-right:3px solid var(--wordbreak)}
 .cell.brk-b{border-bottom:3px solid var(--wordbreak)}
+/* The break marker on a selected word.
+
+   --wordbreak is a green, and so is the selection since it was deepened, so on
+   the answer being typed the divider stopped reading as a divider and became
+   part of the highlight — exactly where knowing "(5,4)" runs out and the
+   second word begins matters most.
+
+   Ink rather than green on those cells: 11.9:1 on the selected word and 7.9:1
+   on the active square, against 4.7 and 3.1 before, and a different hue from
+   everything around it rather than a darker shade of the same one. */
+.cell.in-word.brk-r{border-right-color:var(--ink)}
+.cell.in-word.brk-b{border-bottom-color:var(--ink)}
+.cell.active.brk-r{border-right-color:var(--ink)}
+.cell.active.brk-b{border-bottom-color:var(--ink)}
 
 .stage.prestart{filter:blur(7px);pointer-events:none;user-select:none}
 .kick-card{
@@ -1572,7 +1611,7 @@ body.rotate-needed .rotate-prompt{
    and must never be mistaken for the next-clue button. */
 .nc-flag{
   background:none;border:none;color:var(--ink-faint);font-size:15px;
-  min-height:44px;min-width:34px;cursor:pointer;flex:none;
+  min-height:44px;min-width:44px;cursor:pointer;flex:none;
 }
 .nc-flag:hover{color:var(--wrong)}
 .nc-flag.done{color:var(--pitch)}
@@ -2020,16 +2059,27 @@ body.rotate-needed .rotate-prompt{
    third clue, quiet enough to read as part of the card edge. It comes up on
    hover for anything with a pointer. */
 .nc-arrow{
-  position:absolute;top:0;bottom:0;width:40px;z-index:2;
+  /* Half the card each, and invisible.
+
+     They were 40px strips at the extreme edges with a faint chevron, which is a
+     small target at the very edge of a phone and easy to miss entirely. The
+     whole card is the control now: tap the left half for the previous clue, the
+     right half for the next. Nothing is drawn, because there is nothing to aim
+     at — the target is the half of the card you are already looking at.
+
+     The clue label sits above them and still opens the list. */
+  position:absolute;top:0;bottom:0;width:50%;z-index:2;
   min-width:0;min-height:0;padding:0;margin:0;
-  background:none;border:0;border-radius:8px;
-  color:var(--ink-faint);opacity:.22;font-size:20px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
+  background:none;border:0;border-radius:0;
+  color:transparent;font-size:0;line-height:1;
+  display:block;
 }
 #prevClue{left:0}
 #nextClue{right:0}
-.nc-arrow:hover{opacity:.85;background:var(--sel-word);color:var(--pitch)}
-.nc-arrow:focus-visible{opacity:1;outline:2px solid var(--pitch);outline-offset:-2px}
+/* A hint of where the halves are, for a pointer only — a touch screen has no
+   hover and gains nothing from it. */
+.nc-arrow:hover{background:var(--sel-word)}
+.nc-arrow:focus-visible{outline:2px solid var(--pitch);outline-offset:-3px}
 /* The card's own content sits above the zones, so the label still opens the
    clue list rather than stepping backwards — it is top left, which is exactly
    where the previous zone is. */
@@ -2037,11 +2087,14 @@ body.rotate-needed .rotate-prompt{
    rather than stepping backwards — it is top left, exactly where the previous
    zone is. But it must not swallow taps meant for the zones either, so it only
    catches pointers on its own children. */
+/* The card content sits above the zones so the label still opens the list. The
+   sentence itself does not take pointers, or it would swallow the tap for the
+   half it happens to cover — which is most of the card. */
 .now-clue > .nc-main{position:relative;z-index:3;pointer-events:none}
-.now-clue > .nc-main > *{pointer-events:auto}
+.now-clue > .nc-main .nc-meta{pointer-events:auto}
 /* The sentence keeps clear of both edges so a tap meant for a word does not
    land on a zone. */
-.nc-main{padding:0 42px}
+.nc-main{padding:0 10px}
 
 /* ============ CLUE LABEL TOP LEFT ============
    The number and enumeration sat inline with the sentence, so the first line
@@ -2064,7 +2117,17 @@ body.rotate-needed .rotate-prompt{
    positioned box overrides top/bottom — which collapsed them back to a
    centred glyph with nothing around it to press. That is why tapping the sides
    of the clue bar did nothing. */
-.nc-flag{align-self:center}
+/* Above the tap zones, or the right half covers it.
+
+   The zones are absolutely positioned with a z-index; the flag was a static
+   flex item, so the right half painted over it and a tap meant for the flag
+   stepped to the next clue instead. Raised, and given a background so it reads
+   as a control sitting on the card rather than part of the sentence. */
+.nc-flag{
+  align-self:center;position:relative;z-index:4;
+  border-radius:7px;
+}
+.nc-flag:hover{background:var(--sel-word)}
 
 
 /* ============ JUMP TO A CLUE ============
