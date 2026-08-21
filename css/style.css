@@ -2100,20 +2100,74 @@ body.flex-layout .grid-panel{
 /* Column order. The clue sits directly above the keyboard, where the thumb
    already is, rather than at the top of the screen above the board. */
 body.flex-layout .grid-wrap{order:1;flex:1 1 auto;min-height:0}
-body.flex-layout .bank-strip{order:2;flex:none;margin:0;border-radius:0;
+body.flex-layout .bank-strip{order:2;flex:none;border-radius:0;
   border-left:0;border-right:0}
 body.flex-layout .nudge-row{order:3;flex:none}
-body.flex-layout .now-clue{order:4;flex:none;margin:0;border-radius:0;
+body.flex-layout .now-clue{order:4;flex:none;border-radius:0;
   border-left-width:4px;border-right:0}
-body.flex-layout .tb-game{order:5;flex:none;margin:0}
-body.flex-layout .tb-help{order:6;flex:none;margin:0}
+body.flex-layout .tb-game{order:5;flex:none}
+body.flex-layout .tb-help{order:6;flex:none}
+
+/* Full width, every one of them.
+
+   They were still capped to --board-w, which is the classic layout's idea of
+   the column: the board's own width, so everything below it lines up with it.
+   Here the frame is the full screen, so the cap left the bank, the clue and the
+   controls in a narrow column down the left — and setting margin:0 on them
+   removed the auto-centring that had been hiding it. */
+body.flex-layout .bank-strip,
+body.flex-layout .now-clue,
+body.flex-layout .tb-box,
+body.flex-layout .nudge-row{
+  width:100%;max-width:none;margin:0;
+}
+
+/* ---- wide: board left, clue lists right ----
+   Above the breakpoint there is room to see every clue at once, and a board
+   fitted whole leaves turf either side doing nothing. The panel takes that
+   width and the lists stop being a scroll past the board.
+
+   A grid rather than a row of flex columns, so the panel can span the full
+   height beside a stack of five things without any of them knowing about it. */
+@media (min-width:860px){
+  body.flex-layout .grid-panel{
+    display:grid;
+    grid-template-columns:1fr 340px;
+    grid-template-rows:1fr auto auto auto auto auto;
+  }
+  body.flex-layout .grid-wrap{grid-column:1;grid-row:1;min-height:0}
+  body.flex-layout .bank-strip{grid-column:1;grid-row:2}
+  /* Given a row rather than hidden: this is where a wrong letter is reported,
+     and a game that stops telling you when you are wrong is worse than one
+     with an empty strip in it. */
+  body.flex-layout .nudge-row{grid-column:1;grid-row:3}
+  body.flex-layout .now-clue{grid-column:1;grid-row:4}
+  body.flex-layout .tb-game{grid-column:1;grid-row:5}
+  body.flex-layout .tb-help{grid-column:1;grid-row:6}
+  body.flex-layout .clues-block{
+    display:block;grid-column:2;grid-row:1 / -1;
+    min-height:0;overflow-y:auto;overscroll-behavior:contain;
+    border-left:1px solid var(--line);margin:0;padding:8px 10px 16px;
+    max-width:none;width:auto;
+  }
+  body.flex-layout .clues-block .clues{grid-template-columns:1fr;gap:16px;max-width:none}
+  body.flex-layout .clues-head{max-width:none;margin:0 0 4px}
+  /* Headings stay put while the list moves under them. */
+  body.flex-layout .clue-col h2{
+    position:sticky;top:-8px;background:var(--paper);z-index:1;padding:6px 0 4px;
+  }
+}
 
 /* Hidden here, not deleted. The jump list on the clue label does what the clue
    list does and needs no scrolling past the board; the season table and the
    standings are a sheet away. Both come back the moment the toggle is off. */
-body.flex-layout .clues-block,
 body.flex-layout #seasonPanel,
 body.flex-layout .tb-table{display:none}
+/* On a phone there is no room for the panel; the jump list on the clue label
+   does its job without scrolling past the board. */
+@media (max-width:859px){
+  body.flex-layout .clues-block{display:none}
+}
 
 /* The frame. touch-action:none because pan and pinch are handled in script;
    left to the browser it would scroll the page instead. */
