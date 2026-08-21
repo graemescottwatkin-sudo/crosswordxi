@@ -2089,32 +2089,9 @@ body.flex-layout{
   display:flex;flex-direction:column;overflow:hidden;
 }
 body.flex-layout header{flex:none}
-/* The footer holds the layout switch, the privacy link, sign-in and owner
-   tools. Hiding it in a layout it cannot be reached from stranded every one of
-   them — including the control that switches back, which is the worst of the
-   set to lose.
-
-   It becomes a panel instead, off screen until the header's more button opens
-   it, so it costs no height and nothing goes missing. */
-body.flex-layout footer{
-  position:fixed;left:0;right:0;bottom:0;z-index:70;
-  background:var(--card);border-top:1px solid var(--line);
-  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
-  max-height:60vh;overflow-y:auto;text-align:left;line-height:2.1;
-  transform:translateY(101%);transition:transform .18s ease;
-  box-shadow:0 -8px 24px rgba(0,0,0,.18);
-}
-body.flex-layout.more-open footer{transform:none}
-body.flex-layout.more-open::after{
-  content:"";position:fixed;inset:0;z-index:69;background:rgba(0,0,0,.25);
-}
-.hdr-more{display:none}
-body.flex-layout .hdr-more{
-  display:block;position:absolute;right:8px;top:6px;z-index:2;
-  width:34px;height:30px;border:1px solid var(--line);border-radius:7px;
-  background:transparent;color:var(--ink-soft);font-size:17px;line-height:1;
-}
-body.flex-layout header{position:relative}
+/* The footer is hidden in flex: the settings menu in the toolbar mirrors every
+   control on it, so there are not two places to reach the same switch. */
+body.flex-layout footer{display:none}
 body.flex-layout .stage{
   flex:1 1 auto;min-height:0;max-width:none;padding:0;gap:0;overflow:hidden;
 }
@@ -2317,4 +2294,16 @@ body.flex-layout .tb-help{display:none}
 
 @media (max-width:420px){
   .tbar-btn{font-size:12px;padding:5px 8px}
+}
+
+/* Settings menu. Wider than the others because its rows carry a state. */
+.tbar-set{min-width:230px}
+.tbar-set a{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;
+  min-height:40px;color:var(--ink);text-decoration:none;font-size:14px;
+}
+.tbar-set a:hover{background:var(--sel-word)}
+.set-build{
+  padding:8px 10px 2px;margin-top:4px;border-top:1px solid var(--line);
+  font-size:11px;color:var(--ink-faint);letter-spacing:.04em;
 }

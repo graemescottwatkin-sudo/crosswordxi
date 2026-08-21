@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v67";
+  var BUILD = "v68";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4921,20 +4921,6 @@
       ((v && v.height) || window.innerHeight) + "px");
   }
   on("layoutToggle", "click", function () { setLayout(!flexOn); });
-  on("hdrMore", "click", function (ev) {
-    ev.stopPropagation();
-    var open = !document.body.classList.contains("more-open");
-    document.body.classList.toggle("more-open", open);
-    this.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  /* Anything else closes it, including a tap on the dimmed board behind. */
-  document.addEventListener("click", function (ev) {
-    if (!document.body.classList.contains("more-open")) return;
-    if (ev.target.closest && ev.target.closest("footer, #hdrMore")) return;
-    document.body.classList.remove("more-open");
-    var b = $("hdrMore");
-    if (b) b.setAttribute("aria-expanded", "false");
-  });
 
   /* Its own switch, not tied to Follow word.
 
@@ -4984,7 +4970,7 @@
      two things that have to agree forever, and this codebase has been bitten by
      exactly that shape more than once. */
   (function () {
-    var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop"];
+    var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop", "tbSettingsPop"];
     function closePops(except) {
       POPS.forEach(function (id) {
         var p = $(id);
@@ -5003,13 +4989,23 @@
         closePops(opening ? popId : null);
         p.hidden = !opening;
         this.setAttribute("aria-expanded", opening ? "true" : "false");
-        if (opening) refreshMenus();
+        if (opening) { refreshMenus(); if (popId === "tbSettingsPop") buildSettings(); }
       });
     }
     toggle("tbMode", "tbModePop");
     toggle("tbCheck", "tbCheckPop");
     toggle("tbReveal", "tbRevealPop");
-    document.addEventListener("click", function () { closePops(null); });
+    toggle("tbSettings", "tbSettingsPop");
+    /* Driving a footer control synthesises a click on it, and that click bubbles
+       to the document — where the handler below closes every menu. So pressing
+       a setting closed the menu it was pressed in, which is the opposite of
+       what "rebuild rather than close" was meant to do. The flag makes the
+       synthesised click invisible to the closer. */
+    var driving = false;
+    document.addEventListener("click", function () {
+      if (driving) return;
+      closePops(null);
+    });
 
     function click(id) { var el = $(id); if (el) el.click(); }
 
@@ -5138,14 +5134,67 @@
       saveSoon();
     });
 
-    on("tbSettings", "click", function (ev) {
+    /* The settings menu is built from the footer, every time it opens.
+
+       Each row is a live mirror of a footer control: its text is that control's
+       text, and pressing it presses that control. So there is one place a
+       setting lives and one place its label is written — a second list would be
+       two things to keep in step, and this is a codebase where that shape has
+       gone wrong before.
+
+       Rows whose control is hidden are left out, so owner tools and reset clues
+       appear only when they apply. */
+    var SETTINGS = [
+      { id: "accountToggle", label: "Account" },
+      { id: "statsBtn",      label: "My Season" },
+      { id: "adminToggle",   label: "Owner tools" },
+      { id: "themeToggle",   label: "Theme" },
+      { id: "bankToggle",    label: "Letter bank" },
+      { id: "pitchToggle",   label: "Pitch" },
+      { id: "skipToggle",    label: "Skip filled" },
+      { id: "focusToggle",   label: "Focus" },
+      { id: "layoutToggle",  label: "Layout" },
+      { id: "circReset",     label: "Reset clues" }
+    ];
+    function stateOf(el) {
+      /* Footer labels read "theme: auto" and "letter bank: on". The part after
+         the colon is the state; the part before is the name, which the row
+         already gives. */
+      var t = (el.textContent || "").trim();
+      var i = t.indexOf(":");
+      return i === -1 ? "" : t.slice(i + 1).trim();
+    }
+    function buildSettings() {
+      var pop = $("tbSettingsPop");
+      if (!pop) return;
+      var rows = "";
+      SETTINGS.forEach(function (r) {
+        var el = $(r.id);
+        if (!el) return;
+        /* style.display is how the footer hides owner tools and reset clues. */
+        if (el.style && el.style.display === "none") return;
+        rows += '<button role="menuitem" data-drive="' + r.id + '">' +
+          escapeHtml(r.label) +
+          '<span class="pc">' + escapeHtml(stateOf(el)) + "</span></button>";
+      });
+      rows += '<a role="menuitem" href="privacy.html">Privacy<span class="pc">&rsaquo;</span></a>';
+      rows += '<div class="set-build">' +
+        escapeHtml(($("buildTag") && $("buildTag").textContent) || "") + "</div>";
+      pop.innerHTML = rows;
+    }
+    on("tbSettingsPop", "click", function (ev) {
+      var b = ev.target.closest && ev.target.closest("[data-drive]");
+      if (!b) { ev.stopPropagation(); return; }   // a link looks after itself
       ev.stopPropagation();
-      closePops(null);
-      /* The footer holds every display setting there is. Rather than a second
-         panel that has to be kept in step with it, the cog opens that one. */
-      document.body.classList.add("more-open");
-      var b = $("hdrMore");
-      if (b) b.setAttribute("aria-expanded", "true");
+      var el = $(b.getAttribute("data-drive"));
+      if (el) { driving = true; try { el.click(); } finally { driving = false; } }
+      /* Rebuilt rather than closed: changing the theme or the letter bank is
+         something people do two or three times in a row, and a menu that shuts
+         after each one makes that three round trips. Anything that opens a
+         sheet closes it, because the menu would be behind the sheet. */
+      var opensSheet = /accountToggle|statsBtn|adminToggle/.test(b.getAttribute("data-drive"));
+      if (opensSheet) { closePops(null); return; }
+      buildSettings();
     });
 
     refreshMenus();
