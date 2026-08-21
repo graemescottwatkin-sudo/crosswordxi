@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v77";
+  var BUILD = "v78";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4931,15 +4931,13 @@
     }
     /* Zooming by hand is a deliberate act, so it drops the board out of any
        automatic mode rather than fighting the next thing that moves it. */
-    function toManual() { fxMode = "manual"; fxLabel(); }
+    function toManual() { fxMode = "manual"; applyFxMode(); }
     on("fxIn", "click", function () { toManual(); zoomBy(1.25); });
     on("fxOut", "click", function () { toManual(); zoomBy(1 / 1.25); });
 
     on("fxFit", "click", function () {
       fxMode = fxMode === "board" ? "word" : "board";
-      fxLabel();
-      if (fxMode === "board") fxDoFit("whole");
-      else fxFollow();
+      applyFxMode();
       try { localStorage.setItem("fcw.fxmode", fxMode); } catch (e) {}
     });
   })();
@@ -4947,6 +4945,28 @@
   /* The button says what pressing it will do next, not what mode you are in —
      a control labelled with the current state leaves you working out what the
      other one was. */
+  /* Focus is not a separate setting: it is what Follow word means.
+
+     Following the answer and hiding everything else are the same intent stated
+     twice, and two switches for one idea is two things a player has to line up
+     before either does what they wanted. Fit board shows the whole board, so
+     hiding most of it there would be a contradiction.
+
+     One place decides, and both the class and the fit follow from it. */
+  /* State and label only. At boot there is no puzzle to fit, and fxDoFit would
+     measure a frame that has not been laid out yet. */
+  function applyFxModeQuiet() {
+    document.body.classList.toggle("focus-word", fxMode === "word");
+    fxLabel();
+  }
+
+  function applyFxMode() {
+    document.body.classList.toggle("focus-word", fxMode === "word");
+    fxLabel();
+    if (fxMode === "board") fxDoFit("whole");
+    else if (fxMode === "word") fxFollow();
+  }
+
   function fxLabel() {
     var b = $("fxFit");
     if (!b) return;
@@ -4982,41 +5002,24 @@
       ((v && v.height) || window.innerHeight) + "px");
   }
 
+  /* Boot: restore the fit mode, then apply the layout.
 
-  /* Its own switch, not tied to Follow word.
+     Both of these were lost when the standalone focus control was removed — the
+     regex that took out that block took the boot calls with it, and setLayout()
+     ended up defined and never called. The layout still looked right, because
+     the CSS default carries it, but nothing restored the mode and nothing
+     called fxLabel(), so the button label never matched the state.
 
-     Some people will want the whole grid in front of them and some will want
-     one answer at a time, and that preference is separate from where the board
-     sits. Hiding the rest costs nothing a solver uses: a crossing letter is in
-     a cell belonging to both entries, so it is part of the active word and
-     stays on screen. Only cells the active word does not touch go, and those
-     say nothing about the clue in hand. */
-  function setFocus(on) {
-    document.body.classList.toggle("focus-word", !!on);
-    var b = $("focusToggle");
-    if (b) b.textContent = "focus: " + (on ? "on" : "off");
-    try { localStorage.setItem("fcw.focus", on ? "on" : "off"); } catch (e) {}
-  }
-  on("focusToggle", "click", function () {
-    setFocus(!document.body.classList.contains("focus-word"));
-  });
-  try { setFocus(localStorage.getItem("fcw.focus") === "on"); } catch (e) {}
-  if (window.visualViewport) {
-    /* scaleClue() belongs here as much as in the classic handlers: the clue
-       card is a fixed height and the keyboard moving the visual viewport is
-       exactly when a long clue needs re-measuring. frontend_test asserts every
-       visualViewport handler calls it, and it was right to. */
-    visualViewport.addEventListener("resize", function () {
-      if (flexOn) { setVh(); if (puzzle) fitCells(); }
-      scaleClue();
-    });
-  }
+     A function that is defined and never called is invisible to a syntax check
+     and to every test that does not assert on its effect. Worth remembering as
+     a shape: `grep -c` on the definition is not the same question as whether
+     anything runs it. */
   try {
     var fm = localStorage.getItem("fcw.fxmode");
     if (fm === "word" || fm === "manual" || fm === "board") fxMode = fm;
-    fxLabel();
-    setLayout();
   } catch (e) {}
+  applyFxModeQuiet();
+  setLayout();
 
   /* ---------- Toolbar ----------
      Every item drives the button that already does the job. Nothing here
@@ -5206,7 +5209,6 @@
       { id: "bankToggle",    label: "Letter bank" },
       { id: "pitchToggle",   label: "Pitch" },
       { id: "skipToggle",    label: "Skip filled" },
-      { id: "focusToggle",   label: "Focus" },
       { id: "circReset",     label: "Reset clues" }
     ];
     function stateOf(el) {
