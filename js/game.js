@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v83";
+  var BUILD = "v84";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3503,7 +3503,33 @@
     }
     lastPos = pos;
   }
+  var lastShownScore = null;
+  /* The number on its own, updated whether or not a club has been chosen.
+
+     updateScoreUI() returns early without a club, because everything below it
+     is the league table — and the table was the only place the running score
+     appeared. In the flex layout there is no table, so that early return took
+     the score off the screen entirely. */
+  function updateLiveScoreChip() {
+    var el = $("liveScoreVal");
+    if (!el || !puzzle) return;
+    var v = liveScore();
+    if (v === lastShownScore) return;
+    var fell = lastShownScore !== null && v < lastShownScore;
+    lastShownScore = v;
+    el.textContent = v;
+    if (fell) {
+      var box = $("liveScoreChip");
+      if (box) {
+        box.classList.remove("dropped");
+        void box.offsetWidth;               // restart the animation
+        box.classList.add("dropped");
+      }
+    }
+  }
+
   function updateScoreUI() {
+    updateLiveScoreChip();
     if (!puzzle || club === null) return;
     var score = liveScore();
     var table = FCW.buildTable(club, score, season);
