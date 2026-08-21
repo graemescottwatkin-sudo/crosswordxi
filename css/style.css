@@ -2220,21 +2220,44 @@ body.flex-layout .tb-game{order:3;flex:none}
 body.flex-layout .tb-help{order:4;flex:none}
 body.flex-layout .nudge-row{order:5;flex:none}
 
-/* The league table, on a phone.
+/* The league table, on a phone: beside the clock, not below it.
 
-   Three rows of a twenty-team table — you, one above, one below — sitting
-   directly under the letter bank where the clock and the points were. The table
-   already carries the running score and the position, which is why the score
-   was never repeated anywhere until the flex layout hid the table and took it
-   with it. */
-body.flex-layout .tb-table{
-  order:3;flex:none;width:100%;max-width:none;margin:0;
-  border-radius:0;border-left:0;border-right:0;padding:4px 8px;
+   Stacked it cost the board a whole row of height for three rows of a
+   twenty-team table. The strip and the table are separate blocks in a column,
+   so sharing a row means the column becomes a grid for those two — everything
+   else still spans both tracks and reads as a column.
+
+   The table already carries the running score and the position, which is why a
+   chip repeating them was removed long ago. */
+@media (max-width:859px){
+  body.flex-layout .grid-panel{
+    display:grid;
+    grid-template-columns:1fr auto;
+    grid-template-rows:1fr auto auto auto auto auto;
+  }
+  body.flex-layout .grid-wrap{grid-column:1 / -1;grid-row:1}
+  body.flex-layout .bank-strip{grid-column:1;grid-row:2}
+  body.flex-layout .tb-table{
+    grid-column:2;grid-row:2;align-self:stretch;
+    display:flex;align-items:center;
+    margin:0;max-width:none;width:auto;
+    border-radius:0;border-right:0;border-top:0;border-bottom:0;
+    border-left:1px solid var(--line);padding:2px 8px;
+  }
+  body.flex-layout .tb-game{grid-column:1 / -1;grid-row:3}
+  body.flex-layout .tb-help{grid-column:1 / -1;grid-row:4}
+  body.flex-layout .nudge-row{grid-column:1 / -1;grid-row:5}
+  body.flex-layout .now-clue{grid-column:1 / -1;grid-row:6}
 }
 body.flex-layout .tb-table .club-bar,
 body.flex-layout .tb-table .tb-season{display:none}
-body.flex-layout .tb-table .league{width:100%;font-size:13px}
-body.flex-layout .tb-table .league td{padding:3px 6px}
+body.flex-layout .tb-table .league{width:auto;font-size:12px;line-height:1.15}
+body.flex-layout .tb-table .league td{padding:1px 4px;white-space:nowrap}
+/* The club name is the widest column and the least useful of the three at this
+   size — the position and the points are what the glance is for. */
+body.flex-layout .tb-table .league td.club{
+  max-width:82px;overflow:hidden;text-overflow:ellipsis;
+}
 body.flex-layout .now-clue{order:6;flex:none;border-radius:0;
   border-left-width:4px;border-right:0}
 
