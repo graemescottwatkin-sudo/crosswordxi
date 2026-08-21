@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v58";
+  var BUILD = "v59";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4011,6 +4011,19 @@
     try { return JSON.parse(localStorage.getItem(slotKey(which))); } catch (e) { return null; }
   }
 
+  /* A game with time on the clock is in progress whether or not anything has
+     been typed — twenty-five seconds of reading the clues is still playing, and
+     showing nothing there made it look as though the game had been lost.
+
+     Declared here rather than inside renderHome(). It was nested there, and the
+     Practice handler — which needs it to let somebody finish a puzzle started
+     before the mode was suspended — is bound at load time, outside that scope.
+     The result was a ReferenceError on every tap of Practice. */
+  function inProgress(rec) {
+    return !!rec && !rec.complete &&
+      (Object.keys(rec.letters || {}).length > 0 || (rec.elapsed || 0) > 0);
+  }
+
   function renderHome() {
     syncKickSelect();          // fills and syncs the Play as control on this screen
     var today = FCW.dailyNumber();
@@ -4019,14 +4032,6 @@
     $("homeDailyNote").textContent = phase.counts
       ? "One a day, the same for everyone. The clock counts."
       : "A friendly. Played and kept, but the season table starts on Matchday 1.";
-
-    /* A game with time on the clock is in progress whether or not anything has
-       been typed — twenty-five seconds of reading the clues is still playing,
-       and showing nothing there made it look as though the game had been lost. */
-    function inProgress(rec) {
-      return !!rec && !rec.complete &&
-        (Object.keys(rec.letters || {}).length > 0 || (rec.elapsed || 0) > 0);
-    }
 
     var d = savedFor("daily");
     var state = "";
