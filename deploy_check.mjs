@@ -35,6 +35,25 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
   const assets = [...html.matchAll(/(?:src|href)="(?:css|js)\/[^"]+"/g)].length;
   return tagged.length === assets && new Set(tagged).size === 1;
 })());
+/* The tag has to have MOVED, not merely be consistent.
+
+   V54 to V58 all shipped tagged v50: the packaging step copied files from a
+   working folder still on v50 and then ran a find-and-replace for the previous
+   version, which matched nothing. Every check below passed, because all three
+   places agreed — they just agreed on the wrong number. Worse, ?v=v50 is a URL
+   browsers had genuinely cached when v50 was live, so the old script was served
+   back and the site looked unchanged.
+
+   LAST_SHIPPED is the version that is live now. Bump it when you deploy. */
+const LAST_SHIPPED = "v50";   // <- bump this after each deploy
+t("the build tag has moved past the version now live",
+  (() => {
+    const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
+    const n = (v) => parseInt(String(v).replace(/\D/g, ""), 10);
+    return !!now && n(now) > n(LAST_SHIPPED);
+  })(),
+  `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}`);
+
 t("the build tag matches the one the script reports",
   read("js/game.js").includes('var BUILD = "' + (html.match(/\?v=([^"]+)"/) || [])[1] + '"'),
   (html.match(/\?v=([^"]+)"/) || [])[1]);

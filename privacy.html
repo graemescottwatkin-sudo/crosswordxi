@@ -21,16 +21,16 @@
    page trying to use href="/". */
 :root{
   --paper:#F4F5F2; --card:#FFFFFF; --ink:#182219; --ink-soft:#5A675D;
-  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD;
+  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD; --xi:#8A5A00;
 }
 :root[data-theme="dark"]{
   --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528;
+  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --xi:#E9C25A;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528;
+    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --xi:#E9C25A;
   }
 }
 *{box-sizing:border-box}
@@ -50,6 +50,8 @@ header{
   text-decoration:none;
 }
 header nav a{color:var(--ink-soft); text-decoration:none; font-size:14px}
+/* The mark, same as the games. */
+.xi{color:var(--xi)}
 header nav a:hover{color:var(--pitch); text-decoration:underline}
 h1{
   font-family:"Barlow Condensed",sans-serif; font-weight:700;
@@ -93,7 +95,7 @@ footer a{color:var(--ink-faint)}
 <body>
 <div class="wrap">
 <header>
-  <a class="brand" href="index.html">The XI Games</a>
+  <a class="brand" href="index.html">The <span class="xi">XI</span> Games</a>
   <nav><a href="index.html">&larr; Back to the game</a></nav>
 </header>
 <main>
@@ -220,7 +222,7 @@ footer a{color:var(--ink-faint)}
 <hr>
 </main>
 <footer>
-  <p>The XI Games &middot; unofficial football word puzzles &middot;
+  <p>The <span class="xi">XI</span> Games &middot; unofficial football word puzzles &middot;
   <a href="index.html">crossword.thexigames.com</a></p>
 </footer>
 </div>

@@ -26,6 +26,10 @@
   --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
   --body:"Public Sans",-apple-system,"Segoe UI",Arial,sans-serif;
   --wrong-bg:#FBE3E0;
+  /* The XI mark. Its own token, not --gold: the badge is dark ink ON gold, so
+     #F2C94C never has to be read against paper. As text it measures 1.45:1
+     there, which is invisible. A deep amber carries the same warmth at 5.4:1. */
+  --xi:#8A5A00;
   --gold:#F2C94C;
   --gold-ink:#3A2D00;
   --gold-ans:#F8E9B8;
@@ -104,6 +108,7 @@
   --revealed:#8AA0B6;
   --line:#2A3326;
   --wordbreak:#9DB3A6;
+  --xi:#E9C25A;
   --gold:#C9A227;
   --gold-ink:#120E00;
   --gold-ans:#5C4E1E;
@@ -135,7 +140,11 @@ header{
 .masthead{letter-spacing:.14em}
 /* The XI is the mark shared across The XI Games suite (Scrambled XI,
    Missing XI), so it carries the accent while the word stays ink. */
-.masthead .xi{color:var(--pitch);letter-spacing:.06em}
+.masthead .xi{color:var(--xi);letter-spacing:.06em}
+/* Everywhere the mark appears, not only the masthead: it is what the suite is
+   called, so it should look the same in the strapline and the footer as it
+   does at the top of the page. */
+.xi{color:var(--xi)}
 .brandline{
   font-family:var(--disp);font-weight:500;letter-spacing:.2em;
   font-size:11.5px;text-transform:uppercase;color:var(--ink-soft);margin-top:4px;
