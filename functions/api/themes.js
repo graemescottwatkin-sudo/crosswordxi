@@ -123,12 +123,95 @@ async function serve(request, env) {
     configured: true,
     today,
     mine,
+    featured: await featured(env, themes, today),
     themes,
     upcoming: (next.results || []).map((r) => ({
       name: r.name, no: r.board_no, releaseOn: r.release_on,
     })),
     options,
   });
+}
+
+/* The board of the day, override first.
+ *
+ * A hand-set row wins over the cycle, but only for its own date. Wrapped
+ * because the table arrives in a later migration than the code that reads it:
+ * a missing table should mean "nobody has overridden anything", not a landing
+ * screen without a card on it. */
+async function featured(env, themes, today) {
+  try {
+    const row = await env.DB.prepare(
+      "SELECT board_id FROM featured_override WHERE on_date = ?").bind(today).first();
+    if (row) {
+      /* Matched against the released, listed list rather than read straight
+         from theme_boards. An override naming a board that has since been
+         retired, or is not out yet, must not be the one thing that puts an
+         unreleased board on the landing screen. */
+      for (const t of themes) {
+        for (const b of t.boards) {
+          if (b.boardId === row.board_id) {
+            return {
+              themeId: t.id, themeName: t.name, club: t.club || null,
+              family: t.family || null, no: b.no, boardId: b.boardId, pinned: true,
+            };
+          }
+        }
+      }
+    }
+  } catch (e) { /* no table yet, or no override: fall through to the cycle */ }
+  return featuredBoard(themes, today);
+}
+
+/* Board of the day.
+ *
+ * Chosen here rather than in the browser, and from the date rather than at
+ * random, so every player gets the same board on the same day. That is the
+ * same rule the daily follows, and it is what makes it worth talking about:
+ * "have you done today's board" only means something if there is one.
+ *
+ * It cycles. Position is days-since-epoch modulo the number of boards, over a
+ * list ordered by a hash of the board id — so it works through every board
+ * before repeating one, and the order is not alphabetical, which would put
+ * Arsenal first for a fortnight.
+ *
+ * Adding boards reshuffles the cycle. That is accepted: this is a shop window,
+ * not a schedule anybody is holding us to, and nothing references yesterday's
+ * pick.
+ */
+function featuredBoard(themes, today) {
+  const all = [];
+  for (const t of themes) {
+    for (const b of t.boards) {
+      all.push({
+        themeId: t.id, themeName: t.name, club: t.club || null,
+        family: t.family || null, no: b.no, boardId: b.boardId,
+      });
+    }
+  }
+  if (!all.length) return null;
+
+  all.sort((a, b) => {
+    const ha = hash(String(a.boardId)), hb = hash(String(b.boardId));
+    /* Falls back to the id so the order is total: two boards hashing equal
+       would otherwise sort differently between requests and the board of the
+       day would change on refresh. */
+    return ha - hb || (a.boardId - b.boardId);
+  });
+
+  const days = Math.floor(Date.UTC(
+    +today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10)) / 86400000);
+  return all[((days % all.length) + all.length) % all.length];
+}
+
+/* FNV-1a. Only needs to scatter ids evenly and give the same answer every
+   time; nothing here is security. */
+function hash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }
 
 /* "Arsenal — Goalkeepers" -> "Arsenal". Display only, for the picklist label:

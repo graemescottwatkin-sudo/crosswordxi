@@ -9,7 +9,7 @@
  * no endpoint anywhere writes it — an account cannot promote itself.
  */
 import { json, bad } from "../../_lib/puzzle.js";
-import { hasDB } from "../../_lib/db.js";
+import { hasDB, serverToday } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
 import { dailyNumber } from "../../_lib/daily.js";
 
@@ -298,6 +298,64 @@ export async function onRequest({ request, env, params }) {
       return bad("Name a challenge or an entry.");
     }
     return json({ ok: true, hidden: hide });
+  }
+
+  /* Board of the day: what is set, and what could be.
+     Returns every released, listed board so the picker has something to choose
+     from without a second request. */
+  if (route === "featured" && request.method === "GET") {
+    const today = serverToday();
+    let set = [];
+    try {
+      const r = await env.DB.prepare(
+        `SELECT f.on_date, f.board_id, f.note, t.name, b.board_no
+           FROM featured_override f
+           JOIN theme_boards b ON b.id = f.board_id
+           JOIN themes t ON t.id = b.theme_id
+          WHERE f.on_date >= ?
+          ORDER BY f.on_date`).bind(today).all();
+      set = r.results || [];
+    } catch (e) { /* table not migrated yet */ }
+    const opts = await env.DB.prepare(
+      `SELECT b.id, b.board_no, t.name, t.club_id
+         FROM theme_boards b JOIN themes t ON t.id = b.theme_id
+        WHERE b.release_on <= ? AND b.listed = 1
+        ORDER BY t.name, b.board_no`).bind(today).all();
+    return json({ today, set, boards: opts.results || [] });
+  }
+
+  if (route === "featured-set" && request.method === "POST") {
+    let body;
+    try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
+    const date = String(body.date || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad("Give a date as YYYY-MM-DD.");
+
+    /* Clearing is its own case rather than a board id of zero: the cycle
+       resuming is a different thing from choosing a board, and conflating them
+       is how you end up unable to undo. */
+    if (body.clear) {
+      await env.DB.prepare("DELETE FROM featured_override WHERE on_date = ?").bind(date).run();
+      return json({ ok: true, cleared: date });
+    }
+
+    const boardId = Number(body.boardId);
+    if (!boardId) return bad("Name a board.");
+
+    /* Checked here as well as when it is read. Refusing an unreleased board at
+       the point somebody sets it gives them an error they can act on; catching
+       it only at read time means the override silently does nothing and looks
+       like the feature is broken. */
+    const ok = await env.DB.prepare(
+      "SELECT id FROM theme_boards WHERE id = ? AND listed = 1 AND release_on <= ?")
+      .bind(boardId, serverToday()).first();
+    if (!ok) return bad("That board is not released, or is not listed.");
+
+    await env.DB.prepare(
+      `INSERT INTO featured_override (on_date, board_id, note) VALUES (?, ?, ?)
+       ON CONFLICT (on_date) DO UPDATE SET board_id = excluded.board_id,
+                                           note = excluded.note`)
+      .bind(date, boardId, String(body.note || "").slice(0, 200) || null).run();
+    return json({ ok: true, date, boardId });
   }
 
   if (route === "plays.csv" && request.method === "GET") {

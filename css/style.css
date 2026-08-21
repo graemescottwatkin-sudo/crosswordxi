@@ -1827,3 +1827,30 @@ body.rotate-needed .rotate-prompt{
 }
 .cat-picker[hidden]{display:none}
 .theme-board.pick{min-width:44px;justify-content:center}
+
+/* The coming-soon toggle. One control for the whole section rather than one
+   per club: the question "do I want to see what is planned" is asked once. */
+.theme-filter{display:flex;justify-content:flex-end;margin:-4px 0 8px}
+.theme-filter button{
+  font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  padding:5px 10px;border:1px solid var(--line);border-radius:999px;
+  background:transparent;color:inherit;opacity:.7;cursor:pointer
+}
+.theme-filter button:hover{opacity:1;border-color:var(--pitch);color:var(--pitch)}
+.theme-filter button[aria-pressed="true"]{
+  opacity:1;border-color:var(--pitch);color:var(--pitch)
+}
+
+/* Board of the day. Marked out from the three tracks below it without becoming
+   a fourth one: it is a way in to Clubs and themes, not a mode of its own. */
+.home-choice.featured{border-color:var(--pitch);position:relative}
+.home-choice.featured[hidden]{display:none}
+.hc-kicker{
+  display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--pitch);margin-bottom:2px
+}
+
+/* Board of the day picker in owner tools. */
+.admin-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.admin-row select{flex:1 1 200px;min-width:0}
+.btn.tiny{padding:3px 8px;font-size:11px}

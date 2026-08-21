@@ -3974,8 +3974,31 @@
       loadThemes().then(function (d) {
         var n = (d.themes || []).reduce(function (a, t) { return a + t.boards.length; }, 0);
         th.textContent = n ? n + (n === 1 ? " board available" : " boards available") : "";
+        showFeatured(d.featured);
       }).catch(function () { th.textContent = ""; });
     }
+  }
+
+  /* Board of the day on the landing screen.
+
+     The pick comes from the server so everybody sees the same one; this only
+     draws it. Hidden when there is nothing to show rather than drawn empty —
+     an empty frame on the landing screen is worse than no frame. */
+  var featuredBoard = null;
+  function showFeatured(f) {
+    var card = $("homeFeatured");
+    if (!card) return;
+    featuredBoard = f || null;
+    if (!f) { card.hidden = true; return; }
+    var name = $("homeFeaturedName"), state = $("homeFeaturedState");
+    if (name) name.textContent = f.themeName + (f.no > 1 ? " #" + f.no : "");
+    if (state) {
+      var r = themeResults()[f.themeId + "-" + f.no];
+      state.textContent = r
+        ? (r.score != null ? "Played \u00B7 " + r.score : "Played")
+        : "";
+    }
+    card.hidden = false;
   }
 
   /* ---------- The Themed section ----------
@@ -4101,6 +4124,19 @@
     ]
   };
 
+  /* Whether the "coming soon" chips are on screen.
+
+     Off by default. A club with four live categories was showing twenty-two
+     greyed ones, and a page that is mostly grey reads as empty rather than as
+     filling up. The chips still matter — they say the category exists and has
+     not been written yet, which is the honest answer to "does my club have
+     anything" — so they are one tap away rather than gone.
+
+     Session-scoped on purpose: a preference this cheap to set is not worth
+     storing, and remembering it across visits means somebody who turned it on
+     once to look around sees a wall of grey every visit after. */
+  var showSoon = false;
+
   function renderThemes() {
     var box = $("themeAvailable"), next = $("themeUpcoming");
     if (!box) return;
@@ -4192,7 +4228,7 @@
 
     return '<div class="theme-club">' +
       '<div class="club-name">' + escapeHtml(name) + "</div>" +
-      band("Core", core) +
+      (core ? band("Core", core) : "") +
       (special ? band("Special", special) : "") +
       (general ? band("General", general) : "") +
       "</div>";
@@ -4266,6 +4302,7 @@
      which is both truer and kinder. Not a button — there is nothing to open, and
      a disabled button invites the click that does nothing. */
   function ghostSlot(label) {
+    if (!showSoon) return "";
     return '<span class="theme-board ghost" aria-disabled="true">' +
       escapeHtml(label) + '<span class="tb-soon">soon</span></span>';
   }
@@ -4334,9 +4371,75 @@
     newPuzzle(same ? saved.seed : undefined, same ? saved : null);
   }
 
+  on("homeFeatured", "click", function () {
+    if (!featuredBoard) return;
+    openThemed(featuredBoard.themeId, featuredBoard.no, featuredBoard.boardId);
+  });
   on("homeThemed", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
   on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  /* Board of the day, set by hand.
+
+     Dated rather than a single "current" setting, so it lapses on its own: a
+     one-row override has to be cleared by hand, and forgetting leaves the same
+     board featured for a fortnight while everybody assumes the cycle has it.
+     Setting a date in the future is the point — a board worth pointing at
+     usually coincides with something happening that day. */
+  on("adminFeatured", "click", function () {
+    apiAuth("/api/admin/featured").then(function (d) {
+      var rows = (d.set || []).map(function (r) {
+        return '<tr><td>' + escapeHtml(r.on_date) + "</td><td>" +
+          escapeHtml(r.name) + " #" + r.board_no +
+          '</td><td><button class="btn tiny" data-clear="' + escapeHtml(r.on_date) +
+          '">clear</button></td></tr>';
+      }).join("");
+      var opts = (d.boards || []).map(function (b) {
+        return '<option value="' + b.id + '">' + escapeHtml(b.name) + " #" + b.board_no +
+          "</option>";
+      }).join("");
+      adminMsg("Set for a date. It lapses on its own \u2014 after that day the cycle resumes.");
+      $("adminReportList").innerHTML =
+        '<table class="status-table"><tbody>' +
+        (rows || '<tr><td colspan="3">Nothing set. The cycle is choosing.</td></tr>') +
+        "</tbody></table>" +
+        '<div class="admin-row" id="afRow">' +
+        '<input id="afDate" type="date" value="' + escapeHtml(d.today) + '">' +
+        '<select id="afBoard">' + opts + "</select>" +
+        '<button class="btn secondary" id="afSet">Set</button></div>';
+    }).catch(function () { adminMsg("Could not load the board of the day."); });
+  });
+
+  /* Delegated so it survives the panel being redrawn after each change. */
+  on("adminReportList", "click", function (e) {
+    var t = e.target;
+    if (t.id === "afSet") {
+      var date = $("afDate").value, board = $("afBoard").value;
+      if (!date || !board) return;
+      apiAuth("/api/admin/featured-set", { date: date, boardId: Number(board) })
+        .then(function () { $("adminFeatured").click(); })
+        .catch(function (err) { adminMsg("Could not set it: " + (err && err.message || "")); });
+      return;
+    }
+    var clear = t.getAttribute && t.getAttribute("data-clear");
+    if (clear) {
+      apiAuth("/api/admin/featured-set", { date: clear, clear: true })
+        .then(function () { $("adminFeatured").click(); })
+        .catch(function () {});
+    }
+  });
+
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
+  on("themeShowSoon", "click", function () {
+    showSoon = !showSoon;
+    var b = $("themeShowSoon");
+    if (b) {
+      b.textContent = showSoon ? "Hide coming soon" : "Show coming soon";
+      b.setAttribute("aria-pressed", showSoon ? "true" : "false");
+    }
+    /* Redrawn from the data already held rather than refetched: the flag only
+       decides what is drawn, and a round trip to change a local view is a
+       spinner for nothing. */
+    renderThemes();
+  });
   on("themeAvailable", "click", function (e) {
     var b = e.target.closest ? e.target.closest(".theme-board") : null;
     if (!b) return;

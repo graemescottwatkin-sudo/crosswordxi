@@ -150,6 +150,7 @@
         <button class="btn outline" id="linkMake">Build</button>
       </div>
       <div class="sheet-note" id="linkOut"></div>
+      <button class="btn outline" id="adminFeatured">Board of the day</button>
       <button class="btn outline" id="adminThemeReqs">Theme requests</button>
       <button class="btn outline" id="adminReports">Show flagged clues</button>
       <button class="btn outline" id="adminExport">Download as CSV</button>
@@ -484,6 +485,9 @@
     <div class="sheet-sub" id="themeSub">A new board every Friday</div>
 
     <h3>Available now</h3>
+    <div class="theme-filter">
+      <button id="themeShowSoon" type="button" aria-pressed="false">Show coming soon</button>
+    </div>
     <div id="themeAvailable"></div>
 
     <h3>Coming up</h3>
@@ -537,6 +541,16 @@
       <span class="hc-title">Practice</span>
       <span class="hc-note">As many as you like. Nothing is recorded, no clock pressure.</span>
       <span class="hc-state" id="homePracticeState"></span>
+    </button>
+
+    <!-- Board of the day. Chosen from the date on the server, so everybody
+         gets the same one — which is what makes it worth mentioning to
+         somebody else. Hidden until there is one to show, so the landing
+         screen never carries an empty frame. -->
+    <button class="home-choice featured" id="homeFeatured" hidden>
+      <span class="hc-kicker">Board of the day</span>
+      <span class="hc-title" id="homeFeaturedName"></span>
+      <span class="hc-state" id="homeFeaturedState"></span>
     </button>
 
     <!-- The third track. A new board every Friday and everything already
