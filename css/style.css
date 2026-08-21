@@ -140,11 +140,60 @@ header{
 .masthead{letter-spacing:.14em}
 /* The XI is the mark shared across The XI Games suite (Scrambled XI,
    Missing XI), so it carries the accent while the word stays ink. */
-.masthead .xi{color:var(--xi);letter-spacing:.06em}
-/* Everywhere the mark appears, not only the masthead: it is what the suite is
-   called, so it should look the same in the strapline and the footer as it
-   does at the top of the page. */
-.xi{color:var(--xi)}
+/* The XI is the mark the whole suite shares, so it gets a chip rather than a
+   colour.
+
+   Colour alone could not do it. Anything dark enough to read on paper is too
+   dark to separate from the word beside it — CROSSWORD is pitch-deep, and
+   violet, blue and green all came out under 2:1 against it. Gold reads well
+   against the word and is invisible on paper at 1.45:1. The chip decouples the
+   two: the letters get their own background, so the hue no longer has to
+   survive the paper.
+
+   White on pitch-deep is 12.6:1, the strongest separation available, and it
+   reads as a squad number rather than as coloured text. It also separates by
+   shape and lightness rather than hue alone, so it holds for a colour-blind
+   player — which red text would not have. */
+.xi{
+  display:inline-block;background:var(--pitch-deep);color:#fff;
+  /* Asymmetric on purpose. With the line box at cap height the letters still
+     sit slightly low in it — the font's own ascent leaves a little more room
+     above the caps than below the baseline — so an evenly padded box reads
+     heavy at the top. Less above, sides tight to the letterforms. */
+  padding:.03em .07em .08em;border-radius:.12em;
+  /* line-height sized to the cap height, not to the em.
+
+     At line-height:1 the content box is a full em tall while uppercase
+     letterforms occupy about .72em of it — roughly .13em of ascender space
+     above the caps and .15em of descender space below the baseline that XI
+     never uses. That is three times the padding, and it is there before any
+     padding is added, which is why tightening the padding barely moved it.
+
+     Set to the cap height the box closes on the letters, and the padding then
+     means what it says. */
+  line-height:.72;
+  /* letter-spacing is zeroed inside the chip, not merely reduced.
+
+     The masthead tracks at .14em and tracking is applied AFTER the last
+     character, so the I was carrying a trailing gap the box then had to
+     enclose — a right-hand margin nothing put there and no padding value could
+     remove. Zeroed here and the box closes on the letterforms. */
+  letter-spacing:0;
+  /* Uppercase sits above the baseline with descender space below it, so an
+     evenly padded box reads low. A hair of lift puts the chip on the cap
+     height of the word beside it. */
+  transform:translateY(-.05em);
+}
+/* In dark mode the chip inverts: pitch-deep is the light green there, so white
+   letters on it would be two light tones. Green on white keeps the contrast
+   and the shape. */
+:root[data-theme="dark"] .xi{background:#fff;color:#123B27}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .xi{background:#fff;color:#123B27}
+}
+/* At strapline and footer size the chip would shout, so it is tighter still —
+   same shape, less weight. */
+.brandline .xi,footer .xi{padding:.02em .06em .07em;border-radius:.1em}
 .brandline{
   font-family:var(--disp);font-weight:500;letter-spacing:.2em;
   font-size:11.5px;text-transform:uppercase;color:var(--ink-soft);margin-top:4px;

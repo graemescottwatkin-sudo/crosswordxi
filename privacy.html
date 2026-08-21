@@ -21,16 +21,16 @@
    page trying to use href="/". */
 :root{
   --paper:#F4F5F2; --card:#FFFFFF; --ink:#182219; --ink-soft:#5A675D;
-  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD; --xi:#8A5A00;
+  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD; --pitch-deep:#123B27;
 }
 :root[data-theme="dark"]{
   --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --xi:#E9C25A;
+  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --xi:#E9C25A;
+    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
   }
 }
 *{box-sizing:border-box}
@@ -50,8 +50,19 @@ header{
   text-decoration:none;
 }
 header nav a{color:var(--ink-soft); text-decoration:none; font-size:14px}
-/* The mark, same as the games. */
-.xi{color:var(--xi)}
+/* The mark, same as the games: a chip, not a colour. Colour alone could not
+   separate it from the word beside it — anything dark enough to read on paper
+   was too dark to stand out against the heading. */
+.xi{
+  display:inline-block;background:var(--pitch-deep, #123B27);color:#fff;
+  padding:.06em .3em .1em;border-radius:.18em;line-height:1;
+  transform:translateY(-.04em);
+}
+:root[data-theme="dark"] .xi{background:#fff;color:#123B27}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .xi{background:#fff;color:#123B27}
+}
+footer .xi{padding:.04em .22em .07em}
 header nav a:hover{color:var(--pitch); text-decoration:underline}
 h1{
   font-family:"Barlow Condensed",sans-serif; font-weight:700;
