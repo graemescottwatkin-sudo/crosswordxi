@@ -1854,3 +1854,148 @@ body.rotate-needed .rotate-prompt{
 .admin-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .admin-row select{flex:1 1 200px;min-width:0}
 .btn.tiny{padding:3px 8px;font-size:11px}
+
+/* Where today's field put you, on the board of the day. */
+.res-rank{color:var(--pitch);font-weight:600}
+
+/* A suspended track. Dimmed but legible, and still clickable — somebody
+   part-way through a practice puzzle can finish it. */
+.home-choice.soon{opacity:.62}
+.home-choice.soon:hover{opacity:.78}
+.hc-soon{
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  padding:2px 6px;margin-left:6px;border-radius:999px;
+  border:1px solid var(--line);opacity:.85;vertical-align:middle
+}
+
+/* Route to the privacy policy from the landing screen. Quiet, but present at
+   the point somebody is deciding whether to sign in. */
+.home-privacy{text-align:center;margin:-4px 0 10px}
+.home-privacy a{font-size:12px;color:var(--ink-faint);text-decoration:none}
+.home-privacy a:hover{color:var(--pitch);text-decoration:underline}
+
+/* ============ PHONE: FULL WIDTH ============
+   Every block below the masthead was capped to --board-w, the board's own
+   computed width. On a desktop that is the point — one measure down the page
+   rather than each element finding its own edge. On a phone it is the opposite:
+   a board narrower than the screen pulled the clue card, the letter bank and
+   the controls in with it, so a 393px screen was reading a clue in about 250px
+   and wrapping a one-line sentence to four.
+
+   Below 560px the cap comes off and the blocks take the screen. The board keeps
+   its own width, because its cells are sized by fitCells() and stretching them
+   is a different decision. */
+@media (max-width:560px){
+  .grid-panel > .bank-strip,
+  .grid-panel > .now-clue,
+  .grid-panel > .tb-box,
+  .grid-panel > .tb-table,
+  .grid-panel > #seasonPanel,
+  .clues-block{max-width:100%}
+
+  /* The arrows were 44px wide each — 88px of a 393px screen, before gaps,
+     taken from the sentence. Narrowed but kept 44px tall, so the touch target
+     stays comfortable in the direction the thumb actually travels and still
+     clears the 24px minimum for WCAG 2.5.8. The sentence is what has to be
+     read; the arrows only have to be hit. */
+  .nc-arrow{min-width:26px;padding:0;font-size:17px;line-height:1}
+  .nc-flag{min-width:26px;padding:0}
+  .now-clue{gap:5px;padding:6px}
+  .nc-main{gap:3px 6px}
+
+  /* With the width back, a long clue fits in three lines rather than four, so
+     the card can give some height back to the board. */
+  .now-clue{height:118px}
+  .stage{padding:5px 5px 8px}
+}
+
+/* ============ CLUE ARROWS: PHONE ONLY ============
+   Tab and Shift+Tab already step between clues, and Enter advances — that has
+   been in the keydown handler all along. With a pointer there is also the full
+   clue list on screen and a click on any square. So on anything with a
+   keyboard the arrows are a third route to somewhere you can already get,
+   taking width from the sentence.
+
+   Kept on phones, where there is no Tab key and "next clue" is the most common
+   move in solving. Auto-advance now handles the ordinary case — finish a word
+   and it moves on by itself — so the arrows are the fallback rather than the
+   route, and worth reviewing again once that has been used in anger. */
+/* ============ EDGE TAPS ============
+   The arrows are not removed — they are the whole left and right edge of the
+   card, transparent, taking no width from the sentence. Tap the left edge for
+   the previous clue, the right for the next, wrapping at both ends.
+
+   Reusing the existing buttons rather than adding zones means they stay
+   keyboard-focusable and keep their aria-labels, so the control that is
+   invisible to the eye is still announced to a screen reader.
+
+   Not fully invisible, though. A control nobody can see is a control nobody
+   finds, so a chevron sits at low opacity — enough to notice by the second or
+   third clue, quiet enough to read as part of the card edge. It comes up on
+   hover for anything with a pointer. */
+.nc-arrow{
+  position:absolute;top:0;bottom:0;width:40px;z-index:2;
+  min-width:0;min-height:0;padding:0;margin:0;
+  background:none;border:0;border-radius:8px;
+  color:var(--ink-faint);opacity:.22;font-size:20px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+#prevClue{left:0}
+#nextClue{right:0}
+.nc-arrow:hover{opacity:.85;background:var(--sel-word);color:var(--pitch)}
+.nc-arrow:focus-visible{opacity:1;outline:2px solid var(--pitch);outline-offset:-2px}
+/* The card's own content sits above the zones, so the label still opens the
+   clue list rather than stepping backwards — it is top left, which is exactly
+   where the previous zone is. */
+.now-clue > .nc-main{position:relative;z-index:3}
+/* The sentence keeps clear of both edges so a tap meant for a word does not
+   land on a zone. */
+.nc-main{padding:0 34px}
+
+/* ============ CLUE LABEL TOP LEFT ============
+   The number and enumeration sat inline with the sentence, so the first line
+   of every clue began wherever "3A (8)" happened to end — and the label moved
+   left and right between clues as its own width changed.
+
+   Pinned to the top left instead. The label is a heading, not the opening
+   words of the sentence, and the sentence gets the full width of the card
+   rather than the width after the label. */
+.now-clue{align-items:stretch}
+.nc-main{align-items:flex-start}
+.nc-clue{flex-direction:column;align-items:flex-start;gap:1px}
+.nc-meta{line-height:1.2}
+.nc-text{width:100%}
+/* The arrows keep the middle: they are hit rather than read, and a control
+   pinned to the top of a card is a control the thumb has to aim at. */
+.nc-arrow,.nc-flag{align-self:center}
+
+
+/* ============ JUMP TO A CLUE ============
+   The clue label opens a list of unanswered clues. It sits over the card, so
+   the card needs to be the positioning context. */
+.now-clue{position:relative}
+.nc-meta{
+  cursor:pointer;display:inline-flex;align-items:center;gap:3px;
+  border:0;background:none;color:var(--pitch);font:inherit;padding:0;
+}
+.nc-meta::after{content:"\25BE";font-size:.75em;opacity:.7}
+.nc-meta[aria-expanded="true"]::after{transform:rotate(180deg)}
+.jump-list{
+  position:absolute;z-index:60;left:0;right:0;top:100%;margin-top:4px;
+  background:var(--card);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.16);
+  max-height:46vh;overflow-y:auto;padding:4px;
+}
+.jump-list[hidden]{display:none}
+.jump-item{
+  display:flex;gap:8px;width:100%;text-align:left;padding:8px 9px;
+  border:0;background:none;color:var(--ink);font:inherit;border-radius:6px;
+  min-height:40px;align-items:flex-start;cursor:pointer;
+}
+.jump-item:hover,.jump-item[aria-selected="true"]{background:var(--sel-word)}
+.jump-item .jn{color:var(--pitch);font-weight:600;flex:none;min-width:38px}
+.jump-item .jt{
+  flex:1;min-width:0;font-size:14px;line-height:1.35;color:var(--ink-soft);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.jump-empty{padding:10px;color:var(--ink-faint);font-size:14px}

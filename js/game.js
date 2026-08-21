@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v51";
+  var BUILD = "v50";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1465,7 +1465,7 @@
     // Compact: "1A (6)" reads as well as "1 Across · (6)" and keeps the clue,
     // the numbering and the letter bank together on one line.
     $("ncMeta").textContent = e.num + (e.dir === A ? "A" : "D") + " " + e.row.enum;
-    $("ncMeta").title = e.num + " " + (e.dir === A ? "Across" : "Down");
+    $("ncMeta").title = "Jump to another clue";
     /* Scale the clue to fit rather than letting it clip. The card height is
        fixed so the board cannot move between clues, which means a long clue has
        to give — and a clue cut off mid-word is unsolvable, not merely untidy.
@@ -2566,7 +2566,24 @@
     letters[k] = ch;
     delete wrong[k];
     do { cur.cell++; } while (cur.cell < e.len && passOver(e, cur.cell));
-    if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
+    /* Move on when the WORD is finished, not only when the cursor happens to
+       run off the end of it.
+
+       It used to check the cursor. That fires when you type the last cell in
+       the word's own order — but with skip-filled off, which is the default,
+       the cursor walks through cells a crossing answer already filled. So the
+       ordinary case of typing the fourth letter of a five, where the fifth
+       arrived from a crossing, left you sitting on a completed word with
+       nothing happening. Checking the entry catches both.
+
+       "Filled" is the most this can know: the browser holds no answers — that
+       is what /api/check-answer is for — so a wrong word advances too. That is
+       the usual crossword behaviour and the alternative is worse, because
+       staying put on a wrong answer tells the player it is wrong. */
+    if (cur.cell >= e.len || entryFilled(cur.entry)) {
+      cur.cell = Math.min(cur.cell, e.len - 1);
+      advanceToNextEntry();
+    }
     refreshLetters(); updateSelection(); saveSoon();
     verifySoon();   // the server judges the entry; flashSolved() follows from it
   }
@@ -2594,6 +2611,48 @@
       if (!entryFilled(i)) { cur.entry = i; cur.cell = firstEmptyCell(i); return; }
     }
   }
+  /* Jump straight to another unanswered clue.
+
+     With the arrows gone the only other way to change clue is to find the right
+     square on the board, and the full clue list is a scroll past the whole grid
+     on a phone. This is the short route.
+
+     Unanswered only: a list that includes what you have already filled is a
+     list you read past to find the thing you want. "Filled" is the most it can
+     know — the browser holds no answers — so a wrong word counts as done here,
+     the same as it does for auto-advance. */
+  function buildJumpList() {
+    var box = $("jumpList");
+    if (!box) return;
+    var order = entryOrder(), rows = "";
+    for (var n = 0; n < order.length; n++) {
+      var i = order[n];
+      if (entryFilled(i)) continue;
+      var e = puzzle.entries[i];
+      rows += '<button class="jump-item" role="option" data-entry="' + i + '"' +
+        (i === cur.entry ? ' aria-selected="true"' : '') + '>' +
+        '<span class="jn">' + e.num + (e.dir === A ? "A" : "D") + "</span>" +
+        '<span class="jt">' + escapeHtml(e.row.clue) + "</span></button>";
+    }
+    box.innerHTML = rows ||
+      '<div class="jump-empty">Every clue has an answer in.</div>';
+  }
+  function closeJump() {
+    var box = $("jumpList");
+    if (!box || box.hidden) return;
+    box.hidden = true;
+    var m = $("ncMeta");
+    if (m) m.setAttribute("aria-expanded", "false");
+  }
+  function toggleJump() {
+    var box = $("jumpList"), m = $("ncMeta");
+    if (!box || !m) return;
+    var opening = box.hidden;
+    if (opening) buildJumpList();
+    box.hidden = !opening;
+    m.setAttribute("aria-expanded", opening ? "true" : "false");
+  }
+
   function stepClue(delta) {
     if (paused) return;
     var order = entryOrder();
@@ -3692,6 +3751,11 @@
         }
         verifiedScore = r.score;
         verifiedBreakdown = Object.assign({}, r.breakdown || {}, { score: r.score });
+        /* Ranked here rather than beside the call to verifyScore(): the rank
+           has to include the score just posted, and that is only true once the
+           server has answered. Hung off a timer instead, it would sometimes
+           rank against a table the player was not yet in. */
+        showTodayRank(r.score);
         if (note) {
           note.textContent = "verified by the server";
           note.className = "verify-note verified";
@@ -3904,8 +3968,17 @@
       newPuzzle(FCW.dailySeed(dailyNo)); // fresh daily for today
     }
   }
-  on("prevClue", "click", function () { stepClue(-1); });
-  on("nextClue", "click", function () { stepClue(1); });
+  /* The edge zones. While the jump list is open they close it and do nothing
+     else — a tap that both dismisses a list and moves you somewhere is a tap
+     that did two things you only asked one of. */
+  on("prevClue", "click", function () {
+    if (!$("jumpList").hidden) { closeJump(); return; }
+    stepClue(-1);
+  });
+  on("nextClue", "click", function () {
+    if (!$("jumpList").hidden) { closeJump(); return; }
+    stepClue(1);
+  });
   window.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
   /* The keyboard opening does not fire resize on iOS — it changes the visual
      viewport instead. Without this the board is sized for a screen that no
@@ -3964,8 +4037,13 @@
     $("homeDailyState").textContent = state;
 
     var p = savedFor("practice");
+    /* While practice is suspended the state line has to say whether the tile
+       still does anything. "One in progress" now means "and you can still
+       finish it", which is the opposite of what the Coming soon label implies,
+       so it says so. */
     $("homePracticeState").textContent = inProgress(p)
-      ? "One in progress \u00B7 " + fmt(p.elapsed || 0) : "";
+      ? "One in progress \u00B7 " + fmt(p.elapsed || 0) + " \u00B7 you can finish this one"
+      : "";
 
     /* How many are out, so the card says something before it is opened. Fails
        quietly: a themed count is not worth a broken landing screen. */
@@ -3977,6 +4055,47 @@
         showFeatured(d.featured);
       }).catch(function () { th.textContent = ""; });
     }
+  }
+
+  /* Where today's field put you, on the board of the day.
+
+     Asked for after verifyScore() rather than before: the rank has to include
+     the score just posted, and the server only knows it once /api/finish has
+     landed. Reading it early would rank you against a table you are not in
+     yet, and "3rd of 2" is worse than a moment's wait.
+
+     Only for the featured board. Every other board is playable whenever, so a
+     day-scoped table on one would be comparing people who happened to pick the
+     same afternoon. */
+  function showTodayRank(mine) {
+    var el = $("rRank");
+    if (!el) return;
+    el.style.display = "none";
+    var f = featuredBoard;
+    if (!f || mode !== "theme" || !themeWanted || themeWanted.theme !== f.themeId ||
+        Number(themeWanted.no) !== Number(f.no)) return;
+
+    if (typeof mine !== "number") return;
+    api("/api/featured-scores?theme=" + encodeURIComponent(f.themeId) + "&no=" + f.no)
+        .then(function (d) {
+          if (!d || !d.configured || !d.count) return;
+          var better = 0;
+          d.scores.forEach(function (s) { if (s.score > mine) better++; });
+          /* Only the top ten come back, so a score outside it cannot be ranked
+             exactly. Say the field instead of guessing a position. */
+          var place = d.scores.length < d.count && better >= d.scores.length
+            ? null : better + 1;
+          el.textContent = place
+            ? "Board of the day: " + ordinal(place) + " of " +
+              d.count + (d.count === 1 ? " score today" : " scores today")
+            : d.count + " have played today, best so far " + d.best;
+          el.style.display = "";
+        }).catch(function () {});
+  }
+
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
   }
 
   /* Board of the day on the landing screen.
@@ -4380,6 +4499,44 @@
   });
   on("homeThemed", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
   on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  /* Scores on one board, for the owner. Reached from the themed list: every
+     chip carries its theme and number already, so there is nothing to type.
+
+     Anonymous, because plays are. play_id is random per attempt, so two goes by
+     one visitor are indistinguishable from two visitors and there is no name
+     to show. This answers how a board plays — how many finish, what they score,
+     how much help they need — not who played it. Names live in the challenge
+     tables, where somebody typed one on purpose. */
+  function showBoardScores(theme, no) {
+    apiAuth("/api/admin/board-scores?theme=" + encodeURIComponent(theme) + "&no=" + no)
+      .then(function (d) {
+        if (!d.rows || !d.rows.length) {
+          adminMsg("No attempts at " + theme + " #" + no + " yet.");
+          $("adminReportList").innerHTML = "";
+          return;
+        }
+        adminMsg(theme + " #" + no + " \u2014 " + d.started + " started, " +
+          d.finished + " finished" +
+          (d.median != null ? ", median " + d.median : "") +
+          (d.mine ? " (" + d.mine + " of yours, excluded)" : ""));
+        $("adminReportList").innerHTML =
+          '<table class="status-table"><tbody>' +
+          d.rows.slice(0, 50).map(function (r) {
+            var help = (r.srv_checks || 0) + (r.srv_check_alls || 0) +
+              (r.srv_reveal_letters || 0) + (r.srv_reveal_answers || 0);
+            return "<tr><td>" + (r.completed
+                ? (r.score == null ? "\u2014" : r.score)
+                : r.solved + "/" + r.total) +
+              "</td><td>" + (r.secs ? fmt(r.secs) : "\u2014") +
+              "</td><td>" + (help ? help + " help" : "") +
+              "</td><td>" + (r.by_owner ? "you" : "") +
+              "</td></tr>";
+          }).join("") + "</tbody></table>";
+      }).catch(function (e) {
+        adminMsg("Could not load scores: " + (e && e.message || ""));
+      });
+  }
+
   /* Board of the day, set by hand.
 
      Dated rather than a single "current" setting, so it lapses on its own: a
@@ -4431,6 +4588,24 @@
     }
   });
 
+  on("ncMeta", "click", function (e) { e.stopPropagation(); toggleJump(); });
+  on("jumpList", "click", function (e) {
+    var b = e.target.closest ? e.target.closest(".jump-item") : null;
+    if (!b) return;
+    e.stopPropagation();
+    cur.entry = Number(b.getAttribute("data-entry"));
+    cur.cell = firstEmptyCell(cur.entry);
+    closeJump();
+    updateSelection();
+    startTimer();
+  });
+  /* Anything else closes it. A list left open over the board is a list covering
+     the thing it was meant to help with. */
+  document.addEventListener("click", closeJump);
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") closeJump();
+  });
+
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
   on("themeShowSoon", "click", function () {
     showSoon = !showSoon;
@@ -4451,6 +4626,21 @@
     /* A ghost is a span, not a button, so it cannot be clicked — but a stray
        class elsewhere should not open a board with no data on it either. */
     if (b.classList.contains("ghost")) return;
+
+    /* Alt-click opens the board's scores instead of the board. Handled inside
+       this listener rather than as a separate capturing one: on() attaches
+       without capture and ignores extra arguments, so a second listener would
+       have run after this one and opened the board anyway.
+
+       Owner only, and it fails closed — the endpoint checks admin regardless,
+       so this is a shortcut rather than the guard. */
+    if (e.altKey && b.getAttribute("data-theme") && b.getAttribute("data-no")) {
+      e.preventDefault();
+      $("themeSheet").classList.remove("show");
+      $("adminSheet").classList.add("show");
+      showBoardScores(b.getAttribute("data-theme"), Number(b.getAttribute("data-no")));
+      return;
+    }
 
     /* A category chip opens its picker rather than a board. Only one picker is
        open at a time: two open lists in one band is the row growing again,
@@ -4536,7 +4726,17 @@
   }
 
   on("homeDaily", "click", function () { chooseMode("daily"); });
-  on("homePractice", "click", function () { chooseMode("practice"); });
+  on("homePractice", "click", function () {
+    /* Suspended, but not for somebody mid-puzzle. Stranding a half-finished
+       board to enforce a suspension costs a real player something to save
+       nobody anything — and the puzzle is already on their device, so letting
+       them finish takes no board off the shelf.
+
+       Shared practice links and /api/practice are untouched: a link somebody
+       sent still opens. This closes the front door, not the building. */
+    if (inProgress(savedFor("practice"))) { chooseMode("practice"); return; }
+    toast("Practice is being rebuilt alongside the new club boards.");
+  });
   on("homeSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
   on("homeAccount", "click", function () { $("accountSheet").classList.add("show"); });
   on("homeSignIn", "click", function () { $("accountSheet").classList.add("show"); });

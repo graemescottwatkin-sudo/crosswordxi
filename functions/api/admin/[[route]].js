@@ -303,6 +303,62 @@ export async function onRequest({ request, env, params }) {
   /* Board of the day: what is set, and what could be.
      Returns every released, listed board so the picker has something to choose
      from without a second request. */
+  /* Every attempt at one board, ranked. Admin only.
+     
+     What this can and cannot answer is worth being clear about: plays are
+     anonymous by design — play_id is random per attempt, so two goes by one
+     visitor are indistinguishable from two visitors, and there is no name to
+     show. This ranks scores and times, not people. Where somebody signed in or
+     entered a challenge there IS a name, and those are joined in below; for
+     everybody else the row is a score and nothing more.
+     
+     Not scoped to today, unlike the public one: this is for looking at how a
+     board plays over its life, which is the opposite question. */
+  if (route === "board-scores" && request.method === "GET") {
+    try {
+      const url = new URL(request.url);
+      const theme = String(url.searchParams.get("theme") || "").trim();
+      const no = Number(url.searchParams.get("no") || 0);
+      if (!theme || !no) return bad("Name a board.");
+      const key = theme + "-" + no;
+
+      /* plays only. An earlier version joined results to put a name on each
+         row, and results has no theme_key — it keys on puzzle_token — so the
+         query would simply have thrown, which in a Pages function reaches the
+         browser as an HTML error page rather than anything readable.
+
+         Dropped rather than repaired, because the repair was not worth it: a
+         user who replays has two results rows, so joining on token alone
+         multiplies the play rows, and joining on time as well is guesswork.
+         Names live in challenge_entries, where somebody typed one on purpose.
+         This answers how a board plays, not who played it. */
+      const rows = await env.DB.prepare(
+        `SELECT srv_score AS score, elapsed_secs AS secs, started_at,
+                solved, total, completed, by_owner,
+                srv_checks, srv_check_alls,
+                srv_reveal_letters, srv_reveal_answers
+           FROM plays
+          WHERE theme_key = ?
+          ORDER BY completed DESC, srv_score DESC, elapsed_secs ASC
+          LIMIT 200`).bind(key).all();
+
+      const all = rows.results || [];
+      const done = all.filter((r) => r.completed && !r.by_owner);
+      return json({
+        theme, no,
+        started: all.filter((r) => !r.by_owner).length,
+        finished: done.length,
+        mine: all.filter((r) => r.by_owner).length,
+        median: done.length
+          ? done.map((r) => r.score).sort((a, b) => a - b)[Math.floor(done.length / 2)]
+          : null,
+        rows: all,
+      });
+    } catch (e) {
+      return bad("Board scores: " + (e && e.message || "failed"), 500);
+    }
+  }
+
   if (route === "featured" && request.method === "GET") {
     try {
     const today = serverToday();

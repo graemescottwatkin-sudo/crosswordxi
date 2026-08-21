@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v51">
+<link rel="stylesheet" href="css/style.css?v=v50">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -240,9 +240,17 @@
              text, so the boxes started in a different place on every clue and
              the eye had to find them again each time. -->
         <div class="nc-clue">
-          <div class="nc-meta" id="ncMeta"></div>
+          <!-- The label is the jump control. It is already on the card and it
+               already names the clue, so using it costs no width — which
+               matters, because width is what the sentence was short of. The
+               full clue list still sits below the board; on a phone that is a
+               scroll past the whole grid, which is the friction this removes
+               rather than a duplicate of it. -->
+          <button class="nc-meta" id="ncMeta" aria-expanded="false"
+                  aria-haspopup="listbox" title="Jump to another clue"></button>
           <div class="nc-text" id="ncText"></div>
         </div>
+        <div class="jump-list" id="jumpList" role="listbox" hidden></div>
       </div>
       <button class="nc-arrow" id="nextClue" aria-label="Next clue">&#8250;</button>
       <!-- Flag a clue the moment you notice it. Hidden unless signed in. -->
@@ -416,6 +424,13 @@
         across devices. Your progress on this device comes with you.
       </p>
       <div id="googleBtn" class="acct-provider"></div>
+      <!-- Directly under the sign-in button rather than buried in the footer.
+           Signing in is the one moment somebody hands over an identity, so the
+           explanation of what happens to it belongs at that button. -->
+      <p class="acct-note">
+        Signing in shares your name and email address with us.
+        <a href="privacy.html">What we do with it</a>.
+      </p>
       <p class="acct-note" id="acctUnavailable" style="display:none">
         Sign-in is not switched on for this site yet.
       </p>
@@ -537,9 +552,14 @@
       <span class="hc-state" id="homeDailyState"></span>
     </button>
 
-    <button class="home-choice" id="homePractice">
-      <span class="hc-title">Practice</span>
-      <span class="hc-note">As many as you like. Nothing is recorded, no clock pressure.</span>
+    <!-- Practice is suspended while the clue bank is rebuilt club by club.
+         Left on screen rather than removed: a track that vanishes reads as
+         something broken, and a track marked as coming says what is actually
+         happening. Anybody already part-way through one can still finish it —
+         see homePractice's handler. -->
+    <button class="home-choice soon" id="homePractice">
+      <span class="hc-title">Practice <span class="hc-soon">Coming soon</span></span>
+      <span class="hc-note">Being rebuilt alongside the new club boards.</span>
       <span class="hc-state" id="homePracticeState"></span>
     </button>
 
@@ -580,6 +600,11 @@
     <button class="btn outline home-signin" id="homeSignIn" hidden>
       Sign in to keep your results across devices
     </button>
+
+    <!-- Beside the sign-in offer, not only in the footer. This is the moment
+         somebody decides whether to hand over an identity, and it is the only
+         point on the landing screen where that question is live. -->
+    <div class="home-privacy"><a href="privacy.html">How we handle your data</a></div>
 
     <div class="home-links">
       <button id="homeSeason">My Season</button> &middot;
@@ -623,6 +648,11 @@
     <div class="res-score"><span id="rScore">0</span> <small>/ 114 pts</small></div>
     <p class="res-msg" id="rMsg"></p>
     <p class="res-msg" id="rClockNote" style="display:none"></p>
+    <!-- Where today's field put you, when this is the board of the day.
+         Anonymous: a rank and a count, no names. A named table is a wider
+         step than the challenge tables, which somebody opts into for a group
+         they know, and it waits on a privacy policy rather than on code. -->
+    <p class="res-msg res-rank" id="rRank" style="display:none"></p>
     <!-- Stated plainly rather than buried: honesty is a better deterrent
          than a lock, and the clock stopping is worth about 20 points. -->
     <p class="res-pause" id="rPauseNote" style="display:none"></p>
@@ -701,7 +731,8 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v51</span> &middot;
+  Crossword XI by The XI Games &middot; unofficial word puzzle &middot; <span id="buildTag">v50</span> &middot;
+  <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
   <button id="pitchToggle">pitch: on</button> &middot;
@@ -713,8 +744,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v51"></script>
-<script src="js/engine.js?v=v51"></script>
-<script src="js/game.js?v=v51"></script>
+<script src="js/seasons.js?v=v50"></script>
+<script src="js/engine.js?v=v50"></script>
+<script src="js/game.js?v=v50"></script>
 </body>
 </html>
