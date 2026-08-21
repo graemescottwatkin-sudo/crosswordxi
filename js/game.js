@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v82";
+  var BUILD = "v83";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5255,14 +5255,24 @@
     refreshMenus();
   })();
 
-  /* Both routes open the account sheet, which is where signing in actually
-     happens — no second implementation of it. */
+  /* Both routes press accountToggle rather than opening the sheet themselves.
+
+     Opening it meant adding the .show class — which is all the sheet needs to
+     appear, and not all that opening it involves: accountToggle also calls
+     loadGoogle(), which fetches Google's script and renders the sign-in button
+     into #googleBtn. So the sheet opened with an empty space where the button
+     should be, and only worked once something else had loaded the script — the
+     cog, which drives the real control.
+
+     "It is only one line" is exactly how a second implementation starts. */
   on("tbSignIn", "click", function (ev) {
     ev.stopPropagation();
-    $("accountSheet").classList.add("show");
+    var b = $("accountToggle");
+    if (b) b.click();
   });
   on("resSignInBtn", "click", function () {
-    $("accountSheet").classList.add("show");
+    var b = $("accountToggle");
+    if (b) b.click();
   });
 
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
@@ -5397,8 +5407,18 @@
     toast("Practice is being rebuilt alongside the new club boards.");
   });
   on("homeSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
-  on("homeAccount", "click", function () { $("accountSheet").classList.add("show"); });
-  on("homeSignIn", "click", function () { $("accountSheet").classList.add("show"); });
+  /* These two had the same defect as the toolbar route and predate it: opening
+     the sheet without loading Google, so the sign-in button was missing until
+     something else had fetched the script. Four ways in, one of which knew how
+     to open it. */
+  on("homeAccount", "click", function () {
+    var b = $("accountToggle");
+    if (b) b.click();
+  });
+  on("homeSignIn", "click", function () {
+    var b = $("accountToggle");
+    if (b) b.click();
+  });
   on("kickBack", "click", showHome);
   /* From inside a game. Switching modes now goes through the menu rather than
      a button that silently moves you between a scored daily and free practice. */
