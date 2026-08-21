@@ -4071,12 +4071,35 @@
     { slug: "in-the-cups",  label: "In the Cups" },
     { slug: "europe",       label: "Europe" },
     { slug: "grounds",      label: "Grounds" },
+    { slug: "shirts-and-kits", label: "Shirts & Kits" },
     { slug: "1990s",        label: "1990s" },
     { slug: "2000s",        label: "2000s" },
     { slug: "2010s",        label: "2010s" },
     { slug: "2020s",        label: "2020s" },
     { slug: "way-back-when", label: "Way Back When" }
   ];
+
+  /* Specials a club is known to be planning, so the band shows what is coming
+     rather than only what has landed. Sourced from the club's own workbook —
+     these are agreed categories, not guesses, and a club with no entry here
+     simply shows the Specials it has.
+
+     Note the slug for a year: "1989" alone would make theme id "arsenal-1989",
+     which the share-link parser reads as theme "arsenal", board 1989, because
+     both it and boardOf() are greedy. Any slug ending in bare digits is unsafe,
+     so the year lives in the label and the slug carries a word. */
+  var SPECIAL_SLOTS = {
+    arsenal: [
+      { slug: "wenger-era",      label: "Wenger Era" },
+      { slug: "wenger-signings", label: "Wenger Signings" },
+      { slug: "invincibles",     label: "The Invincibles" },
+      { slug: "highbury",        label: "Highbury" },
+      { slug: "before-wenger",   label: "Before Wenger" },
+      { slug: "after-wenger",    label: "After Wenger" },
+      { slug: "1989-title",      label: "1989" },
+      { slug: "1971-double",     label: "1971 Double" }
+    ]
+  };
 
   function renderThemes() {
     var box = $("themeAvailable"), next = $("themeUpcoming");
@@ -4144,11 +4167,28 @@
       return t ? liveSlot(t, slot.label, done, asked) : ghostSlot(slot.label);
     }).join("");
 
-    var special = themes.filter(function (t) { return t.family === "special"; })
-      .map(function (t) { return liveSlot(t, categoryOf(t, name), done, asked); }).join("");
+    /* Specials the club has, plus the ones its workbook says are coming.
+       Matched on exact theme id, same as Core — never by splitting a name. */
+    var haveSpecial = {};
+    themes.forEach(function (t) { if (t.family === "special") haveSpecial[t.id] = t; });
+    var planned = SPECIAL_SLOTS[club] || [];
+    var special = planned.map(function (slot) {
+      var t = haveSpecial[club + "-" + slot.slug];
+      if (t) { delete haveSpecial[t.id]; return liveSlot(t, slot.label, done, asked); }
+      return ghostSlot(slot.label);
+    }).join("");
+    /* Anything special the club has that the planned list does not mention.
+       Listed rather than dropped: a board that exists must always be reachable,
+       and a missing entry here is a list to update, not a board to hide. */
+    Object.keys(haveSpecial).forEach(function (id) {
+      special += liveSlot(haveSpecial[id], categoryOf(haveSpecial[id], name), done, asked);
+    });
 
     var general = themes.filter(function (t) { return t.family === "general"; })
-      .map(function (t) { return liveSlot(t, "", done, asked); }).join("");
+      /* Labelled "General", not by the theme's own name: the theme is called
+         "Arsenal", and a chip reading "Arsenal 2" under a heading already
+         saying ARSENAL says the club twice and the category not at all. */
+      .map(function (t) { return liveSlot(t, "General", done, asked); }).join("");
 
     return '<div class="theme-club">' +
       '<div class="club-name">' + escapeHtml(name) + "</div>" +
@@ -4165,19 +4205,58 @@
 
   /* A category with boards. One button per board, numbered, so a category with
      three boards reads "Strikers 1 2 3" rather than three separate headings. */
+  /* One chip per category, not one per board.
+
+     A category with three boards was three buttons reading "Strikers 1",
+     "Strikers 2", "Strikers 3", which is the category name three times and a
+     row that grows with the content. One chip carrying a count opens a picker
+     instead, so the band stays the same width however many boards land.
+
+     A single board opens straight away: a picker offering one choice is a
+     second click for nothing. */
   function liveSlot(t, label, done, asked) {
-    var chips = t.boards.map(function (b) {
+    var name = label || themeShortName(t);
+    var played = 0;
+    t.boards.forEach(function (b) { if (done[t.id + "-" + b.no]) played++; });
+    var flag = asked[t.club] || asked[t.id]
+      ? '<span class="theme-asked">You asked for this</span>' : "";
+
+    if (t.boards.length === 1) {
+      var b0 = t.boards[0], r0 = done[t.id + "-" + b0.no];
+      return '<button class="theme-board' + (r0 ? " played" : "") +
+        '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b0.no +
+        '" data-id="' + b0.boardId + '">' + escapeHtml(name) +
+        (r0 && r0.score != null ? '<span class="tb-score">' + r0.score + "</span>" : "") +
+        "</button>" + flag;
+    }
+
+    var picks = t.boards.map(function (b) {
       var r = done[t.id + "-" + b.no];
-      return '<button class="theme-board' + (r ? " played" : "") +
+      return '<button class="theme-board pick' + (r ? " played" : "") +
         '" data-theme="' + escapeHtml(t.id) + '" data-no="' + b.no +
-        '" data-id="' + b.boardId + '">' +
-        (label ? escapeHtml(label) + " " : "#") + b.no +
+        '" data-id="' + b.boardId + '">#' + b.no +
         (r && r.score != null ? '<span class="tb-score">' + r.score + "</span>" : "") +
         "</button>";
     }).join("");
-    var flag = asked[t.club] || asked[t.id]
-      ? '<span class="theme-asked">You asked for this</span>' : "";
-    return chips + flag;
+
+    /* The count says how many boards, and how many are done when some are —
+       "2/3" answers "is there anything new here" without opening it. */
+    var badge = played && played < t.boards.length
+      ? played + "/" + t.boards.length
+      : String(t.boards.length);
+
+    return '<span class="cat-wrap">' +
+      '<button class="theme-board cat' + (played === t.boards.length ? " played" : "") +
+      '" data-cat="' + escapeHtml(t.id) + '" aria-expanded="false">' +
+      escapeHtml(name) + '<span class="tb-count">' + badge + "</span></button>" +
+      '<span class="cat-picker" data-for="' + escapeHtml(t.id) + '" hidden>' +
+      picks + "</span></span>" + flag;
+  }
+
+  /* "Arsenal — Wenger Era" -> "Wenger Era". Used when no slot label applies. */
+  function themeShortName(t) {
+    var parts = String(t.name).split(/\s+[\u2014-]\s+/);
+    return parts.length > 1 ? parts.slice(1).join(" \u2014 ") : t.name;
   }
 
   /* A Core category with nothing behind it yet.
@@ -4261,9 +4340,42 @@
   on("themeAvailable", "click", function (e) {
     var b = e.target.closest ? e.target.closest(".theme-board") : null;
     if (!b) return;
+
+    /* A ghost is a span, not a button, so it cannot be clicked — but a stray
+       class elsewhere should not open a board with no data on it either. */
+    if (b.classList.contains("ghost")) return;
+
+    /* A category chip opens its picker rather than a board. Only one picker is
+       open at a time: two open lists in one band is the row growing again,
+       which is what the chip exists to stop. */
+    var cat = b.getAttribute("data-cat");
+    if (cat) {
+      var box = $("themeAvailable");
+      var want = box.querySelector('.cat-picker[data-for="' + cssEscape(cat) + '"]');
+      var wasOpen = want && !want.hidden;
+      Array.prototype.forEach.call(box.querySelectorAll(".cat-picker"), function (p) {
+        p.hidden = true;
+      });
+      Array.prototype.forEach.call(box.querySelectorAll(".theme-board.cat"), function (c) {
+        c.setAttribute("aria-expanded", "false");
+      });
+      if (want && !wasOpen) {
+        want.hidden = false;
+        b.setAttribute("aria-expanded", "true");
+      }
+      return;
+    }
+
     openThemed(b.getAttribute("data-theme"), Number(b.getAttribute("data-no")),
                b.getAttribute("data-id"));
   });
+
+  /* Theme ids are our own slugs, so this only ever has to survive a hyphen —
+     but the selector is built from data rather than typed, and quoting it is
+     cheaper than trusting that forever. */
+  function cssEscape(s) {
+    return String(s).replace(/["\\]/g, "\\$&");
+  }
   on("themeRequestBtn", "click", function () {
     var sel = $("themeRequestKey"), msg = $("themeRequestMsg");
     if (!sel || !sel.value) { msg.textContent = "Choose a theme first."; return; }
