@@ -2569,3 +2569,36 @@ body.flex-layout .live-score.dropped{animation:scoreDrop .45s ease}
 @media (prefers-reduced-motion:reduce){
   body.flex-layout .live-score.dropped{animation:none}
 }
+
+/* ============ SHORT SCREENS ============
+   render_test measured 106px of frame on a 320x568 phone: the header, toolbar,
+   letter bank, clue card and keyboard between them took 424px of 568, leaving
+   a slot the board could not be panned around inside.
+
+   Rotating does not help a short PORTRAIT screen, so the chrome gives the room
+   back instead. Everything here is smaller, not missing — a control that
+   disappears on a small screen is a feature that phone does not have. */
+@media (max-height:640px){
+  body.flex-layout header{padding:3px 10px}
+  body.flex-layout .masthead{font-size:15px}
+  body.flex-layout .brandline{display:none}
+  body.flex-layout .strap{font-size:9px}
+
+  body.flex-layout .tbar{padding:3px 6px;gap:4px}
+  body.flex-layout .tbar-btn{min-height:40px;padding:4px 8px;font-size:12px}
+
+  body.flex-layout .bank-strip{padding:3px 6px}
+  body.flex-layout .bank-cell{width:18px;height:22px;font-size:13px}
+
+  /* The clue card is the biggest single saving. Two lines instead of three:
+     the sentence is still readable and anything longer scrolls inside the card
+     rather than being clipped, which is what the fixed height protects. */
+  body.flex-layout .now-clue{height:86px;padding:4px 6px}
+  body.flex-layout .nc-text{font-size:14px;line-height:1.25}
+
+  /* The keyboard is left alone. --osk-h is clamp(34px,5.4vh,52px), so on a
+     568px screen it is already at its 34px floor — an override here would only
+     push it below what a thumb can hit. The room comes from the chrome that is
+     not sized for the screen. */
+  body.flex-layout .osk{padding:3px 2px calc(3px + env(safe-area-inset-bottom))}
+}

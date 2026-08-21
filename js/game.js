@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v90";
+  var BUILD = "v92";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1302,9 +1302,31 @@
     fxApply();
   }
 
+  /* Below this the frame is not a board, whatever the zoom does with it.
+
+     render_test measured 20px of frame at 568x320 and 54px at 844x390: the
+     header, the toolbar, the letter bank, the clue card and the keyboard
+     between them take the whole screen in landscape, leaving a slot the board
+     cannot be panned around inside. Two of those viewports also put the square
+     being typed into outside the visible frame, which is worse than a small
+     board — it is typing into something you cannot see. */
+  var FX_MIN_FRAME = 150;
+
   function fitFlex() {
     var g = $("grid");
     if (!g || !puzzle) return;
+    var wrap = document.querySelector(".grid-wrap");
+    var fh = wrap ? wrap.clientHeight : 0;
+    var vw = window.innerWidth || 360;
+    var vv = window.visualViewport;
+    var vh = (vv && vv.height) || window.innerHeight || 800;
+
+    /* The rotate prompt lived in the classic half of fitCells(), which this
+       returns before ever reaching — so in the flex layout nothing told a
+       landscape player to turn the phone. Asked for here, on the same terms:
+       there is not room, and turning the device is the thing that fixes it. */
+    setRotatePrompt(fh > 0 && fh < FX_MIN_FRAME && vw > vh);
+
     document.documentElement.style.setProperty("--cell", FX_BASE + "px");
     g.style.gridTemplateColumns = "repeat(" + puzzle.width + ", var(--cell))";
     /* A fresh puzzle starts in whatever mode was left, so the board does not

@@ -87,6 +87,11 @@ export async function onRequestPost({ request, env }) {
     order.forEach((k, i) => { at[k] = i; });
     let wrongEntries = 0;
     for (const e of puzzle.entries) {
+      /* An entry with no cells cannot be judged complete or wrong, so it is
+         skipped rather than iterated. It threw a TypeError before — and a
+         throw here is a 500 on a check the player has already been charged
+         for, which is a worse failure than the malformed entry it came from. */
+      if (!e || !Array.isArray(e.cells) || !e.cells.length) continue;
       let complete = true, bad = false;
       for (const c of e.cells) {
         const i = at[c.x + "," + c.y];
