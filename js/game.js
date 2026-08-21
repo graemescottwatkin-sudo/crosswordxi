@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v69";
+  var BUILD = "v70";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2793,7 +2793,11 @@
      the same as it does for auto-advance. */
   function buildJumpList() {
     var box = $("jumpList");
-    if (!box) return;
+    /* Guarded on the puzzle as well as the box. Tapping the label before a
+       puzzle has loaded threw on puzzle.entries, and because the throw happened
+       before the list was unhidden, the symptom was a control that did nothing
+       rather than an error anybody would see. */
+    if (!box || !puzzle) return;
     var order = entryOrder(), rows = "";
     for (var n = 0; n < order.length; n++) {
       var i = order[n];
@@ -2816,7 +2820,7 @@
   }
   function toggleJump() {
     var box = $("jumpList"), m = $("ncMeta");
-    if (!box || !m) return;
+    if (!box || !m || !puzzle) return;
     var opening = box.hidden;
     if (opening) buildJumpList();
     box.hidden = !opening;
@@ -2824,7 +2828,11 @@
   }
 
   function stepClue(delta) {
-    if (paused) return;
+    /* The edge zones are on screen before a puzzle is. Guarded here rather
+       than at each caller: stepClue is reached from the zones, the keyboard,
+       Enter and the jump list, and one guard cannot drift out of step with
+       four call sites. */
+    if (paused || !puzzle) return;
     var order = entryOrder();
     var pos = order.indexOf(cur.entry);
     cur.entry = order[(pos + delta + order.length) % order.length];

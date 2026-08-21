@@ -2033,10 +2033,15 @@ body.rotate-needed .rotate-prompt{
 /* The card's own content sits above the zones, so the label still opens the
    clue list rather than stepping backwards — it is top left, which is exactly
    where the previous zone is. */
-.now-clue > .nc-main{position:relative;z-index:3}
+/* The card content sits above the zones so the clue label still opens the list
+   rather than stepping backwards — it is top left, exactly where the previous
+   zone is. But it must not swallow taps meant for the zones either, so it only
+   catches pointers on its own children. */
+.now-clue > .nc-main{position:relative;z-index:3;pointer-events:none}
+.now-clue > .nc-main > *{pointer-events:auto}
 /* The sentence keeps clear of both edges so a tap meant for a word does not
    land on a zone. */
-.nc-main{padding:0 34px}
+.nc-main{padding:0 42px}
 
 /* ============ CLUE LABEL TOP LEFT ============
    The number and enumeration sat inline with the sentence, so the first line
@@ -2051,9 +2056,15 @@ body.rotate-needed .rotate-prompt{
 .nc-clue{flex-direction:column;align-items:flex-start;gap:1px}
 .nc-meta{line-height:1.2}
 .nc-text{width:100%}
-/* The arrows keep the middle: they are hit rather than read, and a control
-   pinned to the top of a card is a control the thumb has to aim at. */
-.nc-arrow,.nc-flag{align-self:center}
+/* The flag keeps the middle: it is hit rather than read, and a control pinned
+   to the top of a card is one the thumb has to aim at.
+
+   The arrows are NOT included. They are absolutely positioned edge zones
+   spanning the full height of the card, and align-self on an absolutely
+   positioned box overrides top/bottom — which collapsed them back to a
+   centred glyph with nothing around it to press. That is why tapping the sides
+   of the clue bar did nothing. */
+.nc-flag{align-self:center}
 
 
 /* ============ JUMP TO A CLUE ============
@@ -2068,11 +2079,20 @@ body.rotate-needed .rotate-prompt{
 .nc-meta[aria-expanded="true"]::after{transform:rotate(180deg)}
 .jump-list{
   position:absolute;z-index:60;left:0;right:0;top:100%;margin-top:4px;
+  /* see the flex override below: at the bottom of the screen it opens upward */
   background:var(--card);border:1px solid var(--line);border-radius:8px;
   box-shadow:0 8px 24px rgba(0,0,0,.16);
   max-height:46vh;overflow-y:auto;padding:4px;
 }
 .jump-list[hidden]{display:none}
+/* In the flex layout the clue card is the last thing before the keyboard, so a
+   list opening downward opens behind the keyboard and off the bottom of the
+   screen. It was rendering all along — just nowhere anybody could see it. */
+body.flex-layout .jump-list{
+  top:auto;bottom:100%;margin-top:0;margin-bottom:6px;
+  box-shadow:0 -8px 24px rgba(0,0,0,.18);
+  max-height:52vh;
+}
 .jump-item{
   display:flex;gap:8px;width:100%;text-align:left;padding:8px 9px;
   border:0;background:none;color:var(--ink);font:inherit;border-radius:6px;
