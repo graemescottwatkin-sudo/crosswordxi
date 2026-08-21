@@ -2218,7 +2218,25 @@ body.flex-layout .bank-strip{order:2;flex:none;border-radius:0;
   border-left:0;border-right:0}
 body.flex-layout .tb-game{order:3;flex:none}
 body.flex-layout .tb-help{order:4;flex:none}
-body.flex-layout .nudge-row{order:5;flex:none}
+/* Zero height, and the message floats over the board.
+
+   The row reserves 36px so a message appearing cannot shift the layout — right
+   in the classic column, where the board sits above it and would have moved.
+   In the flex column that reservation is 36px of permanent grey band between
+   the letter bank and the controls, paid on every screen for a message that is
+   almost never showing.
+
+   The row keeps its place in the order but takes no space: the message is
+   positioned out of it, rising over the bottom of the board frame, which is
+   where the eye already is. Nothing moves when it appears. */
+body.flex-layout .nudge-row{
+  order:2;flex:none;min-height:0;height:0;margin:0;
+  position:relative;z-index:8;overflow:visible;
+}
+body.flex-layout .nudge-row .nudge{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:6px;
+  white-space:normal;max-width:calc(100% - 24px);
+}
 
 /* The league table is not shown on a phone.
 
