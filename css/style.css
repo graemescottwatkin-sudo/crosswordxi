@@ -10,8 +10,18 @@
   --block:#1B211C;          /* blocked cells — near-black, faint green cast */
   --block-line:#1B211C;     /* same as the fill so adjacent blocks merge solid */
   --cell-line:#DFE3DD;      /* thin cell borders */
-  --sel-word:#EAF3ED;
-  --sel-cell:#CFE6D8;
+  /* The selected word and the square being typed into.
+
+     These were #EAF3ED and #CFE6D8: 1.13:1 against a white cell and 1.05:1
+     against each other. A thirteen percent difference in brightness is not a
+     highlight, and five percent between the word and the square inside it is
+     nothing at all — on a board of white cells the selection was invisible.
+
+     Deepened to 1.38:1 and 1.50:1, which reads at a glance while leaving the
+     typed letter at 11.9:1 and 7.9:1 against its own background — well clear of
+     the 4.5:1 a letter needs. */
+  --sel-word:#C6E2D0;
+  --sel-cell:#7FC29C;
   --wrong:#C0392B;          /* red card — a wrong letter */
   --wrong-ink:#8A2419;
   --revealed:#7A8FA6;
@@ -777,7 +787,13 @@ body.no-pitch .cell.block{background:var(--block);border-color:var(--block-line)
   color:var(--ink-faint);
 }
 .cell.in-word{background:var(--sel-word)}
-.cell.active{background:var(--sel-cell);box-shadow:inset 0 0 0 2px var(--pitch-deep)}
+/* Colour and a ring, not colour alone. A fill difference is the first thing
+   lost to a dim screen, sunlight, or colour vision deficiency — the ring
+   carries the same information as a shape. */
+.cell.active{
+  background:var(--sel-cell);
+  box-shadow:inset 0 0 0 3px var(--pitch-deep);
+}
 .cell.wrong{color:var(--wrong-ink);background:var(--wrong-bg)}
 .cell.wrong::after{
   content:"";position:absolute;inset:auto 7px 5px 7px;height:2px;border-radius:2px;
