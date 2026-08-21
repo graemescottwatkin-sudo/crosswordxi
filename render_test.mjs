@@ -166,8 +166,9 @@ const MEASURE = `() => {
     ? toolbarEl.getBoundingClientRect() : null;
   const clueEl = document.querySelector(".now-clue");
   const clueCard = clueEl ? clueEl.getBoundingClientRect() : null;
-  const activeEl = document.querySelector(".cell.active");
-  const activeBox = activeEl ? activeEl.getBoundingClientRect() : null;
+  /* activeBox is already measured above, from activeCell. A second one shadowed
+     it and threw at every viewport — the gate reported it as a page failure,
+     which is exactly what a gate should do with a broken gate. */
   const grid = rect("#grid") || rect(".grid") || rect(".grid-wrap");
 
   /* A display:none element still returns a rect — zeros at the origin — so
