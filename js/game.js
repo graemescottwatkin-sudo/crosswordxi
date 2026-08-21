@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v73";
+  var BUILD = "v75";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4954,13 +4954,20 @@
       : fxMode === "word" ? "Fit board" : "Fit board";
   }
 
-  function setLayout(on) {
-    flexOn = !!on;
-    document.body.classList.toggle("flex-layout", flexOn);
-    var b = $("layoutToggle");
-    if (b) b.textContent = "layout: " + (flexOn ? "flex" : "classic");
-    try { localStorage.setItem("fcw.layout", flexOn ? "flex" : "classic"); } catch (e) {}
-    if (flexOn) setVh();
+  /* The layout, not a layout.
+
+     Flex is what everybody gets. The classic path is still in the file and
+     still works — but it is no longer reachable, and the stored preference is
+     ignored rather than honoured, so anybody who chose classic during the
+     opt-in comes across with everyone else.
+
+     The code stays until the Playwright gate covers the new layout. That gate
+     is the only automated check either layout has, and deleting the one it
+     tests before it tests the other leaves nothing watching. */
+  function setLayout() {
+    flexOn = true;
+    document.body.classList.add("flex-layout");
+    setVh();
     /* Two frames, not one. The class changes the column, and the frame cannot
        be measured until that has been laid out — measured too early it reports
        zero and the fit is meaningless. */
@@ -4968,12 +4975,13 @@
       requestAnimationFrame(function () { if (puzzle) fitCells(); scaleClue(); });
     });
   }
+
   function setVh() {
     var v = window.visualViewport;
     document.documentElement.style.setProperty("--vh",
       ((v && v.height) || window.innerHeight) + "px");
   }
-  on("layoutToggle", "click", function () { setLayout(!flexOn); });
+
 
   /* Its own switch, not tied to Follow word.
 
@@ -5007,14 +5015,7 @@
     var fm = localStorage.getItem("fcw.fxmode");
     if (fm === "word" || fm === "manual" || fm === "board") fxMode = fm;
     fxLabel();
-    /* Flex is the layout now. Classic is still there, still complete, and one
-       press away in the settings panel — but somebody arriving for the first
-       time gets the new one.
-
-       Only an explicit "classic" opts out, so anybody who chose it during the
-       opt-in period keeps it and is not overridden by the default changing
-       under them. */
-    setLayout(localStorage.getItem("fcw.layout") !== "classic");
+    setLayout();
   } catch (e) {}
 
   /* ---------- Toolbar ----------
@@ -5206,7 +5207,6 @@
       { id: "pitchToggle",   label: "Pitch" },
       { id: "skipToggle",    label: "Skip filled" },
       { id: "focusToggle",   label: "Focus" },
-      { id: "layoutToggle",  label: "Layout" },
       { id: "circReset",     label: "Reset clues" }
     ];
     function stateOf(el) {

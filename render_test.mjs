@@ -24,6 +24,19 @@
  * This harness measures the rendered page in real Chromium across the full
  * device matrix. It is deliberately a *gate*, not a report: it throws.
  *
+ * THE FLEX LAYOUT
+ * ---------------
+ * The board no longer has to fit. It sits in a frame it pans and zooms inside,
+ * so a board taller than the frame is the feature rather than a defect, and
+ * "the grid ends within the viewport" would now fail on every puzzle that used
+ * the space it was given.
+ *
+ * What must hold instead: the FRAME is on screen and has room in it, the square
+ * being typed into is visible within the frame, and the toolbar and clue card
+ * are both reachable. Those are asserted when body carries .flex-layout; the
+ * old board-fit assertions still run on the classic path, which remains in the
+ * file until this gate has been run against flex on real hardware.
+ *
  * USAGE
  * -----
  *   npx wrangler pages dev .            # in one terminal, so the API works
@@ -146,6 +159,15 @@ const MEASURE = `() => {
   const rotateEl = document.querySelector("#rotatePrompt");
   const rotateShown = !!rotateEl && visible(rotateEl);
 
+  const frameEl = document.querySelector(".grid-wrap");
+  const frame = frameEl ? frameEl.getBoundingClientRect() : null;
+  const toolbarEl = document.querySelector(".tbar");
+  const toolbar = toolbarEl && getComputedStyle(toolbarEl).display !== "none"
+    ? toolbarEl.getBoundingClientRect() : null;
+  const clueEl = document.querySelector(".now-clue");
+  const clueCard = clueEl ? clueEl.getBoundingClientRect() : null;
+  const activeEl = document.querySelector(".cell.active");
+  const activeBox = activeEl ? activeEl.getBoundingClientRect() : null;
   const grid = rect("#grid") || rect(".grid") || rect(".grid-wrap");
 
   /* A display:none element still returns a rect — zeros at the origin — so
@@ -165,6 +187,27 @@ const MEASURE = `() => {
     gridPresent: !!grid,
     gridTop:    grid ? Math.round(grid.top)    : null,
     gridBottom: grid ? Math.round(grid.bottom) : null,
+
+    /* The flex layout puts the board in a frame it pans and zooms inside, so
+       the board itself is allowed to run past the viewport — that is the
+       feature. What must stay on screen is the FRAME, and within it the square
+       being typed into. */
+    flexLayout: document.body.classList.contains("flex-layout"),
+    frameTop:    frame ? Math.round(frame.top)    : null,
+    frameBottom: frame ? Math.round(frame.bottom) : null,
+    frameHeight: frame ? Math.round(frame.height) : null,
+    frameWidth:  frame ? Math.round(frame.width)  : null,
+    activeInFrame: (function () {
+      if (!frame || !activeBox) return null;
+      return activeBox.top    >= frame.top    - 1 &&
+             activeBox.bottom <= frame.bottom + 1 &&
+             activeBox.left   >= frame.left   - 1 &&
+             activeBox.right  <= frame.right  + 1;
+    })(),
+    toolbarPresent: !!toolbar,
+    toolbarBottom: toolbar ? Math.round(toolbar.bottom) : null,
+    clueTop:    clueCard ? Math.round(clueCard.top)    : null,
+    clueBottom: clueCard ? Math.round(clueCard.bottom) : null,
 
     cellW: cellBox ? +cellBox.width.toFixed(1)  : null,
     cellH: cellBox ? +cellBox.height.toFixed(1) : null,
@@ -328,7 +371,37 @@ const run = async () => {
               `scrollY=${m.scrollY} — header and clock will be cut off`);
       }
 
-      if (started && m.gridPresent) {
+      /* The board no longer has to fit.
+
+         It sits in a frame it pans and zooms inside, so a board taller than the
+         frame is the feature rather than a defect — asserting that the grid ends
+         within the viewport would now fail on every puzzle that uses the space
+         it was given. What must hold is that the FRAME is on screen and has
+         room in it, and that the square being typed into is visible within it.
+
+         The old assertions are kept for the classic path, which is still in the
+         file until this gate has run against flex for a while. */
+      if (started && m.flexLayout) {
+        check(`${label} board frame starts on screen`, m.frameTop >= -1,
+              `top=${m.frameTop}`);
+        check(`${label} board frame ends within viewport`, m.frameBottom <= h + 2,
+              `bottom=${m.frameBottom} vs ${h}`);
+        /* A frame this short is not a board anybody can read, whatever the zoom
+           does. It is the flex equivalent of the cell floor the classic layout
+           enforced. */
+        check(`${label} board frame has usable height`, m.frameHeight >= 140,
+              `${m.frameHeight}px — the board has nowhere to go`);
+        if (m.activeInFrame !== null) {
+          check(`${label} the selected square is inside the frame`, m.activeInFrame,
+                `active cell is outside the visible board area`);
+        }
+        check(`${label} toolbar is on screen`, m.toolbarPresent && m.toolbarBottom <= h,
+              `bottom=${m.toolbarBottom} vs ${h}`);
+        if (m.clueTop !== null) {
+          check(`${label} clue card is on screen`, m.clueBottom <= h + 2 && m.clueTop >= -1,
+                `top=${m.clueTop} bottom=${m.clueBottom} vs ${h}`);
+        }
+      } else if (started && m.gridPresent) {
         check(`${label} grid starts on screen`, m.gridTop >= -1, `top=${m.gridTop}`);
         check(`${label} grid ends within viewport`, m.gridBottom <= h + 2,
               `bottom=${m.gridBottom} vs ${h}`);

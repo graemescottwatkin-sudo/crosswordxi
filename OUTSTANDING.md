@@ -1,5 +1,27 @@
 # Crossword XI — outstanding
 
+## Delete the classic layout
+
+The Playwright gate now asserts the flex layout — frame on screen, frame has
+usable height, the selected square inside the frame, toolbar and clue card
+reachable — so the layout everyone uses is covered.
+
+**Run it against real hardware before deleting anything.** It has been rewritten
+but not yet run: Chromium is not installable in the environment it was written
+in, so the new assertions are reasoned rather than observed.
+
+```
+npx wrangler pages dev .        # one terminal
+node render_test.mjs            # another
+```
+
+Once that passes across the sixteen viewports, the classic path can go: the
+`body:not(.flex-layout)` half of the stylesheet, the classic branch of
+`fitCells()`, and the `else if (started && m.gridPresent)` fallback in the gate.
+
+Until it has been run, keep the classic code. It is the only thing to fall back
+to if the new assertions turn out to be wrong about a device.
+
 **Build v11.** Carries forward §10 of `HANDOVER.md`; read that first, because
 several things that look like bugs there are deliberate.
 
