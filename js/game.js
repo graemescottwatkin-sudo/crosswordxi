@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v92";
+  var BUILD = "v93";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1323,9 +1323,20 @@
 
     /* The rotate prompt lived in the classic half of fitCells(), which this
        returns before ever reaching — so in the flex layout nothing told a
-       landscape player to turn the phone. Asked for here, on the same terms:
-       there is not room, and turning the device is the thing that fixes it. */
-    setRotatePrompt(fh > 0 && fh < FX_MIN_FRAME && vw > vh);
+       landscape player to turn the phone.
+
+       Judged on the cell it would produce, not on the frame height. A 160px
+       frame cleared a 150px floor at 915x412 and drew a 6.9px cell: the frame
+       was tall enough by the number and the board was unreadable, which is the
+       wrong question answered correctly. Eighteen pixels is the same floor the
+       classic layout used — below it a letter and a clue number do not fit. */
+    var wrapW = wrap ? wrap.clientWidth : 0;
+    if (fh > 0 && wrapW > 0) {
+      var u = fxUsedBox();
+      var whole = Math.min((wrapW - 12) / (u.cols * FX_BASE),
+                           (fh - 12) / (u.rows * FX_BASE));
+      setRotatePrompt(FX_BASE * whole < 18 && vw > vh);
+    }
 
     document.documentElement.style.setProperty("--cell", FX_BASE + "px");
     g.style.gridTemplateColumns = "repeat(" + puzzle.width + ", var(--cell))";

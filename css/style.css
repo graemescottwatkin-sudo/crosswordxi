@@ -2585,7 +2585,11 @@ body.flex-layout .live-score.dropped{animation:scoreDrop .45s ease}
   body.flex-layout .strap{font-size:9px}
 
   body.flex-layout .tbar{padding:3px 6px;gap:4px}
-  body.flex-layout .tbar-btn{min-height:40px;padding:4px 8px;font-size:12px}
+  /* 44px stays. I dropped these to 40px to buy height on a short screen and
+     render_test refused it at four viewports, correctly: a mis-tap on Reveal
+     costs points, and a small screen is where mis-taps happen. The saving comes
+     from padding and type size, which cost nothing anybody has to hit. */
+  body.flex-layout .tbar-btn{min-height:44px;padding:3px 7px;font-size:12px}
 
   body.flex-layout .bank-strip{padding:3px 6px}
   body.flex-layout .bank-cell{width:18px;height:22px;font-size:13px}
