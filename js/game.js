@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v59";
+  var BUILD = "v61";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1150,7 +1150,163 @@
      moves with them — a board wider than this would overflow the turf. */
   var MAX_COLS = 14;
 
+  /* ============ FLEX LAYOUT ============
+     Opt-in. The board sits in a frame and pans and zooms inside it, instead of
+     being shrunk until it fits above the keyboard.
+
+     Everything below is guarded on flexOn, and fitCells() hands over at its
+     first line — so the classic path is not merely unused here, it does not
+     run. A sizing function still computing a cell size nothing reads is the
+     kind of thing that comes back later looking like a bug. */
+  var flexOn = false;
+  var fxScale = 1, fxTx = 0, fxTy = 0, fxFit = 1, fxMin = 1;
+  var FX_MAX = 3.2, FX_BASE = 34;      // px per cell before scaling
+
+  function fxUsedBox() {
+    /* The rectangle the white squares occupy, not the whole grid. Blocked
+       squares are transparent — the turf shows through them — so rows and
+       columns of solid block at the edges are empty space, and fitting them as
+       though they were board costs real cell size. */
+    var minX = puzzle.width, maxX = -1, minY = puzzle.height, maxY = -1;
+    for (var k in puzzle.cells) {
+      var p = k.split(","), x = +p[0], y = +p[1];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    return { x: minX, y: minY, cols: maxX - minX + 1, rows: maxY - minY + 1 };
+  }
+  function fxApply() {
+    var g = $("grid");
+    if (!g) return;
+    g.style.transform = "translate(" + fxTx + "px," + fxTy + "px) scale(" + fxScale + ")";
+    var zi = $("fxIn"), zo = $("fxOut");
+    if (zi) zi.disabled = fxScale >= FX_MAX - 0.01;
+    if (zo) zo.disabled = fxScale <= fxMin + 0.01;
+  }
+  function fxClamp() {
+    var wrap = document.querySelector(".grid-wrap");
+    if (!wrap || !puzzle) return;
+    var u = fxUsedBox();
+    var fw = wrap.clientWidth, fh = wrap.clientHeight;
+    var w = u.cols * FX_BASE * fxScale, h = u.rows * FX_BASE * fxScale;
+    var ox = u.x * FX_BASE * fxScale, oy = u.y * FX_BASE * fxScale;
+    fxTx = w <= fw ? (fw - w) / 2 - ox : Math.min(-ox, Math.max(-ox + (fw - w), fxTx));
+    fxTy = h <= fh ? (fh - h) / 2 - oy : Math.min(-oy, Math.max(-oy + (fh - h), fxTy));
+  }
+  function fxDoFit(mode) {
+    var wrap = document.querySelector(".grid-wrap");
+    if (!wrap || !puzzle) return;
+    var fw = wrap.clientWidth, fh = wrap.clientHeight;
+    if (!fw || !fh) return;            // measured before layout; a later call will
+    var u = fxUsedBox();
+    /* A little turf around the puzzle. Fitted flush the outer squares sit hard
+       against the frame edge and the board reads as cropped, and on a phone
+       that edge is where the thumb rests. */
+    var aw = Math.max(40, fw - 12), ah = Math.max(40, fh - 12);
+    var w = u.cols * FX_BASE, h = u.rows * FX_BASE;
+    fxFit = mode === "whole" ? Math.min(aw / w, ah / h) : aw / w;
+    fxMin = Math.min(fxFit, Math.min(aw / w, ah / h));
+    fxScale = fxFit; fxTx = 0; fxTy = 0;
+    fxClamp(); fxApply();
+  }
+  /* Three ways for the board to sit.
+
+     manual  the board stays where you put it
+     board   fitted whole, every white square in the frame
+     word    the active answer is kept framed as you move between clues
+
+     "word" does not literally fit each answer. An eight-letter across entry
+     wants about 1.4x and a nine-letter down entry is tall and narrow, so the
+     height binds and it barely zooms — moving between them would zoom in and
+     out on every clue. It holds a comfortable magnification instead and only
+     moves the board when the answer is not already in view, which is the thing
+     the mode is actually for: never losing the word you are typing into. */
+  var fxMode = "board";
+  var FX_WORD_K = 1.6;               // magnification held in word mode
+
+  function fxWordBox() {
+    var e = puzzle && puzzle.entries[cur.entry];
+    if (!e) return null;
+    var minX = 1e9, maxX = -1, minY = 1e9, maxY = -1;
+    e.cells.forEach(function (c) {
+      if (c.x < minX) minX = c.x;
+      if (c.x > maxX) maxX = c.x;
+      if (c.y < minY) minY = c.y;
+      if (c.y > maxY) maxY = c.y;
+    });
+    return { x: minX, y: minY, cols: maxX - minX + 1, rows: maxY - minY + 1 };
+  }
+  /* Fit the answer to its own axis, and centre it on the other.
+
+     A down answer fills the frame top to bottom and sits centred left to
+     right; an across answer fills it left to right and sits centred top to
+     bottom. So the word being typed is always as large as it can be and always
+     in the same place, whichever way it runs.
+
+     The zoom therefore changes between clues — a nine-letter down entry and an
+     eight-letter across entry want different magnifications, and moving
+     between them will visibly rescale. That is the cost of the mode and it is
+     the point of it: predictable placement in exchange for a changing zoom.
+
+     One limit, and it only bites on very short answers. Filling 393px with
+     four letters means 98px squares, which is wall tiles rather than a
+     crossword, so the cell is capped at 92px. Everything from five letters up
+     fills its axis exactly; a three or four letter answer is centred at the cap
+     instead. */
+  var FX_CELL_MAX = 92;
+
+  function fxFollow() {
+    if (!flexOn || fxMode !== "word" || !puzzle) return;
+    var wrap = document.querySelector(".grid-wrap");
+    var b = fxWordBox();
+    if (!wrap || !b) return;
+    var fw = wrap.clientWidth, fh = wrap.clientHeight;
+    if (!fw || !fh) return;
+
+    var e = puzzle.entries[cur.entry];
+    var across = e.dir === A;
+    var pad = 10;
+
+    /* Along its own axis the answer fills the frame; across the other it takes
+       whatever that scale gives it. */
+    var along = across ? (fw - pad * 2) / (b.cols * FX_BASE)
+                       : (fh - pad * 2) / (b.rows * FX_BASE);
+    var k = Math.min(along, FX_MAX, FX_CELL_MAX / FX_BASE);
+    k = Math.max(fxMin, k);
+    fxScale = k;
+
+    var cw = b.cols * FX_BASE * k, ch = b.rows * FX_BASE * k;
+    var ox = b.x * FX_BASE * k, oy = b.y * FX_BASE * k;
+
+    /* Centre on both axes. On the filled axis that lands it at the padding by
+       construction; on the other it puts the answer's line through the middle
+       of the frame, which is where the eye already is. */
+    fxTx = (fw - cw) / 2 - ox;
+    fxTy = (fh - ch) / 2 - oy;
+
+    /* Deliberately not clamped to the board's edges. An answer on the top row
+       centred vertically needs the board to hang past the frame, and clamping
+       it back would put the word off centre — which is the one thing this mode
+       is for. */
+    fxApply();
+  }
+
+  function fitFlex() {
+    var g = $("grid");
+    if (!g || !puzzle) return;
+    document.documentElement.style.setProperty("--cell", FX_BASE + "px");
+    g.style.gridTemplateColumns = "repeat(" + puzzle.width + ", var(--cell))";
+    /* A fresh puzzle starts in whatever mode was left, so the board does not
+       silently revert to fitted after every clue change. */
+    if (fxMode === "word") { fxDoFit("whole"); fxFollow(); }
+    else fxDoFit(fxMode === "manual" ? "width" : "whole");
+  }
+
   function fitCells() {
+    /* The whole of the classic sizing below is skipped in the flex layout. */
+    if (flexOn) { fitFlex(); return; }
     // Measure the chrome that actually surrounds the grid rather than
     // guessing, so the board always fits above the on-screen keyboard.
     var h = function (sel) {
@@ -1449,6 +1605,11 @@
   /* ---------- Selection ---------- */
   function updateSelection() {
     var e = puzzle.entries[cur.entry];
+    /* Called here rather than from each of the half-dozen places that change
+       the clue — stepClue, the jump list, a tap on a square, auto-advance —
+       because every one of them ends up here. One hook instead of six that can
+       drift apart. */
+    if (typeof fxFollow === "function") fxFollow();
     Object.keys(cellEls).forEach(function (k) {
       cellEls[k].classList.remove("in-word", "active");
     });
@@ -4610,6 +4771,183 @@
   document.addEventListener("keydown", function (ev) {
     if (ev.key === "Escape") closeJump();
   });
+
+  /* ---- flex layout: gestures and the toggle ---- */
+  (function () {
+    var wrap = document.querySelector(".grid-wrap");
+    if (!wrap) return;
+    var pts = {}, n = 0, startD = 0, startK = 1, startMid = null, moved = false;
+
+    function mid() {
+      var a = [], k;
+      for (k in pts) a.push(pts[k]);
+      return a;
+    }
+    wrap.addEventListener("pointerdown", function (ev) {
+      if (!flexOn) return;
+      /* The board controls sit inside the frame. Capturing the pointer here
+         would redirect their own pointerup to the frame and they would never
+         fire — they would look broken while being merely intercepted. */
+      if (ev.target.closest && ev.target.closest(".fx-zoom, .fx-fit")) return;
+      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY }; n++;
+      moved = false;
+      if (n === 2) {
+        var a = mid();
+        startD = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+        startK = fxScale;
+        var r = wrap.getBoundingClientRect();
+        startMid = { x: (a[0].x + a[1].x) / 2 - r.left, y: (a[0].y + a[1].y) / 2 - r.top };
+      }
+    });
+    wrap.addEventListener("pointermove", function (ev) {
+      if (!flexOn || !pts[ev.pointerId]) return;
+      var prev = pts[ev.pointerId];
+      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      if (n === 2 && startD) {
+        var a = mid();
+        var d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+        var k = Math.min(FX_MAX, Math.max(fxMin, startK * (d / startD)));
+        /* Zoom about the midpoint of the fingers so the square under them stays
+           under them; without it the board slides away as you pinch. */
+        var bx = (startMid.x - fxTx) / fxScale, by = (startMid.y - fxTy) / fxScale;
+        fxScale = k;
+        fxTx = startMid.x - bx * fxScale; fxTy = startMid.y - by * fxScale;
+        moved = true; fxClamp(); fxApply();
+        return;
+      }
+      if (n === 1) {
+        var dx = ev.clientX - prev.x, dy = ev.clientY - prev.y;
+        /* Slop, so a tap that wobbles is still a tap and still selects a
+           square — the cell handlers are left to fire on their own. */
+        if (!moved && Math.hypot(dx, dy) < 4) return;
+        moved = true;
+        fxTx += dx; fxTy += dy; fxClamp(); fxApply();
+      }
+    });
+    function up(ev) { if (pts[ev.pointerId]) { delete pts[ev.pointerId]; n--; } if (n < 2) startD = 0; }
+    wrap.addEventListener("pointerup", up);
+    wrap.addEventListener("pointercancel", up);
+
+    /* Safari raises pinch as its own gesture events, at document level, and has
+       ignored user-scalable=no since iOS 10. Refused only when the fingers went
+       down on the board, so a pinch anywhere else still zooms the page for
+       anyone who needs the clue text bigger. */
+    var inFrame = false;
+    document.addEventListener("touchstart", function (ev) {
+      inFrame = !!(flexOn && ev.target.closest && ev.target.closest(".grid-wrap"));
+    }, { passive: true });
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) {
+      document.addEventListener(t, function (ev) { if (inFrame) ev.preventDefault(); },
+        { passive: false });
+    });
+    document.addEventListener("touchmove", function (ev) {
+      if (inFrame && ev.touches.length > 1) ev.preventDefault();
+    }, { passive: false });
+
+    /* Ctrl+wheel, and a trackpad pinch, which browsers report the same way.
+       passive:false matters: wheel listeners default to passive and a passive
+       listener cannot preventDefault, so the page would zoom underneath with
+       nothing to say why. */
+    wrap.addEventListener("wheel", function (ev) {
+      if (!flexOn || !ev.ctrlKey) return;
+      ev.preventDefault();
+      var r = wrap.getBoundingClientRect();
+      var px = ev.clientX - r.left, py = ev.clientY - r.top;
+      var bx = (px - fxTx) / fxScale, by = (py - fxTy) / fxScale;
+      fxScale = Math.min(FX_MAX, Math.max(fxMin, fxScale * Math.exp(-ev.deltaY * 0.0025)));
+      fxTx = px - bx * fxScale; fxTy = py - by * fxScale;
+      fxClamp(); fxApply();
+    }, { passive: false });
+
+    function zoomBy(m) {
+      var r = wrap.getBoundingClientRect();
+      var cx = r.width / 2, cy = r.height / 2;
+      var bx = (cx - fxTx) / fxScale, by = (cy - fxTy) / fxScale;
+      fxScale = Math.min(FX_MAX, Math.max(fxMin, fxScale * m));
+      fxTx = cx - bx * fxScale; fxTy = cy - by * fxScale;
+      fxClamp(); fxApply();
+    }
+    /* Zooming by hand is a deliberate act, so it drops the board out of any
+       automatic mode rather than fighting the next thing that moves it. */
+    function toManual() { fxMode = "manual"; fxLabel(); }
+    on("fxIn", "click", function () { toManual(); zoomBy(1.25); });
+    on("fxOut", "click", function () { toManual(); zoomBy(1 / 1.25); });
+
+    on("fxFit", "click", function () {
+      fxMode = fxMode === "board" ? "word" : "board";
+      fxLabel();
+      if (fxMode === "board") fxDoFit("whole");
+      else fxFollow();
+      try { localStorage.setItem("fcw.fxmode", fxMode); } catch (e) {}
+    });
+  })();
+
+  /* The button says what pressing it will do next, not what mode you are in —
+     a control labelled with the current state leaves you working out what the
+     other one was. */
+  function fxLabel() {
+    var b = $("fxFit");
+    if (!b) return;
+    b.textContent = fxMode === "board" ? "Follow word"
+      : fxMode === "word" ? "Fit board" : "Fit board";
+  }
+
+  function setLayout(on) {
+    flexOn = !!on;
+    document.body.classList.toggle("flex-layout", flexOn);
+    var b = $("layoutToggle");
+    if (b) b.textContent = "layout: " + (flexOn ? "flex" : "classic");
+    try { localStorage.setItem("fcw.layout", flexOn ? "flex" : "classic"); } catch (e) {}
+    if (flexOn) setVh();
+    /* Two frames, not one. The class changes the column, and the frame cannot
+       be measured until that has been laid out — measured too early it reports
+       zero and the fit is meaningless. */
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { if (puzzle) fitCells(); scaleClue(); });
+    });
+  }
+  function setVh() {
+    var v = window.visualViewport;
+    document.documentElement.style.setProperty("--vh",
+      ((v && v.height) || window.innerHeight) + "px");
+  }
+  on("layoutToggle", "click", function () { setLayout(!flexOn); });
+
+  /* Its own switch, not tied to Follow word.
+
+     Some people will want the whole grid in front of them and some will want
+     one answer at a time, and that preference is separate from where the board
+     sits. Hiding the rest costs nothing a solver uses: a crossing letter is in
+     a cell belonging to both entries, so it is part of the active word and
+     stays on screen. Only cells the active word does not touch go, and those
+     say nothing about the clue in hand. */
+  function setFocus(on) {
+    document.body.classList.toggle("focus-word", !!on);
+    var b = $("focusToggle");
+    if (b) b.textContent = "focus: " + (on ? "on" : "off");
+    try { localStorage.setItem("fcw.focus", on ? "on" : "off"); } catch (e) {}
+  }
+  on("focusToggle", "click", function () {
+    setFocus(!document.body.classList.contains("focus-word"));
+  });
+  try { setFocus(localStorage.getItem("fcw.focus") === "on"); } catch (e) {}
+  if (window.visualViewport) {
+    /* scaleClue() belongs here as much as in the classic handlers: the clue
+       card is a fixed height and the keyboard moving the visual viewport is
+       exactly when a long clue needs re-measuring. frontend_test asserts every
+       visualViewport handler calls it, and it was right to. */
+    visualViewport.addEventListener("resize", function () {
+      if (flexOn) { setVh(); if (puzzle) fitCells(); }
+      scaleClue();
+    });
+  }
+  try {
+    var fm = localStorage.getItem("fcw.fxmode");
+    if (fm === "word" || fm === "manual" || fm === "board") fxMode = fm;
+    fxLabel();
+    if (localStorage.getItem("fcw.layout") === "flex") setLayout(true);
+    else { var lb = $("layoutToggle"); if (lb) lb.textContent = "layout: classic"; }
+  } catch (e) {}
 
   on("themeClose", "click", function () { $("themeSheet").classList.remove("show"); });
   on("themeShowSoon", "click", function () {

@@ -326,11 +326,23 @@ header{
 }
 
 /* The full lists, closed by default and opened when wanted. */
-.clues-block{width:100%;max-width:var(--board-w,100%);margin:8px auto 0}
+/* Listed with the other panel children rather than styled on its own, so the
+   column measure is stated once. */
+.clues-block{width:100%;max-width:var(--board-w,100%);margin:8px auto 0;
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center}
 /* A heading, not a control. */
 .clues-head{
   font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink-faint);margin:0 0 2px;
+  text-transform:uppercase;color:var(--ink-faint);
+  /* Capped and centred on the same measure as the columns it heads, rather
+     than inheriting whatever width the block happens to have.
+
+     It was taking the block's full width while .clues capped itself to the
+     board, so on a tablet the label sat at the page edge with the columns
+     starting several hundred pixels to its right — a heading pointing at
+     nothing. Sharing the measure means the two cannot drift apart, whatever
+     the block around them does. */
+  width:100%;max-width:var(--board-w,100%);margin:0 auto 2px;
 }
 .clues-block .clues{margin-top:10px}
 
@@ -2057,3 +2069,102 @@ body.rotate-needed .rotate-prompt{
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .jump-empty{padding:10px;color:var(--ink-faint);font-size:14px}
+
+/* ============================================================
+   FLEX LAYOUT (opt-in)
+   ============================================================
+   The board stops having to fit.
+
+   Today fitCells() shrinks the cell until the whole board sits above the
+   keyboard, which is why a fourteen-row puzzle lands at 18px on a phone. Here
+   the board lives in a frame that takes whatever height is left, and pans and
+   zooms inside it — so the cell is sized for reading, not for fitting.
+
+   Applied by body.flex-layout and by nothing else, so the current layout is
+   untouched behind the toggle. No DOM is moved: the order below is CSS only,
+   which is what makes turning it off a genuine revert rather than a rebuild.
+   ============================================================ */
+body.flex-layout{
+  height:100dvh;height:var(--vh,100dvh);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+body.flex-layout header{flex:none}
+body.flex-layout footer{display:none}
+body.flex-layout .stage{
+  flex:1 1 auto;min-height:0;max-width:none;padding:0;gap:0;overflow:hidden;
+}
+body.flex-layout .grid-panel{
+  flex:1 1 auto;min-height:0;gap:0;align-items:stretch;
+}
+
+/* Column order. The clue sits directly above the keyboard, where the thumb
+   already is, rather than at the top of the screen above the board. */
+body.flex-layout .grid-wrap{order:1;flex:1 1 auto;min-height:0}
+body.flex-layout .bank-strip{order:2;flex:none;margin:0;border-radius:0;
+  border-left:0;border-right:0}
+body.flex-layout .nudge-row{order:3;flex:none}
+body.flex-layout .now-clue{order:4;flex:none;margin:0;border-radius:0;
+  border-left-width:4px;border-right:0}
+body.flex-layout .tb-game{order:5;flex:none;margin:0}
+body.flex-layout .tb-help{order:6;flex:none;margin:0}
+
+/* Hidden here, not deleted. The jump list on the clue label does what the clue
+   list does and needs no scrolling past the board; the season table and the
+   standings are a sheet away. Both come back the moment the toggle is off. */
+body.flex-layout .clues-block,
+body.flex-layout #seasonPanel,
+body.flex-layout .tb-table{display:none}
+
+/* The frame. touch-action:none because pan and pinch are handled in script;
+   left to the browser it would scroll the page instead. */
+body.flex-layout .grid-wrap{
+  position:relative;overflow:hidden;touch-action:none;
+  /* Stretched by the column rather than declared width:100%.
+
+     frontend_test asserts the pitch hugs the grid instead of spanning the
+     content width — a small crossword floating in the middle of a huge pitch
+     was a real defect on an iPad. A bare width:100% on any .grid-wrap rule
+     trips that check, and rightly: the classic layout must keep hugging. Here
+     the frame does need the full column, so it takes it from align-self
+     instead of from a width the test cannot tell apart. */
+  width:auto;max-width:none;align-self:stretch;
+  background:var(--pitch-deep);
+}
+/* Turf fills the frame rather than tracking the board, so panning does not
+   drag the pitch markings around with it. */
+body.flex-layout .pitch-bg{position:absolute;inset:0;width:100%;height:100%}
+body.flex-layout .grid{
+  position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;
+}
+
+/* Board controls, bottom left of the frame. */
+.fx-zoom{position:absolute;left:8px;bottom:8px;z-index:6;display:none;gap:5px}
+body.flex-layout .fx-zoom{display:flex}
+.fx-zoom button{
+  width:34px;height:34px;border:0;border-radius:8px;
+  background:rgba(0,0,0,.5);color:#fff;font:600 17px var(--body);line-height:1;
+}
+.fx-zoom button:disabled{opacity:.35}
+.fx-fit{
+  position:absolute;right:8px;bottom:8px;z-index:6;display:none;
+  border:0;border-radius:999px;background:rgba(0,0,0,.5);color:#fff;
+  font:600 11px var(--body);text-transform:uppercase;letter-spacing:.06em;
+  padding:7px 12px;
+}
+body.flex-layout .fx-fit{display:block}
+
+/* ============ FOCUS THE ACTIVE ANSWER ============
+   Everything outside the current entry is hidden, and that costs nothing.
+
+   The first version dimmed instead, on the reasoning that crossing letters are
+   the main solving aid and must stay visible. That reasoning was wrong: a
+   crossing letter lives in a cell that belongs to BOTH entries, so it is part
+   of the active word and never leaves. What disappears is only the cells the
+   active word does not touch, and those say nothing about the clue in hand.
+
+   Blocked squares are already transparent, so the board simply becomes the one
+   answer sitting on the turf. */
+body.flex-layout.focus-word .cell:not(.in-word){
+  opacity:0;pointer-events:none;
+}
+body.flex-layout.focus-word .cell{transition:opacity .12s linear}
