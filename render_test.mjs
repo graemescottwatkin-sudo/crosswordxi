@@ -51,8 +51,15 @@
  */
 
 import { chromium } from "playwright";
+import fs from "fs";
+import path from "path";
 
 const BASE = process.env.BASE || "http://localhost:8788";
+
+/* SHOTS=1 saves a screenshot of each viewport into shots/. Off by default: the
+   full matrix is sixteen PNGs and most runs only want the verdict. */
+const SHOTS = !!process.env.SHOTS;
+const SHOT_DIR = process.env.SHOT_DIR || "shots";
 const HEAD = process.env.HEAD === "1";
 
 /* The device matrix. Grouped so a failure report says "phone landscape"
@@ -353,6 +360,19 @@ const run = async () => {
           await cell.click({ timeout: 3000 }).catch(() => {});
           await page.waitForTimeout(500);
         }
+      }
+
+      /* SHOTS=1 writes a PNG per viewport, so the thing being measured can also
+         be looked at. A gate that only reports numbers asks you to trust that
+         the assertions describe what a player sees; a picture beside the
+         numbers lets you check that they do — and catches the whole class of
+         defect nobody thought to assert on. */
+      if (SHOTS) {
+        await fs.promises.mkdir(SHOT_DIR, { recursive: true });
+        await page.screenshot({
+          path: path.join(SHOT_DIR, name + ".png"),
+          fullPage: false,          // what fits on the screen is the question
+        });
       }
 
       const m = await measure(page);

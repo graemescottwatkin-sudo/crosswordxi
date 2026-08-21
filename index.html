@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v93">
+<link rel="stylesheet" href="css/style.css?v=v95">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -772,6 +772,23 @@
          score is on the page and the offer is about something real.
 
          Hidden when signed in, and hidden when accounts are not configured. -->
+    <!-- The daily, offered at the moment somebody has just finished something.
+
+         Full Time offered Challenge, Share, New puzzle and View grid — all of
+         them about the board just played. Somebody arriving from a shared link
+         could finish, enjoy it, and leave without ever learning there is one a
+         day. "New puzzle" gives them another board; it does not give them a
+         reason to come back tomorrow.
+
+         Hidden when the daily they just played IS today's, and when today's is
+         already done — offering somebody a thing they have finished reads as a
+         game that does not know what they did. -->
+    <div class="res-daily" id="resDaily" style="display:none">
+      <div class="rd-line" id="rdLine"></div>
+      <button class="btn primary" id="rdPlay">Play today&rsquo;s daily</button>
+      <div class="rd-note" id="rdNote"></div>
+    </div>
+
     <div class="res-signin" id="resSignIn" style="display:none">
       <p>This score is saved on this device only.</p>
       <button class="btn secondary" id="resSignInBtn">Sign in to keep it</button>
@@ -824,7 +841,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v93</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v95</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -837,8 +854,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v93"></script>
-<script src="js/engine.js?v=v93"></script>
-<script src="js/game.js?v=v93"></script>
+<script src="js/seasons.js?v=v95"></script>
+<script src="js/engine.js?v=v95"></script>
+<script src="js/game.js?v=v95"></script>
 </body>
 </html>

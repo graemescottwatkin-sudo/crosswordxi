@@ -41,3 +41,7 @@ desktop.ini
 node_modules/
 .idea/
 .vscode/
+
+# render_test.mjs --SHOTS=1 writes a PNG per viewport here. Useful to look at,
+# not useful to keep: sixteen screenshots of a build that has moved on.
+shots/

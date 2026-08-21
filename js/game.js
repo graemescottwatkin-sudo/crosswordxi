@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v93";
+  var BUILD = "v95";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3771,6 +3771,7 @@
        finished puzzle showing nothing on a slow connection, and a puzzle that
        will not tell you how you did is worse than one that tells you twice. */
     verifyScore();
+    showDailyPrompt();
     /* The sender's own name: the account's, or the last one they used here.
        Remembering this one is right — it is theirs, and they will use it again. */
     var from = $("chFrom");
@@ -4380,6 +4381,54 @@
      Only for the featured board. Every other board is playable whenever, so a
      day-scoped table on one would be comparing people who happened to pick the
      same afternoon. */
+  /* The daily, offered at Full Time.
+
+     The strongest thing this game has for bringing somebody back is that there
+     is one a day and it is the same for everyone. Somebody arriving from a
+     shared link never learns that: they finish a themed board and the buttons
+     all point at the board they just played.
+
+     The wording changes with what they have already done, because the reason to
+     come back is different in each case:
+       never played a daily  -> what it is
+       played before, streak -> the streak, which is a thing to lose
+       played before, no run -> the invitation to start one
+
+     Nothing is shown when today's daily is already done or when it IS what they
+     just played. Offering somebody a puzzle they have finished reads as a game
+     that has not noticed. */
+  function showDailyPrompt() {
+    var box = $("resDaily");
+    if (!box) return;
+    box.style.display = "none";
+    if (mode === "daily") return;
+
+    var done = loadResults().some(function (r) {
+      return r && r.mode === "daily" && r.dailyNo === dailyNo;
+    });
+    if (done) return;
+
+    var st = FCW.seasonStats(phaseResults(), dailyNo);
+    var line = $("rdLine"), note = $("rdNote");
+
+    if (!st.played) {
+      line.textContent = "Today's daily \u2014 #" + dailyNo;
+      note.textContent = "One a day, the same puzzle for everyone. " +
+        "Play tomorrow's too and you have a run going.";
+    } else if (st.currentStreak > 0) {
+      line.textContent = "Your run is " + st.currentStreak +
+        (st.currentStreak === 1 ? " day" : " days");
+      note.textContent = "Today's is #" + dailyNo +
+        ". Miss it and the run goes back to nothing.";
+    } else {
+      line.textContent = "Today's daily \u2014 #" + dailyNo;
+      note.textContent = "You have played " + st.played +
+        (st.played === 1 ? " daily" : " dailies") +
+        ". Two days running starts a new run.";
+    }
+    box.style.display = "";
+  }
+
   function showTodayRank(mine) {
     var el = $("rRank");
     if (!el) return;
@@ -5355,6 +5404,11 @@
     ev.stopPropagation();
     var b = $("accountToggle");
     if (b) b.click();
+  });
+  on("rdPlay", "click", function () {
+    $("doneOverlay").classList.remove("show");
+    var b = $("dailyBtn");
+    if (b) b.click(); else chooseMode("daily");
   });
   on("resSignInBtn", "click", function () {
     var b = $("accountToggle");
