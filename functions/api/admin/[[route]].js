@@ -304,6 +304,7 @@ export async function onRequest({ request, env, params }) {
      Returns every released, listed board so the picker has something to choose
      from without a second request. */
   if (route === "featured" && request.method === "GET") {
+    try {
     const today = serverToday();
     let set = [];
     try {
@@ -322,9 +323,11 @@ export async function onRequest({ request, env, params }) {
         WHERE b.release_on <= ? AND b.listed = 1
         ORDER BY t.name, b.board_no`).bind(today).all();
     return json({ today, set, boards: opts.results || [] });
+    } catch (e) { return bad("Board of the day: " + (e && e.message || "failed"), 500); }
   }
 
   if (route === "featured-set" && request.method === "POST") {
+    try {
     let body;
     try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
     const date = String(body.date || "").trim();
@@ -350,12 +353,26 @@ export async function onRequest({ request, env, params }) {
       .bind(boardId, serverToday()).first();
     if (!ok) return bad("That board is not released, or is not listed.");
 
-    await env.DB.prepare(
-      `INSERT INTO featured_override (on_date, board_id, note) VALUES (?, ?, ?)
-       ON CONFLICT (on_date) DO UPDATE SET board_id = excluded.board_id,
-                                           note = excluded.note`)
-      .bind(date, boardId, String(body.note || "").slice(0, 200) || null).run();
+    /* Delete then insert, rather than an upsert.
+
+       ON CONFLICT ... DO UPDATE threw on the second set for a date — the first
+       inserted cleanly and every one after hit the conflict path — and an
+       uncaught throw in a Pages function comes back as an HTML error page, so
+       the browser reported "Unexpected token '<'" rather than anything about
+       the query. Two plain statements in one batch are atomic, obvious, and
+       have nothing to be clever about. */
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM featured_override WHERE on_date = ?").bind(date),
+      env.DB.prepare("INSERT INTO featured_override (on_date, board_id, note) VALUES (?, ?, ?)")
+        .bind(date, boardId, String(body.note || "").slice(0, 200) || null),
+    ]);
     return json({ ok: true, date, boardId });
+    } catch (e) {
+      /* Anything unhandled here used to reach the browser as an HTML error
+         page. A JSON message the panel can print is the difference between a
+         fixable report and "Unexpected token '<'". */
+      return bad("Could not set it: " + (e && e.message || "unknown"), 500);
+    }
   }
 
   if (route === "plays.csv" && request.method === "GET") {

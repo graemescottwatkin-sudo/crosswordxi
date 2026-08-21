@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v50";
+  var BUILD = "v51";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3991,7 +3991,10 @@
     featuredBoard = f || null;
     if (!f) { card.hidden = true; return; }
     var name = $("homeFeaturedName"), state = $("homeFeaturedState");
-    if (name) name.textContent = f.themeName + (f.no > 1 ? " #" + f.no : "");
+    /* Always the number, even on #1. The card names one specific board and
+       "Arsenal — Midfielders" alone does not say which, so somebody who has
+       played one of two cannot tell whether this is the other. */
+    if (name) name.textContent = f.themeName + " #" + f.no;
     if (state) {
       var r = themeResults()[f.themeId + "-" + f.no];
       state.textContent = r
@@ -4387,7 +4390,8 @@
   on("adminFeatured", "click", function () {
     apiAuth("/api/admin/featured").then(function (d) {
       var rows = (d.set || []).map(function (r) {
-        return '<tr><td>' + escapeHtml(r.on_date) + "</td><td>" +
+        var when = r.on_date === d.today ? "today" : escapeHtml(r.on_date);
+        return '<tr><td>' + when + "</td><td>" +
           escapeHtml(r.name) + " #" + r.board_no +
           '</td><td><button class="btn tiny" data-clear="' + escapeHtml(r.on_date) +
           '">clear</button></td></tr>';
