@@ -2219,6 +2219,22 @@ body.flex-layout .bank-strip{order:2;flex:none;border-radius:0;
 body.flex-layout .tb-game{order:3;flex:none}
 body.flex-layout .tb-help{order:4;flex:none}
 body.flex-layout .nudge-row{order:5;flex:none}
+
+/* The league table, on a phone.
+
+   Three rows of a twenty-team table — you, one above, one below — sitting
+   directly under the letter bank where the clock and the points were. The table
+   already carries the running score and the position, which is why the score
+   was never repeated anywhere until the flex layout hid the table and took it
+   with it. */
+body.flex-layout .tb-table{
+  order:3;flex:none;width:100%;max-width:none;margin:0;
+  border-radius:0;border-left:0;border-right:0;padding:4px 8px;
+}
+body.flex-layout .tb-table .club-bar,
+body.flex-layout .tb-table .tb-season{display:none}
+body.flex-layout .tb-table .league{width:100%;font-size:13px}
+body.flex-layout .tb-table .league td{padding:3px 6px}
 body.flex-layout .now-clue{order:6;flex:none;border-radius:0;
   border-left-width:4px;border-right:0}
 
@@ -2260,8 +2276,19 @@ body.flex-layout .nudge-row{
   /* Last again, so the clue sits against the keyboard on a touch screen and
      against the bottom of the window on a desktop. */
   body.flex-layout .now-clue{grid-column:1;grid-row:6}
+  /* Column two is the clue lists above and the table below. The lists take the
+     scrolling rows; the table takes the last one, so it holds still while they
+     move — a table that scrolled away would be a readout you had to go and
+     find. */
+  body.flex-layout .tb-table{
+    grid-column:2;grid-row:6 / -1;order:0;
+    border-left:1px solid var(--line);border-top:1px solid var(--line);
+    border-right:0;border-bottom:0;border-radius:0;
+    margin:0;padding:6px 10px;max-width:none;width:auto;align-self:stretch;
+  }
+  body.flex-layout .tb-table .tb-season{display:block}
   body.flex-layout .clues-block{
-    display:block;grid-column:2;grid-row:1 / -1;
+    display:block;grid-column:2;grid-row:1 / 6;
     min-height:0;overflow-y:auto;overscroll-behavior:contain;
     border-left:1px solid var(--line);margin:0;padding:8px 10px 16px;
     max-width:none;width:auto;
@@ -2277,8 +2304,7 @@ body.flex-layout .nudge-row{
 /* Hidden here, not deleted. The jump list on the clue label does what the clue
    list does and needs no scrolling past the board; the season table and the
    standings are a sheet away. Both come back the moment the toggle is off. */
-body.flex-layout #seasonPanel,
-body.flex-layout .tb-table{display:none}
+body.flex-layout #seasonPanel{display:none}
 /* On a phone there is no room for the panel; the jump list on the clue label
    does its job without scrolling past the board. */
 @media (max-width:859px){
@@ -2449,6 +2475,11 @@ body.flex-layout .tb-help{display:none}
 /* The running score, beside the clock. Only in the flex layout: the classic one
    still shows the league table, where the number already lives. */
 .live-score{display:none}
+body.flex-layout.has-table .live-score{display:none}
+/* No club, no table: renderLeagueRows never runs without one, so the panel
+   would be an empty box taking room from the board. The score chip covers that
+   case instead. */
+body.flex-layout:not(.has-table) .tb-table{display:none}
 body.flex-layout .live-score{
   display:inline-flex;align-items:baseline;gap:3px;
   font-family:var(--disp);font-weight:700;font-size:19px;line-height:1;

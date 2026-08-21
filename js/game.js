@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v84";
+  var BUILD = "v85";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3530,6 +3530,11 @@
 
   function updateScoreUI() {
     updateLiveScoreChip();
+    /* The table only exists once a club is chosen, and choosing one is
+       optional. Without it there is no table to read the score off, so the chip
+       stays — with it, the chip would be saying the same thing twice, which is
+       why it was removed in the first place. */
+    document.body.classList.toggle("has-table", club !== null);
     if (!puzzle || club === null) return;
     var score = liveScore();
     var table = FCW.buildTable(club, score, season);
