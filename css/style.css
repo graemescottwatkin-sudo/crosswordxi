@@ -2073,7 +2073,13 @@ body.rotate-needed .rotate-prompt{
 .now-clue{position:relative}
 .nc-meta{
   cursor:pointer;display:inline-flex;align-items:center;gap:3px;
-  border:0;background:none;color:var(--pitch);font:inherit;padding:0;
+  border:0;background:none;color:var(--pitch);font:inherit;
+  /* It is the control that opens the clue list, so it has to be hittable. The
+     padding does the work rather than a min-height, which would push the
+     sentence down the fixed-height card: the box grows around the text and the
+     negative margin keeps the label optically where it was. */
+  padding:11px 8px 11px 0;margin:-11px 0 -11px 0;
+  min-height:44px;box-sizing:border-box;
 }
 .nc-meta::after{content:"\25BE";font-size:.75em;opacity:.7}
 .nc-meta[aria-expanded="true"]::after{transform:rotate(180deg)}
@@ -2242,12 +2248,13 @@ body.flex-layout .grid{
 .fx-zoom{position:absolute;left:8px;bottom:8px;z-index:6;display:none;gap:5px}
 body.flex-layout .fx-zoom{display:flex}
 .fx-zoom button{
-  width:34px;height:34px;border:0;border-radius:8px;
+  width:44px;height:44px;border:0;border-radius:8px;
   background:rgba(0,0,0,.5);color:#fff;font:600 17px var(--body);line-height:1;
 }
 .fx-zoom button:disabled{opacity:.35}
 .fx-fit{
   position:absolute;right:8px;bottom:8px;z-index:6;display:none;
+  min-height:44px;
   border:0;border-radius:999px;background:rgba(0,0,0,.5);color:#fff;
   font:600 11px var(--body);text-transform:uppercase;letter-spacing:.06em;
   padding:7px 12px;
@@ -2288,14 +2295,17 @@ body.flex-layout .tbar{
 body.flex-layout .tbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
 .tbar-menu{position:relative}
 .tbar-btn{
+  /* 44px, which is the platform guidance on both iOS and Android and what
+     render_test enforces. These were 34px: comfortable with a mouse, a mis-tap
+     on glass — and a mis-tap on Reveal costs points. */
   font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.06em;
-  text-transform:uppercase;padding:6px 10px;min-height:34px;
+  text-transform:uppercase;padding:6px 10px;min-height:44px;
   border:1px solid var(--line);border-radius:7px;background:var(--card);
   color:var(--ink);white-space:nowrap;
 }
 .tbar-btn[aria-expanded="true"]{border-color:var(--pitch);color:var(--pitch)}
 #tbMode::after,#tbCheck::after,#tbReveal::after{content:" \25BE";font-size:.8em;opacity:.6}
-.tbar-cog{font-size:16px;padding:6px 9px;letter-spacing:0}
+.tbar-cog{font-size:16px;padding:6px 11px;letter-spacing:0;min-width:44px}
 .tbar-pop{
   position:absolute;top:calc(100% + 5px);z-index:80;min-width:190px;
   background:var(--card);border:1px solid var(--line);border-radius:9px;
