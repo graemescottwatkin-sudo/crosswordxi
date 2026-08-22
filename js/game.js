@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v98";
+  var BUILD = "v100";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1671,8 +1671,27 @@
     });
     document.querySelectorAll(".clue-col li").forEach(function (li) {
       var i = +li.dataset.entry;
-      li.classList.toggle("active", i === cur.entry);
+      var on = i === cur.entry;
+      li.classList.toggle("active", on);
       li.classList.toggle("done", entryFilled(i));
+      /* Bring the selected clue into view in the side panel.
+
+         Deliberately not done in the classic layout, and the note further down
+         says why: there the clue list sits BELOW the board, so revealing an
+         item in it scrolls the page and the crossword appears to jump. In the
+         flex layout the list is in its own scrolling panel beside the board, so
+         moving it moves nothing else — and a highlight two scrolls down the
+         panel is no highlight at all.
+
+         nearest, not center: the panel moves only when the clue is actually off
+         it, so a clue already visible does not shuffle under the eye on every
+         letter typed. */
+      if (on && flexOn && li.scrollIntoView) {
+        var panel = li.closest(".clues-block");
+        if (panel && panel.scrollHeight > panel.clientHeight) {
+          try { li.scrollIntoView({ block: "nearest" }); } catch (e) {}
+        }
+      }
     });
     // Compact: "1A (6)" reads as well as "1 Across · (6)" and keeps the clue,
     // the numbering and the letter bank together on one line.
@@ -4121,6 +4140,14 @@
           $("rMsg").textContent = FCW.outcomeMessage(club, pos);
           renderSeason("rSeasonGames", "rSeasonWdl", r.score);
           renderLeagueRows($("finalTableBody"), table, false);
+          /* Re-scrolled, because re-rendering the rows throws the scroll back
+             to the top. It barely showed while the window was ten rows deep;
+             at five it would leave you looking at the top of the league rather
+             than at where you finished. */
+          var youAgain = $("finalTableBody").querySelector("tr.you");
+          if (youAgain && youAgain.scrollIntoView) {
+            youAgain.scrollIntoView({ block: "center" });
+          }
           if (note) {
             note.textContent = "verified \u2014 timed from when the board was opened, " +
               "which does not pause";

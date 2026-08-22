@@ -1220,7 +1220,24 @@ body.touch .osk{display:block}
   font-family:var(--disp);font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   color:var(--pitch-deep);
 }
-.res-table-wrap{max-height:34vh;overflow:auto;margin-bottom:14px;border:1px solid var(--line);border-radius:8px}
+/* Five rows, then scroll.
+
+   It was 34vh, which is ten rows on a tall phone and six on a short one — the
+   same table a different length depending on the handset, and ten rows of a
+   twenty-team league pushes the buttons under it down the card. Five is enough
+   to see where you landed and who is either side, which is what the table is
+   for at Full Time; the rest is still there by scrolling.
+
+   Sized in rows rather than viewport height so it is the same everywhere. */
+.res-table-wrap{
+  --res-row:26px;
+  max-height:calc(var(--res-row) * 5);
+  overflow:auto;overscroll-behavior:contain;
+  margin-bottom:14px;border:1px solid var(--line);border-radius:8px;
+}
+/* The player's own row is scrolled into view, so five rows always include the
+   one that matters rather than the top five of the league. */
+.res-table-wrap table.league td{padding:4px 6px}
 .res-table-wrap table.league{font-size:12.5px}
 .view-grid{
   background:none;border:0;color:var(--ink-soft);text-decoration:underline;
