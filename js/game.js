@@ -4454,10 +4454,31 @@
     syncKickSelect();          // fills and syncs the Play as control on this screen
     var today = FCW.dailyNumber();
     var phase = FCW.dailyPhase(today);
+    /* Both the dimming and the badge follow DAILY_OPEN, from here.
+
+       They were written into index.html as a static class and a span inside the
+       title. Two things went wrong with that: the class stayed on whatever the
+       flag said, so setting DAILY_OPEN = true left the tile greyed and looking
+       unclickable; and this line writes the whole title as textContent, which
+       silently removed the badge span every render. The tile ended up dimmed
+       with nothing explaining why. */
     $("homeDailyTitle").textContent = phase.label;
-    $("homeDailyNote").textContent = phase.counts
-      ? "One a day, the same for everyone. The clock counts."
-      : "A friendly. Played and kept, but the season table starts on Matchday 1.";
+    $("homeDaily").classList.toggle("soon", !DAILY_OPEN);
+    if (!DAILY_OPEN) {
+      var badge = document.createElement("span");
+      badge.className = "hc-soon";
+      badge.textContent = "Coming soon";
+      $("homeDailyTitle").appendChild(document.createTextNode(" "));
+      $("homeDailyTitle").appendChild(badge);
+    }
+    /* The note is written here too, so the suspension message and the phase
+       message cannot both be true at once. The markup's copy is a placeholder
+       for the moment before this runs. */
+    $("homeDailyNote").textContent = !DAILY_OPEN
+      ? "Being rebuilt alongside the new club boards."
+      : phase.counts
+        ? "One a day, the same for everyone. The clock counts."
+        : "A friendly. Played and kept, but the season table starts on Matchday 1.";
 
     var d = savedFor("daily");
     var state = "";
