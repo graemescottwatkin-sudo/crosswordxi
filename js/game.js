@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v100";
+  var BUILD = "v104";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -747,10 +747,10 @@
     }
     $("grid").style.opacity = "";
     $("strapText").innerHTML = mode === "daily"
-      ? "Premier League &middot; " + FCW.dailyPhase(dailyNo).label
+      ? "Season &middot; " + FCW.dailyPhase(dailyNo).label
       : (mode === "theme" && themeLabel
           ? "Club or theme &middot; " + escapeHtml(themeLabel)
-          : "Premier League &middot; Practice");
+          : "Training");
     $("dailyBtn").style.display = mode === "daily" ? "none" : "";
     document.title = mode === "daily"
       ? FCW.dailyPhase(dailyNo).label + " \u00B7 Crossword XI"
@@ -2040,7 +2040,12 @@
     refreshAdmin();
     /* Carry the guest's history over once. Failure here is not fatal: the
        player is signed in, and the local copy is still on the device. */
+    /* Push first, then pull. Order matters: migrate writes this device's rows
+       to the account, and the pull then brings back everything the account has
+       from anywhere — including what was just pushed. The other way round would
+       fetch, merge, and then push rows the account already had. */
     apiAuth("/api/account/migrate", guestPayload()).then(function (m) {
+      pullAccountResults();
       var note = $("acctMigrated");
       if (!note) return;
       if (m.added) {
@@ -2125,6 +2130,14 @@
     account = r.user || null;
     renderAccount();
     refreshAdmin();
+    /* Every load, not only on sign-in.
+
+       The pull was first hung off migrate, which runs once when a guest signs
+       in — so somebody already signed in, opening the site on a second device,
+       never fetched anything and saw an empty history. That is precisely the
+       case this was built for. Here it runs whenever a session exists, which
+       is every visit on every device. */
+    if (account) pullAccountResults();
   }).catch(function () { renderAccount(); });
 
   /* ---------- How far people get ----------
@@ -2451,11 +2464,20 @@
           (d.ownerPlays === 1 ? "" : "s") + ", " + d.ownerFinished + " finished " +
           "(kept out of the figures above)"
         : "";
+      /* Say the period. "50 finished" with no window is a number nobody can
+         act on — it could be today's post or a month of drift. */
+      var window = d.hours
+        ? (d.hours === 24 ? "last 24 hours"
+           : d.hours % 24 === 0 ? "last " + (d.hours / 24) + " days"
+           : "last " + d.hours + " hours")
+        : "recent plays";
       if (!d.days.length) {
-        adminMsg("No visitors have played yet." + mine);
+        adminMsg("No visitors have played in the " + window + "." + mine);
         return;
       }
       $("adminReportList").innerHTML = "";
+      adminMsg("How far players got \u2014 " + window +
+        ". The CSV covers everything." + mine);
       var lines = d.days.slice(0, 20).map(function (x) {
         /* Themed boards read as their own name and number, because that is how
            they are shared and how they will be talked about. "man-united-3"
@@ -3272,6 +3294,56 @@
       return Array.isArray(r) ? r : [];
     } catch (e) { return []; }
   }
+  /* Bring the account's history down to this device.
+
+     migrate.js was only ever half of it: the browser posted what it had and
+     nothing came back, so signing in on a second device showed an empty
+     history while the rows sat on the account. The sign-in offer promised
+     "across every device you play on", which was not true until this existed.
+
+     Merged rather than replaced. A player can finish a puzzle signed out and
+     sign in afterwards, so the local copy can hold something the account has
+     not seen — overwriting would throw that away. */
+  function mergeResults(local, remote) {
+    var byKey = {};
+    var keyOf = function (r) {
+      /* A daily is one per player per number, which is what migrate.js relies
+         on to top up rather than duplicate. Anything else keys on what it has,
+         so a themed board played twice stays two rows. */
+      return r && r.mode === "daily" && r.dailyNo != null
+        ? "daily:" + r.dailyNo
+        : [r && r.mode, r && r.date, r && r.completedAt, r && r.score].join("|");
+    };
+    (local || []).forEach(function (r) { byKey[keyOf(r)] = r; });
+    (remote || []).forEach(function (r) {
+      var k = keyOf(r), have = byKey[k];
+      /* The account wins a tie only where it has more to say. A local row for
+         the same daily is the same run — this device reported it — so keeping
+         the better-scored of the two is wrong; keeping the one that is not
+         missing fields is right. */
+      if (!have) { byKey[k] = r; return; }
+      if (have.score == null && r.score != null) byKey[k] = r;
+    });
+    return Object.keys(byKey).map(function (k) { return byKey[k]; })
+      .sort(function (a, b) { return (a.dailyNo || 0) - (b.dailyNo || 0); });
+  }
+
+  function pullAccountResults() {
+    /* apiAuth with no body is a GET, and it carries the session cookie and the
+       CSRF header the endpoint checks. */
+    return apiAuth("/api/account/results").then(function (d) {
+      if (!d || !Array.isArray(d.results)) return;
+      var before = loadResults();
+      var merged = mergeResults(before, d.results);
+      if (merged.length === before.length) return;      // nothing new
+      saveResults(merged);
+      /* Everything derived from results is recomputed, or the streak and the
+         season table go on showing this device's slice of the history. */
+      renderStreak();
+      if (typeof renderHome === "function") renderHome();
+    }).catch(function () { /* offline or signed out: leave the device as it is */ });
+  }
+
   function saveResults(list) {
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
@@ -3669,24 +3741,32 @@
     }
     if (recent.clubs.length) {
       var g1 = document.createElement("optgroup");
-      g1.label = "Premier League " + recent.label;
+      /* No season in the label. The season you are scored against is drawn from
+         the puzzle seed whichever club you pick, so naming one here reads as
+         "pick from this season" and implies a link that does not exist — the
+         same confusion the note above was written to avoid. */
+      g1.label = "Top flight clubs";
       recent.clubs.slice().sort().forEach(function (c) { addTo(g1, c); });
       sel.appendChild(g1);
     }
     var rest = CLUBS.filter(function (c) { return !seen[c]; });
     if (rest.length) {
       var g2 = document.createElement("optgroup");
-      g2.label = "Other Premier League clubs";
+      g2.label = "Other clubs";
       rest.forEach(function (c) { addTo(g2, c); });
       sel.appendChild(g2);
     }
-    /* Clubs that have never played a Premier League season. They take the
-       bottom club's place in whichever season is used — which is the right
-       story anyway: you start at the bottom and climb. */
+    /* Clubs that have never played in the top flight. They take the bottom
+       club's place in whichever season is used — which is the right story
+       anyway: you start at the bottom and climb.
+
+       Grouped with the others rather than named separately: "Football League"
+       is a mark too, and the only distinction that matters to a player is
+       whether a club is in the current twenty. */
     var efl = EFL_CLUBS.filter(function (c) { return !seen[c]; }).sort();
     if (efl.length) {
       var g3 = document.createElement("optgroup");
-      g3.label = "Football League clubs";
+      g3.label = "Other clubs";
       efl.forEach(function (c) { addTo(g3, c); });
       sel.appendChild(g3);
     }
@@ -4438,7 +4518,8 @@
     var box = $("resDaily");
     if (!box) return;
     box.style.display = "none";
-    if (mode === "daily") return;
+    /* Nothing to offer while the daily is suspended. */
+    if (!DAILY_OPEN || mode === "daily") return;
 
     var done = loadResults().some(function (r) {
       return r && r.mode === "daily" && r.dailyNo === dailyNo;
@@ -5195,6 +5276,13 @@
      The code stays until the Playwright gate covers the new layout. That gate
      is the only automated check either layout has, and deleting the one it
      tests before it tests the other leaves nothing watching. */
+  /* Daily is suspended.
+
+     One flag, read everywhere it matters, so the tile, the menu item and the
+     Full Time prompt cannot drift apart — a prompt advertising a mode the tile
+     refuses to open is worse than either on its own. */
+  var DAILY_OPEN = false;
+
   function setLayout() {
     flexOn = true;
     document.body.classList.add("flex-layout");
@@ -5324,6 +5412,8 @@
          reasoning as the Coming soon tile on the landing screen. */
       var pr = $("tbPractice");
       if (pr) pr.disabled = true;
+      var dy = $("tbDaily");
+      if (dy) dy.disabled = !DAILY_OPEN;
       var lab = $("tbModeLabel");
       if (lab) {
         lab.textContent = mode === "daily" ? "Daily"
@@ -5339,7 +5429,7 @@
       ev.stopPropagation();
       closePops(null);
       var a = b.getAttribute("data-act");
-      if (a === "daily") click("dailyBtn");
+      if (a === "daily") { if (!DAILY_OPEN) return; click("dailyBtn"); }
       else if (a === "practice") return;      // suspended; the item is disabled
       else if (a === "themes") { renderThemes(); $("themeSheet").classList.add("show"); }
       else if (a === "new") click("newBtn");
@@ -5619,7 +5709,16 @@
     }
   }
 
-  on("homeDaily", "click", function () { chooseMode("daily"); });
+  on("homeDaily", "click", function () {
+    /* Anyone part-way through today's can still finish it. Stranding a
+       half-played board to enforce a suspension costs a real player something
+       and saves nobody anything — the puzzle is already on their device. */
+    if (!DAILY_OPEN && !inProgress(savedFor("daily"))) {
+      toast("Daily is being rebuilt alongside the new club boards.");
+      return;
+    }
+    chooseMode("daily");
+  });
   on("homePractice", "click", function () {
     /* Suspended, but not for somebody mid-puzzle. Stranding a half-finished
        board to enforce a suspension costs a real player something to save

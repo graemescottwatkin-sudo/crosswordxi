@@ -111,10 +111,28 @@ export async function onRequest({ request, env, params }) {
      "142 started, 12 finished" and "40 started, 38 finished" are different
      problems, and the median clues solved says which. */
   if (route === "plays" && request.method === "GET") {
+    /* A window in hours, not a row cap.
+
+       It was `ORDER BY started_at DESC LIMIT 2000`, which is not a period at
+       all: 2000 rows is about a fortnight at today's rate and a couple of days
+       once a post lands. The same number meant a different span every week,
+       which is worse than a number that means nothing — "50 finished" reads as
+       recent and could be a month old.
+
+       72 hours by default, because the traffic here arrives in bursts from a
+       post and a three-day window covers one without blurring it into the last.
+       ?hours= overrides it; the CSV export is unwindowed and goes to 20,000
+       rows, which is where a longer look belongs. */
+    const url = new URL(request.url);
+    const asked = Number(url.searchParams.get("hours"));
+    const hours = Number.isFinite(asked) && asked > 0 && asked <= 24 * 365
+      ? Math.floor(asked) : 72;
     const rows = await env.DB.prepare(
       `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs,
               ended_at, theme_key, by_owner
-         FROM plays ORDER BY started_at DESC LIMIT 2000`).all();
+         FROM plays
+        WHERE started_at > datetime('now', ?)
+        ORDER BY started_at DESC LIMIT 5000`).bind("-" + hours + " hours").all();
     const byDay = new Map();
     /* The owner's own testing, counted separately. Twenty passes over a layout
        is not twenty people, and while the site is being built most rows are
@@ -161,7 +179,9 @@ export async function onRequest({ request, env, params }) {
       medianSolvedWhenStopped: mid(d.stops),
       abandoned: d.stops.length,
     })).sort((a, b) => (b.dailyNo || 0) - (a.dailyNo || 0));
-    return json({ ownerPlays, ownerFinished, days });
+    /* The window is reported, not implied. A panel showing "50 finished" with
+       no period is a number nobody can act on. */
+    return json({ ownerPlays, ownerFinished, days, hours });
   }
 
   /* ---- Clear my own record ---- */

@@ -327,8 +327,19 @@ const run = async () => {
            and reported "overlay never cleared" at every viewport — with the
            grid, scroll and keyboard checks all skipped. The measurements it
            exists to take were not being taken. */
-        const home = page.locator("#homeOverlay.show #homeDaily");
-        if (await home.count()) {
+        /* Daily and Practice are both suspended, so the route in is Clubs and
+           themes — which is also the route almost everybody actually takes,
+           arriving from a shared board rather than from the landing screen.
+           Falls back to Daily if it is ever open again. */
+        /* Daily and Practice are both suspended, so their tiles refuse the
+           click. #dailyBtn is the control underneath — hidden in the flex
+           layout, never removed — and loading a puzzle is what this suite needs,
+           not a particular way of asking for one. */
+        const viaBtn = page.locator("#dailyBtn");
+        const home = page.locator("#homeOverlay.show #homeDaily:not(.soon)");
+        if (await viaBtn.count()) {
+          await viaBtn.evaluate((el) => el.click());
+        } else if (await home.count()) {
           await home.click({ timeout: 8000 });
           await page.waitForSelector("#kickOffBtn", { timeout: 12000 });
         }

@@ -109,7 +109,7 @@ server.listen(0, "127.0.0.1", async () => {
   console.log("A reset in another window");
   let dom = await open(null);
   let w = dom.window, $ = (id) => w.document.getElementById(id);
-  $("homeDaily").click(); await wait(2500);
+  ($("dailyBtn") || $("homeDaily")).click(); await wait(2500);
   if ($("kickOffBtn")) { $("kickOffBtn").click(); await wait(500); }
   type(w, "BURN"); await wait(1200);
   t("this window has a game in progress", letters(rec(w)) >= 4, letters(rec(w)) + " letters");
@@ -140,7 +140,7 @@ server.listen(0, "127.0.0.1", async () => {
   console.log("\nA newer game written by another window");
   dom = await open(null);
   w = dom.window; $ = (id) => w.document.getElementById(id);
-  $("homeDaily").click(); await wait(2500);
+  ($("dailyBtn") || $("homeDaily")).click(); await wait(2500);
   if ($("kickOffBtn")) { $("kickOffBtn").click(); await wait(500); }
   type(w, "BUR"); await wait(1200);
   const mine = rec(w);
@@ -163,7 +163,7 @@ server.listen(0, "127.0.0.1", async () => {
   console.log("\nOne window on its own");
   dom = await open(null);
   w = dom.window; $ = (id) => w.document.getElementById(id);
-  $("homeDaily").click(); await wait(2500);
+  ($("dailyBtn") || $("homeDaily")).click(); await wait(2500);
   if ($("kickOffBtn")) { $("kickOffBtn").click(); await wait(500); }
   type(w, "BURND"); await wait(1200);
   const first = letters(rec(w));

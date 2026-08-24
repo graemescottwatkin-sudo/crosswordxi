@@ -188,7 +188,7 @@ server.listen(0, "127.0.0.1", async () => {
   console.log("\nPlaying still saves");
   dom = await open(null);
   w = dom.window; $ = (id) => w.document.getElementById(id);
-  $("homeDaily").click();
+  ($("dailyBtn") || $("homeDaily")).click();
   await wait(2500);
   if ($("kickOffBtn")) { $("kickOffBtn").click(); await wait(500); }
   type(w, "BURN");
@@ -220,7 +220,7 @@ server.listen(0, "127.0.0.1", async () => {
      This holds the invariant rather than fixing anything. */
   console.log("\nThe change listener");
   $("menuBtn").click(); await wait(600);
-  $("homeDaily").click(); await wait(2500);
+  ($("dailyBtn") || $("homeDaily")).click(); await wait(2500);
   const binds = w.__clubBinds || {};
   console.log("      bindings per control: " + JSON.stringify(binds));
   const most = Math.max(0, ...Object.values(binds));
