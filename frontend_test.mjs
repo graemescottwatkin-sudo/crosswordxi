@@ -480,7 +480,14 @@ server.listen(0, "127.0.0.1", async () => {
   t("and shows the verified number rather than its own when it arrives", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
-    return /\$\("rScore"\)\.textContent = r\.score/.test(fn) &&
+    /* rScore is gone: the result line carried the score twice — "20TH — 15
+       PTS" over "15 / 114 pts" — and the second said nothing the first did not
+       except the ceiling, which is now folded into it. setResultLine() writes
+       the one that remains.
+
+       The property is unchanged: when the server's number arrives it replaces
+       the browser's on screen and in the variable. */
+    return /setResultLine\(pos, r\.score\)/.test(fn) &&
       /verifiedScore = r\.score/.test(fn);
   })());
   /* A verified score has to reconcile with the sum printed under it. Updating

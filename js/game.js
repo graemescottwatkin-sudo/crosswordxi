@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v113";
+  var BUILD = "v114";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3932,10 +3932,33 @@
      separate paths set it — the local calculation, the server's verified score,
      and the re-render after verification. Three writes to one element became
      six the moment there were two elements, which is how they drift. */
+  /* The result line: position, score and what was available.
+
+     "20TH \u2014 15 PTS" over "15 / 114 pts" was one number said twice. The
+     ceiling is the only thing the second line carried, so it lives here now. */
+  function setResultLine(pos, score) {
+    $("rPos").textContent = (FCW.ordinal(pos) + "  \u00B7  " + score +
+      " / " + FCW.SCORING.MAX_SCORE).toUpperCase();
+  }
+
+  var shownScore = null;
+
   function setFinalScore(score) {
-    var txt = score + " / " + FCW.SCORING.MAX_SCORE;
-    if ($("rFinal")) $("rFinal").textContent = txt;
-    if ($("rFinalPeek")) $("rFinalPeek").textContent = txt;
+    shownScore = score;
+    if ($("rFinal")) $("rFinal").textContent = score + " / " + FCW.SCORING.MAX_SCORE;
+    /* The summary shows what was LOST, not the total.
+
+       The total was already on the result line directly above it and in the
+       league table below — repeating it here made four appearances of one
+       number. The deduction is the thing this panel actually explains, and it
+       is the only place on the screen that says it.
+
+       Nothing lost, nothing to say: a clean sheet gets no number at all. */
+    var peek = $("rFinalPeek");
+    if (peek) {
+      var lost = FCW.SCORING.MAX_SCORE - score;
+      peek.textContent = lost > 0 ? "\u2212" + lost : "";
+    }
   }
 
   function checkComplete() {
@@ -3952,8 +3975,7 @@
     showPauseNote();
     updateScoreUI();
     $("rClub").textContent = club + (season ? "  \u00B7  " + season.season : "");
-    $("rPos").textContent = (FCW.ordinal(pos) + " \u2014 " + res.score + " pts").toUpperCase();
-    $("rScore").textContent = res.score;
+    setResultLine(pos, res.score);
     $("rMsg").textContent = FCW.outcomeMessage(club, pos);
     renderSeason("rSeasonGames", "rSeasonWdl", res.score);
     $("bClock").textContent = FCW.matchClockLabel(elapsed);
@@ -4311,11 +4333,13 @@
         if (mode === "theme") recordThemed(lastPosition, r.score);
         else if (mode === "daily") recordDaily(lastPosition, r.score, r.breakdown || {});
 
-        if (r.score !== Number($("rScore").textContent)) {
+        /* Compared against the value, not against the text on screen. This read
+           Number($("rScore").textContent) — using rendered display text as
+           state, which breaks the moment the display changes shape, and did. */
+        if (r.score !== shownScore) {
           var table = FCW.buildTable(club, r.score, season);
           var pos = FCW.playerPosition(table);
-          $("rScore").textContent = r.score;
-          $("rPos").textContent = (FCW.ordinal(pos) + " \u2014 " + r.score + " pts").toUpperCase();
+          setResultLine(pos, r.score);
           setFinalScore(r.score);
           $("rMsg").textContent = FCW.outcomeMessage(club, pos);
           renderSeason("rSeasonGames", "rSeasonWdl", r.score);
