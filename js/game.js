@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v104";
+  var BUILD = "v105";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5281,7 +5281,7 @@
      One flag, read everywhere it matters, so the tile, the menu item and the
      Full Time prompt cannot drift apart — a prompt advertising a mode the tile
      refuses to open is worse than either on its own. */
-  var DAILY_OPEN = false;
+  var DAILY_OPEN = true;
 
   function setLayout() {
     flexOn = true;
