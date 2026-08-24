@@ -1329,6 +1329,13 @@ var FCW = (function () {
     if (rec && rec.phase) return rec.phase;
     return dailyPhase(rec && rec.dailyNo).phase;   // older records predate the field
   }
+  /* Two buckets, three phases. Anything that is not a friendly goes in the
+     second one — a daily played before a season starts is still a real result
+     and still builds a run, so it belongs with the season records rather than
+     nowhere. When a season does start, its matchdays join them.
+
+     The split is friendly / not friendly, which is the line that matters:
+     pre-season is its own competition and its streak ends when it does. */
   function splitByPhase(records) {
     var pre = [], season = [];
     (records || []).forEach(function (x) {
@@ -1376,7 +1383,7 @@ var FCW = (function () {
      checks the pair on real dates.
      Any date before #1 clamps to #1, so testing before launch never eats into
      the stored days. */
-  var DAILY_EPOCH = { y: 2026, m: 7, d: 15 }; // day before launch; 2026-08-16 = Puzzle #1
+  var DAILY_EPOCH = { y: 2026, m: 7, d: 23 }; // day before launch; 2026-08-24 = Puzzle #1
   /* Four weeks of friendlies before the season proper. The stored sequence is
      unbroken — days 1-28 are pre-season, day 29 is Matchday 1 on 13 September
      2026 — so nothing about generation or storage changes. What changes is what
@@ -1384,13 +1391,79 @@ var FCW = (function () {
      The point is a record that starts clean: bugs found in the opening weeks
      cannot spoil anybody's streak, and the season has a real first day rather
      than the site merely existing one morning. */
-  var PRESEASON_DAYS = 28;
+  /* Ten, not twenty-eight. Twenty-eight friendlies is a month before anything
+     counts, and the season table — the thing the game is built around — stays
+     empty that whole time. Ten is enough to learn the format and short enough
+     that Matchday 1 is a fortnight away rather than a month.
+
+     Exported below, so this is the only place it is stated. */
+  var PRESEASON_DAYS = 10;
+  /* The daily number the first season starts on, or null while there is not
+     one yet.
+
+     Three phases, not two. Pre-season is friendlies — played, scored, kept, not
+     counted. Then the daily proper: a real puzzle with a real score, but no
+     season to put it in. Then a season, once there is a reason to start one.
+
+     It was two phases, so the day after pre-season was automatically Matchday 1
+     — which committed to a season before there was any evidence anyone would
+     play thirty-eight of them. Null keeps the daily running indefinitely and
+     lets the decision wait.
+
+     To start a season: set this to the daily number of its first matchday. */
+  var SEASON_START = null;
+
+  /* An override, for trying a season before starting one.
+
+     Client-side, and it cannot be otherwise — this file runs in the browser. So
+     it is not a gate and is not presented as one. What it can do is limited:
+     the phase decides labels and whether this device's own table counts. The
+     server has no notion of phases at all, so somebody who found it would see
+     "Matchday 1" early on their own screen and nothing else would follow.
+
+     Set from owner tools, or by hand:
+        localStorage.setItem("fcw.seasonStart", "11")
+        localStorage.removeItem("fcw.seasonStart")
+
+     One real consequence: results recorded while it is set carry
+     phase: "season", and those go to the account on sign-in. Clear it before
+     playing a daily you want recorded honestly. */
+  function seasonStart() {
+    try {
+      var v = localStorage.getItem("fcw.seasonStart");
+      if (v !== null && v !== "") {
+        var n = parseInt(v, 10);
+        if (isFinite(n) && n > 0) return n;
+      }
+    } catch (e) { /* storage blocked: the real value stands */ }
+    return SEASON_START;
+  }
+
   function dailyPhase(n) {
     var no = n || dailyNumber();
-    return no <= PRESEASON_DAYS
-      ? { phase: "preseason", number: no, label: "Pre-season friendly #" + no, counts: false }
-      : { phase: "season", number: no - PRESEASON_DAYS,
-          label: "Matchday " + (no - PRESEASON_DAYS), counts: true };
+    var start = seasonStart();
+    /* The override is tested before pre-season, not after.
+
+       It was after, so setting it during pre-season did nothing at all — the
+       friendly branch returned first and the season never appeared. That is the
+       one time you would want to try a season: before starting one. An explicit
+       start date wins over the calendar. */
+    if (start !== null && no >= start) {
+      return { phase: "season", number: no - start + 1,
+               label: "Matchday " + (no - start + 1), counts: true };
+    }
+    if (no <= PRESEASON_DAYS) {
+      return { phase: "preseason", number: no,
+               label: "Pre-season friendly #" + no, counts: false };
+    }
+    if (start === null || no < start) {
+      /* Numbered from the end of pre-season, so the first real daily is #1
+         rather than #11 — the friendlies were their own run. */
+      var d = no - PRESEASON_DAYS;
+      return { phase: "daily", number: d, label: "Daily #" + d, counts: false };
+    }
+    return { phase: "season", number: no - start + 1,
+             label: "Matchday " + (no - start + 1), counts: true };
   }
   function dailyNumber(at) {
     var t = at || new Date(now());
@@ -1546,6 +1619,8 @@ var FCW = (function () {
     DAILY_EPOCH: DAILY_EPOCH,
     PRESEASON_DAYS: PRESEASON_DAYS,
     dailyPhase: dailyPhase,
+    SEASON_START: SEASON_START,
+    seasonStart: seasonStart,
     resultPhase: resultPhase,
     splitByPhase: splitByPhase,
     dailyNumber: dailyNumber,

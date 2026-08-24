@@ -72,7 +72,18 @@ const KEYS = ["fcw.v04.daily", "fcw.v04.practice", "fcw.mode", "fcw.results.v1",
    and failed after midnight, because renderHome only shows a saved game as in
    progress when it belongs to today — correctly. A fixture that expires is a
    test that reports a fault in the code when the fault is in the fixture. */
-const DAILY_EPOCH = Date.UTC(2026, 7, 16);
+/* Read from the source, not restated here. This was a hardcoded
+   Date.UTC(2026, 7, 16) — a third copy of an epoch that already exists twice
+   and that epoch_test.mjs pins together. Moving the daily to restart at #1
+   broke it, and the failure read as "the menu stopped showing games as in
+   progress" when the code was right and this line was stale.
+
+   The comment above warns that a fixture which expires reports a fault in the
+   code when the fault is in the fixture. It expired a different way. */
+const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
+const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
+if (!EM) throw new Error("Could not read EPOCH from functions/_lib/daily.js");
+const DAILY_EPOCH = Date.UTC(+EM[1], +EM[2], +EM[3]);
 const TODAY_NO = Math.max(1, Math.floor((Date.now() - DAILY_EPOCH) / 86400000) + 1);
 
 const IN_PROGRESS = JSON.stringify({

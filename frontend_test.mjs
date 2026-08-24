@@ -872,12 +872,34 @@ server.listen(0, "127.0.0.1", async () => {
   })());
 
   console.log("\nPre-season");
-  t("the first four weeks are friendlies, then the season starts", (() => {
-    const a = w.FCW.dailyPhase(1), b = w.FCW.dailyPhase(28), c = w.FCW.dailyPhase(29);
+  t("pre-season runs to the boundary, then the season starts", (() => {
+    /* Read from PRESEASON_DAYS rather than restating it. This hardcoded 28 in
+       three places and broke the moment pre-season was shortened to ten — the
+       failure read as "the season starts in the wrong place" when the code was
+       right and the fixture was stale, which is the same shape as the epoch
+       copy in save_test.mjs.
+
+       The property being tested is the boundary, not the number: the last
+       pre-season day does not count, the next one is Matchday 1, and the
+       numbering restarts there. */
+    const n = w.FCW.PRESEASON_DAYS;
+    const a = w.FCW.dailyPhase(1), b = w.FCW.dailyPhase(n), c = w.FCW.dailyPhase(n + 1);
+    /* Three phases now, not two. The day after pre-season used to be Matchday
+       1 automatically, which committed to a season before there was any
+       evidence anyone would play thirty-eight — so the daily runs on its own
+       until SEASON_START is set, and only then does a matchday exist.
+
+       What is tested is still the boundary: pre-season ends where it says it
+       does, and the next day is a fresh run that does not count toward a
+       season. Whether that day is "Daily #1" or "Matchday 1" depends on
+       SEASON_START, so both are accepted. */
+    const started = w.FCW.SEASON_START !== null && w.FCW.SEASON_START <= n + 1;
     return a.label === "Pre-season friendly #1" && a.counts === false &&
-      b.label === "Pre-season friendly #28" && b.counts === false &&
-      c.label === "Matchday 1" && c.counts === true;
-  })(), w.FCW.dailyPhase(29).label);
+      b.label === "Pre-season friendly #" + n && b.counts === false &&
+      c.number === 1 &&
+      (started ? c.label === "Matchday 1" && c.counts === true
+               : c.label === "Daily #1" && c.counts === false);
+  })(), w.FCW.PRESEASON_DAYS + " friendlies, then " + w.FCW.dailyPhase(w.FCW.PRESEASON_DAYS + 1).label);
   t("a friendly is recorded, but to its own record", (() => {
     /* Was: friendlies were discarded. A friendly is still a match, and a
        pre-season streak is a real thing to build — what matters is that the
@@ -892,9 +914,15 @@ server.listen(0, "127.0.0.1", async () => {
     return /FCW\.splitByPhase/.test(js) && /function phaseResults/.test(js);
   })());
   t("older results without a phase are still placed correctly", (() => {
-    // Records written before the field existed fall back to their daily number.
+    /* Records written before the field existed fall back to their daily number.
+
+       Asserted as "not pre-season" rather than "season": there are three phases
+       now and a daily played before a season starts reports "daily". What has
+       to hold is that an old record lands on the right side of the friendly
+       boundary, which is the line splitByPhase actually uses. */
+    const late = w.FCW.resultPhase({ dailyNo: w.FCW.PRESEASON_DAYS + 30 });
     return w.FCW.resultPhase({ dailyNo: 5 }) === "preseason" &&
-      w.FCW.resultPhase({ dailyNo: 40 }) === "season" &&
+      late !== "preseason" &&
       w.FCW.resultPhase({ dailyNo: 5, phase: "season" }) === "season";
   })());
   t("the friendlies stay visible once the season starts", (() => {
@@ -908,9 +936,14 @@ server.listen(0, "127.0.0.1", async () => {
     return !/"Daily #" \+ dailyNo/.test(js) && /FCW\.dailyPhase\(dailyNo\)\.label/.test(js);
   })());
   t("the stored sequence is unbroken, so nothing about generation changes", (() => {
-    // Day 29 is Matchday 1: pre-season uses stored days 1-28, not a second set.
-    return w.FCW.dailyPhase(29).number === 1 && w.FCW.dailyPhase(148).number === 120;
-  })());
+    /* Pre-season uses stored days 1..PRESEASON_DAYS, not a second set — so
+       matchday numbering is an offset from the boundary and the stored day
+       keeps counting through it. Written from the constant, because the numbers
+       29 and 148 were only ever true while pre-season was 28 days. */
+    const n = w.FCW.PRESEASON_DAYS;
+    return w.FCW.dailyPhase(n + 1).number === 1 &&
+      w.FCW.dailyPhase(n + 120).number === 120;
+  })(), "boundary at " + w.FCW.PRESEASON_DAYS);
 
   console.log("\nA save belongs to a puzzle, not an address");
   t("the save records what the puzzle actually is", (() => {

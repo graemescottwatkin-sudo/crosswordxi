@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v105";
+  var BUILD = "v111";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2024,6 +2024,7 @@
 
   function refreshAdmin() {
     renderFlag();
+    seasonTestLabel();
     fetch("/api/admin/whoami", { headers: { "X-Crossword-XI": "1" }, credentials: "same-origin" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
@@ -2493,8 +2494,12 @@
         } else if (x.mode === "practice") {
           name = "Practice";
         } else {
-          name = x.phase === "season" ? "Matchday " + (x.dailyNo - FCW.PRESEASON_DAYS)
-                                      : "Friendly #" + x.dailyNo;
+          /* Asked for, not recomputed. This worked out the matchday itself from
+             PRESEASON_DAYS, which was right while the season began the day
+             pre-season ended and wrong the moment it did not. dailyPhase()
+             already knows, and there is now a third phase it would not have
+             produced a label for at all. */
+          name = FCW.dailyPhase(x.dailyNo).label;
         }
         var out = name + ": " + x.started + " started, " + x.finished + " finished";
         if (x.medianSeconds) out += ", median " + Math.round(x.medianSeconds / 60) + " min";
@@ -2614,6 +2619,46 @@
             { key: b.getAttribute("data-req"), status: b.getAttribute("data-status") })
       .then(function () { $("adminThemeReqs").click(); })
       .catch(function (err) { adminMsg(String(err.message || err)); });
+  });
+
+  /* Try a season before starting one, on this device.
+
+     Not a gate: engine.js runs in the browser, so the override is reachable by
+     anyone who looks. What it can do is small — the phase decides labels and
+     whether this browser's own table counts, and the server has no notion of
+     phases at all. Somebody who found it would see "Matchday 1" early on their
+     own screen and nothing would follow from it.
+
+     Starts at tomorrow's daily rather than today's, so the first matchday is
+     one puzzle away instead of retroactively renaming what has been played. */
+  function seasonTestLabel() {
+    var b = $("adminSeasonTest");
+    if (!b) return;
+    var v = null;
+    try { v = localStorage.getItem("fcw.seasonStart"); } catch (e) {}
+    b.textContent = v ? "Season test: from daily #" + v : "Season test: off";
+  }
+  on("adminSeasonTest", "click", function () {
+    var v = null;
+    try { v = localStorage.getItem("fcw.seasonStart"); } catch (e) {}
+    try {
+      if (v) {
+        localStorage.removeItem("fcw.seasonStart");
+        adminMsg("Season test off. Labels are back to Daily #n.");
+      } else {
+        var from = FCW.dailyNumber() + 1;
+        localStorage.setItem("fcw.seasonStart", String(from));
+        adminMsg("Season test on from daily #" + from + " \u2014 tomorrow is Matchday 1. " +
+          "This device only. Results recorded while it is on carry phase " +
+          "\"season\", so turn it off before playing a daily you want recorded " +
+          "honestly.");
+      }
+    } catch (e) { adminMsg("Could not write the setting."); }
+    seasonTestLabel();
+    /* Guarded: these throw without a puzzle loaded, and an exception here would
+       skip the label and leave the button lying about the state. */
+    try { renderHome(); } catch (e) {}
+    try { renderStreak(); } catch (e) {}
   });
 
   on("adminReports", "click", loadReports);
@@ -2879,6 +2924,11 @@
     if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); updateSelection(); return; }
     var c = e.cells[cur.cell];
     var k = K(c.x, c.y);
+    /* Was the word already complete before this letter?
+
+       If it was, the player is correcting something, not finishing it — and a
+       correction must not move them on. See the advance below. */
+    var wasFilled = entryFilled(cur.entry);
     letters[k] = ch;
     delete wrong[k];
     do { cur.cell++; } while (cur.cell < e.len && passOver(e, cur.cell));
@@ -2896,9 +2946,23 @@
        is what /api/check-answer is for — so a wrong word advances too. That is
        the usual crossword behaviour and the alternative is worse, because
        staying put on a wrong answer tells the player it is wrong. */
-    if (cur.cell >= e.len || entryFilled(cur.entry)) {
+    /* Advance only when this letter COMPLETED the word.
+
+       `entryFilled` after the keystroke was not enough: on a word that was
+       already full it is true every time, so correcting one letter of a
+       finished answer moved to the next clue on every keystroke and the player
+       could not fix a spelling at all. `wasFilled` separates finishing a word
+       from editing a finished one.
+
+       The cursor test stays for the case it was always for: running off the end
+       of a word that still has gaps elsewhere. */
+    if (!wasFilled && (cur.cell >= e.len || entryFilled(cur.entry))) {
       cur.cell = Math.min(cur.cell, e.len - 1);
       advanceToNextEntry();
+    } else if (cur.cell >= e.len) {
+      /* Correcting the last square: stay on it rather than running past the
+         end of the word. */
+      cur.cell = e.len - 1;
     }
     refreshLetters(); updateSelection(); saveSoon();
     maybeOfferFollowWord();
@@ -3548,6 +3612,13 @@
     }).join("");
   }
   on("statsBtn", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
+  /* The tile opens the season view that already exists rather than a second
+     one. My Season is the table; this is a shortcut to it from the landing
+     screen. */
+  on("homeSeason", "click", function () {
+    renderStats();
+    $("statsSheet").classList.add("show");
+  });
   on("statsClose", "click", function () { $("statsSheet").classList.remove("show"); });
 
   /* ---------- Football-result notifications (presentation only) ---------- */
@@ -4479,6 +4550,35 @@
       : phase.counts
         ? "One a day, the same for everyone. The clock counts."
         : "A friendly. Played and kept, but the season table starts on Matchday 1.";
+
+    /* The season tile, while the test override is on.
+
+       Not a mode of its own — the season is the daily, counted. This is a
+       readout of where the run has got to and a way into the table, so the
+       shape can be judged before any of it is committed to. */
+    var seasonTile = $("homeSeason");
+    if (seasonTile) {
+      var on = false;
+      try { on = !!localStorage.getItem("fcw.seasonStart"); } catch (e) {}
+      seasonTile.style.display = on ? "" : "none";
+      if (on) {
+        var played = loadResults().filter(function (r) {
+          return r && r.phase === "season";
+        });
+        var pts = played.reduce(function (a, r) {
+          /* The same mapping the table uses: a score resolves to one result,
+             and three points for a win, one for a draw. */
+          return a + (r.score >= 76 ? 3 : r.score >= 38 ? 1 : 0);
+        }, 0);
+        $("homeSeasonNote").textContent = phase.phase === "season"
+          ? "Today is " + phase.label + " of 38."
+          : "Starts at " + FCW.dailyPhase(FCW.seasonStart()).label + ".";
+        $("homeSeasonState").textContent = played.length
+          ? played.length + (played.length === 1 ? " game" : " games") +
+            " played \u00B7 " + pts + (pts === 1 ? " point" : " points")
+          : "No matchdays played yet";
+      }
+    }
 
     var d = savedFor("daily");
     var state = "";

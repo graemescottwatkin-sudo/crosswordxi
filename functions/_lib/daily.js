@@ -4,7 +4,7 @@
    *before* #1 in local-time components. Change one without the other and the
    browser asks for a puzzle the server will not accept reveals for, so every
    check and reveal returns 403. epoch_test.mjs checks they agree. */
-const EPOCH = Date.UTC(2026, 7, 16);
+const EPOCH = Date.UTC(2026, 7, 24);   // 2026-08-24 = Puzzle #1
 
 export function dailyNumber(now = Date.now()) {
   const d = new Date(now);
