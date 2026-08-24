@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v111">
+<link rel="stylesheet" href="css/style.css?v=v113">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -777,6 +777,19 @@
       </div>
       <div class="season-games" id="rSeasonGames"></div>
     </div>
+    <!-- Collapsed by default.
+
+         Six rows, five of them usually reading "None −0", between the score and
+         the buttons. A player who has just finished wants the score and what to
+         do next; the arithmetic behind it is a question some of them ask and
+         most do not.
+
+         <details> rather than a scripted panel: it opens with a click or the
+         keyboard, works before any JavaScript runs, and cannot get stuck open
+         if a render throws. -->
+    <details class="breakdown-wrap" id="rBreakdown">
+      <summary><span class="bd-open">How that was scored</span><span
+        class="bd-total" id="rFinalPeek">0 / 114</span></summary>
     <div class="breakdown">
       <div class="row"><span>Time</span><div><b id="bTime">0:00</b><b class="pen" id="bTimePen">&minus;0</b></div></div>
       <div class="row"><span>Match clock</span><div><b id="bClock">0'</b></div></div>
@@ -786,6 +799,7 @@
       <div class="row"><span>Revealed answers</span><div><b id="bAnswers">0</b><b class="pen" id="bAnswerPen">&minus;0</b></div></div>
       <div class="res-final"><span>Final score</span><span id="rFinal">0 / 114</span></div>
     </div>
+    </details>
     <!-- The standings, when this game was somebody's challenge — above the
          league table, because the league table is a season the score is mapped
          onto and this is the people who actually played. Shown here and nowhere
@@ -876,7 +890,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v111</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v113</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -889,8 +903,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v111"></script>
-<script src="js/engine.js?v=v111"></script>
-<script src="js/game.js?v=v111"></script>
+<script src="js/seasons.js?v=v113"></script>
+<script src="js/engine.js?v=v113"></script>
+<script src="js/game.js?v=v113"></script>
 </body>
 </html>

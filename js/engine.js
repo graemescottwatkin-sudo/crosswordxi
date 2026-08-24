@@ -775,7 +775,7 @@ var FCW = (function () {
     DEFAULT_LEVEL: "medium",
     // Football outcome messages by final position range (game rules).
     OUTCOMES: [
-      { from: 1,  to: 1,  msg: "{club} are Premier League champions!" },
+      { from: 1,  to: 1,  msg: "{club} are champions!" },
       { from: 2,  to: 4,  msg: "{club} qualified for the Champions League." },
       { from: 5,  to: 6,  msg: "{club} secured European football." },
       { from: 7,  to: 7,  msg: "{club} finished 7th." },

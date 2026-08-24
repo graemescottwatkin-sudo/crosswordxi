@@ -2658,3 +2658,32 @@ body.flex-layout .live-score.dropped{animation:scoreDrop .45s ease}
   flex:none;width:32px;height:38px;border:0;background:none;
   color:var(--ink-faint);font-size:19px;line-height:1;
 }
+
+/* ============ FULL TIME: the breakdown, collapsed ============
+   The score is the answer; the arithmetic is a follow-up question. Six rows of
+   it between the result and the buttons pushed the actions below the fold on
+   every phone. */
+.breakdown-wrap{
+  margin:14px 0 4px;border:1px solid var(--line);border-radius:9px;
+  background:var(--card);text-align:left;
+}
+.breakdown-wrap > summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 12px;cursor:pointer;list-style:none;min-height:44px;
+  font-size:14px;color:var(--ink-soft);
+}
+.breakdown-wrap > summary::-webkit-details-marker{display:none}
+.breakdown-wrap > summary::after{
+  content:"\25BE";font-size:.8em;opacity:.6;order:3;color:var(--ink-faint);
+}
+.breakdown-wrap[open] > summary::after{content:"\25B4"}
+.breakdown-wrap[open] > summary{border-bottom:1px solid var(--line)}
+.bd-open{flex:1;min-width:0}
+.bd-total{
+  font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.breakdown-wrap .breakdown{padding:4px 12px 10px;margin:0}
+/* The total is already on the summary, so repeating it inside is the third
+   time the same number appears on this screen. */
+.breakdown-wrap .res-final{display:none}

@@ -172,7 +172,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v111";
+  var BUILD = "v113";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -788,6 +788,18 @@
       checksUsed = restore.checks || 0;
       checkAllsUsed = restore.checkAlls || 0;
       elapsed = restore.elapsed || 0;
+      /* A finished board comes back finished.
+
+         `complete` resets when a board loads and was only ever set by finishing
+         one, so reopening a completed puzzle left the flag false. Delete a
+         letter and put it back and checkComplete() ran the whole Full Time path
+         a second time: another /api/finish, another recorded result, another
+         Full Time screen — with the breakdown missing, which is where the
+         NaN:aN in the time row came from.
+
+         Restoring the flag stops all of it. The screen is still reachable
+         through the normal route; what is prevented is finishing twice. */
+      complete = !!restore.complete;
       /* The sitting continues: same reference, same row. Without this a
          refresh mid-puzzle became a second attempt with a second number. */
       playId = restore.playId || null;
@@ -3420,8 +3432,13 @@
     if (!phase.counts) {
       var note = $("rClockNote");
       if (note) {
-        note.textContent = "Pre-season friendly \u2014 kept in your pre-season record. " +
-          "The season table starts on Matchday 1, 13 September.";
+        /* No hardcoded date. "13 September" was written when the season began
+           the day pre-season ended; the epoch has moved since and SEASON_START
+           is null, so there is no Matchday 1 date to name at all. A sentence
+           that states a date it cannot know is worse than one that does not. */
+        note.textContent = phase.phase === "preseason"
+          ? "Pre-season friendly \u2014 kept in your pre-season record."
+          : "Kept in your record. The season table starts when the season does.";
         note.style.display = "";
       }
     }
@@ -3909,6 +3926,18 @@
     return count === 1 ? "3 defeats" : (count * 3) + " defeats";
   }
 
+  /* The final score, written to both places at once.
+
+     It appears on the collapsed summary and inside the panel, and three
+     separate paths set it — the local calculation, the server's verified score,
+     and the re-render after verification. Three writes to one element became
+     six the moment there were two elements, which is how they drift. */
+  function setFinalScore(score) {
+    var txt = score + " / " + FCW.SCORING.MAX_SCORE;
+    if ($("rFinal")) $("rFinal").textContent = txt;
+    if ($("rFinalPeek")) $("rFinalPeek").textContent = txt;
+  }
+
   function checkComplete() {
     if (complete || !isComplete()) return;
     complete = true;
@@ -3938,7 +3967,7 @@
     $("bLetterPen").textContent = "\u2212" + res.revealLetterPenalty;
     $("bAnswers").textContent = footballPhrase("answer", revealedAnswerCount(), res.revealAnswerPenalty);
     $("bAnswerPen").textContent = "\u2212" + res.revealAnswerPenalty;
-    $("rFinal").textContent = res.score + " / " + FCW.SCORING.MAX_SCORE;
+    setFinalScore(res.score);
     if (mode === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
     else if (mode === "theme") recordThemed(pos, res.score);
     renderLeagueRows($("finalTableBody"), table, false); // Full Time: all 20
@@ -4269,7 +4298,7 @@
         $("bLetterPen").textContent = "\u2212" + (b.letterPenalty || 0);
         $("bAnswers").textContent = footballPhrase("answer", r.revealedAnswers || 0, b.answerPenalty || 0);
         $("bAnswerPen").textContent = "\u2212" + (b.answerPenalty || 0);
-        $("rFinal").textContent = r.score + " / " + FCW.SCORING.MAX_SCORE;
+        setFinalScore(r.score);
 
         /* The device's own record is rewritten too. recordDaily and
            recordThemed run when the puzzle finishes, before the server has
@@ -4287,7 +4316,7 @@
           var pos = FCW.playerPosition(table);
           $("rScore").textContent = r.score;
           $("rPos").textContent = (FCW.ordinal(pos) + " \u2014 " + r.score + " pts").toUpperCase();
-          $("rFinal").textContent = r.score + " / " + FCW.SCORING.MAX_SCORE;
+          setFinalScore(r.score);
           $("rMsg").textContent = FCW.outcomeMessage(club, pos);
           renderSeason("rSeasonGames", "rSeasonWdl", r.score);
           renderLeagueRows($("finalTableBody"), table, false);

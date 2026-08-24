@@ -523,8 +523,16 @@ server.listen(0, "127.0.0.1", async () => {
   t("the breakdown is replaced along with the score, so the sum still adds up", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const fn = js.slice(js.indexOf("function verifyScore"), js.indexOf("on(\"viewGridBtn\""));
-    return ["bTimePen", "bCheckPen", "bCheckAllPen", "bLetterPen", "bAnswerPen", "rFinal"]
+    /* The penalties are still set by id. The total is not: it appears twice now
+       — on the collapsed summary and inside the panel — so it goes through
+       setFinalScore(), which writes both. Two elements and three code paths is
+       how a total drifts from the rows that explain it.
+
+       The property under test is unchanged: the breakdown and the total are
+       replaced together. Only the way the total is written has moved. */
+    const pens = ["bTimePen", "bCheckPen", "bCheckAllPen", "bLetterPen", "bAnswerPen"]
       .every((id) => fn.includes('$("' + id + '")'));
+    return pens && /setFinalScore\(/.test(fn);
   })());
   t("and the times shown are the server's, not the paused local clock", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
