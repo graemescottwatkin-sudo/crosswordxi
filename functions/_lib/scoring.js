@@ -23,13 +23,10 @@
  */
 export const SCORING = {
   MAX_SCORE: 114,
-  /* These MUST match js/engine.js. The server is authoritative, so a
-     divergence does not show as an error — it shows as a Full Time screen
-     whose number changes a second after it appears, with no explanation. */
-  CHECK_PENALTY: 2,
+  CHECK_PENALTY: 3,
   CHECK_ALL_PENALTY: 9,
-  REVEAL_LETTER_PENALTY: 3,
-  REVEAL_ANSWER_PENALTY: 12,
+  REVEAL_LETTER_PENALTY: 2,
+  REVEAL_ANSWER_PENALTY: 9,
   MATCH_CLOCK_REAL_SECONDS: 1800,
   MATCH_CLOCK_MAX_MINUTES: 90,
   DECAY_CURVE: [

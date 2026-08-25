@@ -726,21 +726,10 @@ var FCW = (function () {
      live table vs a benchmark ladder. All values are configuration. */
   var SCORING = {
     MAX_SCORE: 114,
-    /* Priced against the clock, which is what makes a help a decision.
-
-       The clock costs about 2.6 points a real minute. If a help costs less
-       than the time it saves, using it is always correct and the choice is
-       fake. Reveal answer at 9 bought 3.5 minutes — always worth it for a clue
-       you were stuck on, and priced identically to checking the whole grid,
-       which is not a comparable thing at all.
-
-       Check word is the cheapest because it is the one that rewards having
-       tried: it only helps if you have already typed something. Reveal letter
-       costs more because it works on an empty square. */
-    CHECK_PENALTY: 2,            // now names which letters are wrong, not just that they are
-    CHECK_ALL_PENALTY: 9,        // break-even at 4.5 single checks, so both buttons stay useful
-    REVEAL_LETTER_PENALTY: 3,
-    REVEAL_ANSWER_PENALTY: 12,   // 11 of them is 132, so revealing everything cannot be afforded
+    CHECK_PENALTY: 3,
+    CHECK_ALL_PENALTY: 9,        // whole grid — priced so it can't dominate the single check
+    REVEAL_LETTER_PENALTY: 2,
+    REVEAL_ANSWER_PENALTY: 9,
     // Football match clock: 30 real minutes maps to 90 football minutes.
     MATCH_CLOCK_REAL_SECONDS: 1800,
     MATCH_CLOCK_MAX_MINUTES: 90,
@@ -756,12 +745,9 @@ var FCW = (function () {
     SEASON_GAMES: 38,
     // Recent-form strip: five most recent displayed results.
     FORM_LENGTH: 5,
-    /* Checking is verification, revealing is being told. The markers used to
-       say the opposite — a check was a loss and a revealed letter a draw,
-       which made doing your own work look worse than being given the answer. */
     FORM_MARKERS: {
-      check: ["D"], revealLetter: ["L"],
-      checkAll: ["L", "L", "L"], revealAnswer: ["L", "L", "L", "L"]
+      revealLetter: ["D"], check: ["L"],
+      checkAll: ["L", "L", "L"], revealAnswer: ["L", "L", "L"]
     },
     // Historical Premier League seasons supply the opposition. Loaded from
     // seasons.json (20-team era, 1995/96 onwards) and injected at boot.

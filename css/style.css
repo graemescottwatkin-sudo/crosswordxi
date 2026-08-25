@@ -2869,24 +2869,3 @@ body.home-showing .tbar{visibility:hidden}
   .site-row{grid-template-columns:1fr}
   .home-choice.col{min-height:0}
 }
-
-/* The device code. Two controls: one gives the code out, one takes one in. */
-.code-block{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.code-or{font-size:12px;letter-spacing:.09em;color:var(--ink-faint);
-  text-align:center;margin-bottom:14px}
-.code-mine{margin-bottom:16px}
-.code-lbl{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.code-row{display:flex;gap:8px;align-items:stretch}
-.code-row code{
-  flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:16px;letter-spacing:.06em;background:var(--paper);
-  border:1px solid var(--line);border-radius:8px;padding:11px 12px;
-  display:flex;align-items:center;overflow:auto;
-}
-.code-row input{
-  flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:16px;letter-spacing:.06em;padding:11px 12px;
-  border:1px solid var(--line);border-radius:8px;text-transform:uppercase;
-}
-.code-row .btn{flex:none;min-height:44px}
-.code-note{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}

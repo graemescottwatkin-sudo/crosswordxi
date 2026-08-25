@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v124">
+<link rel="stylesheet" href="css/style.css?v=v122">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -540,38 +540,6 @@
         across devices. Your progress on this device comes with you.
       </p>
       <div id="googleBtn" class="acct-provider"></div>
-
-      <!-- Two controls, not one prompt. The device that has the progress needs
-           to be GIVEN a code; the device that does not needs to ENTER one.
-           A single line asking "are you playing elsewhere?" serves neither,
-           because whichever device you are on, half of it does not apply.
-
-           The second line of each says what it is for. Without those, the code
-           is a mysterious string and "will be merged" is the question anybody
-           hesitating actually has: will this wipe what I have done here? -->
-      <div class="code-block">
-        <div class="code-or">or, without an account</div>
-
-        <div class="code-mine">
-          <div class="code-lbl">This device</div>
-          <div class="code-row">
-            <code id="acctCode">&mdash;</code>
-            <button class="btn outline" id="acctCodeCopy">Copy</button>
-          </div>
-          <div class="code-note">Enter this on another device to play on both.</div>
-        </div>
-
-        <div class="code-enter">
-          <div class="code-lbl">Playing somewhere else already?</div>
-          <div class="code-row">
-            <input id="acctCodeInput" type="text" inputmode="latin"
-                   autocomplete="off" spellcheck="false"
-                   placeholder="XXXX-XXXX-XXXX" maxlength="14">
-            <button class="btn secondary" id="acctCodeGo">Use code</button>
-          </div>
-          <div class="code-note">Your results from both devices will be merged.</div>
-        </div>
-      </div>
       <!-- Directly under the sign-in button rather than buried in the footer.
            Signing in is the one moment somebody hands over an identity, so the
            explanation of what happens to it belongs at that button. -->
@@ -985,7 +953,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v124</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v122</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -998,8 +966,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v124"></script>
-<script src="js/engine.js?v=v124"></script>
-<script src="js/game.js?v=v124"></script>
+<script src="js/seasons.js?v=v122"></script>
+<script src="js/engine.js?v=v122"></script>
+<script src="js/game.js?v=v122"></script>
 </body>
 </html>
