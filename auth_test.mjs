@@ -301,8 +301,18 @@ t("signing out clears the same cookie scope it was set with", (() => {
 {
   const html = fs.readFileSync("index.html", "utf8");
   const js = fs.readFileSync("js/game.js", "utf8");
-  t("sign-in has a control of its own on the landing screen",
-    /id="homeSignIn"/.test(html) && /home-signin/.test(html));
+  t("sign-in has a control of its own on the landing screen", (() => {
+    /* It was a .home-signin button in the column; it is now a button in the
+       header bar, alongside Account and Settings. The class changed, the
+       property did not: sign-in is a control of its own rather than one of
+       three links in a row of small text.
+
+       Tested as "the button exists and is not inside the footer", which is
+       what the assertion was always about. */
+    if (!/id="homeSignIn"/.test(html)) return false;
+    const foot = html.slice(html.indexOf("site-foot"));
+    return !/id="homeSignIn"/.test(foot);
+  })());
   t("which disappears once there is an account", (() => {
     /* An account button is only interesting until you have one. */
     const fn = js.slice(js.indexOf("function syncSignInPrompt"), js.indexOf("function renderAccount"));

@@ -1160,10 +1160,20 @@ server.listen(0, "127.0.0.1", async () => {
        practice pool was rebuilt, a dropped connection — still cost the points
        and filled in nothing. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    // subBtn is defined earlier in the file than revealBtn, so slicing between
-    // them ran backwards. Take a fixed window from the handler instead.
+    /* Sliced to the next handler, not to a fixed character count.
+
+       This took js.slice(start, start + 1600), which worked until a comment
+       was added inside the handler and pushed .catch( past the 1600th
+       character. The test then failed while the code was correct — a window
+       measured in characters is a window that closes when anyone writes
+       anything.
+
+       subBtn appears earlier in the file than revealBtn, which is why the
+       original could not simply slice between the two. Slicing to whichever
+       on(...) comes next avoids both problems. */
     const start = js.indexOf('on("revealBtn"');
-    const reveal = js.slice(start, start + 1600);
+    const nextOn = js.indexOf('\n  on("', start + 10);
+    const reveal = js.slice(start, nextOn > start ? nextOn : start + 4000);
     // The charge must appear after .then( and before the .catch(
     const then = reveal.indexOf(".then(");
     const cat = reveal.indexOf(".catch(");
