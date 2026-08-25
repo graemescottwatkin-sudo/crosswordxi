@@ -104,26 +104,6 @@
      them. The server refuses anything after today whatever this says. */
   var dailyWanted = null;
 
-  /* Whether the board about to be played counts toward the season.
-
-     True for today's. True for a missed board when the day's catch-up is
-     unspent — at a draw, because it is late. False for anything else, which
-     is playable and simply does not count.
-
-     Decided at Kick Off rather than remembered from the calendar: the clock
-     starts on the next tap, so that is where a cost belongs. */
-  var countsToday = true;
-  var CATCHUP_KEY = "fcw.catchup";
-
-  /* The date a catch-up was last spent, or "". One a day. */
-  function catchUpSpent() {
-    try { return localStorage.getItem(CATCHUP_KEY) || ""; } catch (e) { return ""; }
-  }
-  function catchUpAvailable() { return catchUpSpent() !== FCW.localDateKey(new Date()); }
-  function spendCatchUp() {
-    try { localStorage.setItem(CATCHUP_KEY, FCW.localDateKey(new Date())); } catch (e) {}
-  }
-
   var themeWanted = null;
   /* The challenge being played, if any. Set before the board is built and read
      again at Full Time, when the score has been verified and can join a table. */
@@ -166,7 +146,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v129";
+  var BUILD = "v130";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -854,7 +834,6 @@
       $("kickNote").textContent = mode === "daily"
         ? "Today's puzzle, the same for everyone. The clock starts at kick-off."
         : "The clock starts at kick-off.";
-      renderCatchUp();
       if (mode === "practice") renderFilters(); else $("kickOffBtn").disabled = false;
     }
     paused = false; lastSolved = {};
@@ -946,6 +925,49 @@
     return mode === "practice" && FCW.LEVELS[filterOn.level]
       ? filterOn.level : FCW.DEFAULT_LEVEL;
   }
+  /* Help costs match minutes, charged here so the four call sites cannot
+     drift. Converted to real seconds because that is what `elapsed` counts.
+
+     This is what makes help cost SCORE. Subs decide the result; the clock
+     decides the number — and pushes you toward full time, which is itself a
+     draw, so help late is riskier than help early. */
+  function chargeHelp(kind) {
+    var mins = FCW.SCORING.HELP_MINUTES[kind] || 0;
+    if (!mins) return;
+    var perMin = FCW.SCORING.MATCH_CLOCK_REAL_SECONDS / FCW.SCORING.MATCH_CLOCK_MAX_MINUTES;
+    elapsed += Math.round(mins * perMin);
+    renderClock(); updateScoreUI();
+    clearTimeout(saveT); save();
+  }
+
+  /* Subs spent so far on THIS board, from the counters already kept. */
+  function subsSpentNow() {
+    return revealedLetterCount() * FCW.SCORING.SUBS_PER_LETTER +
+           revealedAnswerCount() * FCW.SCORING.SUBS_PER_ANSWER;
+  }
+  function subsRemainingNow() {
+    return Math.max(0, FCW.SCORING.SUBS_PER_BOARD - subsSpentNow());
+  }
+  /* Would this help exceed the allocation, turning the day into a draw?
+     Already exceeded means the answer is no — it cannot get worse. */
+  function wouldExceed(cost) {
+    if (subsSpentNow() > FCW.SCORING.SUBS_PER_BOARD) return false;
+    return subsSpentNow() + cost > FCW.SCORING.SUBS_PER_BOARD;
+  }
+
+  /* Confirm only where the allocation would be exceeded. Returns false if the
+     player backs out. */
+  function confirmSubCost(cost, what) {
+    if (!wouldExceed(cost)) return true;
+    var left = subsRemainingNow();
+    return window.confirm(
+      "Revealing " + what + " uses " + cost +
+      (cost === 1 ? " substitution" : " substitutions") +
+      " and you have " + left + " left.\n\n" +
+      "That takes you past your three, so today becomes a draw however you " +
+      "finish. The score still counts.\n\nGo ahead?");
+  }
+
   function subsAllowance() {
     return mode === "practice" ? FCW.LEVELS[currentLevel()].subs : 0;
   }
@@ -1047,46 +1069,6 @@
   }
 
   /* The single topic practice is filtered by, or null for all. */
-  /* Says what this board is worth, before the clock starts. */
-  function renderCatchUp() {
-    var box = $("kickCatchUp"), esc = $("kickJustPlay");
-    if (!box || !esc) return;
-    var isOld = mode === "daily" && dailyWanted && dailyWanted < FCW.dailyNumber();
-    if (!isOld) {
-      /* Today's board, or practice. Nothing to say. */
-      countsToday = true;
-      box.hidden = true; esc.hidden = true;
-      $("kickNote").style.display = "";
-      return;
-    }
-    if (!catchUpAvailable()) {
-      /* Spent already. Say so plainly rather than offering a choice that is
-         not there — somebody who has used it should not be deciding again. */
-      countsToday = false;
-      box.hidden = false; esc.hidden = true;
-      $("kickCatchLine").innerHTML =
-        "You have used today\u2019s catch-up, so this one is <b>just for the " +
-        "playing</b>. It will not count towards your season.";
-      return;
-    }
-    countsToday = true;
-    box.hidden = false; esc.hidden = false;
-    $("kickCatchLine").innerHTML =
-      "This counts as <b>today\u2019s catch-up</b>. A day late, so a draw at " +
-      "best \u2014 one a day.";
-  }
-
-  on("kickJustPlay", "click", function () {
-    /* Not remembered. It is a decision about this board, and a remembered one
-       is a mode again \u2014 which is what putting this on Kick Off avoided. */
-    countsToday = false;
-    $("kickCatchUp").hidden = false;
-    $("kickJustPlay").hidden = true;
-    $("kickCatchLine").innerHTML =
-      "Just for the playing. This will <b>not count</b> towards your season, " +
-      "and your catch-up stays unused.";
-  });
-
   function practiceCategory() {
     return (mode === "practice" && filterOn.groups && filterOn.groups.length)
       ? filterOn.groups[0] : null;
@@ -3218,6 +3200,7 @@
         markWrongFromServer(idx, r.wrong || []);
         checksUsed++;
         helpActions.push("check");
+        chargeHelp("check");
         consecutiveChecks++;
         var headline = consecutiveChecks === 2 ? "Back-to-back defeats"
                      : consecutiveChecks >= 3 ? "Three losses on the bounce"
@@ -3239,6 +3222,7 @@
     if (!anyTyped) return;                       // nothing to check — no charge
     checkAllsUsed++;
     helpActions.push("checkAll");
+    chargeHelp("checkAll");
     consecutiveChecks = 0;
     /* One request per entry, because the player is owed the positions of every
        wrong letter and each entry is a separate question.
@@ -3277,6 +3261,10 @@
     var c = e.cells[cur.cell];
     var k = K(c.x, c.y);
     if (locked(k)) return; // already revealed: no effect, no charge
+    /* Warned only when it costs the win. Somebody with subs in hand is making
+       an ordinary decision and does not need a dialog; somebody about to exceed
+       is giving up a win, which they should be told before the clock moves. */
+    if (!confirmSubCost(FCW.SCORING.SUBS_PER_LETTER, "a letter")) return;
     // §6 of the deployment standard: the server returns an answer only on an
     // explicit request. This is one — it costs two points.
     revealFromServer(cur.entry, cur.cell, function (ch) {
@@ -3285,6 +3273,7 @@
       revealedCells[k] = true;         // locked + gold from here on
     }, function () {
       helpActions.push("revealLetter");
+      chargeHelp("revealLetter");
       consecutiveChecks = 0;
       toast("Draw \u2014 2 points dropped", "Held to a draw.", "draw");
       // advance to the next editable cell, like typing
@@ -3360,6 +3349,9 @@
     if (complete || !started || paused) return;
     var e = puzzle.entries[cur.entry];
     var idx = cur.entry;
+    /* A whole answer is the bench in one go. With fewer than three left it is
+       the moment a win is given up, so it is said before the clock moves. */
+    if (!confirmSubCost(FCW.SCORING.SUBS_PER_ANSWER, "a whole answer")) return;
     // The one place a whole answer is fetched, and only because the player has
     // asked for it and paid nine points.
     /* The charge lands only once the answer has. Reveals are a server call now,
@@ -3378,6 +3370,7 @@
         if (!revealedEntries[idx]) {
           revealedEntries[idx] = true;
           helpActions.push("revealAnswer");
+          chargeHelp("revealAnswer");
           consecutiveChecks = 0;
           /* Read from SCORING rather than written out. This said "9 points
              dropped" and went on saying it after the price became 12 — a
@@ -3479,13 +3472,6 @@
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
   function recordDaily(pos, score, res) {
-    /* The catch-up is spent on finishing, not on opening.
-
-       Somebody who opens a missed board, thinks better of it and goes back to
-       the menu has not used anything. Charging at Kick Off would take it for a
-       board they never played. */
-    var late = dailyWanted && dailyWanted < FCW.dailyNumber();
-    if (late && countsToday) spendCatchUp();
     /* Friendlies are recorded, but to their own record. A pre-season streak is
        a real thing to build, and it ending on Matchday 1 is the point rather
        than a loss — the season table starts empty for everyone on the same day

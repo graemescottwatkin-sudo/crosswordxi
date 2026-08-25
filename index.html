@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v129">
+<link rel="stylesheet" href="css/style.css?v=v130">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -886,21 +886,7 @@
         <div class="filter-warn" id="filterWarn"></div>
       </div>
     </div>
-    <!-- Catch-up, decided here rather than on the calendar.
-
-         Kick Off is the moment of commitment — the clock starts on the next
-         tap — so it is where the cost belongs. A tick on the archive page
-         would set the state in one place and spend it in another, which is how
-         somebody browsing back three months spends a catch-up they meant to
-         look at.
-
-         Only shown for a board that would count. Today's board, or any board
-         once the catch-up is spent, gets the ordinary card with none of this. -->
-    <div class="kick-catchup" id="kickCatchUp" hidden>
-      <div class="kc-line" id="kickCatchLine"></div>
-    </div>
     <button class="btn primary" id="kickOffBtn">Kick Off</button>
-    <button class="btn ghost kick-just" id="kickJustPlay" hidden>Just play this one</button>
     <button class="btn outline kick-alt" id="kickBack">Back</button>
     <div class="kick-note" id="kickNote">The clock starts at kick-off.</div>
   </div>
@@ -1042,7 +1028,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v129</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v130</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1055,8 +1041,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v129"></script>
-<script src="js/engine.js?v=v129"></script>
-<script src="js/game.js?v=v129"></script>
+<script src="js/seasons.js?v=v130"></script>
+<script src="js/engine.js?v=v130"></script>
+<script src="js/game.js?v=v130"></script>
 </body>
 </html>

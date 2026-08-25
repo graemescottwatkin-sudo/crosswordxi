@@ -737,6 +737,30 @@ var FCW = (function () {
        Check word is the cheapest because it is the one that rewards having
        tried: it only helps if you have already typed something. Reveal letter
        costs more because it works on an empty square. */
+    /* Substitutions decide the RESULT. The clock decides the SCORE.
+
+       Three, for everyone, on every board — not a practice-difficulty setting.
+       A revealed letter uses one, a revealed answer uses all three. Ask for
+       help you cannot afford — a fourth letter, or an answer with two left —
+       and the day becomes a draw however well you finish.
+
+       Spending all three is not a draw. Exceeding them is. */
+    SUBS_PER_BOARD: 3,
+    SUBS_PER_LETTER: 1,
+    SUBS_PER_ANSWER: 3,
+
+    /* Help also costs match minutes, which is what makes it cost SCORE.
+
+       Both currencies always apply. Subs alone would make three reveals free
+       against the 114, and somebody playing for the leaderboard would take
+       them every time. Time alone was what we had, and it could not express
+       "you have had enough help to call this a draw".
+
+       The two bite differently: subs are a hard limit you can exhaust, time is
+       continuous and pushes you toward full time — which is itself a draw. So
+       help late is riskier than help early, and that is the interesting part. */
+    HELP_MINUTES: { check: 2, checkAll: 10, revealLetter: 3, revealAnswer: 14 },
+
     CHECK_PENALTY: 2,            // now names which letters are wrong, not just that they are
     CHECK_ALL_PENALTY: 9,        // break-even at 4.5 single checks, so both buttons stay useful
     REVEAL_LETTER_PENALTY: 3,
@@ -1453,6 +1477,42 @@ var FCW = (function () {
     return SEASON_START;
   }
 
+  /* What a finished board is worth: "W", "D" or "L".
+
+     One function, so the finish screen, the season table, the form chips and
+     the server can never disagree about what happened. Everything they need is
+     already recorded on a result.
+
+       W  solved before full time, without exceeding three subs
+       D  solved, but late or over-subbed
+       L  started and not finished
+
+     Absence is not a loss. Missing a day costs the streak and nothing else —
+     the season measures how you played, the streak measures whether you turned
+     up, and mixing them is what made a missed week able to kill a season. */
+  function outcome(rec) {
+    if (!rec) return "L";
+    if (!rec.complete && !rec.completed) return "L";
+    var mins = matchMinute(rec.elapsedSeconds || rec.elapsed || 0);
+    if (mins >= SCORING.MATCH_CLOCK_MAX_MINUTES) return "D";
+    if (subsExceeded(rec)) return "D";
+    return "W";
+  }
+
+  /* Did they ask for help they could not afford?
+
+     Spending all three is a win. A fourth letter, or an answer with fewer than
+     three left, is not — the allocation was exceeded, and that is the line. */
+  function subsSpent(rec) {
+    return (rec.revealedLetters || 0) * SCORING.SUBS_PER_LETTER +
+           (rec.revealedAnswers || 0) * SCORING.SUBS_PER_ANSWER;
+  }
+  function subsExceeded(rec) { return subsSpent(rec) > SCORING.SUBS_PER_BOARD; }
+  function subsRemaining(rec) {
+    return Math.max(0, SCORING.SUBS_PER_BOARD - subsSpent(rec));
+  }
+  function outcomePoints(o) { return o === "W" ? 3 : o === "D" ? 1 : 0; }
+
   function dailyPhase(n) {
     var no = n || dailyNumber();
     var start = seasonStart();
@@ -1655,6 +1715,11 @@ var FCW = (function () {
     DAILY_EPOCH: DAILY_EPOCH,
     PRESEASON_DAYS: PRESEASON_DAYS,
     dailyPhase: dailyPhase,
+    outcomePoints: outcomePoints,
+    subsRemaining: subsRemaining,
+    subsExceeded: subsExceeded,
+    subsSpent: subsSpent,
+    outcome: outcome,
     SEASON_START: SEASON_START,
     seasonStart: seasonStart,
     resultPhase: resultPhase,
