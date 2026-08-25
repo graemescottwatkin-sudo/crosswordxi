@@ -2943,3 +2943,13 @@ body.home-showing .tbar{visibility:hidden}
    rendered as "2497". */
 .cal-cell span{display:block;line-height:1.1}
 .cal-cell .cal-score{display:block;line-height:1.1;margin-top:1px}
+
+/* Catch-up, on the Kick Off card. Shown only when the board would count. */
+.kick-catchup{
+  background:#FBF3DA;border:1px solid #E8D9A8;border-radius:10px;
+  padding:11px 13px;margin:0 0 12px;font-size:13.5px;color:#7A5E00;
+  line-height:1.45;text-align:left;
+}
+.kick-catchup b{color:#5E4900}
+:root[data-theme="dark"] .kick-catchup{background:#2A2618;border-color:#4A422A;color:#D8C68A}
+.kick-just{width:100%;margin-top:8px}

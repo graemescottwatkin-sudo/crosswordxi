@@ -104,6 +104,26 @@
      them. The server refuses anything after today whatever this says. */
   var dailyWanted = null;
 
+  /* Whether the board about to be played counts toward the season.
+
+     True for today's. True for a missed board when the day's catch-up is
+     unspent — at a draw, because it is late. False for anything else, which
+     is playable and simply does not count.
+
+     Decided at Kick Off rather than remembered from the calendar: the clock
+     starts on the next tap, so that is where a cost belongs. */
+  var countsToday = true;
+  var CATCHUP_KEY = "fcw.catchup";
+
+  /* The date a catch-up was last spent, or "". One a day. */
+  function catchUpSpent() {
+    try { return localStorage.getItem(CATCHUP_KEY) || ""; } catch (e) { return ""; }
+  }
+  function catchUpAvailable() { return catchUpSpent() !== FCW.localDateKey(new Date()); }
+  function spendCatchUp() {
+    try { localStorage.setItem(CATCHUP_KEY, FCW.localDateKey(new Date())); } catch (e) {}
+  }
+
   var themeWanted = null;
   /* The challenge being played, if any. Set before the board is built and read
      again at Full Time, when the score has been verified and can join a table. */
@@ -146,7 +166,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v128";
+  var BUILD = "v129";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -412,7 +432,18 @@
     if (m >= 45 && !halfTimeShown) { halfTimeShown = true; toast("Half Time", "45 minutes gone."); }
   }
   function tick() {
-    elapsed++; renderClock(); saveSoon();
+    elapsed++; renderClock();
+    /* Written straight through once a second, not through the 400ms debounce.
+
+       saveSoon() cancels the pending write each time it is called, and this is
+       called every second — so the write was always 400ms away and never
+       arrived. Refresh and the clock came back at the last value that happened
+       to be saved by something else, which meant holding Ctrl+R froze it.
+
+       The verified score was never affected: /api/finish computes elapsed from
+       started_at in the database, on the server's clock. But a clock that lies
+       about a score which is genuinely falling is its own problem. */
+    if (elapsed % 5 === 0) { clearTimeout(saveT); save(); } else { saveSoon(); }
     // The score only moves when the football minute changes, so re-sort then.
     if (elapsed % Math.round(FCW.SCORING.MATCH_CLOCK_REAL_SECONDS / FCW.SCORING.MATCH_CLOCK_MAX_MINUTES) === 0) {
       updateScoreUI();
@@ -823,6 +854,7 @@
       $("kickNote").textContent = mode === "daily"
         ? "Today's puzzle, the same for everyone. The clock starts at kick-off."
         : "The clock starts at kick-off.";
+      renderCatchUp();
       if (mode === "practice") renderFilters(); else $("kickOffBtn").disabled = false;
     }
     paused = false; lastSolved = {};
@@ -1015,6 +1047,46 @@
   }
 
   /* The single topic practice is filtered by, or null for all. */
+  /* Says what this board is worth, before the clock starts. */
+  function renderCatchUp() {
+    var box = $("kickCatchUp"), esc = $("kickJustPlay");
+    if (!box || !esc) return;
+    var isOld = mode === "daily" && dailyWanted && dailyWanted < FCW.dailyNumber();
+    if (!isOld) {
+      /* Today's board, or practice. Nothing to say. */
+      countsToday = true;
+      box.hidden = true; esc.hidden = true;
+      $("kickNote").style.display = "";
+      return;
+    }
+    if (!catchUpAvailable()) {
+      /* Spent already. Say so plainly rather than offering a choice that is
+         not there — somebody who has used it should not be deciding again. */
+      countsToday = false;
+      box.hidden = false; esc.hidden = true;
+      $("kickCatchLine").innerHTML =
+        "You have used today\u2019s catch-up, so this one is <b>just for the " +
+        "playing</b>. It will not count towards your season.";
+      return;
+    }
+    countsToday = true;
+    box.hidden = false; esc.hidden = false;
+    $("kickCatchLine").innerHTML =
+      "This counts as <b>today\u2019s catch-up</b>. A day late, so a draw at " +
+      "best \u2014 one a day.";
+  }
+
+  on("kickJustPlay", "click", function () {
+    /* Not remembered. It is a decision about this board, and a remembered one
+       is a mode again \u2014 which is what putting this on Kick Off avoided. */
+    countsToday = false;
+    $("kickCatchUp").hidden = false;
+    $("kickJustPlay").hidden = true;
+    $("kickCatchLine").innerHTML =
+      "Just for the playing. This will <b>not count</b> towards your season, " +
+      "and your catch-up stays unused.";
+  });
+
   function practiceCategory() {
     return (mode === "practice" && filterOn.groups && filterOn.groups.length)
       ? filterOn.groups[0] : null;
@@ -3407,6 +3479,13 @@
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
   function recordDaily(pos, score, res) {
+    /* The catch-up is spent on finishing, not on opening.
+
+       Somebody who opens a missed board, thinks better of it and goes back to
+       the menu has not used anything. Charging at Kick Off would take it for a
+       board they never played. */
+    var late = dailyWanted && dailyWanted < FCW.dailyNumber();
+    if (late && countsToday) spendCatchUp();
     /* Friendlies are recorded, but to their own record. A pre-season streak is
        a real thing to build, and it ending on Matchday 1 is the point rather
        than a loss — the season table starts empty for everyone on the same day
