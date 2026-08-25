@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v122";
+  var BUILD = "v124";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2077,6 +2077,7 @@
   }
 
   on("accountToggle", "click", function () {
+    renderDeviceCode();
     $("accountSheet").classList.add("show");
     if (accountsAvailable && !account) loadGoogle(accountsAvailable);
   });
@@ -3143,7 +3144,7 @@
       .catch(function (err) { revealFailed(err); });
   });
 
-  /* ---------- Check All (whole grid, -9 pts) ----------
+  /* ---------- Check All (whole grid, CHECK_ALL_PENALTY) ----------
      Priced above the single check so it never dominates it: checking one
      answer stays the cheap, considered move. */
   on("checkAllBtn", "click", function () {
@@ -3270,7 +3271,7 @@
     }
   }
 
-  /* ---------- Reveal Answer (selected answer, -9 pts per unique answer) ---------- */
+  /* ---------- Reveal Answer (REVEAL_ANSWER_PENALTY per unique answer) ---------- */
   on("revealBtn", "click", function () {
     if (complete || !started || paused) return;
     var e = puzzle.entries[cur.entry];
@@ -3294,7 +3295,11 @@
           revealedEntries[idx] = true;
           helpActions.push("revealAnswer");
           consecutiveChecks = 0;
-          toast("Three defeats on the bounce", "9 points dropped", "loss");
+          /* Read from SCORING rather than written out. This said "9 points
+             dropped" and went on saying it after the price became 12 — a
+             number in a string cannot follow the constant it describes. */
+          toast("Four defeats on the bounce",
+                FCW.SCORING.REVEAL_ANSWER_PENALTY + " points dropped", "loss");
         }
         refreshLetters(); updateSelection(); updateScoreUI(); verifySoon(); saveSoon();
         checkComplete();
@@ -4061,7 +4066,8 @@
     var mine = (challenge && challenge.name || "").toLowerCase();
     var rows = (d.entries || []).map(function (e) {
       /* What was actually done, not how many times something happened. A
-         revealed letter costs 2 and a revealed answer 9, so "2 reveals" meant
+         a revealed letter and a revealed answer cost different amounts, so
+         "2 reveals" meant
          either 4 points or 18 — and a legitimate score looked impossible
          beside a worse one. The words are the prices. */
       /* Short forms. Spelled out, one row read "2 checks, 1 grid check, 17
@@ -5455,6 +5461,70 @@
      than show it — it stops the clock and flushes the pending save first. This
      is the display half, and showHome() calls it. Naming it the same shadowed
      the original and made it call itself. */
+  /* ---------- Device code ----------
+
+     A twelve-character code that identifies this player. Generated here and
+     kept in this browser; nothing reaches the server until they ask to save,
+     which keeps the server holding nothing for the great majority who never
+     do.
+
+     Thirty characters: Crockford base32 with 0 and 1 dropped as well. I, L,
+     O and U go for Crockford's reasons; 0 and 1 go because 0/O and 1/I are
+     exactly what people get wrong copying a code from an iPad onto a laptop,
+     and removing one side of each pair is not enough. 2^59 over twelve. */
+  var CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ";
+  var CODE_KEY = "fcw.deviceCode";
+
+  function makeDeviceCode() {
+    var out = "";
+    try {
+      /* crypto, not Math.random: predictable randomness makes the entropy
+         calculation a fiction, and this is the only thing standing between an
+         account and anyone. */
+      var buf = new Uint32Array(12);
+      crypto.getRandomValues(buf);
+      for (var i = 0; i < 12; i++) out += CODE_ALPHABET[buf[i] % CODE_ALPHABET.length];
+    } catch (e) {
+      for (var j = 0; j < 12; j++) {
+        out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+      }
+    }
+    return out;
+  }
+
+  function deviceCode() {
+    var c = null;
+    try { c = localStorage.getItem(CODE_KEY); } catch (e) {}
+    if (c && c.length === 12) return c;
+    c = makeDeviceCode();
+    try { localStorage.setItem(CODE_KEY, c); } catch (e) {}
+    return c;
+  }
+
+  /* XXXX-XXXX-XXXX. Three even groups of four is the pattern people already
+     know from product keys, and the eye chunks it without being asked. */
+  function formatCode(c) {
+    return String(c || "").replace(/(.{4})(.{4})(.{4})/, "$1-$2-$3");
+  }
+
+  function claimCode(code, then) {
+    apiAuth("/api/account/code", { code: code }).then(function (d) {
+      if (!d || d.error) { toast("That code is not right", "Check it and try again", "loss"); return; }
+      account = d.user || account;
+      try { localStorage.setItem(CODE_KEY, String(code).toUpperCase().replace(/[^0-9A-Z]/g, "")); } catch (e) {}
+      renderAccount();
+      /* Push what this device has, then pull everything the account holds.
+         Merged, never replaced — linking a second device must not wipe what
+         was played on it before linking. */
+      apiAuth("/api/account/migrate", guestPayload()).then(function () {
+        pullAccountResults();
+      });
+      if (then) then(d);
+    }).catch(function () {
+      toast("Could not reach the server", "Try again in a moment", "loss");
+    });
+  }
+
   function setHomeVisible(on) {
     var v = $("homeOverlay");
     if (v) v.classList.toggle("show", !!on);
@@ -5703,12 +5773,30 @@
          end the puzzle. */
       var left = unsolvedEntries();
       if (!left.length) return;
-      var cost = left.length * 9;
+      /* The real arithmetic, not the list price.
+
+         Reveals clamp at what you hold, so somebody on 5 pays 5 rather than 12
+         and the sum printed here would not match the sum on the Full Time
+         screen. This is exactly the calculation a player would do in their
+         head before deciding, done for them.
+
+         Not framed as a forfeit. It is Reveal answer pressed N times in one
+         tap — three left with 90 in hand leaves 54, which is a poor result
+         rather than a wiped one. Eleven left with 114 lands on 0 by the same
+         rule, so it self-forfeits when it should without needing a state of
+         its own. */
+      var per = FCW.SCORING.REVEAL_ANSWER_PENALTY;
+      var have = liveScore();
+      var listed = left.length * per;
+      var cost = Math.min(listed, have);
+      var after = have - cost;
       var ok = window.confirm(
         "Reveal everything left?\n\n" +
         left.length + " answer" + (left.length === 1 ? "" : "s") +
-        " at 9 points each: a " + cost + " point deduction.\n\n" +
-        "That finishes the puzzle for you. There is no way back from it.");
+        " at " + per + " points each" +
+        (cost < listed ? " \u2014 more than you have left" : "") + ".\n\n" +
+        "That costs " + cost + ", leaving you " + after + ".\n\n" +
+        "It finishes the puzzle for you. There is no way back from it.");
       if (!ok) return;
       /* One at a time through the button that already exists, so the server
          accounting is the same as if they had been revealed by hand. */
@@ -6026,6 +6114,42 @@
     }
     pop.hidden = !opening;
     pop.classList.toggle("as-home", opening);
+  });
+
+  /* Shown when the sheet opens rather than at boot, so a code is only put on
+     screen for somebody who went looking for it. */
+  function renderDeviceCode() {
+    var el = $("acctCode");
+    if (el) el.textContent = formatCode(deviceCode());
+  }
+
+  on("acctCodeCopy", "click", function () {
+    var code = formatCode(deviceCode());
+    try {
+      navigator.clipboard.writeText(code);
+      toast("Code copied", "Enter it on your other device");
+    } catch (e) {
+      /* Clipboard refused, which happens without a secure context or a user
+         gesture the browser trusts. The code is on screen either way, so say
+         so rather than failing silently. */
+      toast("Copy it by hand", code);
+    }
+  });
+
+  on("acctCodeGo", "click", function () {
+    var raw = ($("acctCodeInput") && $("acctCodeInput").value) || "";
+    var code = String(raw).toUpperCase().replace(/[^0-9A-Z]/g, "");
+    if (code.length !== 12) {
+      toast("That code is not right", "Twelve characters, like XXXX-XXXX-XXXX", "loss");
+      return;
+    }
+    claimCode(code, function () {
+      /* Entering a code is the moment anonymous play becomes an account: the
+         server has to hold it for the other device to find it. Said once,
+         here, rather than letting it happen quietly. */
+      toast("Devices linked", "Your results are saved and will follow you");
+      $("accountSheet").classList.remove("show");
+    });
   });
 
   on("homeSignIn", "click", function () {
