@@ -96,6 +96,14 @@
   /* Which themed board to fetch, and what the one in play is called. themeLabel
      is what the server said, not something rebuilt here — the name on the board
      and the name in the share message must not be able to drift apart. */
+  /* Which daily is wanted, when it is not today's.
+
+     Null means today. A number opens an earlier board from the archive —
+     needed because a season is thirty-eight played boards and only one exists
+     per day, so anybody arriving late has to be able to reach the ones behind
+     them. The server refuses anything after today whatever this says. */
+  var dailyWanted = null;
+
   var themeWanted = null;
   /* The challenge being played, if any. Set before the board is built and read
      again at Full Time, when the score has been verified and can join a table. */
@@ -138,7 +146,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v126";
+  var BUILD = "v127";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -633,13 +641,17 @@
       if (t.indexOf("theme:") === 0) {
         return api("/api/theme-board?id=" + encodeURIComponent(t.slice(6)));
       }
-      // A daily token is only valid on its own day; if the date has rolled over
-      // the server refuses it, and today's daily is the right thing to open.
-      return api("/api/daily");
+      /* A daily token names its own board. Resuming an archive board has to ask
+         for that number, not for today — otherwise reopening a half-finished
+         board from last week silently swaps it for today's. */
+      var rt = /^daily:(\d+)$/.exec(t);
+      return api("/api/daily" + (rt ? "?no=" + rt[1] : ""));
     }
     if (sharedToken) return api("/api/practice?token=" + encodeURIComponent(sharedToken));
     if (adminDay) return api("/api/admin/daily?n=" + adminDay);
-    if (mode === "daily") return api("/api/daily");
+    if (mode === "daily") {
+      return api("/api/daily" + (dailyWanted ? "?no=" + dailyWanted : ""));
+    }
     if (mode === "theme") {
       return api(themeWanted && themeWanted.id
         ? "/api/theme-board?id=" + encodeURIComponent(themeWanted.id)
@@ -5539,6 +5551,7 @@
     try { localStorage.setItem("fcw.athome", on ? "1" : ""); } catch (e) {}
     if (on) {
       renderRunLine();
+      renderPreviousCount();
       try { window.scrollTo(0, 0); } catch (e) {}
     }
   }
@@ -6056,6 +6069,7 @@
   }
 
   on("homeDaily", "click", function () {
+    dailyWanted = null;   // the hero is always today, whatever was opened last
     /* Anyone part-way through today's can still finish it. Stranding a
        half-played board to enforce a suspension costs a real player something
        and saves nobody anything — the puzzle is already on their device. */
@@ -6065,17 +6079,49 @@
     }
     chooseMode("daily");
   });
-  on("homePractice", "click", function () {
-    /* Suspended, but not for somebody mid-puzzle. Stranding a half-finished
-       board to enforce a suspension costs a real player something to save
-       nobody anything — and the puzzle is already on their device, so letting
-       them finish takes no board off the shelf.
+  /* Previous puzzles. Opens the most recent one not yet played.
 
-       Shared practice links and /api/practice are untouched: a link somebody
-       sent still opens. This closes the front door, not the building. */
-    if (inProgress(savedFor("practice"))) { chooseMode("practice"); return; }
-    toast("Practice is being rebuilt alongside the new club boards.");
+     Deliberately not a list to browse. Somebody wanting to catch up wants the
+     next one they missed, not a menu of two hundred — and a chooser is a
+     screen to design, populate and scroll before anyone can play anything.
+     A list can come later if people ask for one. */
+  on("homePrevious", "click", function () {
+    var no = nextUnplayedDaily();
+    if (no === null) {
+      toast("All caught up", "You have played every board so far.");
+      return;
+    }
+    dailyWanted = no;
+    chooseMode("daily");
   });
+
+  /* The most recent board before today that has no result yet. Counts back
+     rather than forward: the boards nearest today are the ones somebody
+     actually missed, and the ones from months ago matter least. */
+  function nextUnplayedDaily() {
+    var played = {};
+    loadResults().forEach(function (r) {
+      if (r && r.mode === "daily" && r.dailyNo != null) played[r.dailyNo] = true;
+    });
+    for (var n = FCW.dailyNumber() - 1; n >= 1; n--) if (!played[n]) return n;
+    return null;
+  }
+
+  /* How many are left to play. A stock, not a total: "9 to play" says there is
+     something here, and it falls as they are played rather than climbing
+     forever. */
+  function renderPreviousCount() {
+    var el = $("homePreviousCount");
+    if (!el) return;
+    var played = {}, n;
+    loadResults().forEach(function (r) {
+      if (r && r.mode === "daily" && r.dailyNo != null) played[r.dailyNo] = true;
+    });
+    var left = 0;
+    for (n = FCW.dailyNumber() - 1; n >= 1; n--) if (!played[n]) left++;
+    el.textContent = left === 0 ? "All caught up"
+      : left === 1 ? "1 to play" : left + " to play";
+  }
   on("homeSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
   /* These two had the same defect as the toolbar route and predate it: opening
      the sheet without loading Google, so the sign-in button was missing until

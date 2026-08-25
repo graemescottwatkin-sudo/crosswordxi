@@ -160,11 +160,14 @@ server.listen(0, "127.0.0.1", async () => {
     return groups.length >= 2 && /top flight/i.test(groups[0].label) &&
       groups[0].children.length === 20;
   })(), [...$("homeClubSelect").querySelectorAll("optgroup")].map((g) => g.label).join(" | "));
-  t("both modes are offered as their own target", (() => {
-    /* Both are suspended and both are still on screen — the assertion is that
-       the targets exist, not that they are open. A suspended track is marked,
-       not removed. */
-    return !!$("homeDaily") && !!$("homePractice");
+  t("today and the archive are each their own target", (() => {
+    /* Practice is gone: it was a separate pool of 300 puzzles nobody else ever
+       played, and past dailies are better content with nothing to maintain.
+       The card is now Previous puzzles.
+
+       The property is unchanged — today and everything before it are separate
+       things you can choose, not one control with a mode buried in it. */
+    return !!$("homeDaily") && !!$("homePrevious");
   })());
   t("the daily says which phase it is", (() => {
     const title = $("homeDailyTitle").textContent;
@@ -1233,7 +1236,7 @@ server.listen(0, "127.0.0.1", async () => {
   t("choosing a mode is what starts anything", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /function chooseMode/.test(js) &&
-      /on\("homeDaily", "click"/.test(js) && /on\("homePractice", "click"/.test(js);
+      /on\("homeDaily", "click"/.test(js) && /on\("homePrevious", "click"/.test(js);
   })());
   t("leaving a daily for the menu stops its clock", (() => {
     /* Otherwise the timer runs on a puzzle nobody can see, which is the same

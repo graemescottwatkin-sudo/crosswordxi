@@ -32,6 +32,31 @@ t("daily: the whole payload contains no answer as plain text", (() => {
 })());
 t("daily: response is not cacheable", dRes.headers.get("Cache-Control") === "no-store");
 
+/* ---- The archive ----
+   Past boards are playable and future ones are not. A season is thirty-eight
+   played boards and only one exists per day, so without the past nobody
+   arriving late could ever build one — and nobody could catch up a missed day.
+   The half that matters is that tomorrow stays shut. */
+const today = (await (await daily({ env })).json()).dailyNo;
+
+const older = await daily({ env, request: new Request("https://x/api/daily?no=1") });
+const od = await older.json();
+t("archive: an earlier board can be played", older.status === 200 && od.dailyNo === 1,
+  "asked for #1, got #" + od.dailyNo);
+t("archive: it is a real puzzle, not today's", !!od.puzzle && od.dailyNo !== today);
+t("archive: and it still carries no answers",
+  !JSON.stringify(od).match(/"ch"\s*:/));
+
+const tomorrowBoard = await daily({ env, request: new Request("https://x/api/daily?no=" + (today + 1)) });
+t("archive: tomorrow is still refused", tomorrowBoard.status === 403,
+  "status " + tomorrowBoard.status);
+const far = await daily({ env, request: new Request("https://x/api/daily?no=99999") });
+t("archive: so is a board far in the future", far.status === 403);
+const junk = await daily({ env, request: new Request("https://x/api/daily?no=abc") });
+t("archive: a junk number falls back to today rather than erroring",
+  junk.status === 200);
+
+
 const pRes = await practice({ request: req("https://x/api/practice"), env });
 const p = await pRes.json();
 t("practice: server picks the puzzle", pRes.status === 200 && !!p.token, p.token);

@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v126">
+<link rel="stylesheet" href="css/style.css?v=v127">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -786,10 +786,19 @@
         <span class="hc-state" id="homeThemedState"></span>
       </button>
 
-      <button class="home-choice col soon" id="homePractice">
-        <span class="hc-kicker">PRACTICE</span>
-        <span class="hc-title">Practice <span class="hc-soon">Soon</span></span>
-        <span class="hc-note">Being rebuilt alongside the club boards.</span>
+      <!-- Practice was a separate pool of 300 puzzles nobody else ever played.
+           These are the real boards, every daily since the start — which is
+           better content and removes a pool to maintain.
+
+           "Previous puzzles" rather than "Archive": archive is a librarian's
+           word, it says stored rather than playable, and it invites "how far
+           back?" from somebody who only wants to know if there is something to
+           play. This pairs with "Today's puzzle" above, one noun apart. -->
+      <button class="home-choice col" id="homePrevious">
+        <span class="hc-kicker">PREVIOUS PUZZLES</span>
+        <span class="hc-title" id="homePreviousCount">Every daily so far</span>
+        <span class="hc-note">One more every day. They count towards your
+          season &mdash; only today&rsquo;s keeps a run going.</span>
         <span class="hc-state" id="homePracticeState"></span>
       </button>
     </div>
@@ -985,7 +994,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v126</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v127</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -998,8 +1007,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v126"></script>
-<script src="js/engine.js?v=v126"></script>
-<script src="js/game.js?v=v126"></script>
+<script src="js/seasons.js?v=v127"></script>
+<script src="js/engine.js?v=v127"></script>
+<script src="js/game.js?v=v127"></script>
 </body>
 </html>

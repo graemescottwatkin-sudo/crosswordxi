@@ -18,9 +18,21 @@ export function dailyNumber(now = Date.now()) {
    could POST { token: "daily:<tomorrow>" } and read tomorrow's answers straight
    out of the API — the same leak as putting future answers in the source, just
    through a different door. */
+/* Any daily up to today, never one after it.
+
+   It was `asked === dailyNumber()` — today alone. That made every past board
+   unreachable forever: nobody could catch up a missed day, and somebody
+   arriving in November had no way to build a season, because a season is
+   thirty-eight played boards and only one exists per day.
+
+   The half that matters is unchanged. A number ABOVE today is still refused, so
+   tomorrow cannot be read early however the clock is set, and the day is still
+   decided by the server. Opening the past gives nothing away; opening the
+   future gives away everything. */
 export function playableDailyNo(token) {
   const m = /^daily:(\d+)$/.exec(String(token || ""));
   if (!m) return null;
   const asked = Number(m[1]);
-  return asked === dailyNumber() ? asked : false;
+  if (asked < 1) return false;
+  return asked <= dailyNumber() ? asked : false;
 }
