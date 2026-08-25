@@ -2730,3 +2730,9 @@ body.home-showing .tbar{visibility:hidden}
   position:static;margin:8px 0 0;width:100%;min-width:0;
   box-shadow:0 4px 16px rgba(18,34,25,.12);
 }
+
+/* Back to the menu. A glyph, not a word: the toolbar is tight on a phone and
+   this is the one control whose meaning is clear from its shape. */
+.tbar-home{
+  font-size:17px;line-height:1;letter-spacing:0;padding:6px 11px;min-width:44px;
+}

@@ -1196,8 +1196,20 @@ server.listen(0, "127.0.0.1", async () => {
        date sync, so that is the boundary. */
     const at = js.indexOf("function boot()");
     const boot = js.slice(at, js.indexOf("syncServerDate(function", at));
+    /* The rule has changed and the reason it existed has not.
+
+       Boot still chooses no MODE. What it now does is reopen a PUZZLE that is
+       already under way — unfinished, and for the daily, today's. The letters
+       are on disk and the clock has been running against it, so that is not a
+       guess about what somebody wants.
+
+       Both old guesses stay banned: bootDaily() started the daily outright,
+       and remembering a mode alone would start a fresh puzzle. The guard for
+       the second is now the inProgress + dailyNo test rather than the absence
+       of the string, because the string is legitimately back. */
     return /renderHome\(\)/.test(boot) && !/bootDaily\(\)/.test(boot) &&
-      !/last === "practice"/.test(boot);
+      /inProgress\(saved\)/.test(boot) &&
+      /saved\.dailyNo === FCW\.dailyNumber\(\)/.test(boot);
   })());
   t("choosing a mode is what starts anything", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

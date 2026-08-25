@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v116";
+  var BUILD = "v117";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5610,7 +5610,7 @@
       else if (a === "practice") return;      // suspended; the item is disabled
       else if (a === "themes") { renderThemes(); $("themeSheet").classList.add("show"); }
       else if (a === "new") click("newBtn");
-      else if (a === "menu") click("menuBtn");
+
     });
 
     on("tbCheckPop", "click", function (ev) {
@@ -5761,6 +5761,16 @@
     try { localStorage.setItem("fcw.fxmode", fxMode); } catch (e) {}
   });
   on("fxTipNo", "click", function (ev) { ev.stopPropagation(); closeTip(true); });
+
+  /* Drives menuBtn, the control that already leaves a game — it stops the
+     clock and flushes the pending save before showing the menu. Saving is
+     debounced 400ms, so letters typed just before pressing this would
+     otherwise not be in the file the landing screen reads. */
+  on("tbHome", "click", function (ev) {
+    ev.stopPropagation();
+    var b = $("menuBtn");
+    if (b) b.click(); else showHome();
+  });
 
   on("tbSignIn", "click", function (ev) {
     ev.stopPropagation();
@@ -6021,8 +6031,35 @@
       });
       return;
     }
-    /* Otherwise, straight to the choice. Guessing which mode somebody wants is
-       how the daily's clock ended up running on a game they had not picked. */
+    /* A game already under way resumes. Anything else goes to the choice.
+
+       The note this replaces says guessing a mode is how the daily's clock
+       ended up running on a game nobody had picked, and that is still true —
+       so this does not guess a mode. It resumes a PUZZLE that is already
+       started and not finished: the letters are on disk, the clock has been
+       running against it, and the player was on it moments ago. Reopening
+       something you are mid-way through is not a guess about what you want.
+
+       Finished games and untouched modes still land on the menu, because
+       either of those would mean starting something new on your behalf. */
+    var last = null;
+    try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
+    var saved = (last === "daily" || last === "practice") ? savedFor(last) : null;
+    /* Today's daily only.
+
+       chooseMode("daily") starts a FRESH puzzle when the save is not today's —
+       so resuming on a stale save would have started the clock on a game
+       nobody picked, which is the exact fault the note above describes. The
+       save has to be both unfinished and the one currently open.
+
+       Practice has no such date, so an unfinished practice puzzle is always
+       the one that was being played. */
+    var resumable = saved && inProgress(saved) &&
+      (last !== "daily" || saved.dailyNo === FCW.dailyNumber());
+    if (resumable) {
+      chooseMode(last);
+      return;
+    }
     renderHome();
     setHomeVisible(true);
   })();

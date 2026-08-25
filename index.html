@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v116">
+<link rel="stylesheet" href="css/style.css?v=v117">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -250,6 +250,18 @@
        that have to agree forever. -->
   <div class="tbar" id="tbar">
     <div class="tbar-menu">
+      <!-- Leaving is not a way of starting something, so it is not in the menu
+           of things that start something. It was "Back to menu", third item
+           down a dropdown listing Daily, Practice, Clubs and themes and New
+           puzzle — two taps for the most common move on the screen, sitting
+           among four items about going somewhere else.
+
+           A house rather than a word: the strip is tight on a phone and this
+           is the one control there whose meaning is universally understood
+           from its shape. -->
+      <button class="tbar-btn tbar-home" id="tbHome" aria-label="Back to the menu"
+              title="Back to the menu">&#8962;</button>
+
       <button class="tbar-btn" id="tbMode" aria-expanded="false" aria-haspopup="menu">
         <span id="tbModeLabel">Daily</span></button>
       <div class="tbar-pop" id="tbModePop" role="menu" hidden>
@@ -257,7 +269,6 @@
         <button role="menuitem" data-act="practice" id="tbPractice">Practice<span class="pc soon">Soon</span></button>
         <button role="menuitem" data-act="themes">Clubs &amp; themes</button>
         <button role="menuitem" data-act="new">New puzzle</button>
-        <button role="menuitem" data-act="menu">Back to menu</button>
       </div>
     </div>
 
@@ -911,7 +922,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v116</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v117</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -924,8 +935,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v116"></script>
-<script src="js/engine.js?v=v116"></script>
-<script src="js/game.js?v=v116"></script>
+<script src="js/seasons.js?v=v117"></script>
+<script src="js/engine.js?v=v117"></script>
+<script src="js/game.js?v=v117"></script>
 </body>
 </html>
