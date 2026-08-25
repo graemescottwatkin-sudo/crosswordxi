@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v120";
+  var BUILD = "v121";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4553,6 +4553,13 @@
        silently removed the badge span every render. The tile ended up dimmed
        with nothing explaining why. */
     $("homeDailyTitle").textContent = phase.label;
+    /* The kicker names the competition, the title names the fixture. */
+    if ($("homeDailyKicker")) {
+      $("homeDailyKicker").textContent =
+        (phase.phase === "preseason" ? "TODAY \u00B7 PRE-SEASON"
+         : phase.phase === "season" ? "TODAY \u00B7 SEASON" : "TODAY");
+    }
+    $("homeDaily").classList.toggle("hero", true);
     $("homeDaily").classList.toggle("soon", !DAILY_OPEN);
     if (!DAILY_OPEN) {
       var badge = document.createElement("span");
@@ -5157,6 +5164,20 @@
     openThemed(featuredBoard.themeId, featuredBoard.no, featuredBoard.boardId);
   });
   on("homeThemed", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  /* The header nav drives the controls that already do these jobs rather than
+     reimplementing them. Today is where you already are. */
+  on("navClubs", "click", function () {
+    /* Drives homeThemed, the control directly above. An earlier version called
+       click("homeThemes"), a helper that does not exist in this scope — the
+       nav button threw instead of opening anything. */
+    renderThemes(); $("themeSheet").classList.add("show");
+  });
+  on("navSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
+  on("navHelp", "click", function () {
+    /* No page for this yet. Saying so beats a button that does nothing. */
+    toast("How to play", "Coming soon \u2014 the scoring is in Settings meanwhile.");
+  });
+
   on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
   /* Scores on one board, for the owner. Reached from the themed list: every
      chip carries its theme and number already, so there is nothing to type.
@@ -5458,15 +5479,35 @@
 
   /* Where a returning player is, on the screen they land on. The streak is the
      reason to come back and it lived only in the footer. */
+  /* Form, the way football shows it: a row of results rather than a sentence.
+
+     "Run of 3 · best 7" is a stat line. W W D W L is the same information in
+     the language the rest of the game speaks, and a red L is something you
+     want to fix tomorrow in a way "run of 0" is not. */
   function renderRunLine() {
-    var el = $("homeRun");
+    var el = $("homeRun"), title = $("homeRunTitle");
     if (!el) return;
     try {
+      var recent = phaseResults().slice(-FCW.SCORING.FORM_LENGTH);
       var st = FCW.seasonStats(phaseResults(), dailyNo);
-      el.innerHTML = st.played
-        ? "Run of <b>" + st.currentStreak + "</b> \u00B7 best " + st.longestStreak +
-          " \u00B7 " + st.played + " played"
-        : "";
+      if (!st.played) {
+        if (title) title.textContent = "No run yet";
+        el.innerHTML = "<span class=\"run-none\">Play today to start one.</span>";
+        return;
+      }
+      if (title) {
+        title.textContent = st.currentStreak +
+          (st.currentStreak === 1 ? " day run" : " day run");
+      }
+      var chips = recent.map(function (r) {
+        /* The same mapping the season table uses, so the chips and the table
+           can never disagree about what a result was. */
+        var v = r && r.score != null ? r.score : 0;
+        var k = v >= 76 ? "w" : v >= 38 ? "d" : "l";
+        return '<span class="rc ' + k + '">' + k.toUpperCase() + "</span>";
+      }).join("");
+      el.innerHTML = '<span class="run-chips">' + chips + "</span>" +
+        '<span class="run-best">best ' + st.longestStreak + "</span>";
     } catch (e) { el.textContent = ""; }
   }
 

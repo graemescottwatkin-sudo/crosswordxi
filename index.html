@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v120">
+<link rel="stylesheet" href="css/style.css?v=v121">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -667,101 +667,118 @@
      Now it is the page until you pick something, and the board takes over when
      you do. The seven show/hide call sites are unchanged — what moved is what
      the class means. -->
+<!-- The landing, as a site.
+
+     Header with real navigation, a hero for today, a sidebar for form and the
+     featured board, a browsable row of clubs, and a footer that admits the
+     wider world exists. Every control keeps the id it had, so nothing in
+     game.js needed rewiring — what changed is where things sit, not what they
+     are. -->
 <div class="home-view show" id="homeOverlay">
-  <div class="kick-card home-card">
-    <h2>Crossword XI</h2>
-    <div class="kick-mode" id="homeSub">The football crossword</div>
 
-    <!-- Daily is suspended while the bank is rebuilt club by club. Left on
-         screen rather than removed, on the same reasoning as Practice: a track
-         that vanishes reads as something broken, a track marked as coming says
-         what is actually happening. -->
-    <button class="home-choice" id="homeDaily">
-      <span class="hc-title" id="homeDailyTitle">Today&rsquo;s puzzle</span>
-      <span class="hc-note" id="homeDailyNote">Being rebuilt alongside the new club boards</span>
-      <span class="hc-state" id="homeDailyState"></span>
-    </button>
+  <header class="site-head">
+    <div class="site-bar">
+      <div class="site-mast">Crossword <span class="site-xi">XI</span></div>
+      <nav class="site-nav">
+        <button class="on" id="navToday">Today</button>
+        <button id="navClubs">Clubs</button>
+        <button id="navSeason">My season</button>
+        <button id="navHelp">How to play</button>
+      </nav>
+      <div class="site-right">
+        <button class="site-ghost" id="homeSignIn" hidden>Sign in</button>
+        <button class="site-ghost" id="homeAccount">Account</button>
+        <button class="site-ghost" id="homeSettings">Settings</button>
+      </div>
+    </div>
+  </header>
 
-    <!-- Practice is suspended while the clue bank is rebuilt club by club.
-         Left on screen rather than removed: a track that vanishes reads as
-         something broken, and a track marked as coming says what is actually
-         happening. Anybody already part-way through one can still finish it —
-         see homePractice's handler. -->
-    <button class="home-choice soon" id="homePractice">
-      <span class="hc-title">Practice <span class="hc-soon">Coming soon</span></span>
-      <span class="hc-note">Being rebuilt alongside the new club boards.</span>
-      <span class="hc-state" id="homePracticeState"></span>
-    </button>
+  <div class="site-wrap">
+    <p class="site-lede" id="homeSub">Eleven answers. One match. A new football crossword every day.</p>
 
-    <!-- Board of the day. Chosen from the date on the server, so everybody
-         gets the same one — which is what makes it worth mentioning to
-         somebody else. Hidden until there is one to show, so the landing
-         screen never carries an empty frame. -->
-    <button class="home-choice featured" id="homeFeatured" hidden>
-      <span class="hc-kicker">Board of the day</span>
-      <span class="hc-title" id="homeFeaturedName"></span>
-      <span class="hc-state" id="homeFeaturedState"></span>
-    </button>
+    <div class="site-grid">
+      <div class="site-main">
+        <!-- Today. The one thing on the page with weight, because it is the
+             one thing most people came for. -->
+        <button class="home-choice hero" id="homeDaily">
+          <span class="hc-kicker" id="homeDailyKicker">TODAY</span>
+          <span class="hc-title" id="homeDailyTitle">Today&rsquo;s puzzle</span>
+          <span class="hc-note" id="homeDailyNote"></span>
+          <span class="hc-state" id="homeDailyState"></span>
+          <span class="hc-cta">Kick off</span>
+        </button>
 
-    <!-- The third track. A new board every Friday and everything already
-         released stays playable, which is the point: a Newcastle supporter
-         arriving in November should not have to wait for Newcastle's turn to
-         come round again. -->
-    <!-- Season. Shown only while the season test override is on, which is an
-         owner-tools switch — so in practice this is on your screen and nobody
-         else's. It is not a separate mode: the season IS the daily, counted.
-         The tile is a way in to the table and a readout of where you are. -->
-    <button class="home-choice" id="homeSeason" style="display:none">
-      <span class="hc-title">Season <span class="hc-soon">Testing</span></span>
-      <span class="hc-note" id="homeSeasonNote">&nbsp;</span>
-      <span class="hc-state" id="homeSeasonState"></span>
-    </button>
+        <button class="home-choice soon" id="homePractice">
+          <span class="hc-title">Practice <span class="hc-soon">Coming soon</span></span>
+          <span class="hc-note">Being rebuilt alongside the new club boards.</span>
+          <span class="hc-state" id="homePracticeState"></span>
+        </button>
 
-    <button class="home-choice" id="homeThemed">
-      <span class="hc-title">Clubs and themes</span>
+        <button class="home-choice" id="homeSeason" style="display:none">
+          <span class="hc-title">Season <span class="hc-soon">Testing</span></span>
+          <span class="hc-note" id="homeSeasonNote">&nbsp;</span>
+          <span class="hc-state" id="homeSeasonState"></span>
+        </button>
+      </div>
+
+      <aside class="site-side">
+        <!-- Where the run has got to. It was a line of small grey text at the
+             bottom; it is the reason to come back tomorrow, so it gets a card. -->
+        <div class="side-card">
+          <div class="sc-kicker">YOUR FORM</div>
+          <div class="sc-title" id="homeRunTitle">No run yet</div>
+          <div class="home-run" id="homeRun"></div>
+        </div>
+
+        <button class="side-card as-btn" id="homeFeatured" hidden>
+          <span class="sc-kicker">BOARD OF THE DAY</span>
+          <span class="sc-title" id="homeFeaturedName"></span>
+          <span class="sc-note" id="homeFeaturedState"></span>
+        </button>
+
+        <div class="side-card">
+          <div class="sc-kicker">PLAY AS</div>
+          <div class="home-club">
+            <select id="homeClubSelect" title="Choose your club (optional)"></select>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <h2 class="site-sec">CLUBS AND THEMES</h2>
+    <button class="home-choice wide" id="homeThemed">
+      <span class="hc-title">Browse every board</span>
       <span class="hc-note">A new one every Friday. Play any that have been released.</span>
       <span class="hc-state" id="homeThemedState"></span>
     </button>
-
-    <!-- Chosen here rather than on the kick-off card. Which club you play as
-         applies to both modes and does not change between them, so it belongs
-         with the choice rather than being asked again each time. -->
-    <div class="home-club">
-      <label for="homeClubSelect">Play as</label>
-      <select id="homeClubSelect" title="Choose your club (optional)"></select>
-    </div>
-
-    <!-- Signing in is one of three links in a row of small text, which is where
-         a thing goes when nobody is meant to find it. It is what carries a
-         streak between a phone and a laptop and what puts a name on a challenge
-         without typing one, so it gets a control of its own — and disappears
-         once it has been done, because an account button is only interesting
-         until you have one. -->
-    <button class="btn outline home-signin" id="homeSignIn" hidden>
-      Sign in to keep your results across devices
-    </button>
-
-    <!-- Where a returning player is. The streak is the reason to come back and
-         it lived only in the footer, which is where a thing goes when nobody is
-         meant to read it. -->
-    <div class="home-run" id="homeRun"></div>
-
-    <!-- Settings, on the screen rather than behind a cog inside the game. A
-         player who wants dark mode or the letter bank off wants it before
-         starting, not three taps into a puzzle they are being timed on. -->
-    <button class="btn outline home-settings" id="homeSettings">Settings</button>
-
-    <!-- Beside the sign-in offer, not only in the footer. This is the moment
-         somebody decides whether to hand over an identity, and it is the only
-         point on the landing screen where that question is live. -->
-    <div class="home-privacy"><a href="privacy.html">How we handle your data</a></div>
-
-    <div class="home-links">
-      <button id="homeSeason">My Season</button> &middot;
-      <button id="homeThemes">Clubs and themes</button> &middot;
-      <button id="homeAccount">Account</button>
-    </div>
+    <button class="site-hidden" id="homeThemes">Clubs and themes</button>
   </div>
+
+  <!-- The rest of the family. Five more titles are coming, so this is a band
+       that grows rather than a link that has to be redesigned when it does. -->
+  <footer class="site-foot">
+    <div class="site-fw">
+      <div class="foot-games">
+        <div class="fg-kicker">MORE FROM THE XI GAMES</div>
+        <div class="fg-row">
+          <a class="fg-card" href="https://wordsearch.thexigames.com">
+            <span class="fg-name">XI Word Search</span>
+            <span class="fg-note">Find the eleven</span>
+          </a>
+          <span class="fg-card soon"><span class="fg-name">QuickFire XI</span>
+            <span class="fg-note">Coming soon</span></span>
+          <span class="fg-card soon"><span class="fg-name">Scrambled XI</span>
+            <span class="fg-note">Coming soon</span></span>
+        </div>
+      </div>
+      <div class="foot-legal">
+        <a href="privacy.html">How we handle your data</a>
+        <span>&middot;</span>
+        <a href="https://thexigames.com">The XI Games</a>
+        <span class="foot-end">Not affiliated with any club or competition.</span>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <div class="overlay" id="startOverlay">
@@ -926,7 +943,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v120</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v121</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -939,8 +956,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v120"></script>
-<script src="js/engine.js?v=v120"></script>
-<script src="js/game.js?v=v120"></script>
+<script src="js/seasons.js?v=v121"></script>
+<script src="js/engine.js?v=v121"></script>
+<script src="js/game.js?v=v121"></script>
 </body>
 </html>
