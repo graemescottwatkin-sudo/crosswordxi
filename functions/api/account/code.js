@@ -18,7 +18,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import {
-  upsertUser, createSession, sessionCookie, publicUser, csrfOk, currentUser,
+  findOrCreateUser, createSession, sessionCookie, publicUser, csrfOk, currentUser,
 } from "../../_lib/auth.js";
 
 /* Thirty characters: Crockford base32 with 0 and 1 dropped as well.
@@ -65,10 +65,10 @@ export async function onRequestPost({ request, env }) {
     return bad("Sign out first, then enter the code.", 409);
   }
 
-  /* upsertUser creates on first sight and returns the existing row after that,
-     which is exactly the behaviour wanted: the first device to claim a code
-     makes the account, every device after signs in to it. */
-  const { user, created } = await upsertUser(env, "code", code, { name: "Player" });
+  /* findOrCreateUser creates on first sight and returns the existing row after
+     that, which is exactly the behaviour wanted: the first device to claim a
+     code makes the account, every device after signs in to it. */
+  const { user, created } = await findOrCreateUser(env, "code", code, { name: "Player" });
   const session = await createSession(env, user.id);
 
   return json({ user: publicUser(user), created },

@@ -45,7 +45,7 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    back and the site looked unchanged.
 
    LAST_SHIPPED is the version that is live now. Bump it when you deploy. */
-const LAST_SHIPPED = "v120";   // <- bump this after each deploy
+const LAST_SHIPPED = "v122";   // <- bump this after each deploy
 t("the build tag has moved past the version now live",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
@@ -102,6 +102,52 @@ t("the stylesheet's braces and comments balance", (() => {
 /* A Functions file cannot sit beside a directory of the same name: the route
    resolves to the directory, finds no index, and answers 404 — for an endpoint
    that exists and works. It cost a challenge that had just been created. */
+/* Every named import must exist in the module it names.
+
+   Cloudflare bundles Functions with esbuild at deploy time, so an import of
+   something that is not exported is a BUILD failure, not a runtime one — the
+   deployment never completes and Pages goes on serving the previous build. The
+   site does not break; it silently stops changing, which is a much harder thing
+   to notice than an error.
+
+   That is exactly what happened: api/account/code.js imported upsertUser from
+   _lib/auth.js, which exports findOrCreateUser. deploy_check passed, the push
+   succeeded, and the live site sat on the previous version through two more
+   attempts before anybody looked at the build log.
+
+   node --check does not catch this: each file is valid on its own. Only
+   resolving the imports across files does. */
+let brokenImports = [];
+t("every import resolves to something the target actually exports", (() => {
+  const walk = (dir) => {
+    const out = [];
+    for (const e of fs.readdirSync(path.join(DIR, dir), { withFileTypes: true })) {
+      if (e.isDirectory()) out.push(...walk(path.join(dir, e.name)));
+      else if (e.name.endsWith(".js")) out.push(path.join(dir, e.name));
+    }
+    return out;
+  };
+  if (!has("functions")) return true;
+  const broken = [];
+  for (const f of walk("functions")) {
+    const src = fs.readFileSync(path.join(DIR, f), "utf8");
+    for (const m of src.matchAll(/import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["']/g)) {
+      const target = path.resolve(path.dirname(path.join(DIR, f)), m[2]);
+      if (!fs.existsSync(target)) { broken.push(`${f} -> ${m[2]} (no such file)`); continue; }
+      const t2 = fs.readFileSync(target, "utf8");
+      for (const raw of m[1].split(",")) {
+        const name = raw.trim().split(/\s+as\s+/)[0].trim();
+        if (!name) continue;
+        const declared = new RegExp(`export\\s+(async\\s+)?(function|const|let|var|class)\\s+${name}\\b`).test(t2);
+        const listed = new RegExp(`export\\s*\\{[^}]*\\b${name}\\b`).test(t2);
+        if (!declared && !listed) broken.push(`${name} in ${f}`);
+      }
+    }
+  }
+  brokenImports = broken;
+  return broken.length === 0;
+})(), brokenImports.slice(0, 4).join(", "));
+
 t("no Functions file collides with a directory of the same name", (() => {
   const walk = (dir) => {
     const out = [];

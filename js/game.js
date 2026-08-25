@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v124";
+  var BUILD = "v126";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5179,10 +5179,6 @@
     renderThemes(); $("themeSheet").classList.add("show");
   });
   on("navSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
-  on("navHelp", "click", function () {
-    /* No page for this yet. Saying so beats a button that does nothing. */
-    toast("How to play", "Coming soon \u2014 the scoring is in Settings meanwhile.");
-  });
 
   on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
   /* Scores on one board, for the owner. Reached from the themed list: every

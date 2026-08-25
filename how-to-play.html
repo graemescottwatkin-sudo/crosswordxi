@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play &middot; Crossword XI</title>
+<meta name="description" content="Eleven football answers, scored out of 114. What the clock costs you, and what each help button costs.">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Standalone, on the same reasoning as privacy.html: a page explaining the
+   rules has to render for somebody who arrived with the game's stylesheet
+   cached at an older build, or who never loads the game at all.
+
+   Every number here is read from SCORING in js/engine.js. If a penalty changes
+   and this page does not, the page is wrong — there is no mechanism keeping
+   them in step, which is why they are listed in one place rather than scattered
+   through the prose.
+
+   Links relative, never root-relative, so the site runs unchanged at
+   crossword.thexigames.com today and thexigames.com/crossword later.
+   deploy_check enforces it. */
+:root{
+  --paper:#F4F5F2; --card:#FFFFFF; --ink:#182219; --ink-soft:#5A675D;
+  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD; --pitch-deep:#123B27;
+}
+:root[data-theme="dark"]{
+  --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
+  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
+    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:0 20px 64px; background:var(--paper); color:var(--ink);
+  font-family:"Public Sans",system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.65; -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:760px; margin:0 auto}
+header{
+  padding:26px 0 18px; margin-bottom:24px; border-bottom:1px solid var(--line);
+  display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;
+}
+.brand{
+  font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:24px;
+  text-transform:uppercase; letter-spacing:.05em; color:var(--pitch);
+  text-decoration:none;
+}
+header nav a{color:var(--ink-soft); text-decoration:none; font-size:14px}
+/* The mark, same as the games: a chip, not a colour. Colour alone could not
+   separate it from the word beside it — anything dark enough to read on paper
+   was too dark to stand out against the heading. */
+.xi{
+  display:inline-block;background:var(--pitch-deep, #123B27);color:#fff;
+  padding:.06em .3em .1em;border-radius:.18em;line-height:1;
+  transform:translateY(-.04em);
+}
+:root[data-theme="dark"] .xi{background:#fff;color:#123B27}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .xi{background:#fff;color:#123B27}
+}
+footer .xi{padding:.04em .22em .07em}
+header nav a:hover{color:var(--pitch); text-decoration:underline}
+h1{
+  font-family:"Barlow Condensed",sans-serif; font-weight:700;
+  font-size:34px; line-height:1.15; margin:0 0 6px; text-transform:uppercase;
+  letter-spacing:.02em;
+}
+h2{
+  font-family:"Barlow Condensed",sans-serif; font-weight:600; font-size:23px;
+  margin:38px 0 10px; letter-spacing:.02em;
+}
+h3{font-size:16px; font-weight:700; margin:24px 0 8px}
+p{margin:0 0 14px}
+ul{margin:0 0 16px; padding-left:22px}
+li{margin-bottom:6px}
+a{color:var(--pitch)}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em;
+  background:var(--card); border:1px solid var(--line);
+  padding:1px 5px; border-radius:4px; word-break:break-word;
+}
+hr{border:0; border-top:1px solid var(--line); margin:34px 0}
+table{
+  width:100%; border-collapse:collapse; margin:0 0 20px; font-size:15px;
+  background:var(--card); border:1px solid var(--line); border-radius:6px;
+  overflow:hidden; display:block; overflow-x:auto;
+}
+th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
+th{
+  font-family:"Barlow Condensed",sans-serif; font-weight:600; font-size:14px;
+  text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+footer{
+  margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
+  color:var(--ink-faint); font-size:13px;
+}
+footer a{color:var(--ink-faint)}
+
+.htp-lede{font-size:17px;color:var(--ink-soft);margin:0 0 26px}
+.htp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:18px 20px;margin:0 0 14px}
+.htp-big{display:flex;align-items:baseline;gap:13px;margin-bottom:7px;flex-wrap:wrap}
+.htp-big b{font-family:'Barlow Condensed',sans-serif;font-size:38px;line-height:1;
+  letter-spacing:-.01em;color:var(--pitch)}
+.htp-big span{font-size:14px;color:var(--ink-soft)}
+.htp-clock{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 14px}
+.htp-tick{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:12px 8px;text-align:center}
+.htp-tick .m{font-family:'Barlow Condensed',sans-serif;font-size:15px;
+  letter-spacing:.04em;color:var(--ink-faint)}
+.htp-tick .p{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;
+  color:var(--pitch);margin-top:1px}
+.htp-tick .r{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+table.htp{width:100%;border-collapse:collapse;font-size:15px}
+table.htp th{text-align:left;font-size:11.5px;letter-spacing:.09em;color:var(--ink-faint);
+  font-weight:700;padding:0 0 8px}
+table.htp td{padding:9px 0;border-top:1px solid var(--line)}
+table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.htp-cost{color:#9A3F1F;font-weight:700}
+.htp-free{color:var(--pitch);font-weight:700}
+.htp-note{background:#FBF3DA;border:1px solid #E8D9A8;border-radius:11px;
+  padding:14px 16px;font-size:14.5px;color:#7A5E00;margin:16px 0}
+:root[data-theme="dark"] .htp-note{background:#2A2618;border-color:#4A422A;color:#D8C68A}
+@media (max-width:620px){.htp-clock{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="brand" href="index.html">The <span class="xi">XI</span> Games</a>
+  <nav><a href="index.html">&larr; Back to the game</a></nav>
+</header>
+<main>
+
+<h1>How to play</h1>
+<p class="htp-lede">Eleven answers, all about football. Everyone gets the same
+  puzzle each day.</p>
+
+<h2>The score</h2>
+<div class="htp-card">
+  <div class="htp-big"><b>114</b><span>= 38 matches &times; 3 points</span></div>
+  <p>A league season is 38 games. Win all 38 and you finish on 114 &mdash; a
+     perfect season, which nobody has ever had. Nineteen of the last thirty
+     title winners took fewer than 90, so anything in the eighties is a very
+     good day.</p>
+</div>
+
+<h2>The clock</h2>
+<p>The clock counts in match minutes, not real ones. A minute passes every 20
+   seconds, so the full 90 takes half an hour. Your score falls as it runs.</p>
+<div class="htp-clock">
+  <div class="htp-tick"><div class="m">0&rsquo;</div><div class="p">114</div><div class="r">kick off</div></div>
+  <div class="htp-tick"><div class="m">30&rsquo;</div><div class="p">78</div><div class="r">10 real min</div></div>
+  <div class="htp-tick"><div class="m">45&rsquo;</div><div class="p">68</div><div class="r">half time</div></div>
+  <div class="htp-tick"><div class="m">90&rsquo;</div><div class="p">36</div><div class="r">full time</div></div>
+</div>
+<p>It drops fastest early and levels off, so finishing late still gets you a
+   result. At 90&rsquo; it stops falling altogether &mdash; take as long as you
+   like after that.</p>
+<div class="htp-note">The clock starts when the board opens and does not pause.
+  Closing the tab does not stop it.</div>
+
+<h2>The help buttons</h2>
+<p>All four are there whenever you want them. Each costs points, and the cost is
+   shown before you confirm.</p>
+<div class="htp-card">
+  <table class="htp">
+    <tr><th>Button</th><th>What it does</th><th style="text-align:right">Cost</th></tr>
+    <tr><td><b>Check word</b></td><td>Marks which letters of this answer are wrong</td><td class="n htp-cost">&minus;2</td></tr>
+    <tr><td><b>Reveal letter</b></td><td>Fills in the square you are on</td><td class="n htp-cost">&minus;3</td></tr>
+    <tr><td><b>Check grid</b></td><td>Marks every wrong letter on the board</td><td class="n htp-cost">&minus;9</td></tr>
+    <tr><td><b>Reveal answer</b></td><td>Fills in the whole answer</td><td class="n htp-cost">&minus;12</td></tr>
+  </table>
+</div>
+<p><b>There is no penalty for a wrong guess.</b> Typing something and changing
+   your mind is free. Only asking the game costs you.</p>
+<p>Check word is the cheapest because it only helps once you have tried
+   something. Reveal letter costs more because it works on an empty square.
+   Checking every answer one at a time costs more than checking the whole grid,
+   so the grid is the honest move once you are stuck in several places.</p>
+<p>Marks stay put until you edit that square, so you can come back to a word
+   later and still see what was wrong.</p>
+
+<h2>Substitutions</h2>
+<div class="htp-card">
+  <table class="htp">
+    <tr><th>Difficulty</th><th>Clues you can swap</th><th style="text-align:right">Cost</th></tr>
+    <tr><td>Easy</td><td>5</td><td class="n htp-free">free</td></tr>
+    <tr><td>Medium</td><td>3</td><td class="n htp-free">free</td></tr>
+    <tr><td>Hard</td><td>none</td><td class="n">&mdash;</td></tr>
+  </table>
+</div>
+<p>A substitution swaps a clue you cannot get for a different one on the same
+   answer. Not available on the daily &mdash; everyone plays the same eleven.</p>
+
+<h2>Your record</h2>
+<p>Each puzzle is one match. Your score becomes a result, and those results build
+   up: a run of days played, a best score, a league position against the club you
+   chose. Pre-season friendlies are played and kept, but they do not count
+   towards a season.</p>
+
+</main>
+<footer>
+  <p>The <span class="xi">XI</span> Games &middot; unofficial football word puzzles &middot;
+  <a href="index.html">Play</a> &middot;
+  <a href="privacy.html">How we handle your data</a></p>
+</footer>
+</div>
+<script>
+/* Follows the appearance you chose in the game, if you have chosen one. Read
+   only — this page never writes the preference, so opening a legal notice
+   cannot change a setting. Falls back to the system setting. */
+(function () {
+  try {
+    var t = localStorage.getItem("fcw.theme");
+    if (t === "dark" || t === "light") {
+      document.documentElement.setAttribute("data-theme", t);
+    }
+  } catch (e) { /* storage blocked: the system setting still applies */ }
+})();
+</script>
+</body>
+</html>

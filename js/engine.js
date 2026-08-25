@@ -1467,14 +1467,26 @@ var FCW = (function () {
                label: "Matchday " + (no - start + 1), counts: true };
     }
     if (no <= PRESEASON_DAYS) {
+      /* No number in the label.
+
+         A count that only goes up is an invitation to feel late: somebody
+         arriving on #59 reads fifty-eight they missed, when every daily is
+         standalone and there is nothing to catch up on. The number still exists
+         — results are keyed by it and the admin panel reports the range — it
+         just is not said to the player.
+
+         Matchdays keep theirs, because "Matchday 12 of 38" describes where a
+         season has got to against a finite total, and under the season model
+         everybody starts at their own Matchday 1 anyway. The number reappears
+         exactly when it stops being discouraging. */
       return { phase: "preseason", number: no,
-               label: "Pre-season friendly #" + no, counts: false };
+               label: "Pre-season friendly", counts: false };
     }
     if (start === null || no < start) {
       /* Numbered from the end of pre-season, so the first real daily is #1
          rather than #11 — the friendlies were their own run. */
       var d = no - PRESEASON_DAYS;
-      return { phase: "daily", number: d, label: "Daily #" + d, counts: false };
+      return { phase: "daily", number: d, label: "Today's puzzle", counts: false };
     }
     return { phase: "season", number: no - start + 1,
              label: "Matchday " + (no - start + 1), counts: true };

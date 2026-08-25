@@ -909,11 +909,20 @@ server.listen(0, "127.0.0.1", async () => {
        season. Whether that day is "Daily #1" or "Matchday 1" depends on
        SEASON_START, so both are accepted. */
     const started = w.FCW.SEASON_START !== null && w.FCW.SEASON_START <= n + 1;
-    return a.label === "Pre-season friendly #1" && a.counts === false &&
-      b.label === "Pre-season friendly #" + n && b.counts === false &&
-      c.number === 1 &&
-      (started ? c.label === "Matchday 1" && c.counts === true
-               : c.label === "Daily #1" && c.counts === false);
+    /* Tested on phase and number, not on the words.
+
+       The labels have now changed twice — once when the third phase arrived,
+       and again when the numbers came out of them, because a count that only
+       goes up tells a newcomer they are late. Both times the boundary was
+       right and the assertion was quoting a string.
+
+       What has to hold: pre-season ends where PRESEASON_DAYS says, neither
+       side of it counts toward a season until SEASON_START, and the day after
+       pre-season is the first of a fresh run. */
+    return a.phase === "preseason" && a.number === 1 && a.counts === false &&
+      b.phase === "preseason" && b.number === n && b.counts === false &&
+      c.phase !== "preseason" && c.number === 1 &&
+      c.counts === started;
   })(), w.FCW.PRESEASON_DAYS + " friendlies, then " + w.FCW.dailyPhase(w.FCW.PRESEASON_DAYS + 1).label);
   t("a friendly is recorded, but to its own record", (() => {
     /* Was: friendlies were discarded. A friendly is still a match, and a

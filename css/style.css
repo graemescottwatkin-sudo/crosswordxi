@@ -2890,3 +2890,10 @@ body.home-showing .tbar{visibility:hidden}
 }
 .code-row .btn{flex:none;min-height:44px}
 .code-note{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
+
+/* How to play is a real page, so it is a link rather than a button. Styled to
+   match its neighbours in the bar. */
+.site-navlink{
+  color:#9FE1CB;font-size:14.5px;padding:8px 10px;border-radius:6px;
+  text-decoration:none;display:flex;align-items:center;min-height:44px;
+}
