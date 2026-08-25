@@ -102,6 +102,9 @@
      needed because a season is thirty-eight played boards and only one exists
      per day, so anybody arriving late has to be able to reach the ones behind
      them. The server refuses anything after today whatever this says. */
+  /* True while Reveal everything is working through the board. */
+  var bulkReveal = false;
+
   var dailyWanted = null;
 
   var themeWanted = null;
@@ -146,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v130";
+  var BUILD = "v131";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -735,8 +738,20 @@
       season = FCW.pickSeason(club, seed, diff);
     }
     $("grid").style.opacity = "";
+    /* The board's own date, on the board.
+
+       Without it there is nothing on screen saying WHICH daily this is — and
+       now that earlier ones are playable, "Today's puzzle" is often not today's
+       at all. Somebody four boards into the archive has no way to tell one from
+       another.
+
+       The date rather than the number: a number that only counts up tells a
+       newcomer they are late, and the date is what the calendar they came from
+       was showing. */
     $("strapText").innerHTML = mode === "daily"
-      ? "Season &middot; " + FCW.dailyPhase(dailyNo).label
+      ? escapeHtml(FCW.dailyPhase(dailyNo).label) + " &middot; " +
+        escapeHtml(FCW.dailyDate(dailyNo).toLocaleDateString(undefined,
+          { weekday: "short", day: "numeric", month: "short" }))
       : (mode === "theme" && themeLabel
           ? "Club or theme &middot; " + escapeHtml(themeLabel)
           : "Training");
@@ -958,6 +973,9 @@
   /* Confirm only where the allocation would be exceeded. Returns false if the
      player backs out. */
   function confirmSubCost(cost, what) {
+    /* One accepted cost covers the whole lot: Reveal everything already asked,
+       with the real arithmetic, before any of this started. */
+    if (bulkReveal) return true;
     if (!wouldExceed(cost)) return true;
     var left = subsRemainingNow();
     return window.confirm(
@@ -5873,13 +5891,40 @@
         "It finishes the puzzle for you. There is no way back from it.");
       if (!ok) return;
       /* One at a time through the button that already exists, so the server
-         accounting is the same as if they had been revealed by hand. */
-      left.forEach(function (i) {
-        cur.entry = i;
+         accounting is the same as if they had been revealed by hand.
+
+         Sequential, not a forEach. Each press is a server call that returns
+         immediately, so a synchronous loop finished in microseconds with eleven
+         requests still in flight — press Home before they landed and the board
+         came back part-filled, because the letters arrived after the save.
+
+         And with substitutions in, a loop would hit the confirm on every press
+         after the third. bulkReveal suppresses it: the cost was accepted once,
+         above, for the whole lot. */
+      bulkReveal = true;
+      var queue = left.slice();
+      (function next() {
+        if (!queue.length) {
+          bulkReveal = false;
+          clearTimeout(saveT); save();
+          return;
+        }
+        cur.entry = queue.shift();
         cur.cell = 0;
         updateSelection();
+        var before = Object.keys(letters).length;
         click("revealBtn");
-      });
+        /* Waits for the letters to arrive rather than assuming they have. A
+           fixed delay would be a guess about the network. */
+        var tries = 0;
+        (function settle() {
+          if (Object.keys(letters).length > before || tries++ > 40) {
+            setTimeout(next, 0);
+          } else {
+            setTimeout(settle, 50);
+          }
+        })();
+      })();
     });
 
     on("tbClear", "click", function (ev) {
