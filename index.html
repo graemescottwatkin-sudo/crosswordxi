@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v121">
+<link rel="stylesheet" href="css/style.css?v=v122">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -708,12 +708,6 @@
           <span class="hc-cta">Kick off</span>
         </button>
 
-        <button class="home-choice soon" id="homePractice">
-          <span class="hc-title">Practice <span class="hc-soon">Coming soon</span></span>
-          <span class="hc-note">Being rebuilt alongside the new club boards.</span>
-          <span class="hc-state" id="homePracticeState"></span>
-        </button>
-
         <button class="home-choice" id="homeSeason" style="display:none">
           <span class="hc-title">Season <span class="hc-soon">Testing</span></span>
           <span class="hc-note" id="homeSeasonNote">&nbsp;</span>
@@ -730,12 +724,6 @@
           <div class="home-run" id="homeRun"></div>
         </div>
 
-        <button class="side-card as-btn" id="homeFeatured" hidden>
-          <span class="sc-kicker">BOARD OF THE DAY</span>
-          <span class="sc-title" id="homeFeaturedName"></span>
-          <span class="sc-note" id="homeFeaturedState"></span>
-        </button>
-
         <div class="side-card">
           <div class="sc-kicker">PLAY AS</div>
           <div class="home-club">
@@ -745,12 +733,34 @@
       </aside>
     </div>
 
-    <h2 class="site-sec">CLUBS AND THEMES</h2>
-    <button class="home-choice wide" id="homeThemed">
-      <span class="hc-title">Browse every board</span>
-      <span class="hc-note">A new one every Friday. Play any that have been released.</span>
-      <span class="hc-state" id="homeThemedState"></span>
-    </button>
+    <!-- Three across, below the fixture. Everything that is not today.
+
+         "Board of the week" rather than "of the day": there is one featured
+         board and it changes weekly, so calling it daily promised something
+         the content cannot yet keep. Worth revisiting when there are enough
+         boards to rotate one a day. -->
+    <h2 class="site-sec">OTHER BOARDS</h2>
+    <div class="site-row">
+      <button class="home-choice col" id="homeFeatured" hidden>
+        <span class="hc-kicker">BOARD OF THE WEEK</span>
+        <span class="hc-title" id="homeFeaturedName"></span>
+        <span class="hc-state" id="homeFeaturedState"></span>
+      </button>
+
+      <button class="home-choice col" id="homeThemed">
+        <span class="hc-kicker">CLUBS AND THEMES</span>
+        <span class="hc-title">Browse every board</span>
+        <span class="hc-note">A new one every Friday.</span>
+        <span class="hc-state" id="homeThemedState"></span>
+      </button>
+
+      <button class="home-choice col soon" id="homePractice">
+        <span class="hc-kicker">PRACTICE</span>
+        <span class="hc-title">Practice <span class="hc-soon">Soon</span></span>
+        <span class="hc-note">Being rebuilt alongside the club boards.</span>
+        <span class="hc-state" id="homePracticeState"></span>
+      </button>
+    </div>
     <button class="site-hidden" id="homeThemes">Clubs and themes</button>
   </div>
 
@@ -943,7 +953,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v121</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v122</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -956,8 +966,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v121"></script>
-<script src="js/engine.js?v=v121"></script>
-<script src="js/game.js?v=v121"></script>
+<script src="js/seasons.js?v=v122"></script>
+<script src="js/engine.js?v=v122"></script>
+<script src="js/game.js?v=v122"></script>
 </body>
 </html>

@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v121";
+  var BUILD = "v122";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4752,7 +4752,7 @@
           var place = d.scores.length < d.count && better >= d.scores.length
             ? null : better + 1;
           el.textContent = place
-            ? "Board of the day: " + ordinal(place) + " of " +
+            ? "Board of the week: " + ordinal(place) + " of " +
               d.count + (d.count === 1 ? " score today" : " scores today")
             : d.count + " have played today, best so far " + d.best;
           el.style.display = "";

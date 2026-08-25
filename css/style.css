@@ -2847,3 +2847,25 @@ body.home-showing .tbar{visibility:hidden}
 .rc.l{background:#F7C1C1;color:#501313}
 .run-best{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
 .run-none{font-size:13px;color:var(--ink-soft)}
+
+/* Three across, below the fixture. Equal weight because they are alternatives
+   to each other, not to today — today is the block above with all the colour. */
+.site-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch}
+.home-choice.col{
+  width:100%;text-align:left;display:flex;flex-direction:column;
+  padding:16px 17px;min-height:132px;
+}
+.home-choice.col .hc-kicker{
+  display:block;font-size:11px;letter-spacing:.11em;color:var(--pitch);margin-bottom:5px;
+}
+.home-choice.col .hc-title{display:block;font-size:17px;line-height:1.25}
+.home-choice.col .hc-note{display:block;font-size:12.5px;margin-top:4px}
+/* Pushed to the bottom so the three cards' state lines sit on one line
+   whatever length the titles are. */
+.home-choice.col .hc-state{display:block;margin-top:auto;padding-top:8px;font-size:12.5px}
+.home-choice.col.soon .hc-kicker{color:var(--ink-faint)}
+
+@media (max-width:860px){
+  .site-row{grid-template-columns:1fr}
+  .home-choice.col{min-height:0}
+}
