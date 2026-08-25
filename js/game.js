@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v115";
+  var BUILD = "v116";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3988,7 +3988,7 @@
      people finish what they have put something into, and it makes "six have
      taken this" a real number rather than an estimate. */
   function openChallenge(id) {
-    $("homeOverlay").classList.remove("show");
+    setHomeVisible(false);
     api("/api/challenge?id=" + encodeURIComponent(id))
       .then(function (c) {
         challenge = { id: c.id, theme: c.themeId, no: c.boardNo, creator: c.creatorName };
@@ -5143,7 +5143,7 @@
     themeWanted = { theme: theme, no: no, id: id || null };
     themeLabel = "";
     $("themeSheet").classList.remove("show");
-    $("homeOverlay").classList.remove("show");
+    setHomeVisible(false);
     /* Come back to the same board rather than starting it again. Only when it
        is the same board: the slot holds one themed game, and opening a
        different one legitimately replaces it. */
@@ -5423,6 +5423,41 @@
      refuses to open is worse than either on its own. */
   var DAILY_OPEN = true;
 
+  /* Showing the landing and hiding the game are one act, so they are one call.
+
+     Seven places toggled the overlay class directly. That was fine while it was
+     a layer over a board that stayed rendered underneath — now the board must
+     not be reachable at all until something is chosen, and seven places each
+     remembering to do two things is seven chances to do one.
+
+     Named setHomeVisible, not showHome: showHome() already exists and does more
+     than show it — it stops the clock and flushes the pending save first. This
+     is the display half, and showHome() calls it. Naming it the same shadowed
+     the original and made it call itself. */
+  function setHomeVisible(on) {
+    var v = $("homeOverlay");
+    if (v) v.classList.toggle("show", !!on);
+    document.body.classList.toggle("home-showing", !!on);
+    if (on) {
+      renderRunLine();
+      try { window.scrollTo(0, 0); } catch (e) {}
+    }
+  }
+
+  /* Where a returning player is, on the screen they land on. The streak is the
+     reason to come back and it lived only in the footer. */
+  function renderRunLine() {
+    var el = $("homeRun");
+    if (!el) return;
+    try {
+      var st = FCW.seasonStats(phaseResults(), dailyNo);
+      el.innerHTML = st.played
+        ? "Run of <b>" + st.currentStreak + "</b> \u00B7 best " + st.longestStreak +
+          " \u00B7 " + st.played + " played"
+        : "";
+    } catch (e) { el.textContent = ""; }
+  }
+
   function setLayout() {
     flexOn = true;
     document.body.classList.add("flex-layout");
@@ -5465,6 +5500,8 @@
      reimplements checking, revealing or scoring — a second implementation is
      two things that have to agree forever, and this codebase has been bitten by
      exactly that shape more than once. */
+  var buildSettings = function () {};
+
   (function () {
     var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop", "tbSettingsPop"];
     function closePops(except) {
@@ -5660,7 +5697,17 @@
       var i = t.indexOf(":");
       return i === -1 ? "" : t.slice(i + 1).trim();
     }
-    function buildSettings() {
+    /* Assigned to the outer binding, not declared here.
+
+       This lived inside the toolbar IIFE, which is right until something
+       outside it needs the same menu — the landing screen does, because the
+       toolbar is not on screen there. Exposing the one builder beats a second
+       copy: the menu is generated from the footer controls, and two builders
+       reading the same controls is how they drift.
+
+       Assigned rather than moved, so everything it closes over stays where it
+       was. */
+    buildSettings = function () {
       var pop = $("tbSettingsPop");
       if (!pop) return;
       var rows = "";
@@ -5677,7 +5724,7 @@
       rows += '<div class="set-build">' +
         escapeHtml(($("buildTag") && $("buildTag").textContent) || "") + "</div>";
       pop.innerHTML = rows;
-    }
+    };
     on("tbSettingsPop", "click", function (ev) {
       var b = ev.target.closest && ev.target.closest("[data-drive]");
       if (!b) { ev.stopPropagation(); return; }   // a link looks after itself
@@ -5829,14 +5876,14 @@
     if (puzzle && started) { clearTimeout(saveT); save(); }
     renderHome();
     $("startOverlay").classList.remove("show");
-    $("homeOverlay").classList.add("show");
+    setHomeVisible(true);
     document.querySelector(".stage").classList.add("prestart");
   }
 
   function chooseMode(which) {
     mode = which;
     try { localStorage.setItem("fcw.mode", which); } catch (e) {}
-    $("homeOverlay").classList.remove("show");
+    setHomeVisible(false);
     if (which === "daily") {
       dailyNo = FCW.dailyNumber();
       var saved = savedFor("daily");
@@ -5879,6 +5926,33 @@
     var b = $("accountToggle");
     if (b) b.click();
   });
+  /* Opens the account sheet's sibling: the settings menu lives in the toolbar,
+     which is hidden here, so this drives the footer controls the menu is built
+     from. One list, reached from two places. */
+  /* The settings menu lives in the toolbar, which is not on screen here — so
+     the landing gets its own copy of the same list.
+
+     Built by buildSettings() from the footer controls, exactly as the
+     toolbar's is. One source, two places it can be opened from.
+
+     An earlier version added a "more-open" class: that was the old
+     footer-panel mechanism, removed two releases before, so the button did
+     nothing at all. */
+  on("homeSettings", "click", function (ev) {
+    ev.stopPropagation();
+    var pop = $("tbSettingsPop"), host = $("homeSettings");
+    if (!pop || !host) return;
+    var opening = pop.hidden;
+    if (opening) {
+      buildSettings();
+      /* Moved under the button rather than left in the toolbar, which is
+         hidden here and would leave the menu floating over nothing. */
+      host.parentNode.insertBefore(pop, host.nextSibling);
+    }
+    pop.hidden = !opening;
+    pop.classList.toggle("as-home", opening);
+  });
+
   on("homeSignIn", "click", function () {
     var b = $("accountToggle");
     if (b) b.click();
@@ -5920,7 +5994,7 @@
     if (themed) {
       mode = "theme";
       themeWanted = { theme: themed[1], no: Number(themed[2]), id: null };
-      $("homeOverlay").classList.remove("show");
+      setHomeVisible(false);
       /* Checked on the way out rather than caught: buildPuzzle() handles its
          own failures — it shows the nudge and resolves — so a .catch() here
          never fires and a link to a board that is not out left the player on a
@@ -5938,7 +6012,7 @@
     if (shared) {
       mode = "practice";
       sharedToken = "practice:" + shared[1];
-      $("homeOverlay").classList.remove("show");
+      setHomeVisible(false);
       /* Same shape, and the same reason: the .catch() this replaces could not
          fire, so a stale practice link showed an error and nothing else. */
       buildPuzzle(null).then(function () {
@@ -5950,7 +6024,7 @@
     /* Otherwise, straight to the choice. Guessing which mode somebody wants is
        how the daily's clock ended up running on a game they had not picked. */
     renderHome();
-    $("homeOverlay").classList.add("show");
+    setHomeVisible(true);
   })();
 
   /* The sync lands after boot, so the Daily opens instantly and offline play is

@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v115">
+<link rel="stylesheet" href="css/style.css?v=v116">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -642,7 +642,17 @@
      wanted a practice puzzle pressed Kick Off, started the daily's clock, and
      lost points on a game they had not chosen to play. A choice you have to
      undo is not a choice. -->
-<div class="overlay show" id="homeOverlay">
+<!-- The landing is a view, not a modal.
+
+     It was .overlay: a card floating on a dimmed backdrop over a board already
+     rendered underneath. That reads as something interrupting you before you
+     have arrived, and it was the only thing stopping a puzzle you had not
+     chosen from starting.
+
+     Now it is the page until you pick something, and the board takes over when
+     you do. The seven show/hide call sites are unchanged — what moved is what
+     the class means. -->
+<div class="home-view show" id="homeOverlay">
   <div class="kick-card home-card">
     <h2>Crossword XI</h2>
     <div class="kick-mode" id="homeSub">The football crossword</div>
@@ -715,6 +725,16 @@
     <button class="btn outline home-signin" id="homeSignIn" hidden>
       Sign in to keep your results across devices
     </button>
+
+    <!-- Where a returning player is. The streak is the reason to come back and
+         it lived only in the footer, which is where a thing goes when nobody is
+         meant to read it. -->
+    <div class="home-run" id="homeRun"></div>
+
+    <!-- Settings, on the screen rather than behind a cog inside the game. A
+         player who wants dark mode or the letter bank off wants it before
+         starting, not three taps into a puzzle they are being timed on. -->
+    <button class="btn outline home-settings" id="homeSettings">Settings</button>
 
     <!-- Beside the sign-in offer, not only in the footer. This is the moment
          somebody decides whether to hand over an identity, and it is the only
@@ -891,7 +911,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v115</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v116</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -904,8 +924,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v115"></script>
-<script src="js/engine.js?v=v115"></script>
-<script src="js/game.js?v=v115"></script>
+<script src="js/seasons.js?v=v116"></script>
+<script src="js/engine.js?v=v116"></script>
+<script src="js/game.js?v=v116"></script>
 </body>
 </html>

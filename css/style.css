@@ -2687,3 +2687,46 @@ body.flex-layout .live-score.dropped{animation:scoreDrop .45s ease}
 /* The total is already on the summary, so repeating it inside is the third
    time the same number appears on this screen. */
 .breakdown-wrap .res-final{display:none}
+
+/* ============ THE LANDING, AS A VIEW ============
+   Was .overlay — a card on a dimmed backdrop over a board rendered underneath.
+   Now it is the page until something is chosen.
+
+   Keeps the fixed-height column: this fills the same space the board will,
+   scrolls internally if the choices outgrow the screen, and never lets the
+   document scroll. The flex layout stays intact. */
+.home-view{
+  display:none;position:fixed;inset:0;z-index:40;
+  background:var(--paper);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:16px 16px calc(24px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.home-view.show{display:block}
+/* No card-on-backdrop framing: it is the page now, so it takes the page's
+   background and drops the shadow that made it read as a layer. */
+.home-view .kick-card{
+  box-shadow:none;border:0;background:none;
+  max-width:520px;margin:0 auto;padding:0;
+}
+/* The board and its chrome are not behind this any more — they are simply not
+   shown until something is chosen. Hidden rather than covered, so a stray tap
+   cannot reach a puzzle nobody has started. */
+body.home-showing .stage,
+body.home-showing .osk,
+body.home-showing .tbar{visibility:hidden}
+
+.home-run{
+  margin:14px 0 4px;font-size:13px;color:var(--ink-soft);
+  text-align:center;min-height:18px;
+}
+.home-run b{color:var(--pitch);font-weight:700}
+.home-settings{width:100%;margin-top:10px}
+
+/* The settings menu, opened from the landing rather than the toolbar. Same
+   markup, different anchor: in the toolbar it hangs under a button in a strip,
+   here it sits in the column under the Settings button. */
+.tbar-pop.as-home{
+  position:static;margin:8px 0 0;width:100%;min-width:0;
+  box-shadow:0 4px 16px rgba(18,34,25,.12);
+}
