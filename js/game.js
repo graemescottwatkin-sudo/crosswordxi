@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v117";
+  var BUILD = "v118";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6044,7 +6044,28 @@
        either of those would mean starting something new on your behalf. */
     var last = null;
     try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
-    var saved = (last === "daily" || last === "practice") ? savedFor(last) : null;
+    var saved = (last === "daily" || last === "practice" || last === "theme")
+      ? savedFor(last) : null;
+
+    /* A themed board resumes through openThemed(), not chooseMode().
+
+       It was left out of the first version and the difference showed straight
+       away: practice survived a refresh and a club board did not. A themed
+       game needs to know WHICH board it was, and chooseMode() has no argument
+       for that — the save carries it as themeKey ("arsenal-wenger-era-3"), put
+       there for exactly this reason.
+
+       Split on the last hyphen: theme ids contain hyphens and the board number
+       does not, so the last one is always the boundary. */
+    if (last === "theme" && saved && inProgress(saved) && saved.themeKey) {
+      var cut = String(saved.themeKey).lastIndexOf("-");
+      var tId = cut > 0 ? saved.themeKey.slice(0, cut) : null;
+      var tNo = cut > 0 ? Number(saved.themeKey.slice(cut + 1)) : NaN;
+      if (tId && isFinite(tNo)) {
+        openThemed(tId, tNo);
+        return;
+      }
+    }
     /* Today's daily only.
 
        chooseMode("daily") starts a FRESH puzzle when the save is not today's —
@@ -6054,7 +6075,13 @@
 
        Practice has no such date, so an unfinished practice puzzle is always
        the one that was being played. */
-    var resumable = saved && inProgress(saved) &&
+    /* Theme is handled above and must not fall through to here.
+
+       chooseMode() has no theme branch — it would reach newPuzzle() and open a
+       random practice board while calling itself "theme". A themed save
+       without a themeKey cannot say which board it was, so there is nothing to
+       resume and the menu is the honest answer. */
+    var resumable = last !== "theme" && saved && inProgress(saved) &&
       (last !== "daily" || saved.dailyNo === FCW.dailyNumber());
     if (resumable) {
       chooseMode(last);
