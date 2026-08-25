@@ -1229,9 +1229,20 @@ server.listen(0, "127.0.0.1", async () => {
        and remembering a mode alone would start a fresh puzzle. The guard for
        the second is now the inProgress + dailyNo test rather than the absence
        of the string, because the string is legitimately back. */
+    /* Boot still chooses no MODE. What it reopens is a PUZZLE already under
+       way — and since the archive opened, that includes a board from an
+       earlier day. The old rule required saved.dailyNo === dailyNumber(),
+       which meant an unfinished archive board could never resume: boot refused
+       it, showed the menu, and the menu set fcw.athome, so the next reload
+       refused it for a second reason.
+
+       The worry behind the old rule stands and is handled: chooseMode("daily")
+       starts a FRESH puzzle when the save is not today's, which would put the
+       clock on a board nobody picked. dailyWanted names the board in the save,
+       so it reopens that one. */
     return /renderHome\(\)/.test(boot) && !/bootDaily\(\)/.test(boot) &&
       /inProgress\(saved\)/.test(boot) &&
-      /saved\.dailyNo === FCW\.dailyNumber\(\)/.test(boot);
+      /dailyWanted = saved\.dailyNo/.test(boot);
   })());
   t("choosing a mode is what starts anything", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

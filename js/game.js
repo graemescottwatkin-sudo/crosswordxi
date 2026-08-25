@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v131";
+  var BUILD = "v132";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3958,22 +3958,11 @@
     }
   }
   on("kickOffBtn", "click", kickOff);
-  /* Switch mode from the card itself, then kick off in one press. */
-  on("kickAltBtn", "click", function () {
-    mode = (mode === "daily") ? "practice" : "daily";
-    try { localStorage.setItem("fcw.mode", mode); } catch (e) {}
-    seed = (Math.random() * 1e9) | 0;
-    renderKickCard();
-    buildPuzzle(null).then(function () { kickOff(); });
-  });
-  function renderKickCard() {
-    // #kickMode is the card's existing subtitle; the game already keeps it in
-    // step elsewhere, so this only has to set the alternative button's label.
-    var alt = $("kickAltBtn");
-    if (alt) alt.textContent = mode === "daily"
-      ? "Play a practice puzzle instead" : "Play today's daily instead";
-  }
-  renderKickCard();
+  /* kickAltBtn is gone. It offered "play a practice puzzle instead" from the
+     Kick Off card, and practice no longer exists — past dailies replaced it.
+     The button had already been removed from the markup, leaving a handler
+     bound to nothing and a "Missing element: kickAltBtn" warning on every
+     load. A warning nobody can act on trains people to ignore the console. */
 
   /* ---------- Completion + scoring ---------- */
   /* Completion is the server's word. Every entry has to have been judged
@@ -6517,9 +6506,24 @@
        random practice board while calling itself "theme". A themed save
        without a themeKey cannot say which board it was, so there is nothing to
        resume and the menu is the honest answer. */
-    var resumable = last !== "theme" && saved && inProgress(saved) &&
-      (last !== "daily" || saved.dailyNo === FCW.dailyNumber());
+    var resumable = last !== "theme" && saved && inProgress(saved);
     if (resumable) {
+      /* Reopen the board that was actually being played, not today's.
+
+         This used to require saved.dailyNo === dailyNumber(), which was right
+         when today's was the only daily reachable. With the archive open it
+         meant an unfinished board from last week could never resume: the check
+         refused it, boot showed the menu, and the menu set fcw.athome — so the
+         next refresh refused it again for a second reason. A letter and a
+         minute on the clock, lost on every reload.
+
+         The original worry stands and is handled: chooseMode("daily") starts a
+         FRESH puzzle when the save is not today's, which would put the clock on
+         a board nobody picked. Naming the board in dailyWanted is what stops
+         that — it reopens the one in the save. */
+      if (last === "daily" && saved.dailyNo && saved.dailyNo !== FCW.dailyNumber()) {
+        dailyWanted = saved.dailyNo;
+      }
       chooseMode(last);
       return;
     }
