@@ -138,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v118";
+  var BUILD = "v120";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5438,6 +5438,18 @@
     var v = $("homeOverlay");
     if (v) v.classList.toggle("show", !!on);
     document.body.classList.toggle("home-showing", !!on);
+    /* Remembered across a refresh, so leaving is not undone by one.
+
+       Resuming an unfinished game is right when the player was interrupted —
+       a refresh, a closed tab, a dropped connection. It is wrong when they
+       pressed Home, because the game is still saved and still unfinished and
+       looks identical from the save alone. The difference is intent, and only
+       this function knows it.
+
+       Written here rather than in showHome(): every route to the landing goes
+       through this one, and a second place setting it would be a second place
+       to forget. */
+    try { localStorage.setItem("fcw.athome", on ? "1" : ""); } catch (e) {}
     if (on) {
       renderRunLine();
       try { window.scrollTo(0, 0); } catch (e) {}
@@ -5590,7 +5602,19 @@
       var pr = $("tbPractice");
       if (pr) pr.disabled = true;
       var dy = $("tbDaily");
-      if (dy) dy.disabled = !DAILY_OPEN;
+      if (dy) {
+        dy.disabled = !DAILY_OPEN;
+        /* Label and badge together, from the one flag. Two places deciding
+           whether the daily is open is how a greyed item ends up next to a
+           working one. */
+        dy.textContent = "Daily";
+        if (!DAILY_OPEN) {
+          var b = document.createElement("span");
+          b.className = "pc soon";
+          b.textContent = "Soon";
+          dy.appendChild(b);
+        }
+      }
       var lab = $("tbModeLabel");
       if (lab) {
         lab.textContent = mode === "daily" ? "Daily"
@@ -6044,7 +6068,11 @@
        either of those would mean starting something new on your behalf. */
     var last = null;
     try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
-    var saved = (last === "daily" || last === "practice" || last === "theme")
+    /* Left deliberately last time: show the menu, whatever is saved. */
+    var atHome = false;
+    try { atHome = !!localStorage.getItem("fcw.athome"); } catch (e) {}
+
+    var saved = (!atHome && (last === "daily" || last === "practice" || last === "theme"))
       ? savedFor(last) : null;
 
     /* A themed board resumes through openThemed(), not chooseMode().

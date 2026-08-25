@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v118">
+<link rel="stylesheet" href="css/style.css?v=v120">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -265,7 +265,11 @@
       <button class="tbar-btn" id="tbMode" aria-expanded="false" aria-haspopup="menu">
         <span id="tbModeLabel">Daily</span></button>
       <div class="tbar-pop" id="tbModePop" role="menu" hidden>
-        <button role="menuitem" data-act="daily" id="tbDaily">Daily<span class="pc soon">Soon</span></button>
+        <!-- The badge is written by the code that knows whether the daily is
+             open. It was hardcoded here, so it stayed on the item after the
+             daily came back — the same mistake as the landing tile, which was
+             fixed a release earlier and left this one behind. -->
+        <button role="menuitem" data-act="daily" id="tbDaily">Daily</button>
         <button role="menuitem" data-act="practice" id="tbPractice">Practice<span class="pc soon">Soon</span></button>
         <button role="menuitem" data-act="themes">Clubs &amp; themes</button>
         <button role="menuitem" data-act="new">New puzzle</button>
@@ -922,7 +926,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v118</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v120</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -935,8 +939,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v118"></script>
-<script src="js/engine.js?v=v118"></script>
-<script src="js/game.js?v=v118"></script>
+<script src="js/seasons.js?v=v120"></script>
+<script src="js/engine.js?v=v120"></script>
+<script src="js/game.js?v=v120"></script>
 </body>
 </html>
