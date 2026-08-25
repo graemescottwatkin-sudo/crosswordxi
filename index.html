@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v127">
+<link rel="stylesheet" href="css/style.css?v=v128">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -642,6 +642,40 @@
      The schedule publishes names and dates only. Knowing that Manchester
      United #3 lands on 2 October gives nothing away; the board itself would
      give away eleven answers, so it is not sent until its release date. -->
+<!-- Previous puzzles, as a calendar.
+
+     A board's only identity is its date, so a date is how you pick one — the
+     same reasoning as Wordle's archive. Three states, not two: played, missed
+     and still catchable, missed too long ago. That last distinction is the
+     difference between a draw and a loss, and a grid shows it better than a
+     list could. -->
+<div class="sheet" id="archiveSheet">
+  <div class="sheet-card">
+    <h2>Previous puzzles</h2>
+    <div class="sheet-sub" id="archiveSub">Every daily so far</div>
+
+    <div class="cal-head">
+      <button id="calPrev" type="button" aria-label="Previous month">&lsaquo;</button>
+      <div class="cal-month" id="calMonth">August 2026</div>
+      <button id="calNext" type="button" aria-label="Next month">&rsaquo;</button>
+    </div>
+
+    <div class="cal-dow" aria-hidden="true">
+      <span>M</span><span>T</span><span>W</span><span>T</span>
+      <span>F</span><span>S</span><span>S</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="cal-key">
+      <span><i class="k done"></i>Played</span>
+      <span><i class="k open"></i>To play</span>
+      <span><i class="k none"></i>Not yet</span>
+    </div>
+
+    <button class="btn ghost sheet-close" id="archiveClose">Close</button>
+  </div>
+</div>
+
 <div class="sheet" id="themeSheet">
   <div class="sheet-card">
     <h2>Clubs and themes</h2>
@@ -994,7 +1028,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v127</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v128</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1007,8 +1041,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v127"></script>
-<script src="js/engine.js?v=v127"></script>
-<script src="js/game.js?v=v127"></script>
+<script src="js/seasons.js?v=v128"></script>
+<script src="js/engine.js?v=v128"></script>
+<script src="js/game.js?v=v128"></script>
 </body>
 </html>

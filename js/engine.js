@@ -1497,6 +1497,16 @@ var FCW = (function () {
     var epoch = new Date(DAILY_EPOCH.y, DAILY_EPOCH.m, DAILY_EPOCH.d);
     return Math.max(1, Math.round((today - epoch) / 86400000));
   }
+  /* The inverse of dailyNumber: which date a board belongs to.
+
+     Beside it deliberately, and built from the same DAILY_EPOCH, so the two
+     cannot drift. A calendar that disagreed with the puzzle by a day would be
+     worse than no calendar — you would tap the 14th and get the 13th. */
+  function dailyDate(number) {
+    var epoch = new Date(DAILY_EPOCH.y, DAILY_EPOCH.m, DAILY_EPOCH.d);
+    return new Date(epoch.getTime() + Math.max(1, number) * 86400000);
+  }
+
   function dailySeed(number) {
     var str = "fcw-daily-" + number, h = 2166136261;
     for (var i = 0; i < str.length; i++) {
@@ -1650,6 +1660,7 @@ var FCW = (function () {
     resultPhase: resultPhase,
     splitByPhase: splitByPhase,
     dailyNumber: dailyNumber,
+    dailyDate: dailyDate,
     dailySeed: dailySeed,
     DAILY_LOOKBACK: DAILY_LOOKBACK,
     loadDailyBans: loadDailyBans,

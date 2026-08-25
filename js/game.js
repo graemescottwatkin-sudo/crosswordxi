@@ -146,7 +146,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v127";
+  var BUILD = "v128";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6085,13 +6085,104 @@
      next one they missed, not a menu of two hundred — and a chooser is a
      screen to design, populate and scroll before anyone can play anything.
      A list can come later if people ask for one. */
+  /* The calendar, rather than opening the next unplayed board.
+
+     A grid was overkill with one board behind us and is right by the time
+     there are ten, so it is built now while nobody is watching rather than
+     swapped under people later. */
+  var calMonth = null;   // first of the month being shown
+
   on("homePrevious", "click", function () {
-    var no = nextUnplayedDaily();
-    if (no === null) {
-      toast("All caught up", "You have played every board so far.");
-      return;
+    calMonth = null;
+    renderCalendar();
+    $("archiveSheet").classList.add("show");
+  });
+  on("archiveClose", "click", function () { $("archiveSheet").classList.remove("show"); });
+  on("calPrev", "click", function () { stepCalendar(-1); });
+  on("calNext", "click", function () { stepCalendar(1); });
+
+  function stepCalendar(by) {
+    var d = calMonth || startOfMonth(FCW.dailyDate(FCW.dailyNumber()));
+    calMonth = new Date(d.getFullYear(), d.getMonth() + by, 1);
+    renderCalendar();
+  }
+  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+
+  function renderCalendar() {
+    var grid = $("calGrid");
+    if (!grid) return;
+    var today = FCW.dailyNumber();
+    var first = calMonth || startOfMonth(FCW.dailyDate(today));
+    calMonth = first;
+
+    var played = {};
+    loadResults().forEach(function (r) {
+      if (r && r.mode === "daily" && r.dailyNo != null) played[r.dailyNo] = r;
+    });
+
+    $("calMonth").textContent = first.toLocaleDateString(undefined,
+      { month: "long", year: "numeric" });
+
+    /* Monday first: this is a football game and the week starts on Monday
+       everywhere it is played. getDay() puts Sunday at 0, hence the shift. */
+    var lead = (first.getDay() + 6) % 7;
+    var days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+
+    var out = [], i;
+    for (i = 0; i < lead; i++) out.push('<div class="cal-cell empty"></div>');
+    for (i = 1; i <= days; i++) {
+      var date = new Date(first.getFullYear(), first.getMonth(), i);
+      var no = FCW.dailyNumber(date);
+      /* A date can map to #1 twice: dailyNumber clamps at 1, so everything
+         before the epoch reports as the first board. Compare the date back to
+         be sure this cell really is that board. */
+      var real = FCW.dailyDate(no).toDateString() === date.toDateString();
+      var cls = "cal-cell";
+      var body = "";
+      if (!real || no > today) {
+        cls += " none";
+      } else if (played[no]) {
+        cls += " done";
+        /* On its own line under the date. Rendered inline they ran together
+           and "24" with a score of 97 read as "2497". */
+        body = '<b class="cal-score">' +
+          (played[no].score != null ? played[no].score : "\u2713") + "</b>";
+      } else if (no === today) {
+        /* Today is the hero on the landing screen, not an archive entry. Marked
+           so it can be seen and tapped, but not counted as something missed —
+           the day is not over. */
+        cls += " today open";
+      } else {
+        cls += " open";
+      }
+      out.push('<button class="' + cls + '" data-no="' + (real ? no : "") + '">' +
+        "<span>" + i + "</span>" + body + "</button>");
     }
-    dailyWanted = no;
+    grid.innerHTML = out.join("");
+
+    /* Never past the month today falls in: there is nothing to show there and
+       a next arrow that does nothing is worse than one that is plainly off. */
+    var thisMonth = startOfMonth(FCW.dailyDate(today));
+    $("calNext").disabled = first >= thisMonth;
+    var firstEver = startOfMonth(FCW.dailyDate(1));
+    $("calPrev").disabled = first <= firstEver;
+
+    var left = 0;
+    for (i = today - 1; i >= 1; i--) if (!played[i]) left++;
+    $("archiveSub").textContent = left === 0
+      ? "You have played every board so far."
+      : left + (left === 1 ? " board" : " boards") + " left to play";
+  }
+
+  /* Delegated: the grid is rebuilt on every render, so a handler per cell would
+     have to be rebound each time. */
+  on("calGrid", "click", function (ev) {
+    var cell = ev.target.closest ? ev.target.closest(".cal-cell") : null;
+    if (!cell || cell.classList.contains("none") || cell.classList.contains("empty")) return;
+    var no = Number(cell.getAttribute("data-no"));
+    if (!no) return;
+    $("archiveSheet").classList.remove("show");
+    dailyWanted = no === FCW.dailyNumber() ? null : no;
     chooseMode("daily");
   });
 

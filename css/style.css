@@ -2897,3 +2897,49 @@ body.home-showing .tbar{visibility:hidden}
   color:#9FE1CB;font-size:14.5px;padding:8px 10px;border-radius:6px;
   text-decoration:none;display:flex;align-items:center;min-height:44px;
 }
+
+/* ============ PREVIOUS PUZZLES CALENDAR ============
+   A board's only identity is its date, so a date is how you choose one. Three
+   states rather than two: played, still to play, and not yet released. */
+.cal-head{display:flex;align-items:center;gap:10px;margin:14px 0 10px}
+.cal-head button{
+  width:44px;height:44px;border:1px solid var(--line);border-radius:9px;
+  background:var(--card);font-size:19px;line-height:1;color:var(--ink-soft);
+}
+.cal-head button[disabled]{opacity:.35}
+.cal-month{
+  flex:1;text-align:center;font-family:var(--disp);font-size:19px;font-weight:700;
+}
+.cal-dow{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+  font-size:11px;color:var(--ink-faint);text-align:center;margin-bottom:6px;
+}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-cell{
+  aspect-ratio:1;border-radius:9px;border:1px solid var(--line);background:var(--card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:13px;color:var(--ink);min-height:40px;padding:0;
+}
+.cal-cell.empty{border:0;background:none}
+/* Not released. A dot rather than a number: there is nothing there to choose,
+   and an empty square with a date on it reads as something you failed to do. */
+.cal-cell.none{border:0;background:none;color:var(--ink-faint)}
+.cal-cell.none::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--line)}
+.cal-cell.none span{display:none}
+.cal-cell.open{border-color:var(--pitch);color:var(--pitch);font-weight:700}
+.cal-cell.done{background:var(--pitch);border-color:var(--pitch);color:#fff;font-weight:700}
+.cal-cell.today{box-shadow:0 0 0 2px var(--mint-soft,#9FE1CB)}
+.cal-cell b{font-size:9px;font-weight:700;letter-spacing:.04em;opacity:.85}
+.cal-key{
+  display:flex;gap:14px;justify-content:center;margin:14px 0 4px;
+  font-size:12px;color:var(--ink-soft);flex-wrap:wrap;
+}
+.cal-key span{display:flex;align-items:center;gap:6px}
+.cal-key .k{width:13px;height:13px;border-radius:4px;border:1px solid var(--line);display:inline-block}
+.cal-key .k.done{background:var(--pitch);border-color:var(--pitch)}
+.cal-key .k.open{border-color:var(--pitch)}
+.cal-key .k.none{border:0;background:var(--line)}
+/* The date and the score are separate lines. Inline, "24" and a score of 97
+   rendered as "2497". */
+.cal-cell span{display:block;line-height:1.1}
+.cal-cell .cal-score{display:block;line-height:1.1;margin-top:1px}
