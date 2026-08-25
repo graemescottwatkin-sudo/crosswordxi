@@ -16,80 +16,46 @@
   }
   var K = function (x, y) { return x + "," + y; };
 
-  /* ---------- Clue wording (V0.2 informative templates) ----------
-     Terse mode (raw source term) is retained in the dev panel only,
-     for playtest comparison. */
-  var clueStyle = "descriptive";
-  try { clueStyle = localStorage.getItem("fcw.clueStyle") || "descriptive"; } catch (e) {}
-  var NO_ARTICLE = { "Spurs": true }; // nicknames that don't take "the"
-  // Two phrasings per category; the seed and clue number pick one, so
-  // wording varies between puzzles without leaving the house style.
-  var CLUE_TEMPLATES = {
-    "Nickname \u2192 Club": [
-      function (c) { return "This team's nickname is " + (NO_ARTICLE[c] ? c : "the " + c); },
-      function (c) { return "They're known as " + (NO_ARTICLE[c] ? c : "the " + c); }
-    ],
-    "Club \u2192 Nickname": [
-      function (c) { return c + "'s nickname"; },
-      function (c) { return "The nickname of " + c; }
-    ],
-    "City \u2192 Club": [
-      function (c) { return "This team plays in " + c; },
-      function (c) { return "A club based in " + c; }
-    ],
-    "Club \u2192 City": [
-      function (c) { return "The city where " + c + " play"; },
-      function (c) { return c + "'s home city"; }
-    ],
-    "Stadium \u2192 Club": [
-      function (c) { return "This team plays at " + c; },
-      function (c) { return "The home side at " + c; }
-    ],
-    "Club \u2192 Stadium": [
-      function (c) { return c + "'s stadium"; },
-      function (c) { return "The home ground of " + c; }
-    ],
-    "City \u2192 Stadium": [
-      function (c) { return "This stadium is in " + c; },
-      function (c) { return "A ground found in " + c; }
-    ],
-    "Stadium \u2192 City": [
-      function (c) { return "The city where " + c + " is located"; },
-      function (c) { return c + "'s home city"; }
-    ],
-    // Routes that avoid the club name, so clubs named after their city
-    // (Hull City, Coventry City) are still cluable.
-    "City \u2192 Nickname": [
-      function (c) { return "What the side from " + c + " are known as"; },
-      function (c) { return "The nickname of the team from " + c; }
-    ],
-    "Nickname \u2192 City": [
-      function (c) { return "The city where " + (NO_ARTICLE[c] ? c : "the " + c) + " play"; },
-      function (c) { return "Home city of " + (NO_ARTICLE[c] ? c : "the " + c); }
-    ],
-    "Stadium \u2192 Nickname": [
-      function (c) { return "What the side at " + c + " are known as"; },
-      function (c) { return "The nickname of the team at " + c; }
-    ],
-    "Nickname \u2192 Stadium": [
-      function (c) { return (NO_ARTICLE[c] ? c : "The " + c) + "' home ground"; },
-      function (c) { return "Where " + (NO_ARTICLE[c] ? c : "the " + c) + " play"; }
-    ]
-  };
-  function clueText(row, num) {
-    // A disambiguating hint ("— not Doncaster") belongs at the END of the
-    // rendered sentence. Several templates put the term mid-sentence, so strip
-    // the hint before templating and re-attach it after.
-    var raw = String(row.clue || "");
-    var hint = "";
-    var cut = raw.indexOf(" \u2014 not ");
-    if (cut !== -1) { hint = raw.slice(cut); raw = raw.slice(0, cut); }
-    if (clueStyle === "terse") return raw + hint;
-    var fns = CLUE_TEMPLATES[row.cat];
-    if (!fns) return raw + hint;   // categories whose Clue cell is a full sentence
-    var v = ((seed || 0) + (num || 0) * 7) % 2;
-    return fns[v](raw) + hint;
+  /* ---------- Clue wording ----------
+     The bank writes whole sentences. Nothing wraps them here.
+
+     There were CLUE_TEMPLATES: twelve categories, two phrasings each, picked by
+     seed so wording varied between puzzles. That was written when those twelve
+     categories held bare source terms — "Hill Dickinson Stadium" — and needed a
+     frame to become a question.
+
+     They are self-contained now, and the frame doubled them:
+        "What the side at Nickname of the club that plays at Emirates Stadium
+         are known as"
+
+     The reason to remove rather than revert is not that QuickFire needs bare
+     clues, though it does. It is that the templates only ever covered twelve
+     categories of forty-two — the other thirty already shipped full sentences,
+     and the old `if (!fns) return raw + hint` was the majority path. Removing
+     the frame makes the bank consistent with itself, and that still holds if
+     QuickFire never ships.
+
+     What is lost: the same clue no longer reads two ways between puzzles. That
+     was a real property and it applied to under a third of the bank, at the
+     price of clues that could not be read outside this game. */
+  function clueText(row) {
+    /* The " - not " disambiguator needs no special handling now.
+
+       It used to be cut out before templating and re-attached after, because a
+       frame wrapped around "the Rovers - not Doncaster" would have read as a
+       question about the whole string. With no frame the hint is simply part of
+       the sentence, which is where it belonged.
+
+       Worth recording why it was found: the separator was an em-dash, and a
+       bank-wide ASCII fold turned it into a hyphen. game.js stopped matching at
+       that point and nobody noticed, because a clue that fails to split still
+       reads correctly — it just loses the visual break. Both the fold and the
+       template removal are now moot for this, and the ASCII rule stands
+       unbroken. */
+    return String(row.clue || "");
   }
+
+
 
   /* The season's own floor: one point below its bottom club, so running the
      clock out always finishes last. A fixed floor of 36 finished bottom in only
@@ -172,7 +138,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v114";
+  var BUILD = "v115";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1635,7 +1601,7 @@
       var li = document.createElement("li");
       li.dataset.entry = i;
       li.innerHTML = '<span class="cl-num">' + e.num + '</span>' +
-        '<span class="cl-text">' + escapeHtml(clueText(e.row, e.num)) +
+        '<span class="cl-text">' + escapeHtml(clueText(e.row)) +
         ' <span class="cl-enum">' + escapeHtml(e.row.enum) + '</span></span>';
       li.addEventListener("click", function () {
         cur = { entry: i, cell: firstEmptyCell(i) };
@@ -1714,7 +1680,7 @@
        to give — and a clue cut off mid-word is unsolvable, not merely untidy.
        Thresholds are character counts, so the same clue always renders the same
        way regardless of what came before it. */
-    var text = clueText(e.row, e.num);
+    var text = clueText(e.row);
     var el = $("ncText");
     el.textContent = text;
     /* Scale by how many LINES the clue will take, not how many characters it
@@ -2722,7 +2688,7 @@
        nothing; the wording plus a reason is what tells you whether to reword it
        or bin it. */
     var e = puzzle.entries[cur.entry];
-    $("flagClueText").textContent = clueText(e.row, e.num) + "  " + e.row.enum;
+    $("flagClueText").textContent = clueText(e.row) + "  " + e.row.enum;
     $("flagNote").value = "";
     $("flagMsg").textContent = "";
     flagPicked = [];
