@@ -210,5 +210,16 @@ console.log("\nFree information goes through the free door");
   })());
 }
 
+
+/* The answers window rides on the daily payload — the client's one source. */
+{
+  const { ANSWERS_AFTER_DAYS } = await import("../functions/_lib/daily.js");
+  const res = await daily({ request: new Request("https://x/api/daily?no=1"), env: {} });
+  const body = JSON.parse(await res.text());
+  t("the daily payload carries the answers window",
+    body.answersAfter === ANSWERS_AFTER_DAYS,
+    `answersAfter = ${body.answersAfter}, imported constant, not a literal`);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

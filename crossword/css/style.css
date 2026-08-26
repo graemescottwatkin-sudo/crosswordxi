@@ -2919,6 +2919,7 @@ body.home-showing .tbar{visibility:hidden}
 }
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .cal-cell{
+  position:relative;
   aspect-ratio:1;border-radius:9px;border:1px solid var(--line);background:var(--card);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-size:13px;color:var(--ink);min-height:40px;padding:0;
@@ -2946,6 +2947,17 @@ body.home-showing .tbar{visibility:hidden}
    rendered as "2497". */
 .cal-cell span{display:block;line-height:1.1}
 .cal-cell .cal-score{display:block;line-height:1.1;margin-top:1px}
+/* The open-book marker: a board whose answers page is published. Bottom
+   corner, small and muted — information, not decoration. The strap's version
+   is a link in the board's own line. */
+.cal-cell .cal-ans{
+  position:absolute; right:4px; bottom:3px; font-style:normal;
+  font:700 9px/1 "Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  letter-spacing:.05em; color:var(--ink-soft); opacity:.75;
+}
+.cal-cell.done .cal-ans{ color:#fff; opacity:.8; }
+.strap-ans{ color:inherit; text-decoration:underline; text-underline-offset:2px; }
+
 
 
 /* Available to a screen reader and to a crawler, not on screen.

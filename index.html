@@ -24,6 +24,35 @@
 <title>The XI Games — daily football puzzles</title>
 <meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI is out now \u2014 eleven answers, a hundred and fourteen points, a new board every day.">
 <link rel="canonical" href="https://www.thexigames.com/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.thexigames.com/#org",
+      "name": "The XI Games",
+      "url": "https://www.thexigames.com/"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.thexigames.com/#site",
+      "name": "The XI Games",
+      "url": "https://www.thexigames.com/",
+      "publisher": { "@id": "https://www.thexigames.com/#org" }
+    },
+    {
+      "@type": "WebApplication",
+      "name": "Crossword XI",
+      "url": "https://www.thexigames.com/crossword/",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+      "publisher": { "@id": "https://www.thexigames.com/#org" }
+    }
+  ]
+}
+</script>
 <meta property="og:title" content="The XI Games — daily football puzzles">
 <meta property="og:description" content="Eleven daily football puzzles. A new board every day.">
 <meta property="og:url" content="https://www.thexigames.com/">
@@ -106,6 +135,12 @@ body{
   color:rgba(255,255,255,.28)}
 .sheet .played{font-family:var(--disp);font-size:15px;letter-spacing:.16em;
   text-transform:uppercase;color:#9DBBA9;margin:16px 0 0}
+.about{max-width:620px;margin:36px 0 0;padding:0}
+.about h2{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  font-weight:700;font-size:21px;letter-spacing:.04em;text-transform:uppercase;
+  margin:0 0 10px}
+.about p{font-size:14.5px;line-height:1.65;margin:0 0 12px;color:var(--ink-soft)}
+.about a{color:var(--pitch);text-decoration:underline;text-underline-offset:2px}
 .sheet .played b{color:var(--gold);font-weight:700}
 
 /* ---------- games ---------- */
@@ -210,6 +245,29 @@ footer a:hover{text-decoration:underline}
 </section>
 
 <div class="wrap">
+
+  <!-- Real prose for the front page. The team sheet above is the hero; this
+       is what the page RANKS for — 134 crawlable words was a business card,
+       not a page. Names only the released game: the roster's unreleased
+       squad numbers stay squad numbers, here and everywhere. -->
+  <section class="about">
+    <h2>Daily football puzzles, one for every shirt</h2>
+    <p>The XI Games is a squad of eleven football puzzle games, built one
+       shirt at a time. Every game in the family follows the same rules of
+       the competition: eleven answers a day, scored out of 114 &mdash; the
+       points available across a 38-match season &mdash; with wins, draws and
+       losses that build a league table of your own season.</p>
+    <p><a href="/crossword/">Crossword XI</a> wears the number one shirt: a
+       daily football crossword with eleven clues drawn from the history of
+       the game &mdash; title winners, transfers, grounds, nicknames and the
+       players everyone half-remembers. The clock starts when the board opens
+       and doesn&rsquo;t stop, three substitutions stand between you and a
+       reveal, and the same board goes to everyone, every day. Yesterday&rsquo;s
+       counts if you finish it before midnight; the rest of the archive is
+       always there for a friendly.</p>
+    <p>The other ten shirts are being filled. Each new game joins the same
+       season, the same account, and the same team sheet above.</p>
+  </section>
 
   <section class="section">
     <h2>Out now</h2>

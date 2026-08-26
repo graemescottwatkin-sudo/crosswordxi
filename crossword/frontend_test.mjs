@@ -1164,6 +1164,34 @@ server.listen(0, "127.0.0.1", async () => {
     return /\.now-clue\{[^}]*height:96px/.test(flat) && !/\.now-clue\{[^}]*height:auto/.test(flat);
   })());
 
+  console.log("\nThe answers window reaches the client from the payload");
+  t("game.js holds no copy of the seven — it reads the payload field", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const stripped = js.replace(/\/\*[\s\S]*?\*\//g, "");
+    return /res\.answersAfter/.test(stripped) &&
+           !/answersAfterDays\s*=\s*7/.test(stripped);
+  })(), "the constant lives in _lib/daily.js and rides in on /api/daily");
+  t("a seen payload is remembered for next boot", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /localStorage\.setItem\(ANSWERS_AFTER_KEY/.test(js) &&
+           /localStorage\.getItem\(ANSWERS_AFTER_KEY\)/.test(js);
+  })());
+  t("until one has been seen, nothing is badged", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function answersPublished"), js.indexOf("function adoptServerBoard"));
+    return /answersAfterDays != null/.test(fn);
+  })(), "no payload, no guessing");
+  t("the strap links a published board's answers", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /answersPublished\(board\.no\)/.test(js) && /strap-ans/.test(js) &&
+           /href="answers\//.test(js);
+  })());
+  t("and the calendar badges them", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const cal = js.slice(js.indexOf("function renderCalendar"));
+    return /answersPublished\(no\)/.test(cal) && /cal-ans/.test(cal);
+  })());
+
   console.log("\nPausing is recorded, not forbidden");
   t("hiding blurs the puzzle, so it buys no thinking time", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

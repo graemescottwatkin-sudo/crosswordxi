@@ -184,6 +184,20 @@
      refused — a clock ahead of the host's. Adopting it by property assignment
      would be a stray write on a value that is otherwise frozen, so it gets a
      named constructor and the freeze stays meaningful. */
+  /* Which boards have a published answers page. Display only: the server
+     enforces the rule; this decides whether to say so. */
+  var ANSWERS_AFTER_KEY = "fcw.answersAfter";
+  var answersAfterDays = (function () {
+    try {
+      var v = parseInt(localStorage.getItem(ANSWERS_AFTER_KEY), 10);
+      return isNaN(v) ? null : v;
+    } catch (e) { return null; }
+  })();
+  function answersPublished(no) {
+    return answersAfterDays != null && typeof no === "number" &&
+      today() - no > answersAfterDays;
+  }
+
   function adoptServerBoard(no) {
     board = Object.freeze({
       kind: "daily", no: no, theme: null,
@@ -249,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v154";
+  var BUILD = "v155";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -922,6 +936,17 @@
          requestPuzzle now always asks by number — but the server owns the
          calendar, so its answer wins and `board` is updated rather than a
          separate variable drifting from it. */
+      /* The answers window, learned from the server and remembered. Not a
+         constant in this file — the seven lives in _lib/daily.js and rides in
+         on every daily payload; a second copy here is how the client and
+         server would come to disagree about which boards are open-book. The
+         value is stashed so the calendar can badge before this session's
+         first fetch; until a payload has ever been seen, no badges — showing
+         nothing is honest, guessing is not. */
+      if (res.mode === "daily" && typeof res.answersAfter === "number") {
+        answersAfterDays = res.answersAfter;
+        try { localStorage.setItem(ANSWERS_AFTER_KEY, String(res.answersAfter)); } catch (e) {}
+      }
       if (res.mode === "daily" && res.dailyNo && res.dailyNo !== board.no) {
         /* Different number back means the server refused ours — a clock ahead
            of the host's. Named constructor, not a property write: board is
@@ -991,7 +1016,15 @@
     $("strapText").innerHTML = board.kind === "daily"
       ? escapeHtml(FCW.dailyPhase(board.no).label) + " &middot; " +
         escapeHtml(FCW.dailyDate(board.no).toLocaleDateString(undefined,
-          { weekday: "short", day: "numeric", month: "short" }))
+          { weekday: "short", day: "numeric", month: "short" })) +
+        /* Said out loud on the board itself. Once a board's answers page is
+           published the board is open-book whether or not this line exists —
+           the honest move is the link, not the silence. Today's board can
+           never match: the server refuses its answers for answersAfter days. */
+        (answersPublished(board.no)
+          ? ' &middot; <a class="strap-ans" href="answers/' + board.no +
+            '">Answers published</a>'
+          : "")
       : (board.kind === "theme" && themeLabel
           ? "Club or theme &middot; " + escapeHtml(themeLabel)
           : "Training");
@@ -6912,6 +6945,14 @@
         cls += " today open";
       } else {
         cls += " open";
+      }
+      /* The open-book marker. Played or not, a board past the answers window
+         has a published page, and the calendar says which ones — both as
+         honesty about what an old score can mean, and as the way TO the page
+         from inside the game. */
+      if (real && no <= today && answersPublished(no)) {
+        cls += " ans";
+        body += '<i class="cal-ans" title="Answers published">A</i>';
       }
       out.push('<button class="' + cls + '" data-no="' + (real ? no : "") + '">' +
         "<span>" + i + "</span>" + body + "</button>");

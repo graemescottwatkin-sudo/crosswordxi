@@ -9,7 +9,7 @@
  */
 import { publicPuzzle, json, bad } from "../_lib/puzzle.js";
 import { getDailyPuzzle, makeToken } from "../_lib/db.js";
-import { dailyNumber, playableDailyNo } from "../_lib/daily.js";
+import { dailyNumber, playableDailyNo, ANSWERS_AFTER_DAYS } from "../_lib/daily.js";
 
 export async function onRequestGet({ request, env }) {
   /* ?no= asks for an earlier board. Without it you get today's.
@@ -38,6 +38,13 @@ export async function onRequestGet({ request, env }) {
   return json({
     mode: "daily",
     dailyNo: no,
+    /* How many days until a board's answers page is published. The client
+       needs the number for the calendar badges and the strap link, and this
+       payload is how it learns it — copying the constant into game.js would
+       be a second seven, drifting from the first the day one of them
+       changes. The server remains the only place the rule LIVES;
+       the client only displays it. */
+    answersAfter: ANSWERS_AFTER_DAYS,
     token: makeToken("daily", no),
     puzzle: publicPuzzle(stored.puzzle),
   });

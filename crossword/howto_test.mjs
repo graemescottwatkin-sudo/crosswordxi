@@ -77,5 +77,28 @@ t("divs balance",
     /answers are published/.test(flat));
 }
 
+
+/* The SEO layer: one canonical (both URL forms serve this document), and the
+   FAQ markup that makes the page's answers eligible for rich results. The
+   FAQ must agree with the page — a rich result contradicting the page it
+   links to is worse than no rich result. */
+{
+  t("the page declares its canonical",
+    /rel="canonical" href="https:\/\/www\.thexigames\.com\/crossword\/how-to-play\.html"/.test(page));
+  const m = page.match(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g) || [];
+  let faq = null;
+  for (const b of m) {
+    const j = JSON.parse(b.replace(/<\/?script[^>]*>/g, ""));
+    if (j["@type"] === "FAQPage") faq = j;
+  }
+  t("FAQ markup is present and parses", !!faq, (faq ? faq.mainEntity.length + " questions" : "none"));
+  t("and the FAQ tells the same story as the page", (() => {
+    if (!faq) return false;
+    const all = JSON.stringify(faq);
+    return /114/.test(all) && /does not stop/.test(all) &&
+           /before the end of today/.test(all) && /seven days/.test(all);
+  })(), "score, clock, grace and answers window all consistent");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
