@@ -2750,7 +2750,10 @@ body.home-showing .tbar{visibility:hidden}
   max-width:1080px;margin:0 auto;padding:12px 20px;
   display:flex;align-items:center;gap:24px;flex-wrap:wrap;
 }
-.site-mast{font-family:var(--disp);font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em}
+/* An h1 now, not a div — so the browser's default heading margin has to go or
+   it pushes the header bar apart. */
+.site-mast{font-family:var(--disp);font-size:20px;font-weight:700;color:#fff;
+  letter-spacing:-.01em;margin:0;line-height:1.2}
 .site-xi{background:var(--mint,#E1F5EE);color:var(--pitch-deep,#04342C);
   padding:1px 7px;border-radius:5px;font-size:17px;line-height:.72;display:inline-block}
 .site-nav{display:flex;gap:6px}
@@ -2944,3 +2947,15 @@ body.home-showing .tbar{visibility:hidden}
 .cal-cell span{display:block;line-height:1.1}
 .cal-cell .cal-score{display:block;line-height:1.1;margin-top:1px}
 
+
+/* Available to a screen reader and to a crawler, not on screen.
+
+   The H1 reads "Crossword XI" visually; the phrase people actually search for —
+   "the daily football crossword" — rides in here rather than being stuffed into
+   the brand. clip-path with a 1px box is the form that survives; display:none
+   and visibility:hidden are both ignored by assistive tech, which would defeat
+   the point. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}

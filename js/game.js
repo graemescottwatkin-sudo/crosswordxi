@@ -99,7 +99,6 @@
      "solved in 4 minutes across six pauses spread over two hours" when there is
      a leaderboard to compare them on. */
   var pauseCount = 0, pausedMs = 0, pauseStartedAt = null;
-  var mode = "daily";        // "daily" | "practice" | "theme"
   /* Which themed board to fetch, and what the one in play is called. themeLabel
      is what the server said, not something rebuilt here — the name on the board
      and the name in the share message must not be able to drift apart. */
@@ -109,12 +108,107 @@
      needed because a season is thirty-eight played boards and only one exists
      per day, so anybody arriving late has to be able to reach the ones behind
      them. The server refuses anything after today whatever this says. */
-  /* True while Reveal everything is working through the board. */
-  var bulkReveal = false;
+  /* ---------- Which board is in play ----------
 
-  var dailyWanted = null;
+     One value, one writer.
 
-  var themeWanted = null;
+     There were six: board.kind, board.no, dailyWanted, board.theme, board.token and
+     board.adminDay, each written from a different route and each carrying part of the
+     answer. Every reader then had to reassemble it, and they disagreed. Six
+     separate faults came out of that — boot(), chooseMode(), syncServerDate(),
+     recordDaily(), bootDaily() and showDailyPrompt() each held their own idea of
+     what "today" meant, and each was found only after fixing the previous one
+     moved the symptom rather than removing it.
+
+       kind     "daily" or "theme"
+       no       the daily number, for kind "daily"
+       theme    { theme, no, id } for kind "theme"
+       openedAsToday  true when this board IS today's daily, false for an
+                      archive board. The distinction the six copies kept getting
+                      wrong. Derived inside openBoard, never passed in.
+       token    a shared practice link
+       board.adminDay the owner's preview
+
+     openBoard() is the only thing that writes it. Readers ask board.* for what
+     is being played and today() for what day it is; those are different
+     questions and conflating them is the whole story above. */
+  var board = Object.freeze({ kind: "daily", no: null, theme: null,
+                              openedAsToday: false, token: null, adminDay: null });
+
+  function today() { return FCW.dailyNumber(); }
+
+  /* The only writer of `board`, and of the play reference that goes with it.
+
+     Every route that used to set a variable and call newPuzzle() calls this
+     instead: chooseMode, bootDaily's replacement, the hero tile, a calendar
+     cell, the Full Time prompt, the toolbar, admin preview, openThemed, a
+     challenge, a shared link and the boot resume. One place to read when asking
+     "what happens when a board opens", and one place a new route has to go
+     through.
+
+     `openedAsToday` is the distinction the six scattered copies kept losing: a
+     daily can be today's or an earlier one, and almost every bug in this area
+     came from code that assumed the first. */
+  function openBoard(target, restore) {
+    var t = target || {};
+    var kind = t.kind || "daily";
+    var no = kind === "daily" ? (t.no || today()) : null;
+    board = Object.freeze({
+      kind: kind,                       // "daily" | "theme" | "practice"
+      no: no,
+      theme: t.theme || null,
+      /* Derived, never passed. A caller that could say it was today with a past
+         number would create a board that lies about itself. */
+      openedAsToday: kind === "daily" && no === today(),
+      token: t.token || null,
+      adminDay: t.adminDay || null,
+    });
+
+    /* The play reference belongs to a board. Cleared here so a new board cannot
+       run on the previous one's row — which it did, because the reset inside
+       newPuzzle() covered eleven pieces of state and not these three. A restore
+       puts the saved one back, so a refresh mid-puzzle is not a second attempt. */
+    if (restore && restore.playId) {
+      playId = restore.playId; playNo = restore.playNo || null; playSent = true;
+    } else {
+      playId = null; playNo = null; playSent = false;
+    }
+
+    try { localStorage.setItem("fcw.mode", kind); } catch (e) {}
+    setHomeVisible(false);
+  }
+
+  /* The one legitimate second writer.
+
+     We always ask by number, so a different number coming back means the server
+     refused — a clock ahead of the host's. Adopting it by property assignment
+     would be a stray write on a value that is otherwise frozen, so it gets a
+     named constructor and the freeze stays meaningful. */
+  function adoptServerBoard(no) {
+    board = Object.freeze({
+      kind: "daily", no: no, theme: null,
+      openedAsToday: no === today(),
+      token: null, adminDay: board.adminDay,
+    });
+  }
+
+  /* Which save slot a board owns.
+
+     Keyed by the board, not by the board.kind. One `fcw.v04.daily` slot was shared by
+     today's board and every archive board, so opening one overwrote the other —
+     and the symptom was a board that came back blank.
+
+     Reads fall back to the old unkeyed slot once, so a game already in progress
+     when this shipped is not thrown away. */
+  function boardSlot(b) {
+    var t = b || board;
+    if (t.kind === "theme") {
+      var k = t.theme ? (t.theme.theme + "-" + t.theme.no) : "none";
+      return "fcw.v04.theme." + k;
+    }
+    return "fcw.v04.daily." + (t.no || today());
+  }
+
   /* The challenge being played, if any. Set before the board is built and read
      again at Full Time, when the score has been verified and can join a table. */
   var challenge = null;
@@ -149,14 +243,13 @@
     return k;
   }
   var themeLabel = "";
-  var dailyNo = FCW.dailyNumber();
   var cellEls = {};
   var seasonErrors = FCW.loadSeasons(FCW_SEASONS);
   // Answer-repetition control for the Daily. If the table is missing or a day
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v143";
+  var BUILD = "v146";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -387,7 +480,7 @@
   var season = null;  // the historical season this puzzle is played in
   var clubMode = "random";   // "random" | "chosen"
   var club = null;           // this puzzle's club identity
-  var randomPick = null;     // season chosen alongside the club in Random mode
+  var randomPick = null;     // season chosen alongside the club in Random board.kind
   try {
     var pref = localStorage.getItem("fcw.clubPref");
     if (pref && CLUBS.indexOf(pref) !== -1) { clubMode = "chosen"; club = pref; }
@@ -488,7 +581,7 @@
       p.entries.map(function (e) { return e.row.id; }).join(",");
   }
 
-  /* Which slot a mode owns. Three modes, three slots: a themed board is a real
+  /* Which slot a board.kind owns. Three modes, three slots: a themed board is a real
      game with a real clock, and letting it share the practice key would mean
      opening a themed board silently destroyed a practice game in progress. */
   /* Scale the clue to the card it is actually in, now.
@@ -512,11 +605,15 @@
     el.classList.toggle("xxlong", lines >= 4);
   }
 
+  /* Kept as the name everything calls, now answered by the board rather than
+     the board.kind. Practice is gone as a board.kind; the slot name survives for saves
+     written before it was. */
   function slotKey(m) {
-    return m === "daily" ? "fcw.v04.daily"
-         : m === "theme" ? "fcw.v04.theme"
-         : "fcw.v04.practice";
+    if (m === "practice") return "fcw.v04.practice";
+    return boardSlot(board);
   }
+
+
 
   function save() {
     /* Given up, either to another tab or to a reset in progress. */
@@ -526,7 +623,7 @@
        through applyClubChoice(), and on that screen no puzzle has been built.
        The write that produced was a complete, well-formed, entirely empty
        record — letters {}, elapsed 0 — landing on top of a game in progress.
-       Worse, `mode` resets to "daily" on every load (fcw.mode is written and
+       Worse, `board.kind` resets to "daily" on every load (fcw.mode is written and
        never read), so whatever you were last playing, the landing screen wrote
        to the daily slot. Changing your club on the menu destroyed the daily. */
     if (!puzzle) return;
@@ -538,21 +635,21 @@
        non-event whatever caused it: a record holding letters or time is never
        replaced by one holding neither. Only an explicit reset clears a save —
        and both of those use removeItem, which does not come through here.
-       Deliberately not conditioned on mode or on how the empty board arose,
+       Deliberately not conditioned on board.kind or on how the empty board arose,
        because every way of arriving at one has the same wrong answer. */
     var fresh = !Object.keys(letters).length && !elapsed && !complete;
     if (fresh) {
       var prev = null;
       try { prev = JSON.parse(localStorage.getItem(
-        slotKey(mode))); } catch (e) {}
+        slotKey(board.kind))); } catch (e) {}
       if (prev && !prev.complete &&
           (Object.keys(prev.letters || {}).length || prev.elapsed)) return;
     }
     try {
       // Which mode is in play, so a refresh comes back to the same game.
-      localStorage.setItem("fcw.mode", mode);
-      localStorage.setItem(slotKey(mode), JSON.stringify({
-        mode: mode, dailyNo: dailyNo,
+      localStorage.setItem("fcw.mode", board.kind);
+      localStorage.setItem(slotKey(board.kind), JSON.stringify({
+        mode: board.kind, dailyNo: board.no,
         seed: seed, token: puzzleToken, letters: letters,
         fingerprint: puzzleFingerprint(puzzle),
         /* Wall-clock, so a reload can be charged for the time it took.
@@ -577,13 +674,49 @@
         // The reference for this sitting, so a refresh continues it.
         playId: playId, playNo: playNo,
         // Which themed board this is, so it can be resumed rather than restarted.
-        themeKey: themeWanted && themeWanted.theme
-          ? themeWanted.theme + "-" + themeWanted.no : null
+        themeKey: board.theme && board.theme.theme
+          ? board.theme.theme + "-" + board.theme.no : null
       }));
     } catch (e) { /* storage unavailable — play without persistence */ }
   }
-  function loadSaved(which) {
-    try { return JSON.parse(localStorage.getItem("fcw.v04." + which)); } catch (e) { return null; }
+  /* Reads a board's slot.
+
+     A fallback to the old unkeyed fcw.v04.daily lived here so a game in
+     progress survived the move to per-board slots. Deleted: it costs one
+     in-progress board for whoever is mid-puzzle at deploy, and there are no
+     players yet. The dead key is in WIPE_KEYS so it clears.  */
+  function readSlot(which, forBoard) {
+    var b = forBoard || board;
+    try { return JSON.parse(localStorage.getItem(boardSlot(b))); } catch (e) { return null; }
+  }
+  function loadSaved(which) { return readSlot(which); }
+
+  var DAILY_PREFIX = "fcw.v04.daily.";
+
+  /* Every unfinished daily, on any board.
+
+     Walked back from today to 1 before, which is correct and reads 300 keys at
+     boot. A prefix scan reads only the slots that exist, and collecting all of
+     them rather than the first lets boot tell the difference between "resume
+     this" and "you have three going" — one resumes, several go to the landing
+     screen with the count. */
+  function unfinishedDailies() {
+    var out = [];
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(DAILY_PREFIX) !== 0) return;
+        var raw = null;
+        try { raw = JSON.parse(localStorage.getItem(k)); } catch (e) { return; }
+        if (raw && !raw.complete && inProgress(raw)) out.push(raw);
+      });
+    } catch (e) {}
+    return out.sort(function (a, b) { return (b.dailyNo || 0) - (a.dailyNo || 0); });
+  }
+
+  /* Finished slots accumulate one a day forever. Once a result is recorded the
+     save has nothing left to say, so it goes. */
+  function pruneDailySlot(no) {
+    try { localStorage.removeItem(DAILY_PREFIX + no); } catch (e) {}
   }
 
   /* ---------- Puzzle lifecycle ---------- */
@@ -642,7 +775,7 @@
     var el = $("circLine");
     if (!el) return;
     var n = loadUsedClues().length;
-    if (mode !== "practice") { el.textContent = ""; return; }
+    if (board.kind !== "practice") { el.textContent = ""; return; }
     el.textContent = bankReach
       ? n + " of " + bankReach + " clues seen"
       : n + " clues seen";
@@ -676,16 +809,20 @@
       var rt = /^daily:(\d+)$/.exec(t);
       return api("/api/daily" + (rt ? "?no=" + rt[1] : ""));
     }
-    if (sharedToken) return api("/api/practice?token=" + encodeURIComponent(sharedToken));
-    if (adminDay) return api("/api/admin/daily?n=" + adminDay);
-    if (mode === "daily") {
-      return api("/api/daily" + (dailyWanted ? "?no=" + dailyWanted : ""));
+    if (board.token) return api("/api/practice?token=" + encodeURIComponent(board.token));
+    if (board.adminDay) return api("/api/admin/daily?n=" + board.adminDay);
+    if (board.kind === "daily") {
+      /* Always explicit. "No parameter means today" is the server's own second
+         definition of today, and relying on it meant the browser and the server
+         could disagree about which board this is — which is exactly what
+         happened whenever dailyWanted was left set from a previous board. */
+      return api("/api/daily?no=" + (board.no || today()));
     }
-    if (mode === "theme") {
-      return api(themeWanted && themeWanted.id
-        ? "/api/theme-board?id=" + encodeURIComponent(themeWanted.id)
-        : "/api/theme-board?theme=" + encodeURIComponent(themeWanted.theme) +
-          "&no=" + encodeURIComponent(themeWanted.no));
+    if (board.kind === "theme") {
+      return api(board.theme && board.theme.id
+        ? "/api/theme-board?id=" + encodeURIComponent(board.theme.id)
+        : "/api/theme-board?theme=" + encodeURIComponent(board.theme.theme) +
+          "&no=" + encodeURIComponent(board.theme.no));
     }
     var qs = [];
     var cat = practiceCategory();
@@ -704,11 +841,21 @@
     return requestPuzzle(restore).then(function (res) {
       puzzle = res.puzzle;
       puzzleToken = res.token;
-      if (res.mode === "daily" && res.dailyNo) dailyNo = res.dailyNo;
+      /* The server decides which daily this is. It should already agree —
+         requestPuzzle now always asks by number — but the server owns the
+         calendar, so its answer wins and `board` is updated rather than a
+         separate variable drifting from it. */
+      if (res.mode === "daily" && res.dailyNo && res.dailyNo !== board.no) {
+        /* Different number back means the server refused ours — a clock ahead
+           of the host's. Named constructor, not a property write: board is
+           frozen so a stray assignment throws rather than drifting. */
+        adoptServerBoard(res.dailyNo);
+      }
       if (res.mode === "theme") {
         themeLabel = res.label || "";
-        themeWanted = { id: res.token ? res.token.slice(6) : null,
-                        theme: res.themeId, no: res.boardNo };
+        openBoard({ kind: "theme",
+                    theme: { id: res.token ? res.token.slice(6) : null,
+                             theme: res.themeId, no: res.boardNo } });
       }
       if (res.poolId) recordRecent([res.poolId]);
       if (typeof res.bankSize === "number" && res.bankSize) bankReach = res.bankSize;
@@ -763,17 +910,17 @@
        The date rather than the number: a number that only counts up tells a
        newcomer they are late, and the date is what the calendar they came from
        was showing. */
-    $("strapText").innerHTML = mode === "daily"
-      ? escapeHtml(FCW.dailyPhase(dailyNo).label) + " &middot; " +
-        escapeHtml(FCW.dailyDate(dailyNo).toLocaleDateString(undefined,
+    $("strapText").innerHTML = board.kind === "daily"
+      ? escapeHtml(FCW.dailyPhase(board.no).label) + " &middot; " +
+        escapeHtml(FCW.dailyDate(board.no).toLocaleDateString(undefined,
           { weekday: "short", day: "numeric", month: "short" }))
-      : (mode === "theme" && themeLabel
+      : (board.kind === "theme" && themeLabel
           ? "Club or theme &middot; " + escapeHtml(themeLabel)
           : "Training");
-    $("dailyBtn").style.display = mode === "daily" ? "none" : "";
-    document.title = mode === "daily"
-      ? FCW.dailyPhase(dailyNo).label + " \u00B7 Crossword XI"
-      : (mode === "theme" && themeLabel
+    $("dailyBtn").style.display = board.kind === "daily" ? "none" : "";
+    document.title = board.kind === "daily"
+      ? FCW.dailyPhase(board.no).label + " \u00B7 Crossword XI"
+      : (board.kind === "theme" && themeLabel
           ? themeLabel + " \u00B7 Crossword XI"
           : "Practice \u00B7 Crossword XI");
     letters = {}; wrong = {}; revealedEntries = {}; revealedCells = {}; revealAnswerCells = {};
@@ -878,15 +1025,15 @@
     document.querySelector(".stage").classList.toggle("prestart", !started);
     $("startOverlay").classList.toggle("show", !started);
     if (!started) {
-      $("kickMode").textContent = mode === "daily"
-        ? FCW.dailyPhase(dailyNo).label : "Practice puzzle";
+      $("kickMode").textContent = board.kind === "daily"
+        ? FCW.dailyPhase(board.no).label : "Practice puzzle";
       syncKickSelect();
       // Topic filters belong to Practice: the Daily is the same for everyone.
-      $("filterBox").style.display = mode === "practice" ? "" : "none";
-      $("kickNote").textContent = mode === "daily"
+      $("filterBox").style.display = board.kind === "practice" ? "" : "none";
+      $("kickNote").textContent = board.kind === "daily"
         ? "Today's puzzle, the same for everyone. The clock starts at kick-off."
         : "The clock starts at kick-off.";
-      if (mode === "practice") renderFilters(); else $("kickOffBtn").disabled = false;
+      if (board.kind === "practice") renderFilters(); else $("kickOffBtn").disabled = false;
     }
     paused = false; lastSolved = {};
     renderStreak();
@@ -943,7 +1090,7 @@
 
   /* ---------- Free-run topic filters (Practice only) ----------
      The Daily must be identical for everyone, so filters apply to Practice
-     alone; choosing topics in Daily mode would fork the shared puzzle. */
+     alone; choosing topics in Daily board.kind would fork the shared puzzle. */
   /* Practice recency: the last rows seen sit the next puzzles out, so the
      same clue cannot come straight back. Personal (localStorage), practice
      only — the Daily is shared and uses deterministic rotation instead. */
@@ -974,7 +1121,7 @@
      same conditions, for everyone — its pool is the full mix and it grants
      no substitutions. */
   function currentLevel() {
-    return mode === "practice" && FCW.LEVELS[filterOn.level]
+    return board.kind === "practice" && FCW.LEVELS[filterOn.level]
       ? filterOn.level : FCW.DEFAULT_LEVEL;
   }
   /* Help costs match minutes, charged here so the four call sites cannot
@@ -1024,13 +1171,13 @@
   }
 
   function subsAllowance() {
-    return mode === "practice" ? FCW.LEVELS[currentLevel()].subs : 0;
+    return board.kind === "practice" ? FCW.LEVELS[currentLevel()].subs : 0;
   }
   function activeFilter() {
     // Pre-1990 is opt-in. With no explicit selection — and always on the Daily —
     // the default era set applies, keeping the game modern without archiving
     // the older clues out of existence.
-    if (mode !== "practice") return FCW.dailyFilter(dailyNo || FCW.dailyNumber());
+    if (board.kind !== "practice") return FCW.dailyFilter(board.no || FCW.dailyNumber());
     return { groups: filterOn.groups, eras: filterOn.eras || FCW.DEFAULT_ERAS,
              diffs: FCW.LEVELS[currentLevel()].diffs };
   }
@@ -1125,7 +1272,7 @@
 
   /* The single topic practice is filtered by, or null for all. */
   function practiceCategory() {
-    return (mode === "practice" && filterOn.groups && filterOn.groups.length)
+    return (board.kind === "practice" && filterOn.groups && filterOn.groups.length)
       ? filterOn.groups[0] : null;
   }
   function activeFilterPreview() { return activeFilter(); }
@@ -1136,7 +1283,7 @@
   function kickOff() {
     // Topics are chosen on this card, after the grid was generated, so rebuild
     // before starting if the selection has changed.
-    if (mode === "practice" && JSON.stringify(activeFilter()) !== builtFilter) {
+    if (board.kind === "practice" && JSON.stringify(activeFilter()) !== builtFilter) {
       seed = (Math.random() * 1e9) | 0;
       pendingKickOff = true;
       buildPuzzle(null);   // revealBoard() runs from finishBuild once it lands
@@ -1294,7 +1441,7 @@
     fxTx = w <= fw ? (fw - w) / 2 - ox : Math.min(-ox, Math.max(-ox + (fw - w), fxTx));
     fxTy = h <= fh ? (fh - h) / 2 - oy : Math.min(-oy, Math.max(-oy + (fh - h), fxTy));
   }
-  function fxDoFit(mode) {
+  function fxDoFit(fitMode) {
     var wrap = document.querySelector(".grid-wrap");
     if (!wrap || !puzzle) return;
     var fw = wrap.clientWidth, fh = wrap.clientHeight;
@@ -1305,7 +1452,7 @@
        that edge is where the thumb rests. */
     var aw = Math.max(40, fw - 12), ah = Math.max(40, fh - 12);
     var w = u.cols * FX_BASE, h = u.rows * FX_BASE;
-    fxFit = mode === "whole" ? Math.min(aw / w, ah / h) : aw / w;
+    fxFit = fitMode === "whole" ? Math.min(aw / w, ah / h) : aw / w;
     fxMin = Math.min(fxFit, Math.min(aw / w, ah / h));
     fxScale = fxFit; fxTx = 0; fxTy = 0;
     fxClamp(); fxApply();
@@ -1321,11 +1468,11 @@
      height binds and it barely zooms — moving between them would zoom in and
      out on every clue. It holds a comfortable magnification instead and only
      moves the board when the answer is not already in view, which is the thing
-     the mode is actually for: never losing the word you are typing into. */
+     the board.kind is actually for: never losing the word you are typing into. */
   /* Follow word on a phone, whole board on anything bigger.
 
      On a phone the clue lists are gone and the board is the only thing on
-     screen, so keeping the answer being typed framed is what the mode is for.
+     screen, so keeping the answer being typed framed is what the board.kind is for.
      On a tablet or a laptop the lists are beside the board and there is room to
      see all of it, so the whole board is the better resting state.
 
@@ -1341,7 +1488,7 @@
 
      A first-run default, not a rule — whatever was last chosen still wins. */
   var fxMode = "board";
-  var FX_WORD_K = 1.6;               // magnification held in word mode
+  var FX_WORD_K = 1.6;               // magnification held in word board.kind
 
   function fxWordBox() {
     var e = puzzle && puzzle.entries[cur.entry];
@@ -1364,7 +1511,7 @@
 
      The zoom therefore changes between clues — a nine-letter down entry and an
      eight-letter across entry want different magnifications, and moving
-     between them will visibly rescale. That is the cost of the mode and it is
+     between them will visibly rescale. That is the cost of the board.kind and it is
      the point of it: predictable placement in exchange for a changing zoom.
 
      One limit, and it only bites on very short answers. Filling 393px with
@@ -1405,7 +1552,7 @@
 
     /* Deliberately not clamped to the board's edges. An answer on the top row
        centred vertically needs the board to hang past the frame, and clamping
-       it back would put the word off centre — which is the one thing this mode
+       it back would put the word off centre — which is the one thing this board.kind
        is for. */
     fxApply();
   }
@@ -1448,7 +1595,7 @@
 
     document.documentElement.style.setProperty("--cell", FX_BASE + "px");
     g.style.gridTemplateColumns = "repeat(" + puzzle.width + ", var(--cell))";
-    /* A fresh puzzle starts in whatever mode was left, so the board does not
+    /* A fresh puzzle starts in whatever board.kind was left, so the board does not
        silently revert to fitted after every clue change. */
     if (fxMode === "word") { fxDoFit("whole"); fxFollow(); }
     else fxDoFit(fxMode === "manual" ? "width" : "whole");
@@ -1499,7 +1646,7 @@
     if (availW < 160) availW = (window.innerWidth || 360) - 44;
     // Height: measured chrome where layout is available, otherwise a
     // sensible reserve so the board never hides under the keyboard.
-    /* In rail mode the toolbar is beside the board, not above it. Counting its
+    /* In rail board.kind the toolbar is beside the board, not above it. Counting its
        height as vertical chrome made the cell size sensitive to the rail's
        content and was another source of reflow. */
     /* The toolbar only counts as chrome when it is above the board. In the
@@ -2345,15 +2492,15 @@
        safe either way. */
     if (!keep || !playId) { playId = newPlayId(); playNo = null; }
     playSent = false;
-    var phase = mode === "daily" ? FCW.dailyPhase(dailyNo).phase : null;
+    var phase = board.kind === "daily" ? FCW.dailyPhase(board.no).phase : null;
     fetch("/api/play", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "start", playId: playId, mode: mode,
-        dailyNo: mode === "daily" ? dailyNo : null, phase: phase,
+      body: JSON.stringify({ event: "start", playId: playId, mode: board.kind,
+        dailyNo: board.kind === "daily" ? board.no : null, phase: phase,
         /* Which board, when it is a themed one. Still nothing about the
            person: the play id is random per attempt, as it was. */
-        themeKey: mode === "theme" && themeWanted && themeWanted.theme
-          ? themeWanted.theme + "-" + themeWanted.no : null,
+        themeKey: board.kind === "theme" && board.theme && board.theme.theme
+          ? board.theme.theme + "-" + board.theme.no : null,
         total: puzzle.entries.length,
         /* Kept separate from the board on purpose: somebody playing the Arsenal
            board may have arrived from anywhere, including another page here. */
@@ -2370,7 +2517,7 @@
     playSent = true;
     var solved = 0;
     puzzle.entries.forEach(function (e, i) { if (verified[i] === true) solved++; });
-    var payload = JSON.stringify({ event: "end", playId: playId, mode: mode,
+    var payload = JSON.stringify({ event: "end", playId: playId, mode: board.kind,
       solved: solved, completed: !!done, elapsed: elapsed,
       checks: checksUsed, reveals: revealedLetterCount() + revealedAnswerCount() });
     /* sendBeacon, because a normal fetch is cancelled when the tab closes —
@@ -2404,7 +2551,7 @@
      null key. */
   window.addEventListener("storage", function (e) {
     if (saveBlocked || !puzzle) return;
-    var mine = slotKey(mode);
+    var mine = slotKey(board.kind);
     if (e.key !== null && e.key !== mine) return;
     standDown();
     toast("Open in another window",
@@ -2421,8 +2568,6 @@
      on the server, on every request, because a hidden button is not a lock and
      anyone can conjure one up from a console. */
   var isAdmin = false;
-  var adminDay = null;          // set only while the owner previews another day
-  var sharedToken = null;       // set only while opening a shared practice link
 
   function adminMsg(text) {
     var el = $("adminMsg");
@@ -2460,16 +2605,19 @@
   on("adminGo", "click", function () {
     var n = parseInt(($("adminDay") || {}).value, 10);
     if (!n || n < 1) { adminMsg("Give a day number."); return; }
-    mode = "daily";
-    dailyNo = n;
     $("adminSheet").classList.remove("show");
+    /* Through openBoard like every other route. It assigned `board` directly,
+       which is a second writer — and a second writer is how the six variables
+       this replaced got out of step in the first place. */
+    openBoard({ kind: "daily", no: n, adminDay: n });
     /* A daily token returns today's puzzle by design — the server refuses to
        serve another day, and that guard is what stops anyone reading tomorrow's
        answers. So this goes through an admin-only route instead of weakening
        it. */
-    adminDay = n;
     buildPuzzle(null).then(function () {
-      adminDay = null;
+      /* The preview flag is spent: reopened without it so a later request does
+         not go back to the admin route. */
+      openBoard({ kind: "daily", no: n });
       toast("Playing day " + n, FCW.dailyPhase(n).label + " \u2014 reload to return to today.");
     }).catch(function (err) {
       toast("Could not load that day", String(err.message || err), "loss");
@@ -2482,7 +2630,7 @@
      Clear my record wipes the history and leaves the game you are in, because
      "record" means the history and a button should not lie about what it does. */
   on("adminReplay", "click", function () {
-    var no = dailyNo;
+    var no = board.no;
     apiAuth("/api/admin/replay-day", { dailyNo: no }).then(function () {
       /* Stop writing before clearing. location.reload() does not halt this
          page — the browser goes off to fetch the document while everything
@@ -2491,7 +2639,7 @@
       standDown();
       try {
         // The saved game, and this day's entry in the local history.
-        localStorage.removeItem(slotKey(mode));
+        localStorage.removeItem(slotKey(board.kind));
         var list = loadResults().filter(function (r) { return r.dailyNo !== no; });
         localStorage.setItem(RESULTS_KEY, JSON.stringify(list));
       } catch (e) {}
@@ -2653,14 +2801,14 @@
   /* The campaign link builder. Every value is normalised on the way out, so a
      link cannot introduce a spelling the reports then split on. */
   on("linkMake", "click", function () {
-    var board = $("linkBoard").value;
+    var pickedBoard = $("linkBoard").value;
     var q = new URLSearchParams();
     q.set("utm_source", slugify($("linkSource").value));
     q.set("utm_medium", "social");
     q.set("utm_campaign", slugify($("linkCampaign").value));
     var content = slugify($("linkContent").value);
     if (content) q.set("utm_content", content);
-    var url = SHARE_URL + "/" + (board ? "?t=" + board + "&" : "?") + q.toString();
+    var url = SHARE_URL + "/" + (pickedBoard ? "?t=" + pickedBoard + "&" : "?") + q.toString();
     $("linkOut").textContent = url;
     try {
       navigator.clipboard.writeText(url);
@@ -3269,7 +3417,7 @@
       .catch(function (err) { revealFailed(err); });
   });
 
-  /* ---------- Check All (whole grid, CHECK_ALL_PENALTY) ----------
+  /* ---------- Check All (whole grid, HELP_MINUTES.checkAll) ----------
      Priced above the single check so it never dominates it: checking one
      answer stays the cheap, considered move. */
   on("checkAllBtn", "click", function () {
@@ -3406,7 +3554,7 @@
     }
   }
 
-  /* ---------- Reveal Answer (REVEAL_ANSWER_PENALTY per unique answer) ---------- */
+  /* ---------- Reveal Answer (HELP_MINUTES.revealAnswer, 3 subs) ---------- */
   on("revealBtn", "click", function () {
     if (complete || !started || paused) return;
     var e = puzzle.entries[cur.entry];
@@ -3465,7 +3613,7 @@
   /* Everything a reset should clear.
 
      Six keys the game writes were missing, so a reset left the device
-     half-reset: the mode, whether the menu had been left deliberately, the
+     half-reset: the board.kind, whether the menu had been left deliberately, the
      owner's season override and the one-time tip all survived it.
 
      `fcw.streak` and `fcw.pre` stay although nothing has written them for two
@@ -3484,6 +3632,7 @@
     "fcw.v04.practice",
     "fcw.v04.theme",
     "fcw.mode",
+    "fcw.v04.daily",         // dead: the shared slot before boards had their own
     "fcw.athome",            // whether the menu was left deliberately
     "fcw.seasonStart",       // the owner's season test override
     "fcw.tip.followword",    // the one-time tip
@@ -3565,7 +3714,7 @@
        a real thing to build, and it ending on Matchday 1 is the point rather
        than a loss — the season table starts empty for everyone on the same day
        whatever anyone did in August. */
-    var phase = FCW.dailyPhase(dailyNo);
+    var phase = FCW.dailyPhase(board.no);
     /* Same fault: `counts` is false for a daily as well as a friendly. */
     if (phase.phase !== "season") {
       var note = $("rClockNote");
@@ -3591,11 +3740,11 @@
        fault recordThemed guards against with prev.playId === playId, three
        hundred lines below. */
     var mine = list.filter(function (r) {
-      return r && r.dailyNo === dailyNo && r.playId && r.playId === playId;
+      return r && r.dailyNo === board.no && r.playId && r.playId === playId;
     });
     if (mine.length) {
-      list = list.filter(function (r) { return !(r && r.dailyNo === dailyNo); });
-    } else if (list.some(function (r) { return r.dailyNo === dailyNo; })) {
+      list = list.filter(function (r) { return !(r && r.dailyNo === board.no); });
+    } else if (list.some(function (r) { return r.dailyNo === board.no; })) {
       return list;
     }
     /* Spec §19: only the host's clock can bank a result. If the device clock
@@ -3618,12 +3767,15 @@
        The check it replaces still matters and is kept: a number AHEAD of today
        can only come from a moved clock, since the server will not serve one. */
     var ts = FCW.timeState();
-    if (ts.trusted && dailyNo > FCW.dailyNumber()) {
-      showClockNote(dailyNo, FCW.dailyNumber());
+    if (ts.trusted && board.no > FCW.dailyNumber()) {
+      showClockNote(board.no, FCW.dailyNumber());
       return list;
     }
+    /* The save has nothing left to say once the result is banked, and a
+       finished slot would otherwise sit there for good. */
+    pruneDailySlot(board.no);
     list.push(FCW.makeResultRecord({
-      date: FCW.localDateKey(), dailyNo: dailyNo, seed: seed,
+      date: FCW.localDateKey(), dailyNo: board.no, seed: seed,
       /* So a verified rewrite can find its own row. recordThemed has carried
          this for the same reason; the daily never did, which is why the
          verified score could not replace the browser's. */
@@ -3657,8 +3809,8 @@
      for a year is not an exam, and beating your own score is the reason to go
      back to one. */
   function recordThemed(pos, score) {
-    if (!themeWanted || !themeWanted.theme) return;
-    var key = themeWanted.theme + "-" + themeWanted.no;
+    if (!board.theme || !board.theme.theme) return;
+    var key = board.theme.theme + "-" + board.theme.no;
     var list = loadThemeResults();
     var prev = null;
     for (var i = 0; i < list.length; i++) {
@@ -3688,9 +3840,9 @@
     return list;
   }
 
-  /* Their own key, not the results array. That array is sorted by dailyNo,
+  /* Their own key, not the results array. That array is sorted by board.no,
      read by FCW.streaks(), and posted wholesale to /api/account/migrate on
-     sign-in — a record with no dailyNo in it would sort to nowhere, count for
+     sign-in — a record with no board.no in it would sort to nowhere, count for
      nothing and be sent to an endpoint that has never seen one. */
   var THEME_RESULTS_KEY = "fcw.themeResults.v1";
   function loadThemeResults() {
@@ -3731,7 +3883,7 @@
     var split = FCW.splitByPhase(loadResults());
     /* Two faults in one line.
 
-       C: dailyNo is the board being PLAYED, not today. Visiting an archive
+       C: board.no is the board being PLAYED, not today. Visiting an archive
        board left it set, so the landing screen reported a live run as "0 day
        run" — streaks() only counts a current run when the last result is today
        or yesterday.
@@ -4172,8 +4324,8 @@
     $("bAnswers").textContent = footballPhrase("answer", revealedAnswerCount(), res.revealAnswerPenalty);
     $("bAnswerPen").textContent = helpMins("revealAnswer", revealedAnswerCount());
     setFinalScore(res.score);
-    if (mode === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
-    else if (mode === "theme") recordThemed(pos, res.score);
+    if (board.kind === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
+    else if (board.kind === "theme") recordThemed(pos, res.score);
     renderLeagueRows($("finalTableBody"), table, false); // Full Time: all 20
     var youRow = $("finalTableBody").querySelector("tr.you");
     playEnd(true);
@@ -4397,7 +4549,7 @@
   on("chCancel", "click", function () {
     $("challengeOverlay").classList.remove("show");
     leaveChallenge();
-    mode = "practice"; themeWanted = null;
+    openBoard({ kind: "practice" });
     showHome();
   });
 
@@ -4435,11 +4587,11 @@
 
   function startChallengeBoard() {
     $("challengeOverlay").classList.remove("show");
-    mode = "theme";
-    themeWanted = { theme: challenge.theme, no: challenge.no, id: null };
+    openBoard({ kind: "theme",
+                theme: { theme: challenge.theme, no: challenge.no, id: null } });
     buildPuzzle(null).then(function () {
       if (puzzle) return;
-      leaveChallenge(); themeWanted = null; mode = "practice";
+      leaveChallenge(); openBoard({ kind: "practice" });
       toast("That board is not available", "It may not have been released yet.", "loss");
       showHome();
     });
@@ -4520,8 +4672,8 @@
         /* A verified score is the only kind that may join a challenge table.
            Submitted here rather than at Full Time for exactly that reason. */
         if (challenge) submitChallengeEntry();
-        if (mode === "theme") recordThemed(lastPosition, r.score);
-        else if (mode === "daily") recordDaily(lastPosition, r.score, r.breakdown || {});
+        if (board.kind === "theme") recordThemed(lastPosition, r.score);
+        else if (board.kind === "daily") recordDaily(lastPosition, r.score, r.breakdown || {});
 
         /* Compared against the value, not against the text on screen. This read
            Number($("rScore").textContent) — using rendered display text as
@@ -4599,12 +4751,12 @@
      rather than a vague one — the daily needs no such link, because everybody
      gets the same puzzle anyway. */
   function shareLink() {
-    if (mode === "daily") return SHARE_URL;
+    if (board.kind === "daily") return SHARE_URL;
     /* A themed link says what it is. /?t=man-united-3 reads as an invitation;
        /?p=4471 reads as a database key, and the name is public anyway the
        moment it appears in the message. */
-    if (mode === "theme" && themeWanted && themeWanted.theme) {
-      return SHARE_URL + "/?t=" + encodeURIComponent(themeWanted.theme + "-" + themeWanted.no);
+    if (board.kind === "theme" && board.theme && board.theme.theme) {
+      return SHARE_URL + "/?t=" + encodeURIComponent(board.theme.theme + "-" + board.theme.no);
     }
     var m = /^practice:(\d+)$/.exec(puzzleToken || "");
     return m ? SHARE_URL + "/?p=" + m[1] : SHARE_URL;
@@ -4614,9 +4766,9 @@
     var res = shareResult();
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
-    var name = mode === "daily"
-      ? "Crossword XI \u00B7 " + FCW.dailyPhase(dailyNo).label
-      : (mode === "theme" && themeLabel
+    var name = board.kind === "daily"
+      ? "Crossword XI \u00B7 " + FCW.dailyPhase(board.no).label
+      : (board.kind === "theme" && themeLabel
           ? "Crossword XI \u00B7 " + themeLabel
           : "Crossword XI \u00B7 practice");
     /* The season year is gone. "Arsenal finished 3rd in 2020/21" reads as a
@@ -4628,7 +4780,7 @@
        posting: a reader sees how you did and can still play it cold. */
     var line = shareStrip(res.score) + "\n" +
       res.score + " pts \u00B7 " + FCW.ordinal(pos) + " \u00B7 " + fmt(elapsed);
-    var invite = mode === "daily" ? SHARE_URL : "Beat it: " + shareLink();
+    var invite = board.kind === "daily" ? SHARE_URL : "Beat it: " + shareLink();
     // "Manchester United #3" is the whole point of numbering them.
     return name + "\n" + line + "\n" + invite;
   }
@@ -4675,14 +4827,14 @@
        the title and the game is the link. */
     var res = shareResult();
     var title = "Crossword XI \u2014 " +
-      (mode === "daily" ? FCW.dailyPhase(dailyNo).label : "practice") +
+      (board.kind === "daily" ? FCW.dailyPhase(board.no).label : "practice") +
       " \u2014 " + res.score + "/114 in " + fmt(elapsed);
     window.open("https://reddit.com/submit?url=" + encodeURIComponent(SHARE_URL) +
       "&title=" + encodeURIComponent(title), "_blank", "noopener");
   });
 
   function startPractice() {
-    mode = "practice";
+    openBoard({ kind: "practice" });
     newPuzzle(); // fresh random seed
   }
   on("againBtn", "click", function () { startPractice(); });
@@ -4693,20 +4845,33 @@
     startPractice();
   });
   on("dailyBtn", "click", function () {
-    if (mode === "practice" && !complete && progressRatio() > 0.25) {
+    if (board.kind === "practice" && !complete && progressRatio() > 0.25) {
       if (!window.confirm("Leave this practice puzzle and open today's daily?")) return;
     }
     bootDaily();
   });
+  /* "Play today's daily" — the toolbar, Full Time, the board.kind menu.
+
+     It set board.kind and board.no directly and never touched dailyWanted, which
+     requestPuzzle reads. So: calendar to an archive board, Home, any club
+     board, then "today's puzzle" — and you got the archive board, with today's
+     seed. The sixth copy of the assumption, and it never compared against
+     dailyNumber() at all, which is why grepping for that comparison kept
+     missing it.
+
+     Now the same route as everything else, and it asks before reopening a board
+     already banked — the hero tile has done that since v138 and this did not,
+     so the two doors to the same board behaved differently. */
   function bootDaily() {
-    mode = "daily";
-    dailyNo = FCW.dailyNumber();
-    var saved = loadSaved("daily");
-    if (saved && saved.dailyNo === dailyNo && saved.seed != null) {
-      newPuzzle(saved.seed, saved);      // resume today's daily (finished or not)
-    } else {
-      newPuzzle(FCW.dailySeed(dailyNo)); // fresh daily for today
+    var no = today();
+    var done = alreadyPlayedElsewhere(no);
+    if (done && !window.confirm(
+      "You have already played this one" +
+      (done.score != null ? " and scored " + done.score : "") +
+      ".\n\nYour result is saved. Playing again will not change it.\n\nOpen it anyway?")) {
+      return;
     }
+    chooseMode("daily", { kind: "daily", no: no});
   }
   /* The edge zones. While the jump list is open they close it and do nothing
      else — a tap that both dismisses a list and moves you somewhere is a tap
@@ -4747,8 +4912,15 @@
      replaced opened straight onto the daily, so somebody who wanted practice
      pressed Kick Off, started the daily's clock and lost points on a game they
      had not chosen to play. */
-  function savedFor(which) {
-    try { return JSON.parse(localStorage.getItem(slotKey(which))); } catch (e) { return null; }
+  /* `which` is a board.kind, kept because callers ask in modes. `forBoard` lets a
+     caller ask about a board that is not the one open — the landing screen asks
+     about today's while an archive board is in play. */
+  function savedFor(which, forBoard) {
+    if (which === "practice") {
+      try { return JSON.parse(localStorage.getItem("fcw.v04.practice")); } catch (e) { return null; }
+    }
+    return readSlot(which, forBoard || (which === "daily"
+      ? { kind: "daily", no: today() } : board));
   }
 
   /* A game with time on the clock is in progress whether or not anything has
@@ -4757,7 +4929,7 @@
 
      Declared here rather than inside renderHome(). It was nested there, and the
      Practice handler — which needs it to let somebody finish a puzzle started
-     before the mode was suspended — is bound at load time, outside that scope.
+     before the board.kind was suspended — is bound at load time, outside that scope.
      The result was a ReferenceError on every tap of Practice. */
   function inProgress(rec) {
     return !!rec && !rec.complete &&
@@ -4803,7 +4975,7 @@
 
     /* The season tile, while the test override is on.
 
-       Not a mode of its own — the season is the daily, counted. This is a
+       Not a board.kind of its own — the season is the daily, counted. This is a
        readout of where the run has got to and a way into the table, so the
        shape can be judged before any of it is committed to. */
     var seasonTile = $("homeSeason");
@@ -4915,10 +5087,13 @@
     if (!box) return;
     box.style.display = "none";
     /* Nothing to offer while the daily is suspended. */
-    if (!DAILY_OPEN || mode === "daily") return;
+    if (!DAILY_OPEN || board.kind === "daily") return;
 
     var done = loadResults().some(function (r) {
-      return r && r.mode === "daily" && r.dailyNo === dailyNo;
+      /* today(), not board.no. board.no is the board being played — so finishing
+         a club board after visiting an archive daily checked whether THAT
+         daily was done, and hid the prompt or offered the wrong board. */
+      return r && r.mode === "daily" && r.dailyNo === today();
     });
     if (done) return;
 
@@ -4926,16 +5101,15 @@
     var line = $("rdLine"), note = $("rdNote");
 
     if (!st.played) {
-      line.textContent = "Today's daily \u2014 #" + dailyNo;
+      line.textContent = "Today's puzzle";
       note.textContent = "One a day, the same puzzle for everyone. " +
         "Play tomorrow's too and you have a run going.";
     } else if (st.currentStreak > 0) {
       line.textContent = "Your run is " + st.currentStreak +
         (st.currentStreak === 1 ? " day" : " days");
-      note.textContent = "Today's is #" + dailyNo +
-        ". Miss it and the run goes back to nothing.";
+      note.textContent = "Miss it and the run goes back to nothing.";
     } else {
-      line.textContent = "Today's daily \u2014 #" + dailyNo;
+      line.textContent = "Today's puzzle";
       note.textContent = "You have played " + st.played +
         (st.played === 1 ? " daily" : " dailies") +
         ". Two days running starts a new run.";
@@ -4946,7 +5120,7 @@
   /* The Follow word tip: offered once, and only where it earns its interruption.
 
      Four conditions, all of them about the moment rather than the person:
-       the flex layout, since that is where the mode exists
+       the flex layout, since that is where the board.kind exists
        Fit board, or there is nothing to suggest
        cells under 32px, which is a board with more columns than this screen
          comfortably carries
@@ -4987,8 +5161,8 @@
     if (!el) return;
     el.style.display = "none";
     var f = featuredBoard;
-    if (!f || mode !== "theme" || !themeWanted || themeWanted.theme !== f.themeId ||
-        Number(themeWanted.no) !== Number(f.no)) return;
+    if (!f || board.kind !== "theme" || !board.theme || board.theme.theme !== f.themeId ||
+        Number(board.theme.no) !== Number(f.no)) return;
 
     if (typeof mine !== "number") return;
     api("/api/featured-scores?theme=" + encodeURIComponent(f.themeId) + "&no=" + f.no)
@@ -5395,8 +5569,7 @@
   }
 
   function openThemed(theme, no, id) {
-    mode = "theme";
-    themeWanted = { theme: theme, no: no, id: id || null };
+    openBoard({ kind: "theme", theme: { theme: theme, no: no, id: id || null } });
     themeLabel = "";
     $("themeSheet").classList.remove("show");
     setHomeVisible(false);
@@ -5628,7 +5801,7 @@
       fxClamp(); fxApply();
     }
     /* Zooming by hand is a deliberate act, so it drops the board out of any
-       automatic mode rather than fighting the next thing that moves it. */
+       automatic board.kind rather than fighting the next thing that moves it. */
     function toManual() { fxMode = "manual"; applyFxMode(); }
     on("fxIn", "click", function () { toManual(); zoomBy(1.25); });
     on("fxOut", "click", function () { toManual(); zoomBy(1 / 1.25); });
@@ -5640,7 +5813,7 @@
     });
   })();
 
-  /* The button says what pressing it will do next, not what mode you are in —
+  /* The button says what pressing it will do next, not what board.kind you are in —
      a control labelled with the current state leaves you working out what the
      other one was. */
   /* Focus is not a separate setting: it is what Follow word means.
@@ -5685,7 +5858,7 @@
   /* Daily is suspended.
 
      One flag, read everywhere it matters, so the tile, the menu item and the
-     Full Time prompt cannot drift apart — a prompt advertising a mode the tile
+     Full Time prompt cannot drift apart — a prompt advertising a board.kind the tile
      refuses to open is worse than either on its own. */
   var DAILY_OPEN = true;
 
@@ -5839,12 +6012,12 @@
       ((v && v.height) || window.innerHeight) + "px");
   }
 
-  /* Boot: restore the fit mode, then apply the layout.
+  /* Boot: restore the fit board.kind, then apply the layout.
 
      Both of these were lost when the standalone focus control was removed — the
      regex that took out that block took the boot calls with it, and setLayout()
      ended up defined and never called. The layout still looked right, because
-     the CSS default carries it, but nothing restored the mode and nothing
+     the CSS default carries it, but nothing restored the board.kind and nothing
      called fxLabel(), so the button label never matched the state.
 
      A function that is defined and never called is invisible to a syntax check
@@ -5978,11 +6151,11 @@
             : leftSubs + " of " + FCW.SCORING.SUBS_PER_BOARD + " left";
         }
       }
-      /* Practice is the only mode where clearing is offered. A daily or a
+      /* Practice is the only board.kind where clearing is offered. A daily or a
          themed board can be sent as a challenge, and wiping one is a way to
          lose a run somebody else is measuring themselves against. */
       var cl = $("tbClear");
-      if (cl) cl.hidden = mode !== "practice";
+      if (cl) cl.hidden = board.kind !== "practice";
       /* Practice is suspended while the clue bank is rebuilt. Left in the menu
          so the track is visibly coming rather than quietly missing — the same
          reasoning as the Coming soon tile on the landing screen. */
@@ -6004,9 +6177,9 @@
       }
       var lab = $("tbModeLabel");
       if (lab) {
-        lab.textContent = mode === "daily" ? "Daily"
-          : mode === "practice" ? "Practice"
-          : mode === "theme" ? "Clubs & themes" : "Puzzle";
+        lab.textContent = board.kind === "daily" ? "Daily"
+          : board.kind === "practice" ? "Practice"
+          : board.kind === "theme" ? "Clubs & themes" : "Puzzle";
       }
     }
     window.addEventListener("cxi:mode", refreshMenus);
@@ -6062,7 +6235,7 @@
          rule, so it self-forfeits when it should without needing a state of
          its own. */
       /* Minutes and substitutions, which is what it costs. This read
-         REVEAL_ANSWER_PENALTY and, once that became zero, told the player
+         the old point penalty and, once that became zero, told the player
          "11 answers at 0 points each. That costs 0, leaving you 114." before
          charging 154 minutes and turning the day into a draw. */
       var perMins = FCW.SCORING.HELP_MINUTES.revealAnswer;
@@ -6116,7 +6289,7 @@
 
     on("tbClear", "click", function (ev) {
       ev.stopPropagation();
-      if (mode !== "practice") return;
+      if (board.kind !== "practice") return;
       if (!window.confirm("Clear every letter you have typed?\n\n" +
         "Revealed letters stay. Nothing is scored for this.")) return;
       Object.keys(letters).forEach(function (k) {
@@ -6349,34 +6522,29 @@
     document.querySelector(".stage").classList.add("prestart");
   }
 
-  function chooseMode(which) {
-    mode = which;
-    try { localStorage.setItem("fcw.mode", which); } catch (e) {}
-    setHomeVisible(false);
+  /* Opens a board and starts it. The one route in.
+
+     Was: set board.kind, set board.no from dailyWanted, work out whether the save
+     belongs to it, call newPuzzle. Four decisions, three of them duplicated
+     elsewhere. openBoard() makes them once. */
+  function chooseMode(which, target) {
     if (which === "daily") {
-      /* The board being opened, which is not always today's.
-
-         This read dailyNo = FCW.dailyNumber() unconditionally and then only
-         restored a save whose dailyNo matched it. With the archive open that
-         compared an archive board against today and never matched — so the
-         board loaded empty, with the letters and the clock still sitting in
-         storage untouched.
-
-         The same comparison in boot() was fixed one release ago; this is the
-         second copy of it, which is why the symptom moved from "goes to the
-         menu" to "stays on the board and it is blank". Two places deciding one
-         thing. */
-      dailyNo = dailyWanted || FCW.dailyNumber();
-      var saved = savedFor("daily");
-      var mine = saved && saved.dailyNo === dailyNo;
-      newPuzzle(mine && saved.seed != null ? saved.seed : FCW.dailySeed(dailyNo),
+      var t = target || { kind: "daily", no: today()};
+      var saved = savedFor("daily", { kind: "daily", no: t.no || today() });
+      var mine = saved && saved.dailyNo === (t.no || today());
+      openBoard(t, mine ? saved : null);
+      newPuzzle(mine && saved.seed != null ? saved.seed : FCW.dailySeed(board.no),
                 mine ? saved : null);
-    } else {
-      var sp = savedFor("practice");
-      if (sp && !sp.complete && sp.seed != null) newPuzzle(sp.seed, sp);
-      else newPuzzle();
+      return;
     }
+    /* Practice is gone as a mode, but a shared link still opens one and a save
+       from before it went still resumes. */
+    openBoard({ kind: "practice" });
+    var sp = savedFor("practice");
+    if (sp && !sp.complete && sp.seed != null) newPuzzle(sp.seed, sp);
+    else newPuzzle();
   }
+
 
   /* Already played on another device? Say so rather than opening it fresh.
 
@@ -6406,7 +6574,8 @@
       ".\n\nYour result is saved. Playing again will not change it.\n\nOpen it anyway?")) {
       return;
     }
-    dailyWanted = null;   // the hero is always today, whatever was opened last
+    /* The hero is always today's, whatever was opened last. Passed explicitly
+       rather than cleared from a variable somebody else might have set. */
     /* Anyone part-way through today's can still finish it. Stranding a
        half-played board to enforce a suspension costs a real player something
        and saves nobody anything — the puzzle is already on their device. */
@@ -6519,8 +6688,7 @@
     var no = Number(cell.getAttribute("data-no"));
     if (!no) return;
     $("archiveSheet").classList.remove("show");
-    dailyWanted = no === FCW.dailyNumber() ? null : no;
-    chooseMode("daily");
+    chooseMode("daily", { kind: "daily", no: no});
   });
 
   /* The most recent board before today that has no result yet. Counts back
@@ -6630,7 +6798,7 @@
   /* From inside a game. Switching modes now goes through the menu rather than
      a button that silently moves you between a scored daily and free practice. */
   on("menuBtn", "click", function () {
-    if (mode === "daily" && started && !complete) {
+    if (board.kind === "daily" && started && !complete) {
       /* Leaving a daily mid-play stops its clock, exactly as Pause does — the
          alternative is a timer running on a puzzle nobody can see. */
       pauseGame();
@@ -6661,8 +6829,8 @@
     }
     var themed = /[?&]t=([a-z0-9-]+)-(\d+)/.exec(location.search || "");
     if (themed) {
-      mode = "theme";
-      themeWanted = { theme: themed[1], no: Number(themed[2]), id: null };
+      openBoard({ kind: "theme",
+                  theme: { theme: themed[1], no: Number(themed[2]), id: null } });
       setHomeVisible(false);
       /* Checked on the way out rather than caught: buildPuzzle() handles its
          own failures — it shows the nudge and resolves — so a .catch() here
@@ -6671,7 +6839,7 @@
          puzzle arrived. */
       buildPuzzle(null).then(function () {
         if (puzzle) return;
-        themeWanted = null; mode = "practice";
+        openBoard({ kind: "practice" });
         toast("That board is not available", "It may not have been released yet.", "loss");
         showHome();
       });
@@ -6679,22 +6847,23 @@
     }
     var shared = /[?&]p=(\d+)/.exec(location.search || "");
     if (shared) {
-      mode = "practice";
-      sharedToken = "practice:" + shared[1];
-      setHomeVisible(false);
+      openBoard({ kind: "practice", token: "practice:" + shared[1] });
       /* Same shape, and the same reason: the .catch() this replaces could not
          fire, so a stale practice link showed an error and nothing else. */
       buildPuzzle(null).then(function () {
-        sharedToken = null;
-        if (!puzzle) showHome();
+        /* The token is spent once the board is built; a reopen must not reuse
+           it. Reopened as a plain practice board rather than mutating a frozen
+           value. */
+        if (puzzle) openBoard({ kind: "practice" });
+        else showHome();
       });
       return;
     }
     /* A game already under way resumes. Anything else goes to the choice.
 
-       The note this replaces says guessing a mode is how the daily's clock
+       The note this replaces says guessing a board.kind is how the daily's clock
        ended up running on a game nobody had picked, and that is still true —
-       so this does not guess a mode. It resumes a PUZZLE that is already
+       so this does not guess a board.kind. It resumes a PUZZLE that is already
        started and not finished: the letters are on disk, the clock has been
        running against it, and the player was on it moments ago. Reopening
        something you are mid-way through is not a guess about what you want.
@@ -6704,11 +6873,33 @@
     var last = null;
     try { last = localStorage.getItem("fcw.mode"); } catch (e) {}
     /* Left deliberately last time: show the menu, whatever is saved. */
+    var resumeChoices = 0;
     var atHome = false;
     try { atHome = !!localStorage.getItem("fcw.athome"); } catch (e) {}
 
-    var saved = (!atHome && (last === "daily" || last === "practice" || last === "theme"))
-      ? savedFor(last) : null;
+    /* Boot has to find a game in progress on ANY board, not just today's.
+
+       savedFor("daily") defaults to today's slot, which is right for the
+       landing screen — it asks "has today been played?" — and wrong here, where
+       the question is "was anything left unfinished?". Asking the default meant
+       an archive board in progress was invisible and boot showed the menu: the
+       same class of fault this refactor exists to remove, reintroduced by the
+       refactor itself.
+
+       Scans the daily slots instead, newest first, and stops at the first
+       unfinished one. */
+    var saved = null;
+    if (!atHome) {
+      if (last === "practice" || last === "theme") saved = savedFor(last);
+      else if (last === "daily") {
+        /* One resumes. Several means several boards were left going, and
+           picking one for the player would be a guess — the landing screen says
+           how many and lets them choose. */
+        var open_ = unfinishedDailies();
+        if (open_.length === 1) saved = open_[0];
+        else if (open_.length > 1) resumeChoices = open_.length;
+      }
+    }
 
     /* A themed board resumes through openThemed(), not chooseMode().
 
@@ -6757,16 +6948,22 @@
 
          The original worry stands and is handled: chooseMode("daily") starts a
          FRESH puzzle when the save is not today's, which would put the clock on
-         a board nobody picked. Naming the board in dailyWanted is what stops
+         a board nobody picked. Naming the board in the target is what stops
          that — it reopens the one in the save. */
-      if (last === "daily" && saved.dailyNo && saved.dailyNo !== FCW.dailyNumber()) {
-        dailyWanted = saved.dailyNo;
+      if (last === "daily") {
+        var no = saved.dailyNo || today();
+        chooseMode("daily", { kind: "daily", no: no});
+      } else {
+        chooseMode(last);
       }
-      chooseMode(last);
       return;
     }
     renderHome();
     setHomeVisible(true);
+    if (resumeChoices > 1) {
+      toast(resumeChoices + " boards in progress",
+            "Pick one from Previous puzzles.");
+    }
   })();
 
   /* The sync lands after boot, so the Daily opens instantly and offline play is
@@ -6777,20 +6974,23 @@
      the cheat. */
   syncServerDate(function (synced) {
     if (!synced) return;
-    var trueNo = FCW.dailyNumber();
-    if (trueNo === dailyNo) return;
+    /* Nothing opened yet: board.no is null on the landing screen, and null is
+       not today, so without this the sync decided the clock was wrong and
+       opened a board nobody had chosen. */
+    if (!board.no || today() === board.no) return;
     /* An earlier board is not a wrong clock.
 
        This exists for a device whose date is off: it corrects the puzzle before
        kick-off, when nothing is at stake. But since the archive opened,
-       dailyNo is deliberately not today's whenever an earlier board is being
+       board.no is deliberately not today's whenever an earlier board is being
        played — so the sync read that as a bad clock and called bootDaily(),
        which loaded today's board over the top.
 
        That is what showed as the letters appearing for a moment and then a
        blank grid with the Kick Off card: the restore worked, and this replaced
        it a second later. */
-    if (dailyWanted) return;
-    if (mode === "daily" && !started && !complete) bootDaily();
+    if (board.openedAsToday && board.no !== today() && !started && !complete) {
+      chooseMode("daily", { kind: "daily", no: today()});
+    }
   });
 })();

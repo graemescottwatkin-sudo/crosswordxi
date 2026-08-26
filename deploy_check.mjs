@@ -126,6 +126,163 @@ t("the stylesheet's braces and comments balance", (() => {
    The reverse case matters too — a suite named in the workflow but deleted from
    the folder fails the whole run on a missing file, which is how a dead
    scoring_test lingered for weeks exiting 0 on "engine.js is not here". */
+/* The deleted penalty constants stay deleted.
+
+   They were set to 0 when help moved to the clock and kept "so the breakdown
+   can read them". Two reviews then produced findings about readers that still
+   treated them as meaningful — a zero prints a plausible number, so nothing
+   failed and nothing was found. Deleted, a missed reader prints undefined.
+
+   This check exists so they cannot come back as a convenience. */
+/* `dailyNo` is a record field, never a variable.
+
+   It was one of six values each holding part of the answer to "which board is
+   this" — mode, dailyNo, dailyWanted, themeWanted, sharedToken, adminDay —
+   written from a dozen routes and reassembled differently by every reader. Six
+   separate faults came out of that, each found only after fixing the previous
+   one moved the symptom.
+
+   There is one `board` value now and one writer, openBoard(). A bare `dailyNo`
+   is how a seventh copy would start. */
+/* The four shadow variables stay deleted.
+
+   `mode`, `themeWanted`, `sharedToken` and `adminDay` each held part of "which
+   board is this" alongside `board` itself. Seven routes set them and never
+   touched `board`, so `requestPuzzle` read a stale board and **every non-daily
+   board loaded today's daily** — "New puzzle" from the landing screen issued
+   one request, /api/daily. 479 tests passed, because none asserted the URL a
+   theme or practice board asks for.
+
+   One value, one writer, or this comes back. */
+let shadowVars = "";
+t("the board shadow variables have not returned", (() => {
+  if (!has("js/game.js")) return true;
+  const src = read("js/game.js");
+  const bad = [];
+  /* Comments and string literals go first, for every name: "adminDay" is also
+     a DOM id and "cxi:mode" an event name. Stripping them afterwards left the
+     id looking like a variable. */
+  const code = src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "")
+    .replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
+  ["themeWanted", "sharedToken", "adminDay"].forEach((n) => {
+    /* board.adminDay is the field; a bare adminDay is the old variable. */
+    /* Strips the legitimate forms: board.x reading the field, `x:` writing an
+       object key, and "x" as a DOM id or an event name in a string. What is
+       left is a bare variable. */
+    /* Any x.name is a field read — board.adminDay, and t.adminDay reading the
+       target passed to openBoard. A bare name is the old variable. */
+    const stripped = code.replace(new RegExp("[\\w\\)\\]]\\." + n, "g"), "")
+      .replace(new RegExp(n + "\\s*:", "g"), "")
+      .replace(new RegExp('"' + n + '"', "g"), "")
+      .replace(new RegExp("'" + n + "'", "g"), "");
+    if (new RegExp("\\b" + n + "\\b").test(stripped)) bad.push(n);
+  });
+  /* `mode` survives as a string field on records and as fcw.mode; a bare
+     variable read is what must not. */
+  /* Comments and strings stripped first: "cxi:mode" is an event name and the
+     word appears in prose throughout. */
+  const modeSrc = code
+    .replace(/\.mode\b/g, "").replace(/mode\s*:/g, "")
+    .replace(/\bfitMode\b/g, "");
+  if (/(?<![.\w])\bmode\b(?!\s*:)/.test(modeSrc)) bad.push("mode");
+  shadowVars = bad.join(", ");
+  return !bad.length;
+})(), shadowVars);
+
+/* Every JSON-LD block parses, and the share card exists.
+
+   Structured data fails silently: a trailing comma or a stray quote means a
+   search engine ignores the block entirely and nothing on the page looks
+   wrong. Same for og:image — a reference to a file that is not there is worse
+   than no reference, because every share becomes a broken image rather than a
+   plain link. */
+/* A staging address must not be indexed; the real one must be.
+
+   The game is on crossword.thexigames.com and moves to thexigames.com/crossword/.
+   Indexing the subdomain now would put the wrong URL in every search result and
+   every inbound link, and migrating away from somebody else's index of your old
+   address is far harder than never being in it.
+
+   Both directions, because the failure is symmetrical: shipping to the path
+   with noindex still set is a live game nobody can find, which is worse.
+
+   The signal is og:url, the one place the page states where it thinks it
+   lives. */
+let robotsGap = "";
+t("noindex matches the address the page claims", (() => {
+  if (!has("index.html") || !has("_headers")) return true;
+  const url = (read("index.html").match(/og:url" content="([^"]+)"/) || [])[1] || "";
+  const onSubdomain = /:\/\/[a-z]+\.thexigames\.com/.test(url);
+  const noindexed = /X-Robots-Tag:\s*noindex/i.test(read("_headers"));
+  if (onSubdomain && !noindexed) {
+    robotsGap = "on a subdomain (" + url + ") and indexable";
+  } else if (!onSubdomain && noindexed) {
+    robotsGap = "on its path (" + url + ") but still noindex";
+  }
+  return !robotsGap;
+})(), robotsGap || null);
+
+let seoGap = "";
+t("structured data parses and the share card is present", (() => {
+  const problems = [];
+  ["index.html", "how-to-play.html"].forEach((f) => {
+    if (!has(f)) return;
+    const src = read(f);
+    const blocks = src.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g) || [];
+    if (!blocks.length) { problems.push("no JSON-LD in " + f); return; }
+    blocks.forEach((b) => {
+      const body = b.replace(/<script[^>]*>/, "").replace(/<\/script>/, "");
+      try {
+        const parsed = JSON.parse(body);
+        if (!parsed["@type"]) problems.push("no @type in " + f);
+      } catch (e) { problems.push("unparseable JSON-LD in " + f); }
+    });
+    const img = src.match(/og:image" content="([^"]+)"/);
+    if (!img) problems.push("no og:image in " + f);
+    else if (!/^https?:/.test(img[1]) && !has(img[1])) {
+      problems.push("og:image missing: " + img[1]);
+    }
+  });
+  seoGap = problems.join(", ");
+  return !problems.length;
+})(), seoGap);
+
+let bareDaily = "";
+t("dailyNo appears only as a record field, never as a variable", (() => {
+  if (!has("js/game.js")) return true;
+  const lines = read("js/game.js").split("\n");
+  const bad = [];
+  lines.forEach((l, i) => {
+    const trimmed = l.trim();
+    if (trimmed.startsWith("*") || trimmed.startsWith("//")) return;
+    /* Strip the legitimate forms: `x.dailyNo` reading a record, and
+       `dailyNo:` writing one in an object literal. Anything left is a bare
+       variable. */
+    const stripped = l.replace(/[\w\])]\.dailyNo/g, "").replace(/dailyNo\s*:/g, "");
+    if (/\bdailyNo\b/.test(stripped)) bad.push("line " + (i + 1));
+  });
+  bareDaily = bad.slice(0, 3).join(", ");
+  return !bad.length;
+})(), bareDaily);
+
+let deadConsts = "";
+t("the deleted penalty constants have not returned", (() => {
+  const names = ["CHECK_PENALTY", "CHECK_ALL_PENALTY",
+                 "REVEAL_LETTER_PENALTY", "REVEAL_ANSWER_PENALTY"];
+  const files = ["js/engine.js", "js/game.js", "functions/_lib/scoring.js",
+                 "functions/api/finish.js"];
+  const found = [];
+  files.forEach((f) => {
+    if (!has(f)) return;
+    const src = read(f);
+    names.forEach((n) => { if (src.includes(n)) found.push(n + " in " + f); });
+  });
+  deadConsts = found.join(", ");
+  return !found.length;
+})(), deadConsts);
+
 let suiteGap = "";
 t("every test suite is named in the workflow", (() => {
   const wf = "\u002egithub/workflows/checks.yml";

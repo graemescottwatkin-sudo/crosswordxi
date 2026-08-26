@@ -849,7 +849,11 @@ server.listen(0, "127.0.0.1", async () => {
   })());
   t("and following that link opens the puzzle, not a menu", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /\[\?&\]p=\(\\d\+\)/.test(js) && /sharedToken = "practice:"/.test(js);
+    /* sharedToken is gone: one `board` value carries the token now, and
+       openBoard is the only writer. The property is the same — a ?p= link
+       opens the puzzle it names rather than falling through to the menu. */
+    return /\[\?&\]p=\(\\d\+\)/.test(js) &&
+      /openBoard\(\{ kind: "practice", token: "practice:"/.test(js);
   })());
   t("the shared line claims nothing untrue about football", (() => {
     /* "Arsenal finished 3rd in 2020/21" reads as a statement about a real
@@ -864,7 +868,7 @@ server.listen(0, "127.0.0.1", async () => {
        had no way to reach the game. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /SHARE_URL = "https:\/\/crossword\.thexigames\.com"/.test(js) &&
-      /var invite = mode === "daily" \? SHARE_URL/.test(js) &&
+      /var invite = board\.kind === "daily" \? SHARE_URL/.test(js) &&
       /name \+ "\\n" \+ line \+ "\\n" \+ invite/.test(js);
   })());
   t("and a picture that gives nothing away", (() => {
@@ -984,7 +988,16 @@ server.listen(0, "127.0.0.1", async () => {
   })());
   t("the header says which phase it is, not a raw number", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return !/"Daily #" \+ dailyNo/.test(js) && /FCW\.dailyPhase\(dailyNo\)\.label/.test(js);
+    /* `dailyNo` is no longer a variable — it survives only as a record field.
+       Six functions each held their own idea of which board was in play; there
+       is one `board` value and one writer now, so the header asks
+       dailyPhase(board.no).
+
+       The property is unchanged: the header names the phase rather than
+       printing a number, because a count that only goes up tells a newcomer
+       they are late. */
+    return !/"Daily #" \+ /.test(js) &&
+      /FCW\.dailyPhase\(board\.no\)\.label/.test(js);
   })());
   t("the stored sequence is unbroken, so nothing about generation changes", (() => {
     /* Pre-season uses stored days 1..PRESEASON_DAYS, not a second set — so
@@ -1264,9 +1277,14 @@ server.listen(0, "127.0.0.1", async () => {
        starts a FRESH puzzle when the save is not today's, which would put the
        clock on a board nobody picked. dailyWanted names the board in the save,
        so it reopens that one. */
+    /* Boot still chooses no MODE, and still reopens only a puzzle already
+       under way. What changed is how it names the board: dailyWanted is gone,
+       and every route now goes through chooseMode(kind, target) with the board
+       stated explicitly rather than left in a variable for somebody else to
+       read. */
     return /renderHome\(\)/.test(boot) && !/bootDaily\(\)/.test(boot) &&
       /inProgress\(saved\)/.test(boot) &&
-      /dailyWanted = saved\.dailyNo/.test(boot);
+      /chooseMode\("daily", \{ kind: "daily", no: no/.test(boot);
   })());
   t("choosing a mode is what starts anything", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

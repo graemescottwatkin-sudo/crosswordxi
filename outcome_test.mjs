@@ -91,5 +91,72 @@ console.log("\nThe play reference is per board, not per tab");
     "or a refresh mid-puzzle would count as a second attempt");
 }
 
+console.log("\nOne board value, one writer");
+{
+  const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  t("openBoard exists", /function openBoard\(/.test(game));
+  t("and is the only thing that assigns board", (() => {
+    /* Six variables each held part of "which board is this" and were written
+       from a dozen routes. Six faults came out of that, each found only after
+       fixing the previous one moved the symptom. */
+    const writes = (game.match(/(?<![.\w])board\s*=\s*\{/g) || []).length;
+    return writes <= 2;   // the initial value, and openBoard's assignment
+  })());
+  t("the request always names the board",
+    /api\("\/api\/daily\?no=" \+ \(board\.no \|\| today\(\)\)\)/.test(game),
+    "no parameter would be a second definition of today");
+  t("boot looks for an unfinished daily on any board, not only today's",
+    /function unfinishedDailies\(/.test(game),
+    "savedFor('daily') defaults to today, which is the landing screen's question");
+  t("the date sync waits until a board is open",
+    /if \(!board\.no \|\| today\(\) === board\.no\) return;/.test(game),
+    "board.no is null on the landing screen, and null is not today");
+  t("save slots are keyed per board",
+    /"fcw\.v04\.daily\." \+/.test(game),
+    "one shared slot meant an archive board overwrote today's");
+}
+
+console.log("\nEvery kind of board asks for its own");
+{
+  /* The gap that let a broken build pass 479 tests: no suite asserted the URL
+     a theme or practice board requests. Seven routes set the old variables and
+     never touched `board`, so requestPuzzle read a stale one and every
+     non-daily board loaded today's daily.
+
+     Source-read rather than driven, because requestPuzzle needs a live puzzle
+     and a server. What must hold is that each kind has its own branch and that
+     `board` is what they switch on. */
+  const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  const fn = game.slice(game.indexOf("function requestPuzzle"),
+                        game.indexOf("function requestPuzzle") + 2200);
+  t("a daily asks /api/daily by number",
+    /board\.kind === "daily"[\s\S]{0,400}\/api\/daily\?no=/.test(fn));
+  t("a theme board asks /api/theme-board",
+    /board\.kind === "theme"[\s\S]{0,400}\/api\/theme-board/.test(fn));
+  t("a shared token asks /api/practice",
+    /board\.token[\s\S]{0,200}\/api\/practice\?token=/.test(fn));
+  t("the owner's preview asks the admin route",
+    /board\.adminDay[\s\S]{0,200}\/api\/admin\/daily/.test(fn));
+  t("and nothing switches on a variable other than board",
+    !/(?<![.\w])themeWanted|(?<![.\w])sharedToken/.test(fn));
+}
+
+console.log("\nThe board is frozen, and has exactly two constructors");
+{
+  const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  t("openBoard freezes it", /function openBoard[\s\S]{0,600}Object\.freeze/.test(game),
+    "so a stray board.x = throws rather than drifting");
+  t("adoptServerBoard is the only other constructor",
+    /function adoptServerBoard/.test(game) &&
+    /* Three: the initial value, openBoard, adoptServerBoard. The initial one is
+       frozen too, so the landing state cannot be mutated either. */
+    (game.match(/(?<![.\w])board\s*=\s*Object\.freeze/g) || []).length === 3);
+  t("nothing assigns a board field",
+    !/(?<![.\w])board\.(kind|no|theme|token|adminDay|openedAsToday)\s*=[^=]/.test(game));
+  t("openedAsToday is derived, never passed",
+    !/asToday\s*:/.test(game.replace(/openedAsToday:/g, "")),
+    "a caller could otherwise make a board that lies about itself");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -10,6 +10,49 @@ XI Games suite alongside Scrambled XI and Missing XI.
 
 ---
 
+## URLs, decided now and used later
+
+The game is at `crossword.thexigames.com` and moves to a path on the hub. The
+scheme is written down before anything uses it, so every piece of URL-shaped
+work targets one address rather than being redone:
+
+| | |
+|---|---|
+| the game | `/crossword/` |
+| how to play | `/crossword/how-to-play/` |
+| a past daily | `/crossword/daily/<yyyy-mm-dd>/` |
+| a club board | `/crossword/club/<slug>/` |
+
+Dates rather than daily numbers in the archive URLs: a number means nothing to
+anyone outside the game and changes if the epoch ever moves, while a date is
+stable and is what somebody would search for.
+
+**Every reference in the repo is relative** — `css/style.css`, not
+`/css/style.css` — so the move needs no edit to any page. `deploy_check`
+enforces that. The exceptions are the ones that cannot be relative and have to
+be changed by hand at the move:
+
+- `og:url` in `index.html`
+- the `url` field in the JSON-LD block in `index.html`
+- `SHARE_URL` in `js/game.js`
+
+### Held until the move
+
+Not oversights. Each is a URL, and doing it now means doing it twice:
+
+- `sitemap.xml`
+- crawlable pages per past daily and per club board — clue text only, never
+  answers. The largest gain available, and the one most wasted at the wrong
+  address.
+- internal links to the other games and the hub
+- directory listings, subreddit posts, any outreach at all
+
+### While on a subdomain
+
+`_headers` carries `X-Robots-Tag: noindex` and must, until the game is on its
+path. Indexing a staging address means migrating away from somebody else's
+index of it. `deploy_check` fails a build that gets this the wrong way round.
+
 ## A. What changed, and why
 
 Until now the whole game was one `index.html` with all 2,948 clues and answers

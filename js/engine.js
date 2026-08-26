@@ -726,17 +726,6 @@ var FCW = (function () {
      live table vs a benchmark ladder. All values are configuration. */
   var SCORING = {
     MAX_SCORE: 114,
-    /* Priced against the clock, which is what makes a help a decision.
-
-       The clock costs about 2.6 points a real minute. If a help costs less
-       than the time it saves, using it is always correct and the choice is
-       fake. Reveal answer at 9 bought 3.5 minutes — always worth it for a clue
-       you were stuck on, and priced identically to checking the whole grid,
-       which is not a comparable thing at all.
-
-       Check word is the cheapest because it is the one that rewards having
-       tried: it only helps if you have already typed something. Reveal letter
-       costs more because it works on an empty square. */
     /* Substitutions decide the RESULT. The clock decides the SCORE.
 
        Three, for everyone, on every board — not a practice-difficulty setting.
@@ -771,10 +760,6 @@ var FCW = (function () {
        Kept as named constants rather than deleted because the breakdown, the
        share text and the server all read them, and a zero says "this is not
        what it costs" more plainly than an absent field. */
-    CHECK_PENALTY: 0,
-    CHECK_ALL_PENALTY: 0,
-    REVEAL_LETTER_PENALTY: 0,
-    REVEAL_ANSWER_PENALTY: 0,
     // Football match clock: 30 real minutes maps to 90 football minutes.
     MATCH_CLOCK_REAL_SECONDS: 1800,
     MATCH_CLOCK_MAX_MINUTES: 90,
@@ -954,16 +939,18 @@ var FCW = (function () {
     return Math.round(SCORING.MAX_SCORE - scoreAtMinute(matchMinute(elapsedSeconds)));
   }
   function computeScore(elapsedSeconds, checksUsed, revealedLetters, revealedAnswers, checkAllsUsed) {
+    /* The clock is the whole of it.
+
+       Four penalty constants used to multiply the help counts here. They were
+       set to zero when help moved to the clock, and kept "so the breakdown and
+       the share text can read them" — which meant a missed reader printed a
+       plausible 0 instead of failing. Deleted: a missed reader now prints
+       undefined and is found in a minute.
+
+       The counts stay as arguments because the server tallies them and the
+       breakdown lists them; they no longer change the score. */
     var tp = timePenalty(elapsedSeconds);
-    var cp = checksUsed * SCORING.CHECK_PENALTY;
-    var xp = (checkAllsUsed || 0) * SCORING.CHECK_ALL_PENALTY;
-    var lp = revealedLetters * SCORING.REVEAL_LETTER_PENALTY;
-    var ap = revealedAnswers * SCORING.REVEAL_ANSWER_PENALTY;
-    return {
-      score: Math.max(0, SCORING.MAX_SCORE - tp - cp - xp - lp - ap),
-      timePenalty: tp, checkPenalty: cp, checkAllPenalty: xp,
-      revealLetterPenalty: lp, revealAnswerPenalty: ap
-    };
+    return { score: Math.max(0, SCORING.MAX_SCORE - tp), timePenalty: tp };
   }
   /* How much of the grid is wrong, without saying where. Used for the free
      "grid is full but something's off" report: a count is enough to stop the

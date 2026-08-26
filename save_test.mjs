@@ -62,7 +62,19 @@ const server = http.createServer(async (req, res) => {
 });
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const KEYS = ["fcw.v04.daily", "fcw.v04.practice", "fcw.mode", "fcw.results.v1",
+/* Saves are keyed by board now: fcw.v04.daily.<no>, not one shared slot.
+
+   A single slot held whichever daily was last opened, so an archive board
+   overwrote today's and came back blank. These fixtures seed and read the
+   keyed slot; the legacy unkeyed one is still READ once as a fallback, which
+   the "survives the change" case below covers. */
+const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
+const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
+if (!EM) throw new Error("Could not read EPOCH from functions/_lib/daily.js");
+const DAILY_EPOCH = Date.UTC(+EM[1], +EM[2], +EM[3]);
+const TODAY_NO = Math.max(1, Math.floor((Date.now() - DAILY_EPOCH) / 86400000) + 1);
+const DAILY_SLOT = "fcw.v04.daily." + TODAY_NO;
+const KEYS = [DAILY_SLOT, "fcw.v04.practice", "fcw.mode", "fcw.results.v1",
   "fcw.usedClues.v1", "fcw.clubPref", "fcw.recent", "fcw.bank", "fcw.filter"];
 
 /* A daily part way through: three letters down and getting on for three
@@ -80,11 +92,6 @@ const KEYS = ["fcw.v04.daily", "fcw.v04.practice", "fcw.mode", "fcw.results.v1",
 
    The comment above warns that a fixture which expires reports a fault in the
    code when the fault is in the fixture. It expired a different way. */
-const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
-const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
-if (!EM) throw new Error("Could not read EPOCH from functions/_lib/daily.js");
-const DAILY_EPOCH = Date.UTC(+EM[1], +EM[2], +EM[3]);
-const TODAY_NO = Math.max(1, Math.floor((Date.now() - DAILY_EPOCH) / 86400000) + 1);
 
 const IN_PROGRESS = JSON.stringify({
   mode: "daily", dailyNo: TODAY_NO, seed: 1463034884,
@@ -126,7 +133,7 @@ server.listen(0, "127.0.0.1", async () => {
     return dom;
   }
   const daily = (w) => {
-    try { return JSON.parse(w.localStorage.getItem("fcw.v04.daily")); } catch (e) { return null; }
+    try { return JSON.parse(w.localStorage.getItem(DAILY_SLOT)); } catch (e) { return null; }
   };
   const played = (r) => !!r && (Object.keys(r.letters || {}).length > 0 || !!r.elapsed);
   const snap = (w) => { const o = {}; for (const k of KEYS) o[k] = w.localStorage.getItem(k); return o; };
@@ -139,7 +146,7 @@ server.listen(0, "127.0.0.1", async () => {
      letters is {} and elapsed is 0 — and applyClubChoice() ends in saveSoon().
      Before the fix this wrote an empty record straight over a game in play. */
   console.log("The landing screen");
-  let dom = await open({ "fcw.v04.daily": IN_PROGRESS });
+  let dom = await open({ [DAILY_SLOT]: IN_PROGRESS });
   let w = dom.window, $ = (id) => w.document.getElementById(id);
 
   t("a seeded game in progress is there to begin with", played(daily(w)),
@@ -241,7 +248,25 @@ server.listen(0, "127.0.0.1", async () => {
     "highest count " + most);
 
   w.close();
+
+  /* ---- The old shared slot is dead ----
+     A fallback read it once so a game in progress survived the move to
+     per-board slots. Deleted: it cost one board for whoever was mid-puzzle at
+     deploy, and there were no players. It is in WIPE_KEYS so the dead key
+     clears rather than sitting in storage for good. */
+  console.log("\nThe old shared slot");
+  {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    t("nothing reads the unkeyed daily slot any more",
+      !/getItem\("fcw\.v04\.daily"\)/.test(js));
+    t("and a reset clears it", /"fcw\.v04\.daily",/.test(js),
+      "so it does not linger in a browser for good");
+    t("finished slots are pruned once the result is banked",
+      /pruneDailySlot\(/.test(js),
+      "one slot a day would otherwise accumulate for ever");
+  }
+
   server.close();
-  console.log(`\n${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 });

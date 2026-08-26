@@ -26,13 +26,6 @@ export const SCORING = {
   /* These MUST match js/engine.js. The server is authoritative, so a
      divergence does not show as an error — it shows as a Full Time screen
      whose number changes a second after it appears, with no explanation. */
-  /* Zero: the clock is the score cost now, and the server reads elapsed from
-     started_at. See js/engine.js — HELP_MINUTES was converted from these, so
-     charging both charged the same thing twice. MUST match engine.js. */
-  CHECK_PENALTY: 0,
-  CHECK_ALL_PENALTY: 0,
-  REVEAL_LETTER_PENALTY: 0,
-  REVEAL_ANSWER_PENALTY: 0,
   /* MUST match js/engine.js. This is the only score cost now, so a divergence
      here does not show as an error — it shows as the Full Time number changing
      a second after it appears. */
@@ -76,16 +69,11 @@ function scoreAtMinute(minute) {
    apart depending on which badge the player had chosen. A higher floor also
    meant a higher score, so omitting the field bought back the unscaled curve. */
 export function computeScore(elapsedSeconds, checks, revealLetters, revealAnswers, checkAlls) {
+  /* No penalty constants. The clock is the whole score; see js/engine.js.
+     Deleted rather than zeroed: at 0 a missed reader printed a plausible
+     number, so nothing failed and nothing was found. */
   const timePenalty = Math.round(SCORING.MAX_SCORE - scoreAtMinute(matchMinute(elapsedSeconds)));
-  const checkPenalty = (checks || 0) * SCORING.CHECK_PENALTY;
-  const checkAllPenalty = (checkAlls || 0) * SCORING.CHECK_ALL_PENALTY;
-  const letterPenalty = (revealLetters || 0) * SCORING.REVEAL_LETTER_PENALTY;
-  const answerPenalty = (revealAnswers || 0) * SCORING.REVEAL_ANSWER_PENALTY;
-  return {
-    score: Math.max(0, SCORING.MAX_SCORE - timePenalty - checkPenalty -
-                       checkAllPenalty - letterPenalty - answerPenalty),
-    timePenalty, checkPenalty, checkAllPenalty, letterPenalty, answerPenalty,
-  };
+  return { score: Math.max(0, SCORING.MAX_SCORE - timePenalty), timePenalty };
 }
 
 /* Is this grid actually finished and correct? The only part of a score the

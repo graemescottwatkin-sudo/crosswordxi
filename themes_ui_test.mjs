@@ -278,7 +278,11 @@ server.listen(0, "127.0.0.1", async () => {
   if ($("kickOffBtn")) { $("kickOffBtn").click(); await wait(500); }
   for (const ch of "ABC") w.document.dispatchEvent(new w.KeyboardEvent("keydown", { key: ch, bubbles: true }));
   await wait(1500);
-  const themeSlot = w.localStorage.getItem("fcw.v04.theme");
+  /* Themed saves are keyed per board now: fcw.v04.theme.<theme>-<no>. One
+     shared slot meant opening a second club board destroyed the first. */
+  const themeSlot = Object.keys(w.localStorage)
+    .filter((k) => k.indexOf("fcw.v04.theme") === 0)
+    .map((k) => w.localStorage.getItem(k))[0] || null;
   t("a themed board saves to its own slot", !!themeSlot, themeSlot ? "written" : "nothing saved");
   t("and not over the practice slot", !w.localStorage.getItem("fcw.v04.practice"));
   t("the save records which board it is, so it can be resumed",

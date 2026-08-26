@@ -66,7 +66,14 @@ const server = http.createServer(async (req, res) => {
 });
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const SLOT = "fcw.v04.daily";
+/* Saves are keyed by board: fcw.v04.daily.<no>. See save_test.mjs. */
+/* Read from the source, like save_test.mjs — a hardcoded epoch here would be a
+   fourth copy of a value that already exists twice. */
+const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
+const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
+const TODAY_NO = Math.max(1, Math.floor(
+  (Date.now() - Date.UTC(+EM[1], +EM[2], +EM[3])) / 86400000) + 1);
+const SLOT = "fcw.v04.daily." + TODAY_NO;
 
 server.listen(0, "127.0.0.1", async () => {
   const origin = `http://127.0.0.1:${server.address().port}`;

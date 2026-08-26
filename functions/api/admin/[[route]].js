@@ -353,13 +353,23 @@ export async function onRequest({ request, env, params }) {
          Names live in challenge_entries, where somebody typed one on purpose.
          This answers how a board plays, not who played it. */
       const rows = await env.DB.prepare(
-        `SELECT srv_score AS score, elapsed_secs AS secs, started_at,
+      /* srv_elapsed_secs, not elapsed_secs.
+
+         elapsed_secs is the browser's own figure, posted by the pagehide
+         beacon: forgeable, and NULL when the beacon never arrived — which
+         SQLite sorts FIRST ascending, so a lost beacon won the tie-break
+         outright. srv_elapsed_secs is the clock /api/finish scored on.
+
+         COALESCE keeps rows written before migration 017 orderable rather than
+         floating to the top; they fall back to the old figure. */
+        `SELECT srv_score AS score,
+                COALESCE(srv_elapsed_secs, elapsed_secs) AS secs, started_at,
                 solved, total, completed, by_owner,
                 srv_checks, srv_check_alls,
                 srv_reveal_letters, srv_reveal_answers
            FROM plays
           WHERE theme_key = ?
-          ORDER BY completed DESC, srv_score DESC, elapsed_secs ASC
+          ORDER BY completed DESC, srv_score DESC, COALESCE(srv_elapsed_secs, elapsed_secs) ASC
           LIMIT 200`).bind(key).all();
 
       const all = rows.results || [];

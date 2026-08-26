@@ -15,6 +15,44 @@
      WhatsApp, X and Reddit, which is most of how a daily puzzle spreads. -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://crossword.thexigames.com/">
+
+<!-- The share card image. 1200x630 is what every platform crops from; without
+     it a shared link is a grey box, which is the difference between a post that
+     gets clicked and one that does not.
+
+     Relative, like every other reference here, so it survives the move to
+     thexigames.com/crossword/ without an edit. -->
+<meta property="og:image" content="og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="og-image.png">
+
+<!-- Structured data: what this page IS, in the form a search engine parses.
+
+     WebApplication rather than WebSite, because it is a thing you play rather
+     than a set of documents. applicationCategory Game and offers price 0 are
+     what let it appear as free-to-play rather than as an unclassified page.
+
+     The URL is written out because JSON-LD has no notion of a relative base —
+     this is the one place in the file that has to change at the move, and the
+     path scheme it will change to is recorded in README.md. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Crossword XI",
+  "alternateName": "The daily football crossword",
+  "url": "https://crossword.thexigames.com/",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "description": "A daily football crossword. Eleven answers, scored out of 114 \u2014 thirty-eight matches at three points each.",
+  "inLanguage": "en-GB",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+  "publisher": { "@type": "Organization", "name": "The XI Games", "url": "https://thexigames.com" }
+}
+</script>
 <meta property="og:title" content="Crossword XI — The Football Crossword">
 <meta property="og:description" content="The daily football crossword. Solve before the 90 minutes gets away from you.">
 <meta property="og:site_name" content="The XI Games">
@@ -57,9 +95,21 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v143">
+<link rel="stylesheet" href="css/style.css?v=v146">
 </head>
 <body>
+<!-- The page's only H1, first thing in the body.
+
+     There was none at all, and the first headings a crawler met were "Flag this
+     clue" and "Owner tools" — two dialogs that happen to sit early in the
+     markup. Demoting them was not enough: document ORDER is what a crawler
+     reads, so the H1 has to come before them, not merely outrank them.
+
+     Visually hidden rather than shown, because the masthead already says
+     "Crossword XI" in the header and a second visible title would be a
+     duplicate for a human to explain away. The phrase people search for lives
+     here. -->
+<h1 class="sr-only">Crossword XI &mdash; the daily football crossword</h1>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
      because "is this the version I just deployed?" has cost more time on this
      project than any layout question. Remove this element and the .build-badge
@@ -76,7 +126,7 @@
      tells you whether to reword it or bin it. -->
 <div class="sheet" id="flagSheet">
   <div class="sheet-card">
-    <h2>Flag this clue</h2>
+    <h3>Flag this clue</h3>
     <div class="sheet-sub" id="flagClueText">&mdash;</div>
 
     <div class="flag-reasons" id="flagReasons">
@@ -102,7 +152,7 @@
 
 <div class="sheet" id="adminSheet">
   <div class="sheet-card">
-    <h2>Owner tools</h2>
+    <h3>Owner tools</h3>
     <div class="sheet-sub" id="adminSub">&mdash;</div>
     <table class="status-table"><tbody id="adminBody"></tbody></table>
 
@@ -180,7 +230,7 @@
 
 <div class="sheet" id="statusSheet">
   <div class="sheet-card">
-    <h2>What&rsquo;s live</h2>
+    <h3>What&rsquo;s live</h3>
     <div class="sheet-sub" id="statusSub">Checking&hellip;</div>
     <table class="status-table"><tbody id="statusBody"></tbody></table>
     <button class="btn outline sheet-close" id="statusClose">Close</button>
@@ -213,7 +263,7 @@
 <div id="challengeOverlay" class="overlay challenge-overlay">
   <div class="overlay-card">
     <div class="ch-who" id="chWho">Someone challenged you</div>
-    <h2 class="ch-board" id="chBoard">&nbsp;</h2>
+    <h3 class="ch-board" id="chBoard">&nbsp;</h3>
     <div class="ch-count" id="chCount"></div>
     <label class="ch-label" for="chName">What&rsquo;s your name?</label>
     <input id="chName" type="text" maxlength="20" autocomplete="nickname"
@@ -235,7 +285,7 @@
 <div id="rotatePrompt" class="rotate-prompt">
   <div class="rotate-card">
     <div class="rotate-icon" aria-hidden="true">&#8635;</div>
-    <h2>Turn your phone upright</h2>
+    <h3>Turn your phone upright</h3>
     <p>There isn&rsquo;t room for the board and the keyboard side by side on a screen this short.</p>
   </div>
 </div>
@@ -489,10 +539,10 @@
          clue list, and the friction of finding it costs more than the scrolling
          it saved. -->
     <div class="clues-block" id="cluesBlock">
-      <h2 class="clues-head">All clues</h2>
+      <h3 class="clues-head">All clues</h3>
       <div class="clues" id="clues">
-        <div class="clue-col"><h2>Across</h2><ol id="acrossList"></ol></div>
-        <div class="clue-col"><h2>Down</h2><ol id="downList"></ol></div>
+        <div class="clue-col"><h3>Across</h3><ol id="acrossList"></ol></div>
+        <div class="clue-col"><h3>Down</h3><ol id="downList"></ol></div>
       </div>
     </div>
 
@@ -501,7 +551,7 @@
          thing that produced it rather than below the clue lists, where it was
          two scrolls away from the board on a phone. -->
   <div class="table-panel compact board-table" id="seasonPanel">
-    <h2>Season</h2>
+    <h3>Season</h3>
     <div class="season-strip">
       <div class="season-head">
         <span class="lbl">Season</span><span class="wdl" id="seasonWdl"></span>
@@ -531,7 +581,7 @@
      the player asks for it, and the game never waits on it. -->
 <div class="sheet" id="accountSheet">
   <div class="sheet-card">
-    <h2 id="acctTitle">Your account</h2>
+    <h3 id="acctTitle">Your account</h3>
     <div class="sheet-sub" id="acctSub">Playing as a guest on this device</div>
 
     <div id="acctSignedOut">
@@ -606,7 +656,7 @@
 
 <div class="sheet" id="statsSheet">
   <div class="sheet-card">
-    <h2>My Season</h2>
+    <h3>My Season</h3>
     <div class="sheet-sub" id="statsSub"></div>
     <!-- The friendlies stay visible once the season starts. A run built in
          August vanishing on Matchday 1 would read as a bug. -->
@@ -627,7 +677,7 @@
 
 <div class="overlay" id="pauseOverlay">
   <div class="kick-card">
-    <h2>Half Time</h2>
+    <h3>Half Time</h3>
     <div class="kick-mode" id="pauseMode">Clock stopped</div>
     <button class="btn primary" id="resumeBtn">Resume</button>
     <div class="kick-note">The grid and clues are hidden while paused.</div>
@@ -651,7 +701,7 @@
      list could. -->
 <div class="sheet" id="archiveSheet">
   <div class="sheet-card">
-    <h2>Previous puzzles</h2>
+    <h3>Previous puzzles</h3>
     <div class="sheet-sub" id="archiveSub">Every daily so far</div>
 
     <div class="cal-head">
@@ -678,7 +728,7 @@
 
 <div class="sheet" id="themeSheet">
   <div class="sheet-card">
-    <h2>Clubs and themes</h2>
+    <h3>Clubs and themes</h3>
     <div class="sheet-sub" id="themeSub">A new board every Friday</div>
 
     <h3>Available now</h3>
@@ -868,7 +918,7 @@
 
 <div class="overlay" id="startOverlay">
   <div class="kick-card">
-    <h2>Kick Off</h2>
+    <h3>Kick Off</h3>
     <div class="kick-mode" id="kickMode">Daily puzzle</div>
     <div class="kick-club">
       <label for="kickClubSelect">Your club</label>
@@ -894,7 +944,7 @@
 
 <div class="overlay" id="doneOverlay">
   <div class="result">
-    <h2>Full Time</h2>
+    <h3>Full Time</h3>
     <div class="res-club" id="rClub">&mdash;</div>
     <!-- One line, not two. The position line said "20TH — 15 PTS" and the line
          under it said "15 / 114 pts": the same number twice, and the only thing
@@ -1028,7 +1078,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v143</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v146</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1041,8 +1091,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v143"></script>
-<script src="js/engine.js?v=v143"></script>
-<script src="js/game.js?v=v143"></script>
+<script src="js/seasons.js?v=v146"></script>
+<script src="js/engine.js?v=v146"></script>
+<script src="js/game.js?v=v146"></script>
 </body>
 </html>

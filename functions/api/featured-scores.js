@@ -40,14 +40,24 @@ export async function onRequestGet({ request, env }) {
        by_owner = 0 keeps your own testing out. completed = 1 because an
        abandoned attempt is not a score. */
     const rows = await env.DB.prepare(
-      `SELECT srv_score AS score, elapsed_secs AS secs
+      /* srv_elapsed_secs, not elapsed_secs.
+
+         elapsed_secs is the browser's own figure, posted by the pagehide
+         beacon: forgeable, and NULL when the beacon never arrived — which
+         SQLite sorts FIRST ascending, so a lost beacon won the tie-break
+         outright. srv_elapsed_secs is the clock /api/finish scored on.
+
+         COALESCE keeps rows written before migration 017 orderable rather than
+         floating to the top; they fall back to the old figure. */
+      `SELECT srv_score AS score,
+              COALESCE(srv_elapsed_secs, elapsed_secs) AS secs
          FROM plays
         WHERE theme_key = ?
           AND completed = 1
           AND by_owner = 0
           AND srv_score IS NOT NULL
           AND date(started_at) = ?
-        ORDER BY srv_score DESC, elapsed_secs ASC`).bind(key, today).all();
+        ORDER BY srv_score DESC, COALESCE(srv_elapsed_secs, elapsed_secs) ASC`).bind(key, today).all();
 
     const scores = (rows.results || []).map((r, i) => ({
       rank: i + 1, score: r.score, secs: r.secs,
