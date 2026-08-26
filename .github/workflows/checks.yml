@@ -32,6 +32,18 @@ jobs:
       - name: Install jsdom
         run: npm install -D jsdom --no-audit --no-fund
 
+      # names_test.mjs resolves every identifier against the real scope chain,
+      # which needs a parser. Node ships acorn and does not export it, and jsdom
+      # no longer pulls it in, so it is installed the way jsdom is.
+      - name: Install acorn
+        run: npm install -D acorn --no-audit --no-fund
+
+      # Runs before anything that loads the page. A name with no declaration is
+      # cheaper to hear about here than as a ReferenceError inside a suite, and
+      # this is the gap that put broken reveals on the live v146 build.
+      - name: Names resolve
+        run: node names_test.mjs
+
       # The generator suite needs the clue bank, which is not in the repository.
       # Skipped rather than failed: a suite that cannot run is not a suite that
       # found something.
@@ -53,6 +65,7 @@ jobs:
           node d1_test.mjs
           node epoch_test.mjs
           node outcome_test.mjs
+          node record_test.mjs
           node fairness_test.mjs
           node howto_test.mjs
           node auth_test.mjs

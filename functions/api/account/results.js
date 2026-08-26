@@ -31,7 +31,7 @@ export async function onRequestGet({ request, env }) {
     `SELECT mode, daily_no, played_on, score, elapsed_seconds,
             checks, check_alls, revealed_letters, revealed_answers,
             substitutions, pauses, paused_seconds, club, season,
-            completed_at, source
+            solved, completed_at, source
        FROM results
       WHERE user_id = ?
       ORDER BY daily_no DESC, completed_at DESC
@@ -43,6 +43,19 @@ export async function onRequestGet({ request, env }) {
      table, My Season — expects it. Translating here keeps that in one place. */
   const results = (rows.results || []).map((r) => ({
     mode: r.mode,
+    /* A remote row is not built by FCW.makeResultRecord — it is assembled
+       here — so it needs every field the browser's own rows carry or it
+       behaves differently for no reason a reader can see. FCW.outcome() reads
+       `complete` first and returns "L" without it, which would have made every
+       result pulled from an account a loss.
+
+       `results` has no `total` — that column is on `plays` — so there is
+       nothing here to compare a solved count against. migrate.js writes
+       `solved` as 1 for any row carrying a score and 0 otherwise, so on this
+       table it is already the flag rather than a count, and every row it has
+       ever written came from a finished board. Read as a flag, and falling
+       back to the score for rows written before it. */
+    complete: r.solved != null ? !!r.solved : r.score != null,
     dailyNo: r.daily_no,
     date: r.played_on,
     score: r.score,

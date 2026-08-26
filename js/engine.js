@@ -1270,9 +1270,35 @@ var FCW = (function () {
       v: 1,
       date: o.date,                       // ISO yyyy-mm-dd, local calendar day
       dailyNo: o.dailyNo,
+      /* Eight readers filter results on `mode === "daily"` — mergeResults,
+         renderHome, alreadyPlayedElsewhere, nextUnplayedDaily,
+         renderPreviousCount and the calendar among them. The field was never
+         built here, so every one of them matched only rows pulled down from an
+         account and never a row this device wrote. renderPreviousCount not
+         falling after an archive board was blamed on the "today only" guard in
+         recordDaily and fixed there; this was the second cause and outlived it.
+
+         Defaulted rather than required: this function has only ever built
+         dailies, themed boards keep their own store, and a row that reaches a
+         reader without a mode is invisible rather than wrong-looking. */
+      mode: o.mode || "daily",
+      /* What FCW.outcome() reads first. Without it every stored result — a
+         114 in five minutes included — resolved to "L", which is why nothing
+         could be built on outcome() yet.
+
+         Defaults true because recordDaily is reached only from the two Full
+         Time paths, so every record ever written here was a finished board.
+         It is stored rather than assumed because a loss is "started and not
+         finished", and whatever ends up banking one needs somewhere to say so.
+         Deriving it would make that impossible to express. */
+      complete: o.complete !== false,
       /* The attempt this row came from, so a verified score can replace its own
          row rather than being refused as a duplicate. This function builds an
-         explicit shape, so a field not named here is dropped in silence. */
+         explicit shape, so a field not named here is dropped in silence. That
+         is deliberate — it keeps junk out of a record that syncs — but the
+         silence is what hid `mode` and `complete` for as long as it did.
+         record_test.mjs reads recordDaily's call site out of game.js and fails
+         if it passes a field this shape does not carry. */
       playId: o.playId || null,
       seed: o.seed,
       bankVersion: o.bankVersion || QUESTION_BANK_VERSION,

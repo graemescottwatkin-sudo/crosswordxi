@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v148";
+  var BUILD = "v149";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3720,8 +3720,41 @@
   function loadResults() {
     try {
       var r = JSON.parse(localStorage.getItem(RESULTS_KEY));
-      return Array.isArray(r) ? r : [];
+      return Array.isArray(r) ? upgradeResults(r) : [];
     } catch (e) { return []; }
+  }
+  /* Every row banked before mode and complete existed on the record shape.
+     Repaired on read rather than by a one-off migration: there is no moment
+     this device is guaranteed to be running when a migration would fire, and a
+     player who last opened the game in September should not need to have been
+     here for it.
+
+     Both are safe to assume for a legacy row. Nothing but recordDaily has ever
+     written this key — themed boards go to fcw.themeResults — and recordDaily
+     is reached only from the two Full Time paths, so every row present is a
+     finished daily. A row that already carries either field is left alone, so
+     a false from a future banked loss is never overwritten with true. */
+  function upgradeResults(list) {
+    var changed = false;
+    list.forEach(function (r) {
+      if (!r || typeof r !== "object") return;
+      if (r.mode == null && r.dailyNo != null) { r.mode = "daily"; changed = true; }
+      if (r.complete == null) { r.complete = true; changed = true; }
+    });
+    /* The repair is applied in memory whatever happens; only the write back is
+       withheld. A stood-down tab still renders, and rendering from unrepaired
+       rows would show it as having played nothing.
+
+       Withheld because this made loadResults() a writer, and it had never been
+       one. `standDown()` is followed by `removeItem` and a reload under a
+       comment promising no writes in between — and location.reload() does not
+       halt the page, so a render in that window would have written the list
+       straight back. The empty case is already safe (nothing to change, so
+       nothing to write), but relying on that is relying on an accident. */
+    if (changed && !saveBlocked) {
+      try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+    return list;
   }
   /* Bring the account's history down to this device.
 
@@ -3847,7 +3880,24 @@
          this for the same reason; the daily never did, which is why the
          verified score could not replace the browser's. */
       playId: playId,
-      phase: phase.phase,
+      /* `phase: phase.phase` was passed here and silently dropped, so the
+         Season tile's `r.phase === "season"` filter was never once true.
+
+         Not reinstated. Phase is a function of the daily number and
+         SEASON_START, so storing it puts a derivable value in a second place —
+         the fault pattern this codebase keeps paying for. Deriving it also
+         repairs history: every result banked before this build carries no
+         phase at all, and no amount of storing it from now on would make those
+         countable. FCW.dailyPhase(r.dailyNo) answers it for any row, old or
+         new.
+
+         The cost, stated so it is a choice rather than an oversight: moving
+         SEASON_START retroactively re-phases results already played. That is
+         acceptable while SEASON_START is null and no season has begun. Once
+         one has, moving it rewrites history either way — a stored phase would
+         just disagree with the label next to it instead. */
+      mode: "daily",
+      complete: true,
       bankVersion: FCW.QUESTION_BANK_VERSION,
       club: club, season: season ? season.season : null,
       score: score, position: pos,
@@ -4764,6 +4814,7 @@
           if (note) {
             note.textContent = "verified \u2014 timed from when the board was opened, " +
               "which does not pause";
+	    note.className = "verify-note verified";
           }
         }
       })
@@ -5051,13 +5102,23 @@
       try { on = !!localStorage.getItem("fcw.seasonStart"); } catch (e) {}
       seasonTile.style.display = on ? "" : "none";
       if (on) {
+        /* Phase is derived, not read off the row. `r.phase === "season"` was
+           never true — recordDaily passed the field and makeResultRecord
+           dropped it — so this tile showed nothing at all for anyone. */
         var played = loadResults().filter(function (r) {
-          return r && r.phase === "season";
+          return r && r.dailyNo != null &&
+                 FCW.dailyPhase(r.dailyNo).phase === "season";
         });
+        /* FCW.outcome, not a second rule.
+           This read `r.score >= 76 ? 3 : r.score >= 38 ? 1 : 0`, and the
+           comment above it claimed to be "the same mapping the table uses".
+           There is no table yet, and it was not outcome(): of nine ordinary
+           finishes, seven resolved differently. Solved at 45' with no help is
+           a win by the rule and was a draw here; solved at 20' having revealed
+           five letters is over-subbed and a draw by the rule, and was a win
+           here. Score is today's texture; W/D/L is what a board contributes. */
         var pts = played.reduce(function (a, r) {
-          /* The same mapping the table uses: a score resolves to one result,
-             and three points for a win, one for a draw. */
-          return a + (r.score >= 76 ? 3 : r.score >= 38 ? 1 : 0);
+          return a + FCW.outcomePoints(FCW.outcome(r));
         }, 0);
         $("homeSeasonNote").textContent = phase.phase === "season"
           ? "Today is " + phase.label + " of 38."
