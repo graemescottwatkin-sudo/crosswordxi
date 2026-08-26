@@ -17,3 +17,10 @@
 # be broken without a suite saying so.
 
 # Path-level redirects for this site go below.
+
+# /account was linked from the first hub before any hub-level account page
+# existed — the front door's Sign in led to a 404. The link is gone; this
+# catches the address itself, which survives in histories and old tabs.
+# 302 not 301: a hub account page is planned, and a cached permanent
+# redirect would fight it when it arrives. Sign-in lives in the game.
+/account   /crossword/   302
