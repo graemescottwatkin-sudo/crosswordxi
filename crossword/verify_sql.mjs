@@ -7,6 +7,9 @@
  */
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
@@ -22,7 +25,7 @@ if (!files.length) {
    who had signed up — silently, with the command reporting success. */
 {
   const probe = new DatabaseSync(":memory:");
-  const sql = fs.readFileSync("data/schema.sql", "utf8")
+  const sql = fs.readFileSync(path.join(DIR, "../data/schema.sql"), "utf8")
     .replace(/CREATE (UNIQUE )?INDEX[^;]*WHERE[^;]*;/g, "");
   probe.exec(sql);
   probe.exec("INSERT INTO users (id,provider,provider_id,display_name) VALUES ('u1','google','g1','Test')");
@@ -33,16 +36,16 @@ if (!files.length) {
   t("re-running the schema does not delete accounts", users === 1 && results === 1,
     users + " user(s), " + results + " result(s) survived");
   t("the schema contains no DROP TABLE statement",
-    !/^\s*DROP TABLE/mi.test(fs.readFileSync("data/schema.sql", "utf8")));
+    !/^\s*DROP TABLE/mi.test(fs.readFileSync(path.join(DIR, "../data/schema.sql"), "utf8")));
   t("the destructive script exists but is named so it cannot be run by accident",
-    fs.existsSync("data/DANGER-reset-everything.sql"));
+    fs.existsSync(path.join(DIR, "../data/DANGER-reset-everything.sql")));
   probe.close();
 }
 
 const db = new DatabaseSync(":memory:");
 // node:sqlite rejects the partial-index syntax D1 accepts; the table shapes
 // are what matter here.
-const schema = fs.readFileSync("data/schema.sql", "utf8")
+const schema = fs.readFileSync(path.join(DIR, "../data/schema.sql"), "utf8")
   .replace(/CREATE (UNIQUE )?INDEX[^;]*WHERE[^;]*;/g, "");
 db.exec(schema);
 t("the schema loads", true);

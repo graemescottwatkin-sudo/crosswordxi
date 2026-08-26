@@ -8,22 +8,19 @@
 # Two defences now. These headers stop assets being held indefinitely, and the
 # asset URLs in index.html carry a ?v= build tag so an already-cached copy
 # cannot be reused at all. Bump the tag in index.html on every release.
-# ⚠️  SEARCH ENGINES AND THE MOVE TO thexigames.com/crossword/
+# SEARCH ENGINES
 #
-# This game lives at crossword.thexigames.com and is moving to a path on the
-# hub. Until it does, this address is staging: indexing it now would put the
-# wrong URL in every result and every link, and a migration that starts from
-# somebody else's index of your old address is a much harder migration.
+# The games have moved to paths on thexigames.com, so the noindex that held
+# crossword.thexigames.com out of the index is gone — removed in the same
+# commit as the move, which is the rule the old note set.
 #
-# THE RULE, for every game in the family:
+# THE RULE still stands for every game in the family:
 #   on a subdomain  ->  X-Robots-Tag: noindex must be here
 #   on its path     ->  it must NOT be
 #
-# deploy_check enforces it. Remove the header in the same commit that moves the
-# game, not before and not after.
+# deploy_check enforces it.
 
 /*
-  X-Robots-Tag: noindex
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()

@@ -1,6 +1,6 @@
 /* The bug from the screenshot: Check Grid flagged empty squares as wrong, and
    worse, shifted every letter after a gap. */
-import { onRequestPost as check } from "./functions/api/check-answer.js";
+import { onRequestPost as check } from "../functions/api/check-answer.js";
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 

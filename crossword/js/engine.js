@@ -1446,7 +1446,7 @@ var FCW = (function () {
      checks the pair on real dates.
      Any date before #1 clamps to #1, so testing before launch never eats into
      the stored days. */
-  var DAILY_EPOCH = { y: 2026, m: 7, d: 23 }; // day before launch; 2026-08-24 = Puzzle #1
+  var DAILY_EPOCH = { y: 2026, m: 7, d: 25 }; // day before launch; 2026-08-26 = Puzzle #1
   /* Four weeks of friendlies before the season proper. The stored sequence is
      unbroken — days 1-28 are pre-season, day 29 is Matchday 1 on 13 September
      2026 — so nothing about generation or storage changes. What changes is what
@@ -1460,7 +1460,7 @@ var FCW = (function () {
      that Matchday 1 is a fortnight away rather than a month.
 
      Exported below, so this is the only place it is stated. */
-  var PRESEASON_DAYS = 10;
+  var PRESEASON_DAYS = 1;
   /* The daily number the first season starts on, or null while there is not
      one yet.
 

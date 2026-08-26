@@ -3,7 +3,10 @@
    is prove no rule forces a width wider than the viewport, which is the one
    failure mode the brief calls out explicitly. */
 import fs from "node:fs";
-const css = fs.readFileSync("css/style.css", "utf8");
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
+const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8");
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 
@@ -25,7 +28,7 @@ t("the board box shrinks its padding on small screens",
 t("clue columns stack before the text gets narrow",
   /@media \(max-width:820px\)/.test(css));
 t("the grid uses a cell variable, not fixed pixel columns",
-  /grid-template-columns\s*=\s*"repeat\(/.test(fs.readFileSync("js/game.js", "utf8")) ||
+  /grid-template-columns\s*=\s*"repeat\(/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")) ||
   /var\(--cell\)/.test(css));
 t("cells stay square", /\.cell\{[^}]*width:var\(--cell\);height:var\(--cell\)/.test(css.replace(/\s*\n\s*/g, "")));
 /* The keyboard's widest row is 10 keys. Its size comes from three clamped
@@ -70,7 +73,7 @@ t("nothing re-forces two clue columns after the stacking rule",
 /* There is no banner any more. Everything sits in one column under the clue
    strip, in the order it is read: board, controls, help, season, table. */
 t("every block sits in the board column, not in a banner", (() => {
-  const html = fs.readFileSync("index.html", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const panel = html.slice(html.indexOf('<div class="grid-panel"'), html.indexOf('<div class="osk"'));
   return html.indexOf('<div class="toolbar"') === -1 &&
     ["tb-game", "tb-help", 'id="seasonPanel"', 'id="tablePanel"'].every((k) => panel.indexOf(k) > -1);
@@ -131,7 +134,7 @@ t("nothing is placed into a grid that no longer exists", (() => {
     !/--rail-w/.test(flatCss);
 })());
 t("and the script no longer reserves width for a rail", (() => {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   /* railW reserved 230-280px beside the board. Left behind, the stylesheet
      stops drawing a rail while the maths keeps paying for one, and the board
      shrinks in landscape for space nothing occupies. */
@@ -194,7 +197,7 @@ t("phone: and it shows the full three rows, not just yours", (() => {
    both axes, because justify-content has nothing to act on inside an
    inline-block. Nothing failed; it just looked wrong. */
 t("button layout rules reach the column the buttons actually live in", (() => {
-  const html = fs.readFileSync("index.html", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const stillHasToolbar = html.indexOf('<div class="toolbar"') > -1;
   return stillHasToolbar || /\.grid-panel \.tb-box \.btn\{[^}]*display:inline-flex/.test(flatCss);
 })());
@@ -215,23 +218,23 @@ t("and the number buttons stay at the touch target while being square",
    sized every board for fourteen columns, so a ten-column puzzle on a phone
    came out with cells a third smaller than the screen could carry. */
 t("the fixed frame is gated to the same width in the CSS and the maths", (() => {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   const gate = /if \(vw >= (\d+)\) \{/.exec(js);
   const css = /@media \(min-width:(\d+)px\)\{\.grid-wrap\{width:min\(100%,var\(--board-w/.exec(flatCss);
   return gate && css && gate[1] === css[1];
 })(), (() => {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   const g = /if \(vw >= (\d+)\) \{/.exec(js);
   return g ? "maths gated at " + g[1] : "no gate found";
 })());
 t("a narrow screen sizes the board for the puzzle, not the frame",
-  /var frameCols = puzzle\.width;/.test(fs.readFileSync("js/game.js", "utf8")));
+  /var frameCols = puzzle\.width;/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")));
 /* And the frame yields when honouring it would make the board unplayable. A
    landscape tablet is short rather than narrow: spending width on turf either
    side pushed the cell under the floor and raised "turn your phone upright" in
    front of a board that was fine at its own width. */
 t("and the frame is dropped rather than made unplayable", (() => {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   return /if \(trial >= PLAYABLE\) frameCols = wide;/.test(js);
 })());
 
@@ -252,7 +255,7 @@ t("help groups fall to full width on a narrow screen",
    zoom, rotate and keyboard open, and was not. Separating them removes the
    competition rather than managing it. */
 t("the answer boxes are in a strip of their own, not inside the clue card", (() => {
-  const html = fs.readFileSync("index.html", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const card = html.slice(html.indexOf('class="now-clue"'), html.indexOf('class="bank-strip"'));
   return html.indexOf('class="bank-strip"') > -1 && card.indexOf('id="letterBank"') === -1;
 })());
@@ -266,7 +269,7 @@ t("the sentence now has the whole clue card",
    beside the thing being solved rather than in a row of controls below the
    board. */
 t("the answer boxes and the readings share the strip, boxes first", (() => {
-  const html = fs.readFileSync("index.html", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const strip = html.slice(html.indexOf('class="bank-strip"'),
                            html.indexOf('class="grid-wrap"'));
   return strip.indexOf('id="letterBank"') > -1 &&
@@ -297,7 +300,7 @@ t("the readings carry no card face inside the strip",
   /\.bank-strip \.tb-readouts \.match-clock,[\s\S]{0,80}\{[^}]*border:none/.test(flatCss));
 
 console.log("\nThe letter slots");
-const engine = fs.readFileSync("js/engine.js", "utf8");
+const engine = fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8");
 const maxDim = Number((/var MAX_DIM = (\d+)/.exec(engine) || [])[1]);
 t("the generator still bounds the grid at the width the reservation assumes",
   maxDim === 15, "MAX_DIM = " + maxDim);
@@ -307,7 +310,7 @@ t("and the fallback before a puzzle loads is the generator's own ceiling",
   new RegExp("--bank-slots:" + maxDim + "[;\\s]").test(flatCss),
   (/--bank-slots:(\d+)/.exec(flatCss) || [])[1] + " vs MAX_DIM " + maxDim);
 t("the loaded puzzle then sets it from its own longest answer",
-  /setProperty\("--bank-slots"/.test(fs.readFileSync("js/game.js", "utf8")));
+  /setProperty\("--bank-slots"/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")));
 t("the slots take that reserved width rather than what the sentence leaves",
   /\.bank\{[^}]*flex:0 0 var\(--bank-w\);width:var\(--bank-w\)/.test(flatCss));
 /* The word break is the gap between groups now, not an element in the run.
@@ -315,7 +318,7 @@ t("the slots take that reserved width rather than what the sentence leaves",
    mid-word: flat, "Sporting Lisbon" broke as SPORTING LI / SBON, which reads
    as a different answer. */
 t("boxes are grouped into words, so a wrap cannot fall inside one", (() => {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   return /word\.className = "bank-word"/.test(js) &&
     /word\.appendChild\(d\)/.test(js);
 })());

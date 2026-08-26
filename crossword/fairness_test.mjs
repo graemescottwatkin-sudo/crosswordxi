@@ -22,7 +22,7 @@ vm.runInContext(fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8"), ctx);
 const FCW = ctx.FCW || ctx.window.FCW;
 FCW.loadSeasons(ctx.window.FCW_SEASONS);
 
-const srvSrc = fs.readFileSync(path.join(DIR, "functions/_lib/scoring.js"), "utf8")
+const srvSrc = fs.readFileSync(path.join(DIR, "../functions/_lib/scoring.js"), "utf8")
   .replace(/export /g, "");
 const srv = {};
 vm.runInNewContext(srvSrc + "\nthis.computeScore = computeScore; this.SCORING = SCORING;", srv);

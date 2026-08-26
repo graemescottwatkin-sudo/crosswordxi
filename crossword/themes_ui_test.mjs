@@ -17,11 +17,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 
-import { onRequestGet as apiDaily } from "./functions/api/daily.js";
-import { onRequestGet as apiPractice } from "./functions/api/practice.js";
-import { onRequestGet as apiCategories } from "./functions/api/categories.js";
-import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
-import { onRequestGet as apiStatus } from "./functions/api/status.js";
+import { onRequestGet as apiDaily } from "../functions/api/daily.js";
+import { onRequestGet as apiPractice } from "../functions/api/practice.js";
+import { onRequestGet as apiCategories } from "../functions/api/categories.js";
+import { onRequestPost as apiCheck } from "../functions/api/check-answer.js";
+import { onRequestGet as apiStatus } from "../functions/api/status.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
@@ -313,7 +313,7 @@ server.listen(0, "127.0.0.1", async () => {
    renaming a column to match a heading is a migration in exchange for nothing.
    What matters is that nothing a player reads still says "Themed boards". */
 {
-  const html = fs.readFileSync("index.html", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const visible = html.replace(/<!--[\s\S]*?-->/g, "")
     .replace(/\sid="[^"]*"/g, "").replace(/\sclass="[^"]*"/g, "");
   t("the section is named Clubs and themes", /Clubs and themes/.test(visible));

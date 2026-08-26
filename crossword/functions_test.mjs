@@ -1,11 +1,14 @@
 import fs from "node:fs";
 /* Exercises the Functions the way Pages will: real modules, no D1 binding,
    so this proves the development-data fallback path works end to end. */
-import { onRequestGet as daily } from "./functions/api/daily.js";
-import { onRequestGet as practice } from "./functions/api/practice.js";
-import { onRequestPost as check } from "./functions/api/check-answer.js";
-import { onRequestPost as reveal } from "./functions/api/reveal.js";
-import { onRequestGet as cats } from "./functions/api/categories.js";
+import { onRequestGet as daily } from "../functions/api/daily.js";
+import { onRequestGet as practice } from "../functions/api/practice.js";
+import { onRequestPost as check } from "../functions/api/check-answer.js";
+import { onRequestPost as reveal } from "../functions/api/reveal.js";
+import { onRequestGet as cats } from "../functions/api/categories.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
@@ -39,11 +42,17 @@ t("daily: response is not cacheable", dRes.headers.get("Cache-Control") === "no-
    The half that matters is that tomorrow stays shut. */
 const today = (await (await daily({ env })).json()).dailyNo;
 
-const older = await daily({ env, request: new Request("https://x/api/daily?no=1") });
+/* One BEFORE today rather than a hardcoded #1. With the epoch moved so the
+   first board is the launch day, #1 IS today, and "an earlier board" asked for
+   the board it was contrasting against. The archive only exists below today,
+   so that is what the number has to be derived from. */
+const archiveNo = Math.max(1, today - 1);
+const older = await daily({ env, request: new Request("https://x/api/daily?no=" + archiveNo) });
 const od = await older.json();
-t("archive: an earlier board can be played", older.status === 200 && od.dailyNo === 1,
-  "asked for #1, got #" + od.dailyNo);
-t("archive: it is a real puzzle, not today's", !!od.puzzle && od.dailyNo !== today);
+t("archive: an earlier board can be played", older.status === 200 && od.dailyNo === archiveNo,
+  "asked for #" + archiveNo + ", got #" + od.dailyNo);
+t("archive: it is a real puzzle", !!od.puzzle,
+  today === 1 ? "day one — today IS #1, so there is no archive yet" : "#" + od.dailyNo + " against today #" + today);
 t("archive: and it still carries no answers",
   !JSON.stringify(od).match(/"ch"\s*:/));
 
@@ -140,7 +149,7 @@ t("practice: a junk token is refused",
    the answers, and the browser has none. */
 console.log("\nThe grid nudge counts both things");
 {
-  const src = fs.readFileSync("functions/api/check-answer.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/check-answer.js"), "utf8");
   t("the whole-grid check returns spoiled answers as well as wrong squares",
     /wrongEntries/.test(src) && /correct: allRight, wrongCells, wrongEntries/.test(src));
   t("an incomplete answer is not counted as wrong", (() => {
@@ -150,7 +159,7 @@ console.log("\nThe grid nudge counts both things");
     return /if \(i === undefined \|\| !chars\[i\]\) \{ complete = false; break; \}/.test(b);
   })());
   t("and the browser stores what it is sent",
-    /gridStats\.wrongEntries = r\.wrongEntries/.test(fs.readFileSync("js/game.js", "utf8")));
+    /gridStats\.wrongEntries = r\.wrongEntries/.test(fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")));
 }
 
 /* A grid check is one press that takes eleven requests, because the player is
@@ -159,8 +168,8 @@ console.log("\nThe grid nudge counts both things");
    thirty-six points for a single press. */
 console.log("\nA press is charged once, whatever traffic it takes");
 {
-  const src = fs.readFileSync("functions/api/check-answer.js", "utf8");
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/check-answer.js"), "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   t("a grid check is tallied as one grid check, not many single ones",
     /tally\(env, playId, checkGrid \? "srv_check_alls" : "srv_checks"\)/.test(src));
   t("and only one of its requests carries the play id", (() => {
@@ -179,8 +188,8 @@ console.log("\nA press is charged once, whatever traffic it takes");
    four automatic fires charged as four nine-point presses. */
 console.log("\nFree information goes through the free door");
 {
-  const js = fs.readFileSync("js/game.js", "utf8");
-  const verify = fs.readFileSync("functions/api/verify.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  const verify = fs.readFileSync(path.join(DIR, "../functions/api/verify.js"), "utf8");
   t("the grid-full nudge asks the free endpoint",
     /api\("\/api\/verify", \{ token: puzzleToken, grid: gridText\(\)/.test(js));
   t("and carries no play id, so nothing can tally it", (() => {

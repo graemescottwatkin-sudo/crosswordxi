@@ -4,8 +4,11 @@
  * control: anyone can call the endpoint directly. Every check here is about the
  * server refusing, not the browser not asking.
  */
-import { onRequest as admin } from "./functions/api/admin/[[route]].js";
-import { onRequestPost as report } from "./functions/api/report-clue.js";
+import { onRequest as admin } from "../functions/api/admin/[[route]].js";
+import { onRequestPost as report } from "../functions/api/report-clue.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
@@ -90,7 +93,7 @@ console.log("\nThe flag cannot be self-granted");
   const owner = makeEnv({ admin: 1 });
   t("and yes for the owner", (await (await call("whoami", {}, owner)).json()).admin === true);
   const src = await import("node:fs").then((fs) =>
-    fs.readFileSync("functions/api/admin/[[route]].js", "utf8"));
+    fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8"));
   t("no route anywhere writes the admin flag",
     !/UPDATE users SET[^"]*is_admin/i.test(src) && !/is_admin\s*=\s*1/.test(src));
 }
@@ -186,7 +189,7 @@ console.log("\nReplaying a day");
   /* Replay and clear-my-record must stay distinct: one forgets a day so it can
      be played again, the other wipes the history and leaves the game alone. */
   const src = await import("node:fs").then((fs) =>
-    fs.readFileSync("functions/api/admin/[[route]].js", "utf8"));
+    fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8"));
   t("replay only ever touches one day", /DELETE FROM results WHERE user_id = \? AND daily_no = \?/.test(src));
   t("and clearing the record never touches the saved game",
     /DELETE FROM results WHERE user_id = \?"/.test(src));

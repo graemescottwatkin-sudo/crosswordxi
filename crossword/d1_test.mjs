@@ -1,10 +1,10 @@
 /* Proves the practice-token fix against production insert order.
    A stub D1 that behaves like the real table: daily rows inserted first, so
    practice rows start at id = DAILY_COUNT + 1 and never match a 1..N counter. */
-import { onRequestGet as practice } from "./functions/api/practice.js";
-import { onRequestPost as reveal } from "./functions/api/reveal.js";
-import { onRequestGet as cats } from "./functions/api/categories.js";
-import { SAMPLE_PUZZLES } from "./functions/_lib/sample-puzzles.js";
+import { onRequestGet as practice } from "../functions/api/practice.js";
+import { onRequestPost as reveal } from "../functions/api/reveal.js";
+import { onRequestGet as cats } from "../functions/api/categories.js";
+import { SAMPLE_PUZZLES } from "../functions/_lib/sample-puzzles.js";
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };

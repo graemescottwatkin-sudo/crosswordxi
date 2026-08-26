@@ -49,41 +49,41 @@ jobs:
       # found something.
       - name: Behaviour and layout
         run: |
-          node frontend_test.mjs
-          node viewport_test.mjs
-          node save_test.mjs
-          node tabs_test.mjs
-          node themes_ui_test.mjs
+          node crossword/frontend_test.mjs
+          node crossword/viewport_test.mjs
+          node crossword/save_test.mjs
+          node crossword/tabs_test.mjs
+          node crossword/themes_ui_test.mjs
 
       - name: API
         run: |
-          node functions_test.mjs
-          node status_test.mjs
-          node play_test.mjs
-          node blank_test.mjs
-          node circulation_test.mjs
-          node d1_test.mjs
-          node epoch_test.mjs
-          node outcome_test.mjs
-          node record_test.mjs
+          node crossword/functions_test.mjs
+          node crossword/status_test.mjs
+          node crossword/play_test.mjs
+          node crossword/blank_test.mjs
+          node crossword/circulation_test.mjs
+          node crossword/d1_test.mjs
+          node crossword/epoch_test.mjs
+          node crossword/outcome_test.mjs
+          node crossword/record_test.mjs
           # live_check.mjs is named here so deploy_check's "every suite is in
           # the workflow" check passes, but never run in CI: it reads the
           # deployed site, so on a pull request it would report the build that
           # is live rather than the one being proposed. Run it by hand after a
-          # deploy.  ->  node live_check.mjs --expect v150
-          node fairness_test.mjs
-          node howto_test.mjs
-          node auth_test.mjs
-          node admin_test.mjs
-          node themes_test.mjs
-          node challenge_test.mjs
+          # deploy.  ->  node crossword/live_check.mjs --expect v152
+          node crossword/fairness_test.mjs
+          node crossword/howto_test.mjs
+          node crossword/auth_test.mjs
+          node crossword/admin_test.mjs
+          node crossword/themes_test.mjs
+          node crossword/challenge_test.mjs
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.
       - name: Pre-upload checklist
         run: |
           rm -rf node_modules package-lock.json package.json
-          node deploy_check.mjs
+          node crossword/deploy_check.mjs
 
   render:
     name: Sixteen viewports, real browser

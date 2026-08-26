@@ -1,6 +1,6 @@
 /* circulation_test.mjs — practice variety: does the pool contain enough
    different clues, and does the server pick by what has not been seen? */
-import { onRequestPost as practicePost } from "./functions/api/practice.js";
+import { onRequestPost as practicePost } from "../functions/api/practice.js";
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };

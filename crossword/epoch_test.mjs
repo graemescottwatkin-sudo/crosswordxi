@@ -7,20 +7,23 @@
  * everybody, and the game looks broken rather than misconfigured.
  */
 import fs from "node:fs";
-import { dailyNumber as serverDaily } from "./functions/_lib/daily.js";
+import { dailyNumber as serverDaily } from "../functions/_lib/daily.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 
 /* Load the client engine the way a browser would. */
-const engineSrc = fs.readFileSync("js/engine.js", "utf8");
+const engineSrc = fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8");
 const sandbox = { module: { exports: {} }, window: {} };
 new Function("module", "window", engineSrc)(sandbox.module, sandbox.window);
 const FCW = sandbox.module.exports;
 
 const epochLine = engineSrc.match(/var DAILY_EPOCH = \{ y: (\d+), m: (\d+), d: (\d+) \}/);
 t("the client declares an epoch", !!epochLine, epochLine && epochLine[0]);
-const serverLine = fs.readFileSync("functions/_lib/daily.js", "utf8")
+const serverLine = fs.readFileSync(path.join(DIR, "../functions/_lib/daily.js"), "utf8")
   .match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
 t("the server declares one too", !!serverLine, serverLine && serverLine[0]);
 

@@ -1,0 +1,21 @@
+# Cloudflare Pages redirects.
+#
+# The game lived at crossword.thexigames.com and now lives at
+# thexigames.com/crossword/. Everything that was shared while it was there has
+# to keep working — a dead shared link is a player who never comes back.
+#
+# THE SPLAT CARRIES THE QUERY STRING. Pages appends the original query to the
+# destination automatically, and that is the whole point here: a shared result
+# is /?token=practice:42 and a challenge invite is /?c=<id>. A redirect that
+# dropped the query would send every one of them to a blank landing screen and
+# nothing would look broken from the outside.
+#
+# 301 rather than 302: the old address should stop being the address. Search
+# engines pass ranking on a 301 and browsers cache it, which is what we want
+# now that the noindex is off the new home.
+
+https://crossword.thexigames.com/*   https://www.thexigames.com/crossword/:splat   301
+http://crossword.thexigames.com/*    https://www.thexigames.com/crossword/:splat   301
+
+# The apex to www, so there is one canonical host and not two.
+https://thexigames.com/*             https://www.thexigames.com/:splat             301

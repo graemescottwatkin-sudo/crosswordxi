@@ -7,7 +7,10 @@
  */
 import fs from "node:fs";
 import { readFileSync } from "node:fs";
-import { onRequestPost as play } from "./functions/api/play.js";
+import { onRequestPost as play } from "../functions/api/play.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
@@ -86,7 +89,7 @@ t("nothing about the person", (() => {
   /* Comments stripped first: the note explaining that it stores no cookie
      contains the word cookie, and matching prose rather than code fails on the
      explanation. Fifth time that has caught me today. */
-  const src = readFileSync("functions/api/play.js", "utf8")
+  const src = readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   return !/cookie/i.test(src) && !/currentUser/.test(src) &&
     !/headers\.get\(/i.test(src) && !/user_id/.test(src);
@@ -96,7 +99,7 @@ t("a play id is per attempt, not per person", (() => {
   /* Generated when the puzzle starts and forgotten when it ends. Two attempts
      by one player are indistinguishable from two players — the price of not
      following anyone around. */
-  const game = readFileSync("js/game.js", "utf8");
+  const game = readFileSync(path.join(DIR, "js/game.js"), "utf8");
   return /playId = newPlayId\(\)/.test(game) && !/localStorage[^\n]*playId/.test(game);
 })());
 
@@ -105,7 +108,7 @@ t("a play id is per attempt, not per person", (() => {
    be coerced into "practice" with nothing to say which one. */
 console.log("\nThemed boards are counted as themselves");
 {
-  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
   t("theme is a mode in its own right, not folded into practice",
     /body\.mode === "theme" \? "theme"/.test(src));
   t("the board key is stored with the attempt",
@@ -123,13 +126,13 @@ console.log("\nThemed boards are counted as themselves");
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     return !/user|account|device|ip\b/i.test(code);
   })());
-  const client = fs.readFileSync("js/game.js", "utf8");
+  const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   t("the client sends the board it is actually on",
     /themeKey: mode === "theme" && themeWanted/.test(client));
-  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
   t("the funnel groups by board rather than heaping them together",
     /"theme:" \+ \(r\.theme_key \|\| "unknown"\)/.test(admin));
-  const mig = fs.readFileSync("data/migrations/008-plays-theme.sql", "utf8");
+  const mig = fs.readFileSync(path.join(DIR, "../data/migrations/008-plays-theme.sql"), "utf8");
   t("the column is added by a migration, not assumed",
     /ALTER TABLE plays ADD COLUMN theme_key TEXT/.test(mig));
 }
@@ -138,7 +141,7 @@ console.log("\nThemed boards are counted as themselves");
    a layout is not twenty people. */
 console.log("\nOwner attempts are siloed");
 {
-  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
   t("the flag is set from the session, not from the browser", (() => {
     /* A flag the client could send is a flag anyone could set about anyone. */
     return /await isAdmin\(request, env\)/.test(src) && !/body\.byOwner|body\.owner/.test(src);
@@ -150,12 +153,12 @@ console.log("\nOwner attempts are siloed");
   })());
   t("a failure to read the session counts the play as a visitor's, not the owner's",
     /catch \(e\) \{ byOwner = 0; \}/.test(src));
-  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
   t("the funnel leaves owner attempts out of the per-board figures",
     /if \(r\.by_owner\) \{[\s\S]{0,140}continue;/.test(admin));
   t("and reports them separately rather than hiding them",
     /ownerPlays, ownerFinished, days/.test(admin));
-  const mig = fs.readFileSync("data/migrations/008-plays-theme.sql", "utf8");
+  const mig = fs.readFileSync(path.join(DIR, "../data/migrations/008-plays-theme.sql"), "utf8");
   t("the column is added by the same migration",
     /ALTER TABLE plays ADD COLUMN by_owner INTEGER DEFAULT 0/.test(mig));
 }
@@ -166,7 +169,7 @@ console.log("\nOwner attempts are siloed");
    practice figures ran ahead of reality. */
 console.log("\nOne sitting, one row");
 {
-  const client = fs.readFileSync("js/game.js", "utf8");
+  const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   t("the reference is kept with the saved game, not in a variable",
     /playId: playId, playNo: playNo,/.test(client));
   t("and a restored game brings it back",
@@ -178,7 +181,7 @@ console.log("\nOne sitting, one row");
   t("the reference is six digits, zero padded",
     /PLAY_DIGITS = 6/.test(client) && /padStart\(PLAY_DIGITS, "0"\)/.test(client));
 
-  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
   t("numbers run per board, so each board starts at one", (() => {
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "");
     return /mode='daily' AND daily_no = \?/.test(code) &&
@@ -187,7 +190,7 @@ console.log("\nOne sitting, one row");
   t("a play id the server has seen gets the same number back, not a new one",
     /SELECT play_no FROM plays WHERE play_id = \?/.test(src));
 
-  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
   t("attempts can be exported one row each",
     /route === "plays.csv"/.test(admin) && /Reference/.test(admin));
   t("and the export is behind the admin gate like everything else", (() => {
@@ -203,7 +206,7 @@ console.log("\nOne sitting, one row");
    repaired afterwards. */
 console.log("\nAttribution");
 {
-  const client = fs.readFileSync("js/game.js", "utf8");
+  const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
 
   t("attribution is held for the session, not persisted", (() => {
     /* sessionStorage dies with the tab. localStorage here would be a tracking
@@ -236,13 +239,13 @@ console.log("\nAttribution");
       /\[\^a-z0-9\]\+/.test(fn);
   })());
 
-  const src = fs.readFileSync("functions/api/play.js", "utf8");
+  const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
   t("the server rejects a value that is not already a slug rather than repairing it",
     /\/\^\[a-z0-9\]\[a-z0-9-\]\*\$\/\.test\(x\) \? x : null/.test(src));
   t("and records which kind of attribution the row carries, for when first-touch arrives",
     /"session"\)\.run\(\)/.test(src));
 
-  const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+  const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
   t("the source report excludes the owner's own testing",
     /FROM plays\s+WHERE by_owner = 0/.test(admin));
   t("and reports completion rate, not just clicks",
@@ -250,7 +253,7 @@ console.log("\nAttribution");
   t("the attempts CSV carries the source columns",
     /"Source", "Medium", "Campaign", "Content", "Term", "Referrer"/.test(admin));
 
-  const mig = fs.readFileSync("data/migrations/010-attribution.sql", "utf8");
+  const mig = fs.readFileSync(path.join(DIR, "../data/migrations/010-attribution.sql"), "utf8");
   t("the columns are added by a migration",
     (mig.match(/ALTER TABLE plays ADD COLUMN/g) || []).length === 7);
 }

@@ -14,17 +14,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 
-import { onRequestGet as apiDaily } from "./functions/api/daily.js";
-import { onRequestGet as apiPractice } from "./functions/api/practice.js";
-import { onRequestGet as apiCategories } from "./functions/api/categories.js";
-import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
+import { onRequestGet as apiDaily } from "../functions/api/daily.js";
+import { onRequestGet as apiPractice } from "../functions/api/practice.js";
+import { onRequestGet as apiCategories } from "../functions/api/categories.js";
+import { onRequestPost as apiCheck } from "../functions/api/check-answer.js";
 /* The free background verification has its own endpoint now, so that the paid
    check can be paid by definition — the server had to be told which was which,
    and a browser that omitted the flag got its checks for nothing. */
-import { onRequestPost as apiVerify } from "./functions/api/verify.js";
-import { onRequestPost as apiFinish } from "./functions/api/finish.js";
-import { onRequestPost as apiReveal } from "./functions/api/reveal.js";
-import { onRequestGet as apiStatus } from "./functions/api/status.js";
+import { onRequestPost as apiVerify } from "../functions/api/verify.js";
+import { onRequestPost as apiFinish } from "../functions/api/finish.js";
+import { onRequestPost as apiReveal } from "../functions/api/reveal.js";
+import { onRequestGet as apiStatus } from "../functions/api/status.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
@@ -458,13 +458,13 @@ server.listen(0, "127.0.0.1", async () => {
      checks for nothing. */
   t("the free verification and the paid check are separate endpoints", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const verify = fs.existsSync(path.join(DIR, "functions/api/verify.js"));
+    const verify = fs.existsSync(path.join(DIR, "../functions/api/verify.js"));
     return verify && /api\/verify/.test(js) && !/paid: 1/.test(js);
   })());
   t("and the free one cannot buy what the paid one sells", (() => {
     /* Which letters are wrong is what three points buys. If the free endpoint
        answered that too, the paid one would be decorative. */
-    const src = fs.readFileSync(path.join(DIR, "functions/api/verify.js"), "utf8");
+    const src = fs.readFileSync(path.join(DIR, "../functions/api/verify.js"), "utf8");
     return !/detail/.test(src.replace(/\/\*[\s\S]*?\*\//g, ""));
   })());
   t("the paid check counts itself, without being told whether it was paid", (() => {
@@ -472,7 +472,7 @@ server.listen(0, "127.0.0.1", async () => {
        that takes eleven requests — but nothing tells the server whether to
        charge at all. Anything arriving here is paid by virtue of the door it
        came through. */
-    const src = fs.readFileSync(path.join(DIR, "functions/api/check-answer.js"), "utf8")
+    const src = fs.readFileSync(path.join(DIR, "../functions/api/check-answer.js"), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "");
     return /await tally\(env, playId, checkGrid \? "srv_check_alls" : "srv_checks"\)/.test(src) &&
       !/\bpaid\b/.test(src);
@@ -575,7 +575,7 @@ server.listen(0, "127.0.0.1", async () => {
   })());
   t("the server refuses to score the same finish twice", (() => {
     /* Otherwise a finished board could be resubmitted until the clock suited. */
-    const src = fs.readFileSync(path.join(DIR, "functions/api/finish.js"), "utf8");
+    const src = fs.readFileSync(path.join(DIR, "../functions/api/finish.js"), "utf8");
     return /srv_score !== null/.test(src) && /already: true/.test(src);
   })());
 
@@ -902,9 +902,17 @@ server.listen(0, "127.0.0.1", async () => {
       return !/crosswordxi\.com/.test(src);
     });
   })());
+  /* HOME is one constant for both of the checks below.
+
+     They asserted crossword.thexigames.com, which was right while the game
+     lived on a subdomain and became wrong the moment it moved to a path — the
+     two failed on correct behaviour, which is the least useful way for a test
+     to fail. The address is one fact; it belongs in one place, so the next
+     move changes a line rather than hunting assertions. */
+  const HOME = "https://www.thexigames.com/crossword/";
   t("the page says which address is canonical", (() => {
     const link = d.querySelector('link[rel="canonical"]');
-    return !!link && /crossword\.thexigames\.com/.test(link.getAttribute("href"));
+    return !!link && link.getAttribute("href") === HOME;
   })(), d.querySelector('link[rel="canonical"]') &&
         d.querySelector('link[rel="canonical"]').getAttribute("href"));
   t("a shared link previews as something other than a grey box", (() => {
@@ -912,10 +920,10 @@ server.listen(0, "127.0.0.1", async () => {
     return need.every((prop) => !!d.querySelector(`meta[property="${prop}"]`)) &&
       !!d.querySelector('meta[name="twitter:card"]');
   })());
-  t("the preview points at the new hostname, not the old", (() => {
+  t("the preview points at the same address the page claims", (() => {
     const url = d.querySelector('meta[property="og:url"]');
-    return !!url && /crossword\.thexigames\.com/.test(url.getAttribute("content"));
-  })());
+    return !!url && url.getAttribute("content") === HOME;
+  })(), HOME);
 
   console.log("\nPre-season");
   t("pre-season runs to the boundary, then the season starts", (() => {
@@ -974,9 +982,14 @@ server.listen(0, "127.0.0.1", async () => {
        Asserted as "not pre-season" rather than "season": there are three phases
        now and a daily played before a season starts reports "daily". What has
        to hold is that an old record lands on the right side of the friendly
-       boundary, which is the line splitByPhase actually uses. */
+       boundary, which is the line splitByPhase actually uses.
+
+       Read off PRESEASON_DAYS rather than a literal. This asked about board 5
+       and passed only while pre-season ran to ten; with one friendly day, board
+       5 is a daily and the assertion failed on correct behaviour. The boundary
+       is a constant and the test should ask the constant. */
     const late = w.FCW.resultPhase({ dailyNo: w.FCW.PRESEASON_DAYS + 30 });
-    return w.FCW.resultPhase({ dailyNo: 5 }) === "preseason" &&
+    return w.FCW.resultPhase({ dailyNo: 1 }) === "preseason" &&
       late !== "preseason" &&
       w.FCW.resultPhase({ dailyNo: 5, phase: "season" }) === "season";
   })());

@@ -10,12 +10,15 @@ import crypto from "node:crypto";
 import {
   verifyGoogleIdToken, findOrCreateUser, createSession, currentUser,
   destroySession, sessionCookie, clearedCookie, csrfOk, publicUser,
-} from "./functions/_lib/auth.js";
-import { onRequestPost as googleSignIn } from "./functions/api/auth/google.js";
-import { onRequestGet as sessionInfo } from "./functions/api/auth/session.js";
-import { onRequestPost as signOut } from "./functions/api/auth/signout.js";
-import { onRequestGet as getProfile, onRequestPost as setProfile } from "./functions/api/account/profile.js";
-import { onRequestPost as migrate } from "./functions/api/account/migrate.js";
+} from "../functions/_lib/auth.js";
+import { onRequestPost as googleSignIn } from "../functions/api/auth/google.js";
+import { onRequestGet as sessionInfo } from "../functions/api/auth/session.js";
+import { onRequestPost as signOut } from "../functions/api/auth/signout.js";
+import { onRequestGet as getProfile, onRequestPost as setProfile } from "../functions/api/account/profile.js";
+import { onRequestPost as migrate } from "../functions/api/account/migrate.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
@@ -288,7 +291,7 @@ t("signing out clears the same cookie scope it was set with", (() => {
    for ends, so the sheet showed a signed-out account with no way back in until
    the page was reloaded. */
 {
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   const out = js.slice(js.indexOf('on("acctSignOut"'), js.indexOf('on("acctSave"'));
   t("signing out rebuilds the sign-in button", /loadGoogle\(accountsAvailable\)/.test(out));
   t("and re-renders what depends on the session",
@@ -299,8 +302,8 @@ t("signing out clears the same cookie scope it was set with", (() => {
    thing goes when nobody is meant to find it — and it is what carries a streak
    between devices and puts a name on a challenge without typing one. */
 {
-  const html = fs.readFileSync("index.html", "utf8");
-  const js = fs.readFileSync("js/game.js", "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   t("sign-in has a control of its own on the landing screen", (() => {
     /* It was a .home-signin button in the column; it is now a button in the
        header bar, alongside Account and Settings. The class changed, the

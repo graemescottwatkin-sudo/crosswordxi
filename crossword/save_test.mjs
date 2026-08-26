@@ -17,12 +17,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 
-import { onRequestGet as apiDaily } from "./functions/api/daily.js";
-import { onRequestGet as apiPractice } from "./functions/api/practice.js";
-import { onRequestGet as apiCategories } from "./functions/api/categories.js";
-import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
-import { onRequestPost as apiReveal } from "./functions/api/reveal.js";
-import { onRequestGet as apiStatus } from "./functions/api/status.js";
+import { onRequestGet as apiDaily } from "../functions/api/daily.js";
+import { onRequestGet as apiPractice } from "../functions/api/practice.js";
+import { onRequestGet as apiCategories } from "../functions/api/categories.js";
+import { onRequestPost as apiCheck } from "../functions/api/check-answer.js";
+import { onRequestPost as apiReveal } from "../functions/api/reveal.js";
+import { onRequestGet as apiStatus } from "../functions/api/status.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
@@ -68,7 +68,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
    overwrote today's and came back blank. These fixtures seed and read the
    keyed slot; the legacy unkeyed one is still READ once as a fallback, which
    the "survives the change" case below covers. */
-const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
+const EPOCH_SRC = fs.readFileSync(path.join(DIR, "../functions/_lib/daily.js"), "utf8");
 const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
 if (!EM) throw new Error("Could not read EPOCH from functions/_lib/daily.js");
 const DAILY_EPOCH = Date.UTC(+EM[1], +EM[2], +EM[3]);

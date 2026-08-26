@@ -6,17 +6,20 @@
  * is shown to another, so it is the only place where a trusted number matters.
  */
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 
 const src = {
-  challenge: fs.readFileSync("functions/api/challenge/index.js", "utf8"),
-  start: fs.readFileSync("functions/api/challenge/start.js", "utf8"),
-  entry: fs.readFileSync("functions/api/challenge/entry.js", "utf8"),
-  table: fs.readFileSync("functions/api/challenge/table.js", "utf8"),
-  names: fs.readFileSync("functions/_lib/names.js", "utf8"),
-  migration: fs.readFileSync("data/migrations/012-challenges.sql", "utf8"),
+  challenge: fs.readFileSync(path.join(DIR, "../functions/api/challenge/index.js"), "utf8"),
+  start: fs.readFileSync(path.join(DIR, "../functions/api/challenge/start.js"), "utf8"),
+  entry: fs.readFileSync(path.join(DIR, "../functions/api/challenge/entry.js"), "utf8"),
+  table: fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8"),
+  names: fs.readFileSync(path.join(DIR, "../functions/_lib/names.js"), "utf8"),
+  migration: fs.readFileSync(path.join(DIR, "../data/migrations/012-challenges.sql"), "utf8"),
 };
 const bare = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
@@ -25,10 +28,10 @@ const bare = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
    seconds earlier. */
 t("the endpoint is a directory index, not a file beside the directory", () => true);
 {
-  const both = fs.existsSync("functions/api/challenge.js") &&
-               fs.existsSync("functions/api/challenge");
+  const both = fs.existsSync(path.join(DIR, "../functions/api/challenge.js")) &&
+               fs.existsSync(path.join(DIR, "../functions/api/challenge"));
   t("there is no challenge.js beside the challenge directory", !both);
-  t("and the directory has an index", fs.existsSync("functions/api/challenge/index.js"));
+  t("and the directory has an index", fs.existsSync(path.join(DIR, "../functions/api/challenge/index.js")));
 }
 
 console.log("Nothing competitive before the board is played");
@@ -98,8 +101,8 @@ t("and an entry can be hidden without being deleted",
 
 console.log("\nThe interface keeps the same promise as the endpoints");
 {
-  const js = fs.readFileSync("js/game.js", "utf8");
-  const html = fs.readFileSync("index.html", "utf8");
+  const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
 
   t("a challenge link opens the challenge screen, not the board", (() => {
     const boot = js.slice(js.indexOf("var chLink"), js.indexOf("var themed ="));
@@ -119,7 +122,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     /* .overlay-card was a class the markup invented and the stylesheet had
        never heard of, so the board showed through the text. Any class used by
        this screen has to exist. */
-    const css = fs.readFileSync("css/style.css", "utf8").replace(/\s*\n\s*/g, "");
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
     return /\.challenge-overlay \.overlay-card\{[^}]*background:var\(--card\)/.test(css);
   })());
 
@@ -149,12 +152,12 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   })());
 
   t("the sender's name and the group's are separate fields", (() => {
-    const html = fs.readFileSync("index.html", "utf8");
+    const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
     return /id="chFrom"/.test(html) && /id="chGroup"/.test(html) &&
       /groupName: group \|\| null/.test(js);
   })());
   t("the group is optional", (() => {
-    const api = fs.readFileSync("functions/api/challenge/index.js", "utf8");
+    const api = fs.readFileSync(path.join(DIR, "../functions/api/challenge/index.js"), "utf8");
     return /body\.groupName \? cleanName\(body\.groupName\) : null/.test(api);
   })());
   t("the person answering starts with an empty box, not somebody else's name", (() => {
@@ -206,8 +209,8 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     /* A revealed letter costs 2 and a revealed answer 9. Merged into one
        number, "2 reveals" meant either 4 points or 18 — and a legitimate score
        looked impossible beside a worse one. */
-    const mig = fs.readFileSync("data/migrations/014-entry-help.sql", "utf8");
-    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const mig = fs.readFileSync(path.join(DIR, "../data/migrations/014-entry-help.sql"), "utf8");
+    const t = fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8");
     return /reveal_letters/.test(mig) && /reveal_answers/.test(mig) &&
       /revealLetters/.test(t) && /revealAnswers/.test(t) &&
       /revealLetters/.test(js) &&
@@ -244,7 +247,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   })());
 
   t("names start in the same place, so the column can be scanned", (() => {
-    const css = fs.readFileSync("css/style.css", "utf8")
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
     return /\.challenge-table \.ct-name\{[^}]*text-align:left/.test(css);
   })());
@@ -257,7 +260,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     /* Comments stripped first. The explanation sits between the selector and
        the declarations, so matching the raw file captured the comment and not
        the rule. Third time tonight — §5 of the handover. */
-    const css = fs.readFileSync("css/style.css", "utf8")
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
     const help = /\.challenge-table \.ct-help\{([^}]*)\}/.exec(css);
     return help && /width:\d{2,}px/.test(help[1]) && !/width:1%/.test(help[1]);
@@ -266,7 +269,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   t("nothing in the standings may wrap", (() => {
     /* A long help list wrapped to three lines, pushed the score column off the
        panel and split a name in half. A standings table is scanned. */
-    const css = fs.readFileSync("css/style.css", "utf8").replace(/\s*\n\s*/g, "");
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
     return /\.challenge-table table\{[^}]*table-layout:fixed/.test(css) &&
       /\.challenge-table td\{[^}]*white-space:nowrap/.test(css) &&
       /\.challenge-table td\{[^}]*text-overflow:ellipsis/.test(css);
@@ -295,12 +298,12 @@ console.log("\nThe interface keeps the same promise as the endpoints");
        write had used the account — so a signed-in creator asking for their own
        standings matched nothing and was told they had not played. */
     const files = ["index", "start", "entry", "table"].map((n) =>
-      fs.readFileSync("functions/api/challenge/" + n + ".js", "utf8"));
+      fs.readFileSync(path.join(DIR, "../functions/api/challenge/") + n + ".js", "utf8"));
     return files.every((f) => /entrantKeyFor/.test(f)) &&
       !files.some((f) => /user \? "u:" \+ user\.id/.test(f));
   })());
   t("and reading uses the same rule as writing", (() => {
-    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const t = fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8");
     return /currentUser\(request, env\)/.test(t) && /entrantKeyFor\(user/.test(t);
   })());
 
@@ -308,23 +311,23 @@ console.log("\nThe interface keeps the same promise as the endpoints");
     /* Otherwise you send a challenge and cannot check on it without replaying
        the board. They cannot act on the standings — one entry each, and theirs
        is set — so the rule that nothing competitive comes before play holds. */
-    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const t = fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8");
     return /onRequestPost/.test(t) && /played: false/.test(t) &&
       /apiAuth\("\/api\/challenge\/table"/.test(js);
   })());
   t("and someone who has not played gets nothing back", (() => {
-    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const t = fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8");
     const fn = t.slice(t.indexOf("onRequestPost"), t.indexOf("onRequestGet"));
     return /if \(!mine\) return json\(\{ played: false \}\);/.test(fn);
   })());
   t("the entrant key travels in a body, not a query string", (() => {
     /* Identifiers in URLs end up in logs, referrers and shared links. */
-    const t = fs.readFileSync("functions/api/challenge/table.js", "utf8");
+    const t = fs.readFileSync(path.join(DIR, "../functions/api/challenge/table.js"), "utf8");
     const fn = t.slice(t.indexOf("onRequestPost"), t.indexOf("onRequestGet"));
     return /body\.entrantKey/.test(fn) && !/searchParams\.get\("entrantKey"\)/.test(t);
   })());
   t("the owner can see every challenge, and hide a name", (() => {
-    const admin = fs.readFileSync("functions/api/admin/[[route]].js", "utf8");
+    const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
     return /route === "challenges"/.test(admin) &&
       /route === "challenge-hide"/.test(admin) &&
       /UPDATE challenge_entries SET hidden/.test(admin);
@@ -333,7 +336,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   t("there is a way out of the challenge screen", (() => {
     /* Without one it is a one-way door: no back, and the challenge stays in the
        address, so a refresh returns you to the screen you just declined. */
-    const html = fs.readFileSync("index.html", "utf8");
+    const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
     return /id="chCancel"/.test(html) && /on\("chCancel"/.test(js);
   })());
   t("and leaving takes the challenge out of the address too", (() => {
@@ -345,8 +348,8 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   t("every class on that screen exists in the stylesheet", (() => {
     /* .overlay-card was invented by the markup once already and the card
        rendered with no panel at all. A missing class fails silently. */
-    const html = fs.readFileSync("index.html", "utf8");
-    const css = fs.readFileSync("css/style.css", "utf8");
+    const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
+    const css = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8");
     const block = html.slice(html.indexOf('id="challengeOverlay"'), html.indexOf('id="rotatePrompt"'));
     const names = new Set();
     for (const m of block.matchAll(/class="([^"]+)"/g)) m[1].split(/\s+/).forEach((n) => names.add(n));
@@ -356,7 +359,7 @@ console.log("\nThe interface keeps the same promise as the endpoints");
   t("the standings sit above the league table", (() => {
     /* The league table is a season the score is mapped onto; the challenge is
        the people who actually played. */
-    const html = fs.readFileSync("index.html", "utf8");
+    const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
     return html.indexOf('id="challengeTable"') < html.indexOf('id="finalTableBody"');
   })());
   t("and say so when a repeat finish did not replace an entry", (() => {

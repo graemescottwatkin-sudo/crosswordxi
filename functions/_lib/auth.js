@@ -141,10 +141,10 @@ export async function destroySession(request, env) {
  * crossword.thexigames.com instead, login works perfectly here and silently
  * fails in every other game — and nobody finds out until the second game ships.
  *
- * It is deliberately NOT set yet: there is one game and one account, and a
- * cookie scoped to a parent domain is harder to reason about than one that is
- * not. Add COOKIE_DOMAIN below when the second game is close, not before. */
-const COOKIE_DOMAIN = null;   // set to ".thexigames.com" for shared sign-in
+ * Set now, with the move to paths on thexigames.com. The leading dot is what
+ * makes one sign-in work across every game in the family rather than only the
+ * one that happened to serve the page. */
+const COOKIE_DOMAIN = ".thexigames.com";
 
 export function sessionCookie(id, expires) {
   /* HttpOnly so script cannot read it. Secure so it never crosses plain HTTP.

@@ -336,7 +336,7 @@ t("and an unreleased one cannot be, either way in", earlyByName.status === 404);
 
 /* The release guard has to live where check-answer and reveal read from, or
    it guards the list and not the answers. */
-const db = fs.readFileSync(path.join(DIR, "functions/_lib/db.js"), "utf8")
+const db = fs.readFileSync(path.join(DIR, "../functions/_lib/db.js"), "utf8")
   .replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 t("getPuzzleForToken applies the release guard, not just the listing",
   /if \(t\.mode === "theme"\) return getThemeBoard\(env, t\.id\);/.test(db));
@@ -345,7 +345,7 @@ t("tokens understand themed boards", /\(daily\|practice\|theme\)/.test(db));
 /* The rule the interface is now advertising: many themes per person, each of
    them once. It lives in the schema, so that is where it is checked. */
 console.log("\nThe request rule");
-const migration = fs.readFileSync(path.join(DIR, "data/migrations/006-themes.sql"), "utf8");
+const migration = fs.readFileSync(path.join(DIR, "../data/migrations/006-themes.sql"), "utf8");
 t("one request per person per theme is enforced by the database, not the UI",
   /UNIQUE \(theme_key, requested_by\)/.test(migration));
 t("and nothing caps how many different themes one person may request", (() => {
@@ -356,7 +356,7 @@ t("and nothing caps how many different themes one person may request", (() => {
 })());
 t("the endpoint matches on both columns, so a second theme is not a duplicate",
   /WHERE theme_key = \? AND requested_by = \?/.test(
-    fs.readFileSync(path.join(DIR, "functions/api/theme-request.js"), "utf8")));
+    fs.readFileSync(path.join(DIR, "../functions/api/theme-request.js"), "utf8")));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -21,12 +21,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM } from "jsdom";
 
-import { onRequestGet as apiDaily } from "./functions/api/daily.js";
-import { onRequestGet as apiPractice } from "./functions/api/practice.js";
-import { onRequestGet as apiCategories } from "./functions/api/categories.js";
-import { onRequestPost as apiCheck } from "./functions/api/check-answer.js";
-import { onRequestPost as apiReveal } from "./functions/api/reveal.js";
-import { onRequestGet as apiStatus } from "./functions/api/status.js";
+import { onRequestGet as apiDaily } from "../functions/api/daily.js";
+import { onRequestGet as apiPractice } from "../functions/api/practice.js";
+import { onRequestGet as apiCategories } from "../functions/api/categories.js";
+import { onRequestPost as apiCheck } from "../functions/api/check-answer.js";
+import { onRequestPost as apiReveal } from "../functions/api/reveal.js";
+import { onRequestGet as apiStatus } from "../functions/api/status.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
@@ -69,7 +69,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 /* Saves are keyed by board: fcw.v04.daily.<no>. See save_test.mjs. */
 /* Read from the source, like save_test.mjs — a hardcoded epoch here would be a
    fourth copy of a value that already exists twice. */
-const EPOCH_SRC = fs.readFileSync(path.join(DIR, "functions/_lib/daily.js"), "utf8");
+const EPOCH_SRC = fs.readFileSync(path.join(DIR, "../functions/_lib/daily.js"), "utf8");
 const EM = EPOCH_SRC.match(/const EPOCH = Date\.UTC\((\d+), (\d+), (\d+)\)/);
 const TODAY_NO = Math.max(1, Math.floor(
   (Date.now() - Date.UTC(+EM[1], +EM[2], +EM[3])) / 86400000) + 1);

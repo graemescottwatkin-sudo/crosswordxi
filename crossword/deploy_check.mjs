@@ -7,11 +7,23 @@ import { fileURLToPath } from "node:url";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 let pass = 0, fail = 0;
 const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
+/* Two roots now, and the difference is the point.
+
+   DIR is this game's folder — its own index.html, css and js. ROOT is the
+   repository, which holds what every game shares: functions/, data/, _headers
+   and the redirects. Before the move the two were the same directory and
+   nothing distinguished a file the crossword owns from one the family shares.
+   Reading them through different helpers means a check has to say which it
+   means, and a shared file cannot be quietly duplicated into one game. */
+const ROOT = path.join(DIR, "..");
 const read = (f) => fs.readFileSync(path.join(DIR, f), "utf8");
 const has = (f) => fs.existsSync(path.join(DIR, f));
+const readRoot = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
+const hasRoot = (f) => fs.existsSync(path.join(ROOT, f));
 
-t("index.html is at the repository root", has("index.html"));
-t("functions/ is at the repository root", has("functions/api/daily.js"));
+t("the game has its own index.html", has("index.html"));
+t("functions/ is at the repository root, shared", hasRoot("functions/api/daily.js"));
+t("the hub is at the repository root", hasRoot("index.html"));
 t("css and js are present", has("css/style.css") && has("js/game.js") && has("js/engine.js"));
 
 const html = read("index.html");
@@ -22,7 +34,7 @@ t("every relative reference resolves, exact case", refs.every(has), refs.join(",
 /* The bug this guards against: index.html revalidated but css/ and js/ had no
    cache rule, so browsers served stale assets after a deploy and the site
    looked unchanged however many times it was uploaded. */
-const headers = read("_headers");
+const headers = readRoot("_headers");
 t("css and js have cache rules, not just the HTML",
   /\/css\/\*/.test(headers) && /\/js\/\*/.test(headers));
 t("index.html is never stored, so a player cannot be pinned to an old build", (() => {
@@ -45,7 +57,7 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    back and the site looked unchanged.
 
    LAST_SHIPPED is the version that is live now. Bump it when you deploy. */
-const LAST_SHIPPED = "v150";   // <- bump this after each deploy
+const LAST_SHIPPED = "v151";   // <- bump this after each deploy
 t("the build tag has moved past the version now live",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
@@ -212,10 +224,10 @@ t("the board shadow variables have not returned", (() => {
    lives. */
 let robotsGap = "";
 t("noindex matches the address the page claims", (() => {
-  if (!has("index.html") || !has("_headers")) return true;
+  if (!has("index.html") || !hasRoot("_headers")) return true;
   const url = (read("index.html").match(/og:url" content="([^"]+)"/) || [])[1] || "";
   const onSubdomain = /:\/\/[a-z]+\.thexigames\.com/.test(url);
-  const noindexed = /X-Robots-Tag:\s*noindex/i.test(read("_headers"));
+  const noindexed = /X-Robots-Tag:\s*noindex/i.test(readRoot("_headers"));
   if (onSubdomain && !noindexed) {
     robotsGap = "on a subdomain (" + url + ") and indexable";
   } else if (!onSubdomain && noindexed) {
@@ -287,8 +299,9 @@ let deadConsts = "";
 t("the deleted penalty constants have not returned", (() => {
   const names = ["CHECK_PENALTY", "CHECK_ALL_PENALTY",
                  "REVEAL_LETTER_PENALTY", "REVEAL_ANSWER_PENALTY"];
-  const files = ["js/engine.js", "js/game.js", "functions/_lib/scoring.js",
-                 "functions/api/finish.js"];
+  const files = ["js/engine.js", "js/game.js"].map((f) => path.join(DIR, f))
+    .concat(["functions/_lib/scoring.js", "functions/api/finish.js"]
+      .map((f) => path.join(ROOT, f)));
   const found = [];
   files.forEach((f) => {
     if (!has(f)) return;
@@ -388,15 +401,15 @@ t("the clue bank is not in any public file",
   !/"clue"\s*:\s*"/.test(all));
 t("no solution letters in any public file", !/"ch"\s*:\s*"[A-Z]"/.test(all));
 t("the sample dataset is server-only, not under data/",
-  has("functions/_lib/sample-puzzles.js") && !has("data/sample-puzzles.js"));
+  hasRoot("functions/_lib/sample-puzzles.js") && !hasRoot("data/sample-puzzles.js"));
 t("API calls use relative URLs", /fetch\(/.test(read("js/game.js")) &&
   !/https?:\/\/[^"']*\/api\//.test(read("js/game.js")));
 
-const ignore = read(".gitignore");
+const ignore = readRoot(".gitignore");
 t("generated answer files are gitignored",
   /clues-production\.sql/.test(ignore) && /puzzles-production\.sql/.test(ignore));
 t("no production SQL is present in the package",
-  !has("data/clues-production.sql") && !has("data/puzzles-production.sql"));
+  !hasRoot("data/clues-production.sql") && !hasRoot("data/puzzles-production.sql"));
 t("no secrets are committed", !has(".env") && !has(".dev.vars") &&
   !/(api[_-]?key|password|secret)\s*[:=]\s*["'][^"']{8,}/i.test(all));
 t("no node_modules in the package", !has("node_modules"));
@@ -404,7 +417,7 @@ t("no preview build is in the package", (() => {
   // A preview inlines the answers so it can run from disk. It must never reach
   // the repository, which is what the whole D1 move was for.
   return !fs.readdirSync(DIR).some((f) => /^crosswordxi-preview-.*\.html$/.test(f)) &&
-    /crosswordxi-preview-\*\.html/.test(read(".gitignore"));
+    /crosswordxi-preview-\*\.html/.test(readRoot(".gitignore"));
 })());
 
 console.log(`\n${pass} passed, ${fail} failed`);
