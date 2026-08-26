@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v150";
+  var BUILD = "v151";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -744,10 +744,56 @@
     return out.sort(function (a, b) { return (b.dailyNo || 0) - (a.dailyNo || 0); });
   }
 
-  /* Finished slots accumulate one a day forever. Once a result is recorded the
-     save has nothing left to say, so it goes. */
-  function pruneDailySlot(no) {
-    try { localStorage.removeItem(DAILY_PREFIX + no); } catch (e) {}
+  /* A finished board is kept, not thrown away.
+     This deleted the slot the moment a result was banked, under a comment
+     saying the save had nothing left to say. It had two problems.
+
+     It did not work. The board is still open with complete = true when the
+     prune runs, and save() treats a complete board as worth saving — `fresh`
+     is only true with no letters, no clock AND not complete — so the next save
+     wrote the slot straight back. save_test asserted the prune and passed,
+     because it looked immediately after banking and before any later save.
+
+     And it was the wrong intent anyway. Reopening a finished board should show
+     what you did, the way Wordle does: going back to look at your grid, and
+     showing someone else, is a large part of what a daily is for. Dordle
+     cleared the board on reload and had to be talked out of it by a player who
+     recommended it to a friend, went back to their own tab and found it blank.
+     Keeping the board also means a result cannot be posted by somebody who has
+     already seen the answer.
+
+     So the behaviour that was happening by accident is now the behaviour, said
+     out loud. What the old prune was right about is that slots accumulate one
+     a day forever, so they are capped instead of deleted.
+
+     KEPT_BOARDS is a month of looking back, which covers showing somebody your
+     grid, and bounds the growth at roughly a few hundred KB against a 5MB
+     budget. The result record is untouched and permanent — that is what My
+     Season reads, and it is small. Only the grid goes.
+
+     Unfinished boards are never dropped, however old. An abandoned board is
+     the input to the outstanding-board rule, and ageing one out would silently
+     erase a loss. */
+  var KEPT_BOARDS = 30;
+  function capFinishedDailies() {
+    try {
+      var done = [];
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(DAILY_PREFIX) !== 0) return;
+        var raw = null;
+        try { raw = JSON.parse(localStorage.getItem(k)); } catch (e) { return; }
+        if (raw && raw.complete) done.push({ key: k, no: raw.dailyNo || 0 });
+      });
+      if (done.length <= KEPT_BOARDS) return;
+      /* By board number rather than savedAt: which boards a player would look
+         back at is a question about the puzzles, not about when the slot last
+         happened to be written. unfinishedDailies orders the same way and for
+         the same reason. */
+      done.sort(function (a, b) { return b.no - a.no; });
+      done.slice(KEPT_BOARDS).forEach(function (d) {
+        try { localStorage.removeItem(d.key); } catch (e) {}
+      });
+    } catch (e) {}
   }
 
   /* ---------- Puzzle lifecycle ---------- */
@@ -3872,9 +3918,9 @@
       showClockNote(board.no, FCW.dailyNumber());
       return list;
     }
-    /* The save has nothing left to say once the result is banked, and a
-       finished slot would otherwise sit there for good. */
-    pruneDailySlot(board.no);
+    /* The finished board stays, so it can be looked at again. Only the count
+       is bounded. See capFinishedDailies. */
+    capFinishedDailies();
     list.push(FCW.makeResultRecord({
       date: FCW.localDateKey(), dailyNo: board.no, seed: seed,
       /* So a verified rewrite can find its own row. recordThemed has carried
@@ -7034,6 +7080,13 @@
     var resumeChoices = 0;
     var atHome = false;
     try { atHome = !!localStorage.getItem("fcw.athome"); } catch (e) {}
+
+    /* Run at boot as well as on banking. Capping only when a board is finished
+       would leave a player who stops playing holding whatever they had
+       accumulated for good, and every browser carrying slots from before the
+       cap existed would never be tidied. Runs before the scan below, which
+       reads the same keys. */
+    capFinishedDailies();
 
     /* Boot has to find a game in progress on ANY board, not just today's.
 

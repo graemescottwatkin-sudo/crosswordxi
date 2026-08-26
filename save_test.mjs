@@ -261,9 +261,58 @@ server.listen(0, "127.0.0.1", async () => {
       !/getItem\("fcw\.v04\.daily"\)/.test(js));
     t("and a reset clears it", /"fcw\.v04\.daily",/.test(js),
       "so it does not linger in a browser for good");
-    t("finished slots are pruned once the result is banked",
-      /pruneDailySlot\(/.test(js),
-      "one slot a day would otherwise accumulate for ever");
+  }
+
+  /* ---- Finished boards are kept, and capped ----
+     The assertion here used to be `/pruneDailySlot\(/.test(js)` — the presence
+     of a function call in the source, not an outcome. It passed for as long as
+     the prune existed while the behaviour was the opposite of what it claimed:
+     the board is still open with complete = true when the prune ran, save()
+     treats a complete board as worth saving, and the next save wrote the slot
+     straight back.
+
+     A finished board is now deliberately kept, so reopening shows what you did.
+     Only the number of them is bounded. Tested by counting slots after a boot,
+     which is a thing that happened rather than a string that is present. */
+  console.log("\nFinished boards are kept, and capped");
+  {
+    const seed = {};
+    /* 35 finished boards, and one abandoned board OLDER than all of them.
+       Older deliberately: the first version of this used a high board number
+       for the abandoned one, so it survived the cap on recency alone and the
+       test still passed when the `complete` filter was removed. The case only
+       bites when the unfinished board is one the cap would otherwise drop. */
+    for (let n = 10; n <= 44; n++) {
+      seed["fcw.v04.daily." + n] = JSON.stringify({
+        v: 4, dailyNo: n, complete: true, letters: { "0,0": "A" },
+        elapsed: 300, savedAt: Date.now() - n * 1000, club: "Everton",
+      });
+    }
+    seed["fcw.v04.daily.3"] = JSON.stringify({
+      v: 4, dailyNo: 3, complete: false, letters: { "0,0": "B" },
+      elapsed: 90, savedAt: Date.now(), club: "Everton",
+    });
+    const w = (await open(seed)).window;
+    const slots = Object.keys(w.localStorage)
+      .filter((k) => k.indexOf("fcw.v04.daily.") === 0)
+      .map((k) => { try { return JSON.parse(w.localStorage.getItem(k)); } catch (e) { return null; } })
+      .filter(Boolean);
+    const done = slots.filter((r) => r.complete);
+    const open_ = slots.filter((r) => !r.complete);
+
+    t("boot caps the finished boards it keeps", done.length <= 30,
+      `${done.length} kept of 35`);
+    t("and keeps the most recent ones, by board number",
+      done.every((r) => r.dailyNo >= 15),
+      done.length ? "lowest kept #" + Math.min(...done.map((r) => r.dailyNo)) : "none");
+    /* The one that must never be dropped. An abandoned board is the input to
+       the outstanding-board rule; ageing one out would erase a loss. */
+    t("an unfinished board is never dropped, however old",
+      open_.some((r) => r.dailyNo === 3), `${open_.length} unfinished kept`);
+    t("a finished board is still there to look at",
+      done.some((r) => r.dailyNo === 44),
+      "reopening a daily should show what you did");
+    w.close();
   }
 
   server.close();

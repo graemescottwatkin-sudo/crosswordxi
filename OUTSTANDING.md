@@ -1,305 +1,164 @@
 # Crossword XI — outstanding
 
-## Delete the classic layout
+Current as of **v150**, 26 August 2026. Live is v149.
 
-The Playwright gate now asserts the flex layout — frame on screen, frame has
-usable height, the selected square inside the frame, toolbar and clue card
-reachable — so the layout everyone uses is covered.
+The previous version of this file described v10g and v11, with the v11 section
+duplicated verbatim, and had been superseded by RUN-ME notes for twenty-odd
+releases. Replaced rather than appended to.
 
-**Run it against real hardware before deleting anything.** It has been rewritten
-but not yet run: Chromium is not installable in the environment it was written
-in, so the new assertions are reasoned rather than observed.
-
-```
-npx wrangler pages dev .        # one terminal
-node render_test.mjs            # another
-```
-
-Once that passes across the sixteen viewports, the classic path can go: the
-`body:not(.flex-layout)` half of the stylesheet, the classic branch of
-`fitCells()`, and the `else if (started && m.gridPresent)` fallback in the gate.
-
-Until it has been run, keep the classic code. It is the only thing to fall back
-to if the new assertions turn out to be wrong about a device.
-
-**Build v11.** Carries forward §10 of `HANDOVER.md`; read that first, because
-several things that look like bugs there are deliberate.
+The full ruleset for the season is in `SEASON-RULES.md`; the ordered plan with
+who does what is in `TASK-ORDER.md`. This file is the fault list.
 
 ---
 
-## What changed in v11
+## Dated
 
-**The Themed section.** A third track alongside Daily and Practice: themed
-boards, released on a schedule, everything already out stays playable.
+**3 September — daily #11, pre-season ends.** Day 1 is 24 August and
+`PRESEASON_DAYS = 10`, so #10 falls on 2 September. On the 3rd every label
+stops saying "Pre-season friendly", friendly records stop accumulating, and
+because `SEASON_START` is null the game enters the middle phase: a real daily
+with a real score and no season to put it in.
 
-- **Twelve boards at launch** — Manchester United #1 and #2, Liverpool #1 and
-  #2, Arsenal #1 and #2, Chelsea #1, Spurs #1, Manchester City #1, plus
-  Grounds #1, Nicknames #1 and Premier League #1 so somebody who supports none
-  of the big six has something to open on day one.
-- **One a Friday after that**, starting 21 August, with the five single-board
-  clubs across the first five weeks. **Seven over Christmas week**, one a day
-  from 21 to 27 December, taking in Christmas Eve, Christmas Day and Boxing
-  Day. Stock runs to 28 May 2027.
-- **59 boards built from the existing bank** by `tools/build_themes.js`. Every
-  one validated for the eleven-answer invariant, duplicate answers, the
-  transfer cap, self-answering and cross-naming.
-- **The theme is never the answer.** `tools/themes.js` separates what a clue is
-  *about* from what the theme *is*: a Manchester City board is about Maine
-  Road, Shaun Goater, its transfers and its managers. Grounds and stands stay;
-  the club's own name and nicknames are struck out of the pool, because a
-  nickname is the club.
-- **A third save slot.** `fcw.v04.theme`. Three modes now, and sharing the
-  practice key would have meant opening a themed board destroyed a practice
-  game in progress.
-- **Readable share links.** `/?t=man-united-3`, and the share message names the
-  board. The name comes from the server, so what is on the board and what is in
-  the message cannot drift apart.
-- **Requests are collected**, picklist rather than free text so the tally is a
-  sortable number. Nothing sends mail; a marker in the section tells anyone who
-  asked, the week their board lands. `notified_at` exists for when email does.
-
-**Fixed while building it:** `buildPuzzle()` handles its own failures and
-resolves, so the `.catch()` on both the `?p=` and `?t=` boot paths could never
-fire — a link to a withdrawn or unreleased board left the player on a dead
-screen with no way back to the menu. Both now check whether a puzzle actually
-arrived.
-
-**Not fixed, and it is a gap:** Everton has no board. Removing "Everton" and
-"Toffees" leaves 26 clues, and the generator cannot reach eleven answers from
-that. It needs roughly fifteen new clues, and it is the largest following in
-the game with nothing to play.
+That is the three-phase design working, not a fault. But it is a visible change
+to everyone playing, and nobody has seen it. **Test the phase model against 3
+September specifically, not against today**, and decide what the tile should
+say when there is no matchday number.
 
 ---
 
-## What changed in v10h
+## Live faults
 
-**Fixed: several windows open on the same game fought over the same two keys.**
+**`streaks()` does not guard the longest run.** The current run is guarded —
+"finishing an older Daily after the next has begun does not revive a streak" —
+but `longest` loops over every number in the record with no such check. Play
+the archive end to end and best run reads 290.
 
-`localStorage` is shared by every tab on the origin, and no tab knew the others
-were there. Three windows meant three clocks and three ten-second saves writing
-`fcw.v04.daily` and `fcw.v04.practice`, last write winning. Two consequences,
-both seen: a cleared record came back within ten seconds because another window
-still held a copy in memory, and a tab left open since the morning could
-overwrite the board being typed into now.
+**The pinch handler counts pointers twice.** `js/game.js`, the flex-layout
+gesture block. `n` and `pts` are two representations of one fact — how many
+pointers are down — and they drift: `n++` is unconditional on `pointerdown`
+while `pts[ev.pointerId]` overwrites when an id repeats. A touch released
+outside `.grid-wrap` never fires wrap's `pointerup`, so the entry leaks in
+both; the next touch reusing that id makes `mid()` return one element and
+`a[1].x` throws. If the id differs instead, no throw — a phantom pinch against
+a stale finger position, and the board jumps. Either way `startD` and
+`startMid` never get assigned, so the board stops panning until pointers clear.
 
-- A `storage` listener. A tab that sees its own slot change underneath it stands
-  down — stops the clock, stops writing, and says so — rather than arguing about
-  who is right. Storage events are only delivered to *other* documents, so this
-  cannot fire on the tab that wrote, and a lone tab never sees it.
-- `stopClockSaves()`. The interval `startClockSaves()` opened was never cancelled
-  by anything; `stopTimer()` clears only `timerId`, deliberately, because a
-  paused game still wants its elapsed written.
-- Both admin buttons stop writing before they clear and reload.
-  `location.reload()` does not halt the page — the browser fetches the document
-  while everything here keeps running — so a save could land after the
-  `removeItem` calls and put the record straight back.
+Fix is to delete `n` and derive the count from `pts`. Same principle as `board`
+in v145. It throws in every `frontend_test` run and has done since at least
+v148 — check `git diff` against v126 before assuming it is new.
 
-`tabs_test.mjs` is new: 13 checks, eight of which fail against v10g. Read the
-note at the top of it about what it cannot prove — jsdom delivers no storage
-events between windows, so the harness bridges two by hand. That exercises the
-handler, not the browser. **Worth confirming on the live site with two real
-tabs.**
-
-Also repaired two checks in `frontend_test.mjs` that sliced the admin handlers
-by character count (`+ 700`). Adding a comment above the code under test pushed
-it out of the window and failed a check about code that had not changed — the
-trap recorded in §5 of the handover. Both now slice to a real boundary.
+**Client and server disagree about which day it is.** The client reads local
+date components; the server reads UTC. Europe/London disagrees for the 00:00
+hour, America/New_York every evening. `epoch_test` compares dates at fixed
+times, not times, so it passes throughout. Settle **before anyone outside the
+UK plays** — and it is a product decision, not a bug fix, because pinning the
+puzzle day to one zone breaks the local-midnight rollover the Daily is built
+around.
 
 ---
 
-## What changed in v11
+## Test gaps
 
-**The Themed section.** A third track alongside Daily and Practice: themed
-boards, released on a schedule, everything already out stays playable.
+**`frontend_test`'s uncaught-error check is scoped to boot.** That is why the
+pinch fault above prints a full stack trace inside a suite reporting 185 passed,
+0 failed. Widening it to the whole run would catch that and would have caught
+the v146 `bulkReveal` fault, which is the same shape — cheaper and broader than
+`names_test.mjs` alone.
 
-- **Twelve boards at launch** — Manchester United #1 and #2, Liverpool #1 and
-  #2, Arsenal #1 and #2, Chelsea #1, Spurs #1, Manchester City #1, plus
-  Grounds #1, Nicknames #1 and Premier League #1 so somebody who supports none
-  of the big six has something to open on day one.
-- **One a Friday after that**, starting 21 August, with the five single-board
-  clubs across the first five weeks. **Seven over Christmas week**, one a day
-  from 21 to 27 December, taking in Christmas Eve, Christmas Day and Boxing
-  Day. Stock runs to 28 May 2027.
-- **59 boards built from the existing bank** by `tools/build_themes.js`. Every
-  one validated for the eleven-answer invariant, duplicate answers, the
-  transfer cap, self-answering and cross-naming.
-- **The theme is never the answer.** `tools/themes.js` separates what a clue is
-  *about* from what the theme *is*: a Manchester City board is about Maine
-  Road, Shaun Goater, its transfers and its managers. Grounds and stands stay;
-  the club's own name and nicknames are struck out of the pool, because a
-  nickname is the club.
-- **A third save slot.** `fcw.v04.theme`. Three modes now, and sharing the
-  practice key would have meant opening a themed board destroyed a practice
-  game in progress.
-- **Readable share links.** `/?t=man-united-3`, and the share message names the
-  board. The name comes from the server, so what is on the board and what is in
-  the message cannot drift apart.
-- **Requests are collected**, picklist rather than free text so the tally is a
-  sortable number. Nothing sends mail; a marker in the section tells anyone who
-  asked, the week their board lands. `notified_at` exists for when email does.
-
-**Fixed while building it:** `buildPuzzle()` handles its own failures and
-resolves, so the `.catch()` on both the `?p=` and `?t=` boot paths could never
-fire — a link to a withdrawn or unreleased board left the player on a dead
-screen with no way back to the menu. Both now check whether a puzzle actually
-arrived.
-
-**Not fixed, and it is a gap:** Everton has no board. Removing "Everton" and
-"Toffees" leaves 26 clues, and the generator cannot reach eleven answers from
-that. It needs roughly fifteen new clues, and it is the largest following in
-the game with nothing to play.
+**Three checks have now matched a comment instead of the code.** Twice in
+`record_test.mjs`, once in `live_check.mjs`. Comments here are long and quote
+the code they replaced, so anything asserting against source must strip
+comments first. Both files now do. Trailing `//` is deliberately left alone —
+stripping it truncates any line holding a URL.
 
 ---
 
-## What changed in v10h — the banner, the table and the clue strip
+## Environment
 
-**The banner.** The three groups now share one box treatment — same border,
-padding, radius and label — so the row scans as a dashboard rather than three
-different shapes with white space between them. `justify-content` was
-`space-between`, which pushed the groups to the edges and put the gap in the
-middle; it is `flex-start` now. Readouts lost their border and card face and
-controls kept theirs, so what is pressable is visible without pressing it, and
-the game buttons share a `min-width` so they are one size.
+**The gate contradicts its own instructions.** `npm install jsdom --no-save`
+puts `node_modules` on disk and check 31 fails on its presence, though
+`.gitignore` means it can never reach the package.
 
-**The league table** is under the board at exactly the board's width, taken from
-`--board-w`. That value is *calculated* by `fitCells()` from the puzzle's own
-dimensions rather than measured off the painted board, so the two edges cannot
-drift apart. It used to be a banner panel that script moved below the board on
-phones; `placeTable()` is deleted and `.below-board` is simply what the panel is
-rather than a state it gets put into.
+It happens not to bite because there is no `package.json` in the repo, so npm
+walks up to `C:\Users\graem\package.json` and installs there. Two consequences:
+every suite prints a `MODULE_TYPELESS_PACKAGE_JSON` warning, and **installing
+one dependency prunes the others** — `npm install acorn --no-save` removed
+jsdom and broke three suites. Always install both names in one command.
 
-**The clue strip** reserves a fixed column for the letter slots, so they start in
-the same place on every clue instead of beginning wherever the sentence ended.
-The reservation is derived — `15 * --bank-cell + 14 * --bank-gap + 27px` — from
-`MAX_DIM = 15` in `engine.js`, which is the hard bound on grid width and so on
-the longest answer that can ever be placed. A test asserts the two agree, so
-raising `MAX_DIM` fails loudly rather than silently overflowing the card. Long
-clues now shrink rather than scroll: `overflow-y:auto` inside a 96px card meant
-the longest ones could only be read by scrolling, which nobody discovers. Below
-900px the slots take their own row, because a sentence and fifteen boxes will
-not sit side by side on a phone.
-
-**Needs your eyes before deploying.** `render_test.mjs` and `journey_test.mjs`
-are the only suites that measure a real browser, and neither could run here —
-the Playwright browser download is blocked by the network allow-list. Everything
-below is verified against stylesheet rules and jsdom, which cannot do layout.
-Run both locally, and look at a phone, a tablet in both orientations and a wide
-monitor before this goes out.
+Adding `{ "type": "module" }` to the repo silences the warning and fixes the
+pruning, and breaks check 31. Pick one.
 
 ---
 
-## What changed in v10g
+## Not built
 
-**Fixed: a saved game could be destroyed by changing your club on the menu.**
+**Cross-device saves.** Completed results sync through
+`/api/account/results`; the board in progress does not — letters, clock and
+help are `localStorage` only, and no server path touches a save slot.
 
-The landing screen's *Play as* control fires `applyClubChoice()`, which ends in
-`saveSoon()`. On that screen no puzzle has been built, so `letters` is `{}` and
-`elapsed` is `0` — and `save()` had no guard for it. The write that produced was
-a complete, well-formed, entirely empty record landing on top of a game in
-progress. `mode` resets to `"daily"` on every page load, so whatever you were
-last playing, the landing screen wrote to the **daily** slot.
+Harder than results sync because the clock runs: two devices with one board
+open are two clocks and two sets of letters, with no `storage` event across
+devices the way there is across tabs. The multi-tab stand-down machinery exists
+because concurrent writers corrupt state; cross-device is that problem without
+the detection.
 
-The damage was invisible when it happened: `renderHome()` does not re-run after
-a club change, so the card carried on saying *In progress · 2:43* while the
-record behind it was already empty. The next render was the first sight of it,
-which made the refresh look like the culprit.
+What happens today is less broken than it sounds. Opening today's board on a
+second device gives a fresh board and a new `play_id`; the outstanding-board
+rule keys on `dailyNo` so no loss banks; and `recordDaily` refuses a second
+result for a number it already holds, so whichever device finishes first wins.
+You lose typed work on a device switch, not your day or your streak.
 
-Two guards, in `save()`:
+The cheap partial, if it becomes a complaint: the server already knows the open
+`play_id`, so device B could say *"this board is in progress on another
+device"* rather than handing over a blank grid. That is a message, not a sync.
 
-1. Nothing is written when no puzzle is loaded.
-2. A record holding letters or time is never replaced by one holding neither.
-   Deliberately not conditioned on mode or on how the empty board arose, because
-   every route to one has the same wrong answer. Only an explicit reset clears a
-   save, and both of those go through `removeItem`, which does not come through
-   `save()`.
+**The season.** Decided in full, entirely unbuilt. `FCW.outcome()` is correct,
+tested, and read only by the Season tile as of v149. See `SEASON-RULES.md` and
+items 7–14 of `TASK-ORDER.md`.
 
-`save_test.mjs` is new: 13 checks, seeding a game in progress into storage before
-the page loads and then trying to destroy it. Three of them fail against v10f.
-
-**Not changed, and worth recording:** the stacked-listener problem reported
-during the investigation does not exist. `populateClubSelect()` opens with
-`if (sel.options.length) return;`, so the binding happens once. The invariant is
-now held by a test rather than assumed.
+**`seasonFromActions()` is a third W/D/L rule** and the one on screen at Full
+Time. It factorises one board's score into a fake 38-game record. Retire it
+**with** the season, not after — otherwise Full Time shows "12W 3D 23L" for
+today's board beside a real record of "3W 1D 0L".
 
 ---
 
-## Found during the investigation, not yet fixed
+## Product and admin
 
-1. **The client and the server disagree about which day it is.** `dailyNumber()`
-   in `js/engine.js` reads *local* date components; `functions/_lib/daily.js`
-   reads *UTC*. Measured across 48 hours: Europe/London disagrees for the 00:00
-   hour (client a day ahead), America/New_York for 20:00–23:59 **every evening**
-   (client a day behind). Inside that window `renderHome()` blanks a good
-   in-progress daily, and `chooseMode("daily")` passes `restore = null`, rebuilds
-   and — before v10g — overwrote the save. Guard 2 above now stops the data loss,
-   but the daily still *appears* unplayed and the board comes back empty.
-
-   The fix is to take the day number from the daily response, which already
-   carries it, rather than recomputing locally. Note this is the product decision
-   flagged in the engine comment: pinning the puzzle day to one zone breaks the
-   local-midnight rollover the Daily is built around. **Worth settling before
-   anyone outside the UK plays.**
-
-2. **`New puzzle` discards an in-progress practice game without asking.** The
-   confirm guards only the board on screen, not the saved practice game it is
-   about to replace. Measured: a practice game showing *One in progress · 0:01*
-   became blank after one press.
-
-3. **`New puzzle` leaves a daily below 25% with no confirmation at all.** One tap
-   on the largest green button on screen moves you out of a scored daily. The
-   save survives, but it does not look like it does.
-
-4. **`fcw.mode` is written in three places and read in none.** Either honour it
-   on boot or drop it; as it stands it is a promise the code does not keep, and
-   it is why the landing screen always addressed the daily slot.
+- **how-to-play is live and already describes the season** — "Missing a day is
+  not a loss", 38 matches, a table against a real season. It is indexed. The
+  page promises something the game does not yet do.
+- **The landing screen implies every archive board counts** towards the season.
+  Under the settled rule a catch-up day banks two results and "one game a day"
+  is no longer literally true. Needs a line.
+- **Search Console still says `PASTE_TOKEN_HERE`.** Verify the **domain**
+  property by DNS TXT, not URL-prefix, so it survives a move to
+  `thexigames.com/crossword/`.
+- **Rename Missing XI and Career Path** before either has a URL.
+  playfootball.games has established pages under both names.
+- **Device codes** need rate limiting on `/api/account/code`, a retention line
+  in the privacy policy, a rotate button, and must never be logged. Bearer
+  token.
+- **Legal review** — naming, competition references, player name usage, and
+  terms-of-service constraints on data sources.
 
 ---
 
-## Before Matchday 1 (13 September)
+## Content
 
-5. **Make the exported master the real source.** The export is not yet fit for
-   it: `crosswordxi-master-bank.xlsx` holds 2,889 of the 3,406 rows in
-   `data.json` — missing all 515 `V3xxxx` imports plus `FA2023` and `FA2024` —
-   and every row carries `Max Per Puzzle = 1`, including the 1,251 that are
-   archived. Adopting it as-is would lose 517 clues and un-archive the entire
-   playability filter. Clue text itself is faithful: zero drift on clue, answer,
-   category or era across all shared ids.
+Ahead of all of the above on impact. Roughly two people a day finish a board; a
+league table is what brings someone back on day thirty and does nothing about
+almost nobody arriving on day one.
 
-   `crosswordxi-clue-review.xlsx` is the better base — 2,891 rows, a strict
-   superset, `In play?` matching `data.json` on every row, and a `Why archived`
-   column. Still missing the 515 imports. Plan: review file + imports, then a
-   round-trip test that rebuilds `data.json` from the spreadsheet and asserts an
-   exact match before anything becomes canonical.
-
-6. Review the 98 flagged clues; the 31 city-ambiguous ones first (23 plain,
-   4 with `— not` disambiguation, 4 more combined, 3 with truncation).
-7. Finish the validation audit on the 515 imported questions.
-8. Remove the gold badge and move "What's live" into owner tools.
-9. Check the EFL club list — written from memory, may have clubs in the wrong
-   division.
-10. Privacy policy (an email and display name are stored).
-
-## During the season
-
-11. More puzzles before 10 January — the badge turns red a fortnight out.
-12. `og:image` (1200×630) so shared links preview properly.
-13. Whether clue-circulation tracking resets at Matchday 1.
-
-## Accepted
-
-14. No public leaderboard until scoring can be recomputed server-side.
-15. Google Fonts is an external request (self-hosting costs ~270KB).
-
-## Offered, not built
-
-16. A self-answering check in the generator.
-17. EFL league tables.
-18. Themed boards have never run against a real D1 — only a stub and the
-    sample data. The release guard, the token round-trip through check-answer
-    and the schedule query are all first contact on deploy.
-19. Everton clues, so it can join the rotation. Then Sunderland, Forest and
-    the other large followings with nothing.
-20. An audit mode behind `?audit=1` — logs every write to the save slots with the
-    stack that caused it and keeps the last non-empty record under
-    `cxi.lastGood`. Not built, because the cause was found; worth having if
-    anything like this recurs.
+- **More clubs.** Four clubs across several subreddits outperformed one club in
+  one thread — the strongest signal available.
+- **Everton has no board.** Removing "Everton" and "Toffees" leaves 26 clues and
+  the generator cannot reach eleven answers. Largest following in the game with
+  nothing to play. Then Sunderland, Forest, and the other large followings.
+- **Season boards** — "Premier League 2023/24". Club-neutral, so they post to
+  r/soccer rather than one club sub, and their clues promote naturally into the
+  daily bank.
+- **A `dailyEligible` flag on new club clues** — a judgement made when the clue
+  is written and expensive to reconstruct later.
+- **Source CSVs are behind `data.json`.** A rebuild from source would lose
+  changes that exist only in the master spreadsheet.
