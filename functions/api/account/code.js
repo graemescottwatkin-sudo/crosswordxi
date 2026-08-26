@@ -18,9 +18,9 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import {
-import { limited } from "../../_lib/limit.js";
   findOrCreateUser, createSession, sessionCookie, publicUser, csrfOk, currentUser,
 } from "../../_lib/auth.js";
+import { limited } from "../../_lib/limit.js";
 
 /* Thirty characters: Crockford base32 with 0 and 1 dropped as well.
 

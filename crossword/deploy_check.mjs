@@ -356,6 +356,38 @@ t("every test suite is named in the workflow", (() => {
 })(), suiteGap);
 
 let brokenImports = [];
+/* Every Functions file must PARSE as an ES module, checked with a real
+   parser. The import-resolution check below matches import lines by pattern
+   and read straight past a multi-line import that had another import spliced
+   into the middle of it — locally every suite stayed green because nothing
+   imports account/code.js, and the fault surfaced as a failed Pages build in
+   Cloudflare's log, the first deploy-time failure since v124. The bundler
+   parses; so does the gate now. */
+{
+  /* Node's own parser via stdin — no dependency, because this gate must run
+     with no node_modules present (its own check demands it). */
+  const { execSync } = await import("node:child_process");
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d)) {
+      const p = path.join(d, e);
+      fs.statSync(p).isDirectory() ? walk(p) : e.endsWith(".js") && files.push(p);
+    }
+  })(path.join(ROOT, "functions"));
+  let broken = null;
+  for (const f of files) {
+    try {
+      execSync(process.execPath + " --input-type=module --check",
+        { input: fs.readFileSync(f), stdio: ["pipe", "pipe", "pipe"] });
+    } catch (e) {
+      broken = path.relative(ROOT, f) + " — " +
+        String(e.stderr || e.message).split("\n").find((l) => /Error/.test(l));
+      break;
+    }
+  }
+  t("every Functions file parses as the Pages bundler will parse it",
+    !broken, broken || files.length + " files");
+}
 t("every import resolves to something the target actually exports", (() => {
   const walk = (dir) => {
     const out = [];
