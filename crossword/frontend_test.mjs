@@ -762,6 +762,28 @@ server.listen(0, "127.0.0.1", async () => {
       "registered on its own resize listener before, so it could run alone");
     t("nothing re-registers placeTable on its own",
       !/addEventListener\("resize", placeTable\)/.test(js));
+
+    /* v153's version of the fix bet on event timing — relayout at 250ms and
+       600ms after orientationchange — and iPad still came up wrong, because
+       iPadOS presents as desktop Safari, orientationchange there is
+       deprecated and unreliable, and Apple does not publish the rotation
+       animation's length. The v155 shape: the layout records which viewport
+       it was computed FOR, staleness is a checkable fact, and the clock tick
+       is a watchdog — a rotation whose every event is missed still heals
+       within a second. Wrong-until-refresh is structurally gone. */
+    t("the layout records the viewport it was computed for",
+      /layoutFor = window\.innerWidth \+ "x" \+ window\.innerHeight/.test(js));
+    t("staleness is a checkable fact, not a caught event",
+      /function layoutStale\(\)/.test(js));
+    t("the clock tick heals a stale layout",
+      /function tick\(\)[\s\S]{0,700}if \(layoutStale\(\)\) relayout\(\)/.test(js),
+      "the watchdog: worst case one wrong second, never wrong-until-refresh");
+    t("the modern rotation signals call the one relayout",
+      /screen\.orientation\.addEventListener\("change"/.test(js) &&
+      /visualViewport\.addEventListener\("resize", relayout\)/.test(js));
+    t("no listener responds to resize with a subset of relayout",
+      !/addEventListener\("resize", function \(\) \{ if \(puzzle\) fitCells\(\); scaleClue\(\); \}\)/.test(js),
+      "the partial healer was WHY rotation looked half-fixed");
   }
 
   t("and the decision is sticky, so it cannot oscillate", (() => {
@@ -1138,8 +1160,15 @@ server.listen(0, "127.0.0.1", async () => {
      which is the case the board already handles and the words did not. */
   t("including the visual viewport, which the keyboard moves", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const vv = js.match(/visualViewport\.addEventListener\("(resize|scroll)"[\s\S]{0,120}?\}\)/g) || [];
-    return vv.length >= 2 && vv.every((h) => /scaleClue\(\)/.test(h));
+    /* Two shapes are acceptable: a handler that calls scaleClue itself, or
+       one that passes relayout — which includes it. The old version demanded
+       the literal call in every handler's text, which is testing the shape
+       of the code rather than the property; the resize path now routes
+       through relayout by reference and is MORE complete, not less. */
+    const scroll = /visualViewport\.addEventListener\("scroll"[\s\S]{0,120}?scaleClue\(\)/.test(js);
+    const resize = /visualViewport\.addEventListener\("resize", relayout\)/.test(js) &&
+      /function relayout\(\)[\s\S]{0,300}scaleClue\(\)/.test(js);
+    return scroll && resize;
   })());
   t("button labels cannot be drawn on top of each other", (() => {
     /* min-width:0 let a button shrink below its own label while the label

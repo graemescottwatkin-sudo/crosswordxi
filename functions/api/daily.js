@@ -9,16 +9,27 @@
  */
 import { publicPuzzle, json, bad } from "../_lib/puzzle.js";
 import { getDailyPuzzle, makeToken } from "../_lib/db.js";
-import { dailyNumber, playableDailyNo, ANSWERS_AFTER_DAYS } from "../_lib/daily.js";
+import { dailyNumber, ANSWERS_AFTER_DAYS } from "../_lib/daily.js";
 
 export async function onRequestGet({ request, env }) {
   /* ?no= asks for an earlier board. Without it you get today's.
 
-     playableDailyNo() decides what is allowed, so this endpoint and the check,
-     reveal and finish endpoints cannot disagree about which boards are open —
-     one function, four callers. A number above today is refused there, which is
-     the guard that matters: opening the past gives nothing away, opening the
-     future gives away everything. */
+     A number above today is ANSWERED WITH TODAY, not refused. The refusal
+     dead-ended a real player, nightly: the server's day flips at midnight
+     UTC, the browser's at local midnight, so every UK summer night between
+     twelve and one the client computed tomorrow's number, asked for it, got
+     403 "not available yet", and the daily was a toast on an empty pitch.
+     The client-side recovery for a number disagreement — adoptServerBoard,
+     "the server owns the calendar, so its answer wins" — was already written
+     and already right, but it only runs when a BOARD comes back; a 403
+     carries nothing to adopt. Clamping the ask is what lets the stated
+     principle actually operate.
+
+     Nothing leaks: the clamped answer is today's board, which is what the
+     asker is entitled to. And this is the ASK only — check, reveal, verify
+     and finish still validate tokens through playableDailyNo, where a claim
+     about a future board stays refused. Asking is a question; a token is a
+     claim. */
   let asked = NaN;
   /* Guarded because the endpoint took no request at all until ?no= arrived, and
      callers that never needed one still exist — functions_test invokes it as
@@ -26,10 +37,7 @@ export async function onRequestGet({ request, env }) {
      than one that ignores a parameter it cannot read. */
   try { asked = Number(new URL(request.url).searchParams.get("no")); } catch (e) {}
   const wanted = Number.isFinite(asked) && asked > 0 ? Math.floor(asked) : dailyNumber();
-  const no = playableDailyNo("daily:" + wanted);
-  if (no === false || no === null) {
-    return bad("That puzzle is not available yet.", 403);
-  }
+  const no = Math.min(Math.max(1, wanted), dailyNumber());
   const stored = await getDailyPuzzle(env, no);
   if (!stored) {
     return bad("No daily puzzle is stored for #" + no +

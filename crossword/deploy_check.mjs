@@ -71,13 +71,33 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    browsers had genuinely cached when v50 was live, so the old script was served
    back and the site looked unchanged.
 
-   LAST_SHIPPED is the version that is live now. Bump it when you deploy. */
+   LAST_SHIPPED is the version that is live now. Bump it when you deploy.
+
+   THE SCHEME, from Crossword_v001 on: a major release bumps the number
+   (v001 -> v002); a minor amendment appends or advances a letter
+   (v001 -> v001b -> v001c). A tag is BURNED the moment its package is
+   presented — v154 alone was rebuilt six times under one name, which made
+   "--expect v154" prove a string while proving nothing about the tree, the
+   duplication fault applied to release numbers. Packages are folders named
+   for the game: Crossword_v001, zipped as Crossword_v001.zip.
+
+   The old lineage (v124..v156) is retired; numbering restarted at v001. The
+   comparison below knows about that one reset — an old-lineage LAST_SHIPPED
+   (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
+   new-scheme, ordering is strict again: number first, then letter, where
+   "v001" < "v001b" < "v002". */
 const LAST_SHIPPED = "v154";   // <- bump this after each deploy
 t("the build tag has moved past the version now live",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
-    const n = (v) => parseInt(String(v).replace(/\D/g, ""), 10);
-    return !!now && n(now) > n(LAST_SHIPPED);
+    const parse = (v) => {
+      const m = /^v(\d+)([a-z]?)$/.exec(String(v).trim());
+      return m ? [parseInt(m[1], 10), m[2] || ""] : null;
+    };
+    const a = parse(now), b = parse(LAST_SHIPPED);
+    if (!a || !b) return false;
+    if (b[0] >= 100 && a[0] < 100) return true;   // the one restart, v156 -> v001
+    return a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]);
   })(),
   `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}`);
 

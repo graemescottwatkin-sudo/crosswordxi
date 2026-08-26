@@ -56,11 +56,41 @@ t("archive: it is a real puzzle", !!od.puzzle,
 t("archive: and it still carries no answers",
   !JSON.stringify(od).match(/"ch"\s*:/));
 
+/* A future ask is answered with TODAY, never refused and never served.
+   The 403 dead-ended a real player nightly: server days flip at midnight
+   UTC, browser days at local midnight, so a UK client between twelve and
+   one asked for tomorrow's number and got a toast on an empty pitch — while
+   the adoptServerBoard recovery, already written for exactly this
+   disagreement, sat unreachable because a 403 carries no board to adopt.
+   The guard that matters survives intact and is asserted here: the
+   response's dailyNo is today's, so nothing unreleased ever leaves. */
 const tomorrowBoard = await daily({ env, request: new Request("https://x/api/daily?no=" + (today + 1)) });
-t("archive: tomorrow is still refused", tomorrowBoard.status === 403,
-  "status " + tomorrowBoard.status);
+{
+  const b = JSON.parse(await tomorrowBoard.text());
+  t("archive: asking for tomorrow is answered with today",
+    tomorrowBoard.status === 200 && b.dailyNo === today,
+    `asked #${today + 1}, served #${b.dailyNo}`);
+  t("archive: and carries today's token, so the recovery path has a board to adopt",
+    typeof b.token === "string" && b.token === "daily:" + today);
+}
 const far = await daily({ env, request: new Request("https://x/api/daily?no=99999") });
-t("archive: so is a board far in the future", far.status === 403);
+{
+  const b = JSON.parse(await far.text());
+  t("archive: a far-future ask clamps the same way",
+    far.status === 200 && b.dailyNo === today);
+}
+/* The other half of the split: a TOKEN naming a future board stays refused.
+   Asking is a question and gets today; a token is a claim and a false one
+   gets nothing. If this ever goes green-to-red, the clamp has leaked into
+   playableDailyNo, where it must never live. */
+{
+  const res = await check({ env, request: new Request("https://x/api/check-answer", {
+    method: "POST", headers: { "content-type": "application/json", "x-fcw": "1" },
+    body: JSON.stringify({ token: "daily:" + (today + 1), num: 1, dir: "A", answer: "X" }),
+  }) });
+  t("a token claiming tomorrow's board is still refused", res.status === 403,
+    `status ${res.status}`);
+}
 const junk = await daily({ env, request: new Request("https://x/api/daily?no=abc") });
 t("archive: a junk number falls back to today rather than erroring",
   junk.status === 200);

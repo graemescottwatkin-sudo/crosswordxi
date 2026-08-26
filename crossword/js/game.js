@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v155";
+  var BUILD = "v001";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -530,6 +530,11 @@
   }
   function tick() {
     elapsed++; renderClock();
+    /* The layout watchdog. If a rotation's events were all missed — the
+       iPad case — the next tick notices the viewport no longer matches the
+       one the layout was computed for, and relays out. Worst case the board
+       looks wrong for one second; it cannot stay wrong until a refresh. */
+    if (layoutStale()) relayout();
     /* Written straight through once a second, not through the 400ms debounce.
 
        saveSoon() cancels the pending write each time it is called, and this is
@@ -948,9 +953,17 @@
         try { localStorage.setItem(ANSWERS_AFTER_KEY, String(res.answersAfter)); } catch (e) {}
       }
       if (res.mode === "daily" && res.dailyNo && res.dailyNo !== board.no) {
-        /* Different number back means the server refused ours — a clock ahead
-           of the host's. Named constructor, not a property write: board is
-           frozen so a stray assignment throws rather than drifting. */
+        /* Different number back means the server clamped ours — a clock
+           ahead of the host's, which every UK summer night is between
+           twelve and one, local midnight running an hour ahead of the
+           UTC midnight the server counts by. The server used to 403 that
+           ask, which carried no board for this branch to adopt, so the
+           recovery written for exactly this disagreement never ran and
+           the daily died on a toast. The server now answers with today
+           and this line — the server owns the calendar, its answer wins —
+           finally does its job. Named constructor, not a property write:
+           board is frozen so a stray assignment throws rather than
+           drifting. */
         adoptServerBoard(res.dailyNo);
       }
       if (res.mode === "theme") {
@@ -2261,14 +2274,41 @@
      Boot ran the full list once, correctly, which is why a refresh healed it.
 
      Anything added here is now had by every caller, which is the point. */
+  /* Which viewport the current layout was computed FOR. Written at the end
+     of every relayout, compared by anything that wants to know whether the
+     layout is stale. This exists because iPad rotation cannot be caught
+     reliably by events: iPadOS presents as desktop Safari, window
+     orientationchange is deprecated there and does not always fire, and the
+     rotation animation's duration is not published — so the v153 answer,
+     relayout at 250ms and again at 600ms, was a bet on Apple's timings and
+     it lost. The layout now carries its own evidence, and staleness is a
+     FACT that can be checked, not an event that must be caught. */
+  var layoutFor = "";
+  function layoutStale() {
+    return layoutFor !== (window.innerWidth + "x" + window.innerHeight);
+  }
   function relayout() {
     droppedBelow = false;            // decide again for the new size
     placeToolbar();
     placeTable();
     if (puzzle) fitCells();
     scaleClue();
+    layoutFor = window.innerWidth + "x" + window.innerHeight;
   }
   window.addEventListener("resize", relayout);
+  /* The modern rotation signals, where they exist. Guarded: desktop Safari
+     lacks screen.orientation events, old browsers lack visualViewport. */
+  if (window.screen && screen.orientation && screen.orientation.addEventListener) {
+    screen.orientation.addEventListener("change", function () {
+      setTimeout(relayout, 60);
+    });
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", relayout);
+  }
+  /* And the watchdog. Anything that runs periodically anyway can notice a
+     stale layout and heal it — the clock tick does, below — so a rotation
+     whose every event was missed still corrects itself within a second. */
 
   /* Where the league table goes.
      In the rail beside the controls, which is where it belongs on anything
@@ -5140,12 +5180,15 @@
     if (!$("jumpList").hidden) { closeJump(); return; }
     stepClue(1);
   });
-  window.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
+  /* Was a second resize listener doing a subset of relayout — cells and clue
+     but not toolbar or table placement. That split is WHY iPad rotation
+     looked half-fixed: the signal arrived, and healed half the layout. One
+     handler now; relayout is the only response to a size change. */
   /* The keyboard opening does not fire resize on iOS — it changes the visual
      viewport instead. Without this the board is sized for a screen that no
      longer exists the moment a cell is focused. */
   if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
+    /* Subsumed by the relayout visualViewport listener above. */
     window.visualViewport.addEventListener("scroll", function () { if (puzzle) fitCells(); scaleClue(); });
   }
   /* The full relayout, not just the board.

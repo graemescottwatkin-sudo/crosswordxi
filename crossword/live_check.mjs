@@ -184,9 +184,18 @@ if (daily.json) {
 }
 
 /* ---- the archive boundary ---- */
+/* A future ask is CLAMPED to today, not refused — the 403 dead-ended UK
+   players nightly between local midnight and the UTC one. The guard that
+   matters is asserted directly: whatever is asked, the board that comes
+   back is today's or earlier, so nothing unreleased ever leaves. */
 const future = await get("/api/daily?no=99999");
-t("tomorrow's board is refused", future.res.status === 403,
-  `HTTP ${future.res.status} — a 200 here would serve unreleased answers`);
+{
+  const served = future.json && future.json.dailyNo;
+  const todayNo = daily.json && daily.json.dailyNo;
+  t("a future ask is answered with today's board, not a dead end",
+    future.res.status === 200 && served === todayNo,
+    `asked #99999, served #${served} (today is #${todayNo})`);
+}
 
 /* ---- what the browser is told about the clock ---- */
 /* Cannot be exercised without finishing a board, which would post a score.
