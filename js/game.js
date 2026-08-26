@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v137";
+  var BUILD = "v138";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4714,7 +4714,23 @@
 
     var d = savedFor("daily");
     var state = "";
-    if (d && d.dailyNo === today) {
+
+    /* Played is a fact about the PLAYER, not about this browser.
+
+       This read only savedFor("daily"), which is this device's localStorage and
+       never crosses devices — so finishing on a laptop and opening the iPad
+       showed the daily as unplayed, and playing it again was the obvious next
+       step. The results DO sync; the tile was not asking them.
+
+       Results win over the local save: a result is banked and verified, a save
+       is a working copy. */
+    var doneToday = null;
+    loadResults().forEach(function (r) {
+      if (r && r.mode === "daily" && r.dailyNo === today) doneToday = r;
+    });
+    if (doneToday) {
+      state = "Played \u00B7 " + (doneToday.score != null ? doneToday.score + "/114" : "done");
+    } else if (d && d.dailyNo === today) {
       if (d.complete) state = "Played \u00B7 " + (d.score != null ? d.score + "/114" : "done");
       /* No number. It showed the elapsed time from the save, which stopped
          being true the moment you left — the clock does not pause, so a figure
@@ -6233,7 +6249,34 @@
     }
   }
 
+  /* Already played on another device? Say so rather than opening it fresh.
+
+     The results sync but the SAVE does not, so a daily finished on a laptop
+     looked untouched on a tablet — and the natural next move was to play it
+     again, which banks a second attempt at the same board. The result is
+     already safe; there is nothing to gain and a record to muddle.
+
+     Not a refusal. Looking at a board you have finished is reasonable, and the
+     server will not bank it twice — the confirm is so it is a decision rather
+     than a surprise. */
+  function alreadyPlayedElsewhere(no) {
+    var local = savedFor("daily");
+    if (local && local.dailyNo === no && local.complete) return null;   // played here
+    var found = null;
+    loadResults().forEach(function (r) {
+      if (r && r.mode === "daily" && r.dailyNo === no) found = r;
+    });
+    return found;
+  }
+
   on("homeDaily", "click", function () {
+    var done = alreadyPlayedElsewhere(FCW.dailyNumber());
+    if (done && !window.confirm(
+      "You have already played this one" +
+      (done.score != null ? " and scored " + done.score : "") +
+      ".\n\nYour result is saved. Playing again will not change it.\n\nOpen it anyway?")) {
+      return;
+    }
     dailyWanted = null;   // the hero is always today, whatever was opened last
     /* Anyone part-way through today's can still finish it. Stranding a
        half-played board to enforce a suspension costs a real player something
