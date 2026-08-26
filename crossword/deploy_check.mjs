@@ -35,8 +35,23 @@ t("every relative reference resolves, exact case", refs.every(has), refs.join(",
    cache rule, so browsers served stale assets after a deploy and the site
    looked unchanged however many times it was uploaded. */
 const headers = readRoot("_headers");
-t("css and js have cache rules, not just the HTML",
-  /\/css\/\*/.test(headers) && /\/js\/\*/.test(headers));
+/* The rules must name THIS game's paths, not any paths.
+
+   This asked whether the file mentioned /css/* and /js/* anywhere, and passed
+   happily after the move while both rules matched nothing — the game's assets
+   had gone to /crossword/css/ and the rules that stop a browser pairing new
+   markup with a month-old stylesheet were dead. The only outward sign was a
+   cache header quietly changing to the Pages default.
+
+   GAME is this folder's name, so a game added without its own rules fails
+   here rather than shipping with no cache policy. */
+const GAME = path.basename(DIR);
+t(`css and js have cache rules under /${GAME}/`,
+  new RegExp(`^/${GAME}/css/\\*`, "m").test(headers) &&
+  new RegExp(`^/${GAME}/js/\\*`, "m").test(headers),
+  `/${GAME}/css/* and /${GAME}/js/*`);
+t(`the game's own index.html is never stored`,
+  new RegExp(`^/${GAME}/index\\.html`, "m").test(headers));
 t("index.html is never stored, so a player cannot be pinned to an old build", (() => {
   // A stale index.html names stale asset URLs, so the ?v= tags cannot rescue it.
   const html = headers.slice(headers.indexOf("/index.html"));

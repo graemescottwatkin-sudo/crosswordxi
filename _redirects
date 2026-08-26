@@ -1,21 +1,19 @@
-# Cloudflare Pages redirects.
+# Cloudflare Pages redirects — PATHS ONLY.
 #
-# The game lived at crossword.thexigames.com and now lives at
-# thexigames.com/crossword/. Everything that was shared while it was there has
-# to keep working — a dead shared link is a player who never comes back.
+# The host-to-host rule for crossword.thexigames.com used to live here and did
+# nothing. Pages matches the source as a path, so a source written as a full
+# URL never matched and the old subdomain quietly served the hub instead of the
+# game. Every shared link would have landed on the wrong page.
 #
-# THE SPLAT CARRIES THE QUERY STRING. Pages appends the original query to the
-# destination automatically, and that is the whole point here: a shared result
-# is /?token=practice:42 and a challenge invite is /?c=<id>. A redirect that
-# dropped the query would send every one of them to a blank landing screen and
-# nothing would look broken from the outside.
+# That redirect is a Cloudflare Redirect Rule on the zone instead:
+#   Rules -> Redirect Rules -> hostname equals crossword.thexigames.com
+#   Dynamic: concat("https://www.thexigames.com/crossword", http.request.uri.path)
+#   301, Preserve query string ON
 #
-# 301 rather than 302: the old address should stop being the address. Search
-# engines pass ranking on a 301 and browsers cache it, which is what we want
-# now that the noindex is off the new home.
+# Query string preservation is the part that matters: a shared result is
+# /?token= and a challenge invite is /?c=.
+#
+# live_check.mjs follows the redirect and reads where it lands, so this cannot
+# be broken without a suite saying so.
 
-https://crossword.thexigames.com/*   https://www.thexigames.com/crossword/:splat   301
-http://crossword.thexigames.com/*    https://www.thexigames.com/crossword/:splat   301
-
-# The apex to www, so there is one canonical host and not two.
-https://thexigames.com/*             https://www.thexigames.com/:splat             301
+# Path-level redirects for this site go below.

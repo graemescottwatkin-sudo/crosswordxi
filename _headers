@@ -31,23 +31,32 @@
 # pins a player to an old build permanently, because the versioned asset URLs
 # it names are the old ones too. The file is 15KB; fetching it every time costs
 # nothing next to shipping someone last week's game.
+# Never stored. A player must not be pinned to an old build, and index.html is
+# what carries the ?v= tag that busts everything else.
+#
+# One pair of rules per game. These read /css/* and /js/* before the move,
+# which matched nothing once the game went into crossword/ — the rules that
+# stop a browser pairing new markup with a month-old stylesheet were silently
+# doing nothing at all, and the only sign was a cache header changing from
+# no-store to the Pages default. Every game added needs its own three lines.
 /
   Cache-Control: no-store
 
 /index.html
   Cache-Control: no-store
 
-# Stylesheet and scripts. Versioned in the HTML, so a long cache would be safe,
-# but revalidating costs one conditional request and removes a whole class of
-# "why has nothing changed" problem.
-/css/*
-  Cache-Control: public, max-age=0, must-revalidate
+/crossword/
+  Cache-Control: no-store
 
-/js/*
-  Cache-Control: public, max-age=0, must-revalidate
+/crossword/index.html
+  Cache-Control: no-store
 
-# Puzzle responses carry today's clues and must never sit in a shared cache.
-# The Functions set this themselves too; this is belt and braces.
+/crossword/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/crossword/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /api/*
   Cache-Control: no-store
   X-Robots-Tag: noindex

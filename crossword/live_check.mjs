@@ -16,7 +16,9 @@
  * Anything it cannot see from outside is listed at the end rather than passed
  * over in silence — a check that quietly skips is worse than no check.
  */
-const SITE = "https://crossword.thexigames.com";
+const SITE = "https://www.thexigames.com/crossword";
+const HUB = "https://www.thexigames.com";
+const OLD = "https://crossword.thexigames.com";
 const want = (() => {
   const i = process.argv.indexOf("--expect");
   return i > -1 ? process.argv[i + 1] : null;
@@ -37,8 +39,12 @@ const codeOnly = (src) => src
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
 
+/* SITE is the game; the API is at the repository root, because functions/ is.
+   Asking SITE + "/api/daily" gave /crossword/api/daily and a 404 — the check
+   was wrong, not the site. Anything starting /api/ goes to the root. */
 const get = async (path) => {
-  const res = await fetch(SITE + path, { headers: { "accept": "*/*" } });
+  const base = path.startsWith("/api/") ? HUB : SITE;
+  const res = await fetch(base + path, { headers: { "accept": "*/*" } });
   const text = await res.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* html */ }
@@ -46,6 +52,45 @@ const get = async (path) => {
 };
 
 console.log(`\n${SITE}\n`);
+
+/* ---- the old address still reaches the game ----
+   Checked first, because it is the one thing here that can be silently wrong.
+   The original test for this asked a person to confirm the query string was
+   still in the address bar after the redirect — which is true when the
+   redirect works AND true when nothing happens at all, so it could not tell
+   success from total failure. It reported a pass while crossword.thexigames.com
+   was serving the hub and every shared link was dead.
+
+   This follows the redirect and reads where it actually landed. A shared
+   result is /?token= and a challenge invite is /?c=, so the query surviving is
+   the whole point rather than a detail. */
+{
+  const url = OLD + "/?token=practice:2";
+  const res = await fetch(url, { redirect: "follow" });
+  const landed = res.url;
+  t("the old subdomain still reaches the game",
+    landed.startsWith("https://www.thexigames.com/crossword"),
+    landed);
+  t("and a shared link keeps its token across the move",
+    landed.includes("token=practice:2"),
+    landed.includes("?") ? landed.slice(landed.indexOf("?")) : "query dropped");
+}
+
+/* ---- the hub ---- */
+{
+  const hub = await fetch(HUB + "/");
+  const html = await hub.text();
+  t("the hub is served", hub.ok, `HTTP ${hub.status}`);
+  t("and it shows eleven shirts",
+    (html.match(/class="shirt/g) || []).length === 11,
+    `${(html.match(/class="shirt/g) || []).length} found`);
+  /* The roster must not name unreleased games — two of them are built under
+     names live competitors already hold. */
+  const leaked = ["Word Search","QuickFire","Scrambled","Missing XI",
+                  "Career Path","Link XI","Odd One Out"].filter((n) => html.includes(n));
+  t("and names no unreleased game", leaked.length === 0,
+    leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");
+}
 
 /* ---- which build is being served ---- */
 const home = await get("/");
