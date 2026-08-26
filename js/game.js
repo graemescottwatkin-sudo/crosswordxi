@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v146";
+  var BUILD = "v147";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -692,6 +692,7 @@
   function loadSaved(which) { return readSlot(which); }
 
   var DAILY_PREFIX = "fcw.v04.daily.";
+  var THEME_PREFIX = "fcw.v04.theme.";
 
   /* Every unfinished daily, on any board.
 
@@ -700,6 +701,29 @@
      them rather than the first lets boot tell the difference between "resume
      this" and "you have three going" — one resumes, several go to the landing
      screen with the count. */
+  /* The themed board left unfinished, if there is one.
+
+     Same shape as unfinishedDailies and for the same reason: slots are keyed
+     per board, and at boot `board` is the empty default with no theme on it —
+     so savedFor("theme") looked in "fcw.v04.theme.none" and found nothing.
+     That is why a daily resumed after a refresh and every club board did not.
+
+     Singular because only one themed board can be in progress: they share one
+     slot family and openThemed overwrites, unlike dailies which each keep their
+     own. */
+  function unfinishedTheme() {
+    var found = null;
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (found || k.indexOf(THEME_PREFIX) !== 0) return;
+        var raw = null;
+        try { raw = JSON.parse(localStorage.getItem(k)); } catch (e) { return; }
+        if (raw && !raw.complete && inProgress(raw)) found = raw;
+      });
+    } catch (e) {}
+    return found;
+  }
+
   function unfinishedDailies() {
     var out = [];
     try {
@@ -1153,6 +1177,17 @@
     if (subsSpentNow() > FCW.SCORING.SUBS_PER_BOARD) return false;
     return subsSpentNow() + cost > FCW.SCORING.SUBS_PER_BOARD;
   }
+
+  /* True while Reveal everything is working through the board.
+
+     Its declaration was removed with the old board variables — the name looked
+     like part of that family and is not. Three references survived, so every
+     reveal threw ReferenceError: reveal letter, reveal answer and reveal
+     everything were all dead on v147.
+
+     Declared here, next to its only reader, rather than back among the board
+     state where it was mistaken for it. */
+  var bulkReveal = false;
 
   /* Confirm only where the allocation would be exceeded. Returns false if the
      player backs out. */
@@ -2667,7 +2702,32 @@
            played — a record of nothing that still refused to let you play, and
            exactly the contradiction the button exists to prevent.
            Anything new that survives a reload belongs on this list. */
+        /* Named keys, then everything under the game's prefixes.
+
+           WIPE_KEYS is a fixed list, and save slots stopped being fixed the
+           moment they were keyed per board — "fcw.v04.daily.3" is not
+           "fcw.v04.daily", so a reset removed nothing that mattered and the
+           board came straight back. A list cannot enumerate a key that carries
+           a number in it.
+
+           The prefix sweep covers every board slot without anybody having to
+           remember to add one. Preferences are left alone: they are named
+           individually in the KEEP list, because a reset clears what you have
+           done, not how you like the thing to look. */
         WIPE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
+        var KEEP = ["fcw.clubPref", "fcw.deviceCode", "fcw.theme", "fcw.pitch",
+                    "fcw.bank", "fcw.skip", "fcw.fxmode", "fcw.filter"];
+        var doomed = [], i, k;
+        for (i = 0; i < localStorage.length; i++) {
+          k = localStorage.key(i);
+          if (!k || k.indexOf("fcw.") !== 0) continue;
+          if (KEEP.indexOf(k) !== -1) continue;
+          if (k.indexOf("fcw.v04.") === 0 || k.indexOf("fcw.results") === 0 ||
+              k.indexOf("fcw.themeResults") === 0) doomed.push(k);
+        }
+        /* Collected first, removed after: removing inside the loop shifts the
+           indices and skips every other key. */
+        doomed.forEach(function (key) { localStorage.removeItem(key); });
       } catch (e) {}
       // Reload, so the clock, the season strip and the board all start again
       // together rather than one at a time.
@@ -6890,7 +6950,13 @@
        unfinished one. */
     var saved = null;
     if (!atHome) {
-      if (last === "practice" || last === "theme") saved = savedFor(last);
+      if (last === "practice") saved = savedFor("practice");
+      /* A themed board has to be found by scanning, for the same reason a daily
+         does: slots are keyed per board, and at boot `board` is the empty
+         default with no theme on it. savedFor("theme") therefore looked in
+         "fcw.v04.theme.none" and found nothing — which is why a daily resumed
+         after a refresh and every club board did not. */
+      else if (last === "theme") saved = unfinishedTheme();
       else if (last === "daily") {
         /* One resumes. Several means several boards were left going, and
            picking one for the player would be a guess — the landing screen says

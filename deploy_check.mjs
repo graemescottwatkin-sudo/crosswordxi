@@ -224,6 +224,22 @@ t("noindex matches the address the page claims", (() => {
   return !robotsGap;
 })(), robotsGap || null);
 
+/* NOT CHECKED HERE: that every name game.js calls is one it declares.
+
+   `bulkReveal` lost its declaration and kept three references, so every reveal
+   threw ReferenceError on a shipped build. Fixing it nearly shipped the same
+   fault again — `unfinishedTheme` was called before it was written.
+
+   A regex attempt at this produced four false positives on the first run
+   (function parameters, string methods, keywords) and four more after two
+   rounds of tightening. A checker that cries wolf gets switched off, which is
+   worse than not having one.
+
+   The right tool is a parser — `node --check` only proves the file parses, not
+   that its names resolve. Until then the honest answer is that this class of
+   fault is caught by loading the page, which is what the jsdom suites do and
+   what this gate cannot. Run frontend_test before shipping. */
+
 let seoGap = "";
 t("structured data parses and the share card is present", (() => {
   const problems = [];
