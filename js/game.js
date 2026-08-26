@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v134";
+  var BUILD = "v135";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -548,6 +548,14 @@
         mode: mode, dailyNo: dailyNo,
         seed: seed, token: puzzleToken, letters: letters,
         fingerprint: puzzleFingerprint(puzzle),
+        /* Wall-clock, so a reload can be charged for the time it took.
+
+           `elapsed` counts ticks, and a tick only happens while the page is
+           open — so seconds spent reloading were never counted, and holding
+           Ctrl+R stopped the clock outright. The rule the game states is that
+           the clock does not pause and closing the tab does not stop it; this
+           is what makes that true of the display as well as the score. */
+        savedAt: Date.now(),
         pauseCount: pauseCount,
         // Include a pause still open, so refreshing mid-pause cannot erase it.
         pausedMs: pausedMs + (pauseStartedAt ? Date.now() - pauseStartedAt : 0),
@@ -792,6 +800,14 @@
       checksUsed = restore.checks || 0;
       checkAllsUsed = restore.checkAlls || 0;
       elapsed = restore.elapsed || 0;
+      /* Charge the gap since the save. Only for a game that was still running:
+         a finished board has nothing left to run, and a paused one is paused.
+         Capped at an hour so a board reopened next week does not arrive with a
+         nonsense number — past full time the score has stopped falling anyway. */
+      if (!restore.complete && restore.savedAt) {
+        var away = Math.round((Date.now() - restore.savedAt) / 1000);
+        if (away > 0) elapsed += Math.min(away, 3600);
+      }
       /* A finished board comes back finished.
 
          `complete` resets when a board loads and was only ever set by finishing
@@ -5770,17 +5786,45 @@
       if (c) c.textContent = left ? "\u2212" + cost : "\u2014";
       var ra = document.querySelector('[data-act="reveal-all"]');
       if (ra) ra.disabled = !left;
-      /* Substitutions belong to practice levels. Shown either way, but greyed
-         and labelled where they do not apply — an item that vanishes reads as
-         a feature that does not exist, rather than one you cannot use here. */
-      var sb = $("subBtn"), item = $("tbSub"), note = $("tbSubNote");
+      /* Every price read from SCORING, never written in the markup.
+
+         The menu said "Selected word -3" when a check costs 2, and "Selected
+         word -9" when revealing an answer costs 12 — numbers typed into the
+         HTML when those were the prices, left behind when they changed. A
+         number in a string cannot follow the constant it describes.
+
+         The reveals also say what they cost in substitutions, because that is
+         what decides the result and the menu was silent on it. */
+      var HM = FCW.SCORING.HELP_MINUTES;
+      var setCost = function (id, pts, subs) {
+        var el = $(id);
+        if (!el) return;
+        el.textContent = "\u2212" + pts + (subs ? "  \u00B7  " + subs + " sub" +
+          (subs === 1 ? "" : "s") : "");
+      };
+      /* The footer buttons carry the same prices and had the same stale
+         numbers. Driven from here so there is one source, not five. */
+      setCost("costCheck", FCW.SCORING.CHECK_PENALTY, 0);
+      setCost("costCheckAll", FCW.SCORING.CHECK_ALL_PENALTY, 0);
+      setCost("costLetter", FCW.SCORING.REVEAL_LETTER_PENALTY, 0);
+      setCost("costWord", FCW.SCORING.REVEAL_ANSWER_PENALTY, 0);
+      setCost("tbCostCheck", FCW.SCORING.CHECK_PENALTY, 0);
+      setCost("tbCostCheckAll", FCW.SCORING.CHECK_ALL_PENALTY, 0);
+      setCost("tbCostLetter", FCW.SCORING.REVEAL_LETTER_PENALTY, FCW.SCORING.SUBS_PER_LETTER);
+      setCost("tbCostWord", FCW.SCORING.REVEAL_ANSWER_PENALTY, FCW.SCORING.SUBS_PER_ANSWER);
+
+      /* Substitutions are universal now — three a board, every board. The item
+         said "Practice only", which was true when they were a practice
+         difficulty setting and became wrong when they started deciding whether
+         a day is a win. */
+      var item = $("tbSub"), note = $("tbSubNote");
       if (item) {
-        var have = sb && sb.style.display !== "none" && !sb.disabled;
-        item.disabled = !have;
+        item.disabled = true;      // a readout, not a control
         if (note) {
-          note.textContent = have
-            ? ($("subCount") ? $("subCount").textContent : "")
-            : (mode === "practice" ? "None left" : "Practice only");
+          var leftSubs = subsRemainingNow();
+          note.textContent = subsSpentNow() > FCW.SCORING.SUBS_PER_BOARD
+            ? "Exceeded \u2014 draw"
+            : leftSubs + " of " + FCW.SCORING.SUBS_PER_BOARD + " left";
         }
       }
       /* Practice is the only mode where clearing is offered. A daily or a

@@ -57,7 +57,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v134">
+<link rel="stylesheet" href="css/style.css?v=v135">
 </head>
 <body>
 <!-- Build badge: pinned so it appears in every screenshot regardless of scroll,
@@ -280,18 +280,18 @@
       <div class="tbar-menu">
         <button class="tbar-btn" id="tbCheck" aria-expanded="false" aria-haspopup="menu">Check</button>
         <div class="tbar-pop" id="tbCheckPop" role="menu" hidden>
-          <button role="menuitem" data-act="check-word">Selected word<span class="pc">&minus;3</span></button>
-          <button role="menuitem" data-act="check-all">Full board<span class="pc">&minus;9</span></button>
+          <button role="menuitem" data-act="check-word">Selected word<span class="pc" id="tbCostCheck"></span></button>
+          <button role="menuitem" data-act="check-all">Full board<span class="pc" id="tbCostCheckAll"></span></button>
         </div>
       </div>
 
       <div class="tbar-menu">
         <button class="tbar-btn" id="tbReveal" aria-expanded="false" aria-haspopup="menu">Reveal</button>
         <div class="tbar-pop" id="tbRevealPop" role="menu" hidden>
-          <button role="menuitem" data-act="reveal-letter">Selected letter<span class="pc">&minus;2</span></button>
-          <button role="menuitem" data-act="reveal-word">Selected word<span class="pc">&minus;9</span></button>
+          <button role="menuitem" data-act="reveal-letter">Selected letter<span class="pc" id="tbCostLetter"></span></button>
+          <button role="menuitem" data-act="reveal-word">Selected word<span class="pc" id="tbCostWord"></span></button>
           <button role="menuitem" data-act="reveal-all" class="danger">Everything left<span class="pc" id="tbRevealAllCost"></span></button>
-            <button role="menuitem" data-act="sub" id="tbSub">Free substitution<span class="pc" id="tbSubNote"></span></button>
+            <button role="menuitem" data-act="sub" id="tbSub">Substitutions<span class="pc" id="tbSubNote"></span></button>
         </div>
       </div>
 
@@ -468,13 +468,13 @@
     <div id="helpRow">
       <div class="tb-row">
         <span class="tb-sub">Check</span>
-        <button class="btn secondary" id="checkBtn" title="Check the selected answer — tells you which letters are wrong">Answer<span class="cost">&minus;3</span></button>
-        <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid">Grid<span class="cost">&minus;9</span></button>
+        <button class="btn secondary" id="checkBtn" title="Check the selected answer — tells you which letters are wrong">Answer<span class="cost" id="costCheck"></span></button>
+        <button class="btn secondary" id="checkAllBtn" title="Check every answer in the grid">Grid<span class="cost" id="costCheckAll"></span></button>
       </div>
       <div class="tb-row">
         <span class="tb-sub">Reveal</span>
-        <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter and lock it">Letter<span class="cost">&minus;2</span></button>
-        <button class="btn outline" id="revealBtn" title="Reveal the whole selected answer and lock it">Answer<span class="cost">&minus;9</span></button>
+        <button class="btn outline" id="revealLetterBtn" title="Reveal the selected letter and lock it">Letter<span class="cost" id="costLetter"></span></button>
+        <button class="btn outline" id="revealBtn" title="Reveal the whole selected answer and lock it">Answer<span class="cost" id="costWord"></span></button>
       </div>
       <div class="tb-row tb-row-sub">
         <span class="tb-sub">Free</span>
@@ -1028,7 +1028,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v134</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v135</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1041,8 +1041,8 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v134"></script>
-<script src="js/engine.js?v=v134"></script>
-<script src="js/game.js?v=v134"></script>
+<script src="js/seasons.js?v=v135"></script>
+<script src="js/engine.js?v=v135"></script>
+<script src="js/game.js?v=v135"></script>
 </body>
 </html>
