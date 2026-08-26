@@ -938,25 +938,23 @@ var FCW = (function () {
     while (marks.length < n) marks.unshift("W");   // a perfect season so far
     return marks.slice(-n);
   }
-  /* The time floor can follow the season. A fixed floor of 36 finished bottom
-     in only 2 of the 30 stored seasons — in 2007/08 the last club had 11
-     points, so running the clock out still placed you 16th, mid-table, for a
-     puzzle you never solved. Passing the season's own floor rescales the curve
-     so time alone always leaves you last, in whichever season you are playing.
-     Help penalties still apply below it: time puts you bottom, help puts you
-     further. */
-  function timePenaltyTo(elapsedSeconds, floor) {
-    var raw = scoreAtMinute(matchMinute(elapsedSeconds));
-    var base = SCORING.DECAY_CURVE[SCORING.DECAY_CURVE.length - 1].score;
-    if (floor === undefined || floor === null || floor === base) {
-      return Math.round(SCORING.MAX_SCORE - raw);
-    }
-    var span = SCORING.MAX_SCORE - base;
-    var scaled = floor + (raw - base) * ((SCORING.MAX_SCORE - floor) / span);
-    return Math.round(SCORING.MAX_SCORE - scaled);
+  /* The clock alone, on the fixed curve.
+
+     This used to take a floor and rescale the curve to it, so time alone left
+     you bottom of whichever season you were shown. That was wrong for a reason
+     that took two reviews to surface: pickSeason() draws from
+     seasonsForClub(), so the season — and the floor — depended on the club you
+     picked for flavour. Identical play scored 66 as Aston Villa and 76 as
+     Blackpool.
+
+     The parameter is gone rather than defaulted, so it cannot come back by
+     accident. Where a score places you in a table is a table concern; what the
+     score IS must be the same for everyone. */
+  function timePenalty(elapsedSeconds) {
+    return Math.round(SCORING.MAX_SCORE - scoreAtMinute(matchMinute(elapsedSeconds)));
   }
-  function computeScore(elapsedSeconds, checksUsed, revealedLetters, revealedAnswers, checkAllsUsed, opts) {
-    var tp = timePenaltyTo(elapsedSeconds, opts && opts.floor);
+  function computeScore(elapsedSeconds, checksUsed, revealedLetters, revealedAnswers, checkAllsUsed) {
+    var tp = timePenalty(elapsedSeconds);
     var cp = checksUsed * SCORING.CHECK_PENALTY;
     var xp = (checkAllsUsed || 0) * SCORING.CHECK_ALL_PENALTY;
     var lp = revealedLetters * SCORING.REVEAL_LETTER_PENALTY;
@@ -1285,6 +1283,10 @@ var FCW = (function () {
       v: 1,
       date: o.date,                       // ISO yyyy-mm-dd, local calendar day
       dailyNo: o.dailyNo,
+      /* The attempt this row came from, so a verified score can replace its own
+         row rather than being refused as a duplicate. This function builds an
+         explicit shape, so a field not named here is dropped in silence. */
+      playId: o.playId || null,
       seed: o.seed,
       bankVersion: o.bankVersion || QUESTION_BANK_VERSION,
       club: o.club,
@@ -1719,7 +1721,7 @@ var FCW = (function () {
     timeState: timeState,
     streaks: streaks,
     seasonStats: seasonStats,
-    timePenaltyTo: timePenaltyTo,
+    timePenalty: timePenalty,
     // Exported so tests can be written against the launch date rather than
     // hard-coding it — it has moved once and will move again.
     DAILY_EPOCH: DAILY_EPOCH,

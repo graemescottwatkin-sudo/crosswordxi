@@ -67,5 +67,29 @@ t("a perfect season reaches the maximum score",
   38 * FCW.outcomePoints("W") === FCW.SCORING.MAX_SCORE,
   "38 x 3 = " + FCW.SCORING.MAX_SCORE);
 
+console.log("\nThe play reference is per board, not per tab");
+{
+  /* Asked for by review: two consecutive fresh boards must not share a play id.
+     They did — the reset block cleared eleven pieces of state and not playId,
+     playNo or playSent, and playStart() only mints a new one when playId is
+     null. So finishing the daily and opening an archive board ran the second
+     board on the first board's row: /api/finish answered `already: true` with
+     the wrong score, recordDaily rewrote the wrong record, and a challenge
+     started afterwards was refused as a duplicate entry.
+
+     Read from the source because the reset lives inside newPuzzle(), which
+     needs a live puzzle and a server to run. What must hold is that the three
+     are cleared alongside the rest of the per-board state. */
+  const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  const reset = game.slice(game.indexOf("helpActions = []; consecutiveChecks = 0;"),
+                           game.indexOf("helpActions = []; consecutiveChecks = 0;") + 1400);
+  t("a fresh board clears the play id", /playId = null/.test(reset));
+  t("and the play number", /playNo = null/.test(reset));
+  t("and the sent flag, so the new row is posted", /playSent = false/.test(reset));
+  t("while a restore still puts the saved one back",
+    /playId = restore\.playId/.test(game),
+    "or a refresh mid-puzzle would count as a second attempt");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

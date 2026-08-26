@@ -432,8 +432,14 @@ server.listen(0, "127.0.0.1", async () => {
        which a reveal. Section plus button now reads as one phrase. */
     const rows = [...d.querySelectorAll("#helpRow .tb-row")];
     const label = (r) => r.querySelector(".tb-sub").textContent.trim();
+    /* Strips the cost, whatever form it takes. It used to expect a minus and a
+       number, because costs were points; they are match minutes now — "+14'" —
+       so the old pattern left the cost attached and the label stopped matching.
+
+       Matching either shape keeps the assertion about what it is for: that the
+       row reads as "Check: Answer / Grid" rather than four loose buttons. */
     const btns = (r) => [...r.querySelectorAll("button")].map(
-      (b) => b.textContent.replace(/[\u2212-]\d+.*/, "").trim());
+      (b) => b.textContent.replace(/[+\u2212-].*/, "").trim());
     return rows.length === 3 &&
       label(rows[0]) === "Check" && btns(rows[0]).join("/") === "Answer/Grid" &&
       label(rows[1]) === "Reveal" && btns(rows[1]).join("/") === "Letter/Answer";
@@ -477,8 +483,18 @@ server.listen(0, "127.0.0.1", async () => {
      the help it served, and a clock started when the board was pulled. */
   t("Full Time asks the server to score it", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    /* Tested on what the call carries, not on its exact shape. It gained a
+       `floor` argument &mdash; the drawn season's bottom club &mdash; because
+       the server was scoring every daily against the fixed curve while the
+       browser used the season floor, so the verified number came back up to 26
+       points HIGHER and the screen jumped upward on verification.
+
+       What must hold: the finish endpoint is asked, and it is given the token,
+       the play and the letters. */
+    const call = js.slice(js.indexOf('api("/api/finish"'), js.indexOf('api("/api/finish"') + 260);
     return /function verifyScore\(\)/.test(js) &&
-      /api\("\/api\/finish", \{ token: puzzleToken, playId: playId, letters: letters \}\)/.test(js);
+      /token: puzzleToken/.test(call) && /playId: playId/.test(call) &&
+      /letters: letters/.test(call);
   })());
   t("and shows the verified number rather than its own when it arrives", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
@@ -580,7 +596,15 @@ server.listen(0, "127.0.0.1", async () => {
        pitch you play on are not history. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const list = /var WIPE_KEYS = \[([\s\S]*?)\];/.exec(js);
-    return list && !/fcw\.clubPref|fcw\.pitch|fcw\.bank|fcw\.clueStyle/.test(list[1]);
+    if (!list) return false;
+    /* Quoted entries only. The block now carries a comment naming each excluded
+       key and why, so a regex over the whole thing could not tell a key that is
+       wiped from one explained as not being wiped — and failed on the
+       explanation. */
+    const wiped = [...list[1].matchAll(/^\s*"([^"]+)",/gm)].map((m) => m[1]);
+    return !["fcw.clubPref", "fcw.pitch", "fcw.bank", "fcw.clueStyle",
+             "fcw.theme", "fcw.skip", "fcw.fxmode", "fcw.deviceCode"]
+      .some((k) => wiped.includes(k));
   })());
   t("the reset uses that list rather than keeping its own", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");

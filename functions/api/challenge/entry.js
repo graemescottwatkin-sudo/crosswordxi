@@ -24,6 +24,7 @@ export async function onRequestPost({ request, env }) {
 
   const play = await env.DB.prepare(
     `SELECT play_id, theme_key, srv_score, started_at, ended_at, srv_verified_at,
+            srv_elapsed_secs,
             srv_checks, srv_check_alls, srv_reveal_letters, srv_reveal_answers
        FROM plays WHERE play_id = ? LIMIT 1`).bind(String(body.playId || "")).first();
   if (!play || play.srv_score === null || play.srv_score === undefined) {
@@ -49,9 +50,18 @@ export async function onRequestPost({ request, env }) {
      could reconcile the two.
      srv_verified_at is when /api/finish ran, which is exactly the span the
      score was calculated over. Time and score now agree by construction. */
+  /* Read, not recomputed. srv_elapsed_secs is the clock /api/finish scored on
+     — wall time plus the minutes help added. Working it out here from
+     started_at gave a help-free figure, so a player who used two reveals showed
+     a time twenty-eight minutes short of the one their score came from.
+
+     The fallback keeps rows written before that column existed readable; it is
+     the old arithmetic, and it is wrong by exactly the help used. */
   const a = Date.parse((play.started_at || "").replace(" ", "T") + "Z");
   const b = Date.parse((play.srv_verified_at || play.ended_at || "").replace(" ", "T") + "Z");
-  const elapsed = Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, Math.round((b - a) / 1000)) : 0;
+  const elapsed = Number.isFinite(play.srv_elapsed_secs)
+    ? play.srv_elapsed_secs
+    : (Number.isFinite(a) && Number.isFinite(b) ? Math.max(0, Math.round((b - a) / 1000)) : 0);
 
   /* One scored result each. IGNORE rather than REPLACE, so a second finish
      cannot improve on the first — which is what makes reveal-then-replay cost

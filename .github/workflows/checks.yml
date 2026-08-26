@@ -52,9 +52,13 @@ jobs:
           node circulation_test.mjs
           node d1_test.mjs
           node epoch_test.mjs
+          node outcome_test.mjs
+          node fairness_test.mjs
+          node howto_test.mjs
           node auth_test.mjs
           node admin_test.mjs
           node themes_test.mjs
+          node challenge_test.mjs
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.

@@ -57,10 +57,17 @@
 
 
 
-  /* The season's own floor: one point below its bottom club, so running the
-     clock out always finishes last. A fixed floor of 36 finished bottom in only
-     2 of the 30 seasons — in 2007/08 it placed you 16th for a puzzle you never
-     solved. */
+  /* The drawn season's bottom club, minus one.
+
+     NOT used for scoring. It was, and that was a mistake: pickSeason() draws
+     from seasonsForClub(), so the season — and therefore the floor — depends on
+     the club you picked for flavour. Identical play scored 66 as Aston Villa
+     and 76 as Blackpool. The daily is meant to be the same for everyone, and a
+     ten-point spread decided by a club badge is not that.
+
+     Kept because placing a player in a table is a table concern and a real one:
+     running the clock out should finish last in the season being shown. Where
+     that lands is presentation. What the score IS must not depend on it. */
   function seasonFloor() {
     if (!season || !season.table || !season.table.length) return undefined;
     var last = season.table[season.table.length - 1];
@@ -149,7 +156,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v138";
+  var BUILD = "v143";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -390,7 +397,7 @@
   function revealedAnswerCount() { return Object.keys(revealedEntries).length; }
   function liveScore() {
     return FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
-                            revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() }).score;
+                            revealedAnswerCount(), checkAllsUsed).score;
   }
 
   function breakCells(entry) {
@@ -774,6 +781,20 @@
     subbedCells = {}; subsUsed = 0;
     checksUsed = 0; checkAllsUsed = 0; elapsed = 0; complete = false;
     helpActions = []; consecutiveChecks = 0; halfTimeShown = false; lastPos = null;
+    /* The play reference belongs to a board, not to the tab.
+
+       These were never cleared: playStart() only mints a new one when playId is
+       null, and only the restore branch below set it. So finishing the daily
+       and opening an archive board ran the new board on the OLD board's play
+       row — /api/finish answered `already: true` with the daily's score and no
+       breakdown, recordDaily rewrote the archive result with the daily's
+       number, and a challenge started after any other board was refused as a
+       duplicate entry.
+
+       Cleared here, with the rest of the per-board state. The restore branch
+       still puts back the saved one, which is what keeps a refresh mid-puzzle
+       from counting as a second attempt. */
+    playId = null; playNo = null; playSent = false;
     /* A save from a different grid is discarded rather than applied. Letters
        are stored by cell position, so on a changed puzzle they land on
        unrelated squares — a board that looks half-solved with nonsense in it,
@@ -2130,7 +2151,9 @@
       if (m.added) {
         note.textContent = m.added + (m.added === 1 ? " result" : " results") +
           " from this device saved to your account.";
-      } else if (!FCW.dailyPhase(FCW.dailyNumber()).counts) {
+      /* phase name, not `counts`: that is false for BOTH "preseason" and
+         "daily", so from board #11 this claimed a friendly forever. */
+      } else if (FCW.dailyPhase(FCW.dailyNumber()).phase === "preseason") {
         /* Silence here reads as a failure. During pre-season there is genuinely
            nothing to carry across — friendlies are played and scored but not
            recorded — and a player who has just finished a puzzle deserves to be
@@ -3238,8 +3261,9 @@
         consecutiveChecks++;
         var headline = consecutiveChecks === 2 ? "Back-to-back defeats"
                      : consecutiveChecks >= 3 ? "Three losses on the bounce"
-                     : "Defeat \u2014 3 points dropped";
-        toast(headline, consecutiveChecks > 1 ? "3 points dropped" : "", "loss");
+                     : "Defeat \u2014 " + FCW.SCORING.HELP_MINUTES.check + " minutes on the clock";
+        toast(headline, consecutiveChecks > 1
+          ? FCW.SCORING.HELP_MINUTES.check + " minutes on the clock" : "", "loss");
         updateScoreUI(); saveSoon();
       })
       .catch(function (err) { revealFailed(err); });
@@ -3309,7 +3333,11 @@
       helpActions.push("revealLetter");
       chargeHelp("revealLetter");
       consecutiveChecks = 0;
-      toast("Draw \u2014 2 points dropped", "Held to a draw.", "draw");
+      /* revealLetter, matching the charge on the line above. It read .check —
+         said 2, cost 3 — because the toasts were converted in one pass and this
+         one sits inside the reveal handler rather than the check handler. */
+      toast("Draw \u2014 " + FCW.SCORING.HELP_MINUTES.revealLetter +
+            " minutes on the clock", "Held to a draw.", "draw");
       // advance to the next editable cell, like typing
       do { cur.cell++; } while (cur.cell < e.len && locked(K(e.cells[cur.cell].x, e.cells[cur.cell].y)));
       if (cur.cell >= e.len) { cur.cell = e.len - 1; advanceToNextEntry(); }
@@ -3410,7 +3438,7 @@
              dropped" and went on saying it after the price became 12 — a
              number in a string cannot follow the constant it describes. */
           toast("Four defeats on the bounce",
-                FCW.SCORING.REVEAL_ANSWER_PENALTY + " points dropped", "loss");
+                FCW.SCORING.HELP_MINUTES.revealAnswer + " minutes on the clock", "loss");
         }
         refreshLetters(); updateSelection(); updateScoreUI(); verifySoon(); saveSoon();
         checkComplete();
@@ -3434,17 +3462,44 @@
      was written and never got added to it, so clearing everything left themed
      boards still marked as played. Anything new that survives a reload and
      records what somebody did belongs here. */
+  /* Everything a reset should clear.
+
+     Six keys the game writes were missing, so a reset left the device
+     half-reset: the mode, whether the menu had been left deliberately, the
+     owner's season override and the one-time tip all survived it.
+
+     `fcw.streak` and `fcw.pre` stay although nothing has written them for two
+     revisions — that is exactly why. A player who last opened the game months
+     ago still has them, and dropping them from this list would strand those
+     keys in their browser permanently. A wipe list is the one place legacy
+     names earn their keep. */
   var WIPE_KEYS = [
-    "fcw.results.v1",        // daily and practice results
+    "fcw.results.v1",        // daily and archive results
     "fcw.themeResults.v1",   // themed boards, and what was marked as played
-    "fcw.streak",            // the run
-    "fcw.pre",               // the pre-season record
+    "fcw.streak",            // legacy: the run, before it was derived
+    "fcw.pre",               // legacy: the pre-season record
     "fcw.recent",            // recent answers, so they are not repeated
     "fcw.usedClues.v1",      // clue circulation
     "fcw.v04.daily",         // the three saved games
     "fcw.v04.practice",
     "fcw.v04.theme",
     "fcw.mode",
+    "fcw.athome",            // whether the menu was left deliberately
+    "fcw.seasonStart",       // the owner's season test override
+    "fcw.tip.followword",    // the one-time tip
+    /* Deliberately NOT wiped, and each for a reason:
+
+       fcw.deviceCode  is an identity, not a record. Wiping it would cut the
+                       player off from results already synced to their account,
+                       which a reset of local history has no business doing.
+       fcw.clubPref    the club you play as. Not history — and since the season
+                       floor came out of scoring it does not affect a score
+                       either.
+       fcw.theme, fcw.pitch, fcw.bank, fcw.skip, fcw.fxmode, fcw.filter
+                       display preferences. A reset clears what you have DONE,
+                       not how you like the thing to look.
+
+       Listed by name so each omission reads as a decision rather than a gap. */
   ];
   function loadResults() {
     try {
@@ -3511,7 +3566,8 @@
        than a loss — the season table starts empty for everyone on the same day
        whatever anyone did in August. */
     var phase = FCW.dailyPhase(dailyNo);
-    if (!phase.counts) {
+    /* Same fault: `counts` is false for a daily as well as a friendly. */
+    if (phase.phase !== "season") {
       var note = $("rClockNote");
       if (note) {
         /* No hardcoded date. "13 September" was written when the season began
@@ -3526,20 +3582,52 @@
     }
     var list = loadResults();
     // A Daily is recorded once; a later replay never overwrites the original.
-    if (list.some(function (r) { return r.dailyNo === dailyNo; })) return list;
+    /* A rewrite of this same attempt replaces its row; a different attempt at a
+       board already banked is refused.
+
+       This returned on ANY existing result for the number, so the verified
+       rewrite that follows the server's answer did nothing at all — the record
+       kept the browser's figure while the card showed the server's. Exactly the
+       fault recordThemed guards against with prev.playId === playId, three
+       hundred lines below. */
+    var mine = list.filter(function (r) {
+      return r && r.dailyNo === dailyNo && r.playId && r.playId === playId;
+    });
+    if (mine.length) {
+      list = list.filter(function (r) { return !(r && r.dailyNo === dailyNo); });
+    } else if (list.some(function (r) { return r.dailyNo === dailyNo; })) {
+      return list;
+    }
     /* Spec §19: only the host's clock can bank a result. If the device clock
        has been moved to open a Daily that is not today, the puzzle stays
        playable — it just does not count towards points, streak or history.
        Offline there is no trusted clock and no way to tell, so play records as
        normal: refusing would punish honest offline players to stop a cheat that
        only ever affects the cheater's own device. */
+    /* A board from the archive is not a moved clock.
+
+       This refused to bank anything whose number was not today's, which was
+       right when today's was the only daily reachable. With the archive open it
+       dropped every finished archive board — and silently, because
+       renderPreviousCount never fell and nextUnplayedDaily offered the same
+       board again, which then opened blank over the single daily save slot.
+
+       The fourth copy of the "the daily in play is today's" assumption, after
+       boot(), chooseMode() and syncServerDate().
+
+       The check it replaces still matters and is kept: a number AHEAD of today
+       can only come from a moved clock, since the server will not serve one. */
     var ts = FCW.timeState();
-    if (ts.trusted && dailyNo !== FCW.dailyNumber()) {
+    if (ts.trusted && dailyNo > FCW.dailyNumber()) {
       showClockNote(dailyNo, FCW.dailyNumber());
       return list;
     }
     list.push(FCW.makeResultRecord({
       date: FCW.localDateKey(), dailyNo: dailyNo, seed: seed,
+      /* So a verified rewrite can find its own row. recordThemed has carried
+         this for the same reason; the daily never did, which is why the
+         verified score could not replace the browser's. */
+      playId: playId,
       phase: phase.phase,
       bankVersion: FCW.QUESTION_BANK_VERSION,
       club: club, season: season ? season.season : null,
@@ -3641,11 +3729,24 @@
      behind it as their own line rather than being folded in or thrown away. */
   function phaseResults() {
     var split = FCW.splitByPhase(loadResults());
-    return FCW.dailyPhase(dailyNo).counts ? split.season : split.preseason;
+    /* Two faults in one line.
+
+       C: dailyNo is the board being PLAYED, not today. Visiting an archive
+       board left it set, so the landing screen reported a live run as "0 day
+       run" — streaks() only counts a current run when the last result is today
+       or yesterday.
+
+       E: splitByPhase divides friendly from not-friendly, but this keyed on
+       `counts`, which is false for BOTH "preseason" and "daily". From board #11
+       every reader would have taken the pre-season bucket: streak line blank,
+       My Season showing ten friendlies and nothing else. The phase name is what
+       splitByPhase actually uses. */
+    return FCW.dailyPhase(FCW.dailyNumber()).phase !== "preseason"
+      ? split.season : split.preseason;
   }
   function renderStreak() {
-    var st = FCW.seasonStats(phaseResults(), dailyNo);
-    var pre = !FCW.dailyPhase(dailyNo).counts;
+    var st = FCW.seasonStats(phaseResults(), FCW.dailyNumber());
+    var pre = FCW.dailyPhase(FCW.dailyNumber()).phase === "preseason";
     $("streakLine").textContent = st.played
       ? (pre ? "Pre-season run " : "Current run ") + st.currentStreak +
         " \u00B7 best " + st.longestStreak + " \u00B7 " + st.played + " played"
@@ -3656,9 +3757,9 @@
   function fmtClock(sec) { return fmt(sec || 0); }
   function renderStats() {
     var split = FCW.splitByPhase(loadResults());
-    var inSeason = FCW.dailyPhase(dailyNo).counts;
+    var inSeason = FCW.dailyPhase(FCW.dailyNumber()).phase !== "preseason";
     var results = inSeason ? split.season : split.preseason;
-    var st = FCW.seasonStats(results, dailyNo);
+    var st = FCW.seasonStats(results, FCW.dailyNumber());
     var label = inSeason ? "Daily" : "pre-season";
     $("statsSub").textContent = st.played
       ? st.played + " " + label + " " + (st.played === 1 ? "puzzle" : "puzzles") + " completed"
@@ -3990,6 +4091,16 @@
   }
   /* Help stated as football results. Safe to phrase this way because the
      season strip is now derived from the same actions, so the two agree. */
+  /* What a row of help cost, in minutes on the clock.
+
+     The breakdown printed the point penalties, which are zero now — four rows
+     reading "-0" under a score that had plainly fallen. The clock is the only
+     cost, so the breakdown reports the clock. */
+  function helpMins(kind, n) {
+    var m = (FCW.SCORING.HELP_MINUTES[kind] || 0) * (n || 0);
+    return m ? "+" + m + "\u2032" : "\u2014";
+  }
+
   function footballPhrase(kind, count, points) {
     if (!count) return "None";
     if (kind === "draw") return count === 1 ? "1 draw" : count + " draws";
@@ -4038,7 +4149,7 @@
     paused = false; $("pauseBtn").disabled = true; syncPauseIcon();
     stopTimer(); save();
     var res = FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
-                               revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
+                               revealedAnswerCount(), checkAllsUsed);
     var table = FCW.buildTable(club, res.score, season);
     var pos = FCW.playerPosition(table);
     lastPosition = pos;
@@ -4053,13 +4164,13 @@
     $("bTime").textContent = fmt(elapsed);
     $("bTimePen").textContent = "\u2212" + res.timePenalty;
     $("bChecks").textContent = footballPhrase("check", checksUsed, res.checkPenalty);
-    $("bCheckPen").textContent = "\u2212" + res.checkPenalty;
+    $("bCheckPen").textContent = helpMins("check", checksUsed);
     $("bCheckAlls").textContent = footballPhrase("answer", checkAllsUsed, res.checkAllPenalty);
-    $("bCheckAllPen").textContent = "\u2212" + res.checkAllPenalty;
+    $("bCheckAllPen").textContent = helpMins("checkAll", checkAllsUsed);
     $("bLetters").textContent = footballPhrase("draw", revealedLetterCount(), res.revealLetterPenalty);
-    $("bLetterPen").textContent = "\u2212" + res.revealLetterPenalty;
+    $("bLetterPen").textContent = helpMins("revealLetter", revealedLetterCount());
     $("bAnswers").textContent = footballPhrase("answer", revealedAnswerCount(), res.revealAnswerPenalty);
-    $("bAnswerPen").textContent = "\u2212" + res.revealAnswerPenalty;
+    $("bAnswerPen").textContent = helpMins("revealAnswer", revealedAnswerCount());
     setFinalScore(res.score);
     if (mode === "daily") { recordDaily(pos, res.score, res); renderStreak(); }
     else if (mode === "theme") recordThemed(pos, res.score);
@@ -4352,6 +4463,8 @@
   function verifyScore() {
     var note = $("rVerified");
     if (note) { note.textContent = "checking\u2026"; note.className = "verify-note"; }
+    /* The floor goes with it: only this device knows which season was drawn,
+       and the server scores against the same curve or the two disagree. */
     api("/api/finish", { token: puzzleToken, playId: playId, letters: letters })
       .then(function (r) {
         if (!r || !r.verified || typeof r.score !== "number") {
@@ -4383,15 +4496,20 @@
         var b = r.breakdown || {};
         $("bTime").textContent = fmt(r.elapsedSeconds);
         $("bClock").textContent = FCW.matchClockLabel(r.elapsedSeconds);
+        /* Counts come from r, not b. b is the server's breakdown and carries
+           penalties only — reading b.checks gave undefined and every cost
+           rendered as a dash, while the count beside it read r.checks and was
+           right. The line above and the line below disagreed about which
+           object held the same fact. */
         $("bTimePen").textContent = "\u2212" + (b.timePenalty || 0);
         $("bChecks").textContent = footballPhrase("check", r.checks || 0, b.checkPenalty || 0);
-        $("bCheckPen").textContent = "\u2212" + (b.checkPenalty || 0);
+        $("bCheckPen").textContent = helpMins("check", r.checks || 0);
         $("bCheckAlls").textContent = footballPhrase("answer", r.checkAlls || 0, b.checkAllPenalty || 0);
-        $("bCheckAllPen").textContent = "\u2212" + (b.checkAllPenalty || 0);
+        $("bCheckAllPen").textContent = helpMins("checkAll", r.checkAlls || 0);
         $("bLetters").textContent = footballPhrase("draw", r.revealedLetters || 0, b.letterPenalty || 0);
-        $("bLetterPen").textContent = "\u2212" + (b.letterPenalty || 0);
+        $("bLetterPen").textContent = helpMins("revealLetter", r.revealedLetters || 0);
         $("bAnswers").textContent = footballPhrase("answer", r.revealedAnswers || 0, b.answerPenalty || 0);
-        $("bAnswerPen").textContent = "\u2212" + (b.answerPenalty || 0);
+        $("bAnswerPen").textContent = helpMins("revealAnswer", r.revealedAnswers || 0);
         setFinalScore(r.score);
 
         /* The device's own record is rewritten too. recordDaily and
@@ -4473,7 +4591,7 @@
       return verifiedBreakdown;
     }
     return FCW.computeScore(elapsed, checksUsed, revealedLetterCount(),
-                            revealedAnswerCount(), checkAllsUsed, { floor: seasonFloor() });
+                            revealedAnswerCount(), checkAllsUsed);
   }
 
   /* A practice puzzle can be handed to somebody else. Each one has a token, and
@@ -4679,9 +4797,9 @@
        for the moment before this runs. */
     $("homeDailyNote").textContent = !DAILY_OPEN
       ? "Being rebuilt alongside the new club boards."
-      : phase.counts
-        ? "One a day, the same for everyone. The clock counts."
-        : "A friendly. Played and kept, but the season table starts on Matchday 1.";
+      : phase.phase === "preseason"
+        ? "A friendly. Played and kept, but the season table starts on Matchday 1."
+        : "One a day, the same for everyone. The clock counts.";
 
     /* The season tile, while the test override is on.
 
@@ -4804,7 +4922,7 @@
     });
     if (done) return;
 
-    var st = FCW.seasonStats(phaseResults(), dailyNo);
+    var st = FCW.seasonStats(phaseResults(), FCW.dailyNumber());
     var line = $("rdLine"), note = $("rdNote");
 
     if (!st.played) {
@@ -5681,7 +5799,7 @@
     if (!el) return;
     try {
       var recent = phaseResults().slice(-FCW.SCORING.FORM_LENGTH);
-      var st = FCW.seasonStats(phaseResults(), dailyNo);
+      var st = FCW.seasonStats(phaseResults(), FCW.dailyNumber());
       if (!st.played) {
         if (title) title.textContent = "No run yet";
         el.innerHTML = "<span class=\"run-none\">Play today to start one.</span>";
@@ -5806,9 +5924,12 @@
 
     function refreshMenus() {
       var left = unsolvedEntries().length;
-      var cost = left * 9;
+      /* Minutes, not the old nine points. This read left * 9 and showed
+         "-99" on the toolbar item for eleven answers, which stopped being the
+         price when help moved to the clock. */
+      var cost = left * FCW.SCORING.HELP_MINUTES.revealAnswer;
       var c = $("tbRevealAllCost");
-      if (c) c.textContent = left ? "\u2212" + cost : "\u2014";
+      if (c) c.textContent = left ? "+" + cost + "\u2032" : "\u2014";
       var ra = document.querySelector('[data-act="reveal-all"]');
       if (ra) ra.disabled = !left;
       /* Every price read from SCORING, never written in the markup.
@@ -5821,22 +5942,27 @@
          The reveals also say what they cost in substitutions, because that is
          what decides the result and the menu was silent on it. */
       var HM = FCW.SCORING.HELP_MINUTES;
-      var setCost = function (id, pts, subs) {
+      /* Minutes, not points. The point penalties are zero — the clock is the
+         only score cost now — so printing them said "-0", which reads as free.
+
+         Minutes are the honest unit anyway: the score is whatever the clock has
+         left, so moving the clock is the only thing that moves the score. */
+      var setCost = function (id, mins, subs) {
         var el = $(id);
         if (!el) return;
-        el.textContent = "\u2212" + pts + (subs ? "  \u00B7  " + subs + " sub" +
-          (subs === 1 ? "" : "s") : "");
+        el.textContent = "+" + mins + "\u2032" +
+          (subs ? "  \u00B7  " + subs + " sub" + (subs === 1 ? "" : "s") : "");
       };
       /* The footer buttons carry the same prices and had the same stale
          numbers. Driven from here so there is one source, not five. */
-      setCost("costCheck", FCW.SCORING.CHECK_PENALTY, 0);
-      setCost("costCheckAll", FCW.SCORING.CHECK_ALL_PENALTY, 0);
-      setCost("costLetter", FCW.SCORING.REVEAL_LETTER_PENALTY, 0);
-      setCost("costWord", FCW.SCORING.REVEAL_ANSWER_PENALTY, 0);
-      setCost("tbCostCheck", FCW.SCORING.CHECK_PENALTY, 0);
-      setCost("tbCostCheckAll", FCW.SCORING.CHECK_ALL_PENALTY, 0);
-      setCost("tbCostLetter", FCW.SCORING.REVEAL_LETTER_PENALTY, FCW.SCORING.SUBS_PER_LETTER);
-      setCost("tbCostWord", FCW.SCORING.REVEAL_ANSWER_PENALTY, FCW.SCORING.SUBS_PER_ANSWER);
+      setCost("costCheck", HM.check, 0);
+      setCost("costCheckAll", HM.checkAll, 0);
+      setCost("costLetter", HM.revealLetter, FCW.SCORING.SUBS_PER_LETTER);
+      setCost("costWord", HM.revealAnswer, FCW.SCORING.SUBS_PER_ANSWER);
+      setCost("tbCostCheck", HM.check, 0);
+      setCost("tbCostCheckAll", HM.checkAll, 0);
+      setCost("tbCostLetter", HM.revealLetter, FCW.SCORING.SUBS_PER_LETTER);
+      setCost("tbCostWord", HM.revealAnswer, FCW.SCORING.SUBS_PER_ANSWER);
 
       /* Substitutions are universal now — three a board, every board. The item
          said "Practice only", which was true when they were a practice
@@ -5935,17 +6061,20 @@
          rather than a wiped one. Eleven left with 114 lands on 0 by the same
          rule, so it self-forfeits when it should without needing a state of
          its own. */
-      var per = FCW.SCORING.REVEAL_ANSWER_PENALTY;
-      var have = liveScore();
-      var listed = left.length * per;
-      var cost = Math.min(listed, have);
-      var after = have - cost;
+      /* Minutes and substitutions, which is what it costs. This read
+         REVEAL_ANSWER_PENALTY and, once that became zero, told the player
+         "11 answers at 0 points each. That costs 0, leaving you 114." before
+         charging 154 minutes and turning the day into a draw. */
+      var perMins = FCW.SCORING.HELP_MINUTES.revealAnswer;
+      var mins = left.length * perMins;
+      var subsNeeded = left.length * FCW.SCORING.SUBS_PER_ANSWER;
       var ok = window.confirm(
         "Reveal everything left?\n\n" +
         left.length + " answer" + (left.length === 1 ? "" : "s") +
-        " at " + per + " points each" +
-        (cost < listed ? " \u2014 more than you have left" : "") + ".\n\n" +
-        "That costs " + cost + ", leaving you " + after + ".\n\n" +
+        " at " + perMins + " minutes each: " + mins + " minutes on the clock.\n\n" +
+        (subsNeeded > subsRemainingNow()
+          ? "That is more substitutions than you have, so today becomes a draw.\n\n"
+          : "") +
         "It finishes the puzzle for you. There is no way back from it.");
       if (!ok) return;
       /* One at a time through the button that already exists, so the server

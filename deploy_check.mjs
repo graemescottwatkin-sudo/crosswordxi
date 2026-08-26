@@ -117,6 +117,43 @@ t("the stylesheet's braces and comments balance", (() => {
 
    node --check does not catch this: each file is valid on its own. Only
    resolving the imports across files does. */
+/* Every test suite in the folder is named in the workflow.
+
+   Suites drift out of CI silently: outcome_test, fairness_test and howto_test
+   were all written, all passing locally, and none of them ran on a push. A test
+   nobody runs is a comment.
+
+   The reverse case matters too — a suite named in the workflow but deleted from
+   the folder fails the whole run on a missing file, which is how a dead
+   scoring_test lingered for weeks exiting 0 on "engine.js is not here". */
+let suiteGap = "";
+t("every test suite is named in the workflow", (() => {
+  const wf = "\u002egithub/workflows/checks.yml";
+  if (!has(wf)) return true;
+  const yml = read(wf);
+  const suites = fs.readdirSync(DIR).filter((f) => /_test\.mjs$/.test(f));
+  /* Suites that need a live URL or a real browser cannot run in the offline
+     job. Named here so the exemption is a decision on the record rather than
+     something that quietly grew:
+       render_test   Playwright, sixteen viewports, needs BASE
+       journey_test  Playwright
+       signin_test   Playwright, needs BASE
+       preview_test  needs a built preview, and exits 0 without one — which is
+                     the "test that cannot fail" fault; it should be fixed or
+                     deleted rather than added here permanently. */
+  const needsLive = ["render_test.mjs", "journey_test.mjs", "signin_test.mjs",
+                     "preview_test.mjs"];
+  const missing = suites.filter((f) => needsLive.indexOf(f) === -1 && !yml.includes(f));
+  const named = (yml.match(/node (\w+_test\.mjs)/g) || [])
+    .map((m) => m.replace("node ", ""));
+  const absent = named.filter((f) => !has(f));
+  suiteGap = [
+    missing.length ? "not in CI: " + missing.join(", ") : "",
+    absent.length ? "in CI but missing: " + absent.join(", ") : "",
+  ].filter(Boolean).join("  |  ");
+  return !missing.length && !absent.length;
+})(), suiteGap);
+
 let brokenImports = [];
 t("every import resolves to something the target actually exports", (() => {
   const walk = (dir) => {

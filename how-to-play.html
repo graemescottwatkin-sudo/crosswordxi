@@ -156,7 +156,8 @@ table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:no
 
 <h2>The clock</h2>
 <p>The clock counts in match minutes, not real ones. A minute passes every 20
-   seconds, so the full 90 takes half an hour. Your score falls as it runs.</p>
+   seconds, so the full 90 takes half an hour. <b>Your score is whatever the
+   clock has left</b> &mdash; nothing else takes points off it.</p>
 <div class="htp-clock">
   <div class="htp-tick"><div class="m">0&rsquo;</div><div class="p">114</div><div class="r">kick off</div></div>
   <div class="htp-tick"><div class="m">30&rsquo;</div><div class="p">78</div><div class="r">10 real min</div></div>
@@ -165,50 +166,59 @@ table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:no
 </div>
 <p>It drops fastest early and levels off, so finishing late still gets you a
    result. At 90&rsquo; it stops falling altogether &mdash; take as long as you
-   like after that.</p>
+   like after that, though the day counts as a draw once the whistle has gone.</p>
 <div class="htp-note">The clock starts when the board opens and does not pause.
   Closing the tab does not stop it.</div>
 
 <h2>The help buttons</h2>
-<p>All four are there whenever you want them. Each costs points, and the cost is
-   shown before you confirm.</p>
+<p>All four are there whenever you want them. <b>They cost time.</b> Asking for
+   help moves the clock forward, and the clock is what your score is made of.</p>
 <div class="htp-card">
   <table class="htp">
     <tr><th>Button</th><th>What it does</th><th style="text-align:right">Cost</th></tr>
-    <tr><td><b>Check word</b></td><td>Marks which letters of this answer are wrong</td><td class="n htp-cost">&minus;2</td></tr>
-    <tr><td><b>Reveal letter</b></td><td>Fills in the square you are on</td><td class="n htp-cost">&minus;3</td></tr>
-    <tr><td><b>Check grid</b></td><td>Marks every wrong letter on the board</td><td class="n htp-cost">&minus;9</td></tr>
-    <tr><td><b>Reveal answer</b></td><td>Fills in the whole answer</td><td class="n htp-cost">&minus;12</td></tr>
+    <tr><td><b>Check word</b></td><td>Marks which letters of this answer are wrong</td><td class="n htp-cost">+2&prime;</td></tr>
+    <tr><td><b>Check grid</b></td><td>Marks every wrong letter on the board</td><td class="n htp-cost">+10&prime;</td></tr>
+    <tr><td><b>Reveal letter</b></td><td>Fills in the square you are on</td><td class="n htp-cost">+3&prime; &middot; 1 sub</td></tr>
+    <tr><td><b>Reveal answer</b></td><td>Fills in the whole answer</td><td class="n htp-cost">+14&prime; &middot; 3 subs</td></tr>
   </table>
 </div>
 <p><b>There is no penalty for a wrong guess.</b> Typing something and changing
    your mind is free. Only asking the game costs you.</p>
-<p>Check word is the cheapest because it only helps once you have tried
-   something. Reveal letter costs more because it works on an empty square.
-   Checking every answer one at a time costs more than checking the whole grid,
-   so the grid is the honest move once you are stuck in several places.</p>
+<p>Checking never costs a substitution, so verifying your own work can never
+   turn a win into a draw. Help late is riskier than help early: reveal an
+   answer at 45&rsquo; and you are fine, but take three letters at 82&rsquo; and
+   the whistle goes before you finish.</p>
 <p>Marks stay put until you edit that square, so you can come back to a word
    later and still see what was wrong.</p>
 
 <h2>Substitutions</h2>
 <div class="htp-card">
+  <div class="htp-big"><b>3</b><span>a board, every board</span></div>
+  <p>A revealed letter uses one. A revealed answer uses all three.</p>
+</div>
+<p><b>Spending all three is fine.</b> Going past them is not: ask for a fourth
+   letter, or an answer when you only have two left, and the day becomes a draw
+   however well you finish. You will be warned before it happens.</p>
+
+<h2>Win, draw or lose</h2>
+<p>Every board is a match, and every match is one of three results.</p>
+<div class="htp-card">
   <table class="htp">
-    <tr><th>Difficulty</th><th>Clues you can swap</th><th style="text-align:right">Cost</th></tr>
-    <tr><td>Easy</td><td>5</td><td class="n htp-free">free</td></tr>
-    <tr><td>Medium</td><td>3</td><td class="n htp-free">free</td></tr>
-    <tr><td>Hard</td><td>none</td><td class="n">&mdash;</td></tr>
+    <tr><td><b>Win</b></td><td>Solved before full time, without going past your three substitutions</td><td class="n htp-free">3 pts</td></tr>
+    <tr><td><b>Draw</b></td><td>Solved, but you ran out of substitutions or the whistle went first</td><td class="n">1 pt</td></tr>
+    <tr><td><b>Loss</b></td><td>Started and did not finish it</td><td class="n">0</td></tr>
   </table>
 </div>
-<p>A substitution swaps a clue you cannot get for a different one on the same
-   answer. Not available on the daily &mdash; everyone plays the same eleven.</p>
+<p><b>Missing a day is not a loss.</b> It ends your run, and that is all &mdash;
+   the table is about how you play, the run is about turning up.</p>
 
 <h2>Your record</h2>
-<p>Each puzzle is one match. Your score becomes a result, and those results build
-   up: a run of days played, a best score, a league position against the club you
-   chose. Pre-season friendlies are played and kept, but they do not count
-   towards a season.</p>
+<p>Thirty-eight matches make a season, the same as a league. Your results build
+   a table, and where you finish is measured against a real season &mdash;
+   champions, Europe, mid-table, relegated.</p>
+<p>Miss a board and you can play it later from <b>Previous puzzles</b>: every
+   daily since the start is there, and one more arrives every day.</p>
 
-</main>
 <footer>
   <p>The <span class="xi">XI</span> Games &middot; unofficial football word puzzles &middot;
   <a href="index.html">Play</a> &middot;

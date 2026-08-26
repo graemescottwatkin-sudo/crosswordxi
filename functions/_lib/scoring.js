@@ -67,6 +67,14 @@ function scoreAtMinute(minute) {
   return c[c.length - 1].score;
 }
 
+/* No opts. The score is the same for everyone who plays the same board the
+   same way, full stop.
+
+   A `floor` parameter lived here briefly, so the server could match a browser
+   that scaled the decay curve to the drawn season. Both were wrong: the season
+   is drawn per club, so the floor was too, and identical play scored ten points
+   apart depending on which badge the player had chosen. A higher floor also
+   meant a higher score, so omitting the field bought back the unscaled curve. */
 export function computeScore(elapsedSeconds, checks, revealLetters, revealAnswers, checkAlls) {
   const timePenalty = Math.round(SCORING.MAX_SCORE - scoreAtMinute(matchMinute(elapsedSeconds)));
   const checkPenalty = (checks || 0) * SCORING.CHECK_PENALTY;

@@ -96,12 +96,24 @@ export async function onRequestPost({ request, env }) {
   await env.DB.prepare(
     `UPDATE plays
         SET srv_score = ?, srv_verified_at = datetime('now'),
+            /* The clock the score was computed from, stored so nothing has to
+               work it out again. challenge/entry.js recomputed it from
+               started_at and srv_verified_at, which is wall time and therefore
+               help-free — so the leaderboard showed a time that could not
+               produce the score beside it, under a comment claiming the two
+               agree by construction. One figure, written once, read by all. */
+            srv_elapsed_secs = ?,
             completed = 1, ended_at = COALESCE(ended_at, datetime('now'))
-      WHERE play_id = ?`).bind(res.score, String(playId || "")).run();
+      WHERE play_id = ?`)
+    .bind(res.score, elapsed + helpSeconds, String(playId || "")).run();
 
   return json({
     complete: true, verified: true, score: res.score,
-    elapsedSeconds: elapsed,
+    /* The clock the score was computed from, help included. Reporting bare
+       elapsed meant the Full Time screen showed a time that did not produce the
+       score beside it — and challenge entries stored a help-free figure while
+       claiming time and score agree by construction. */
+    elapsedSeconds: elapsed + helpSeconds,
     checks: row.srv_checks || 0, checkAlls: row.srv_check_alls || 0,
     revealedLetters: row.srv_reveal_letters || 0,
     revealedAnswers: row.srv_reveal_answers || 0,
