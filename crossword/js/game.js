@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001";
+  var BUILD = "v001b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2288,6 +2288,20 @@
     return layoutFor !== (window.innerWidth + "x" + window.innerHeight);
   }
   function relayout() {
+    /* The v001 watchdog got relayout RUNNING on iPad rotation and the board
+       still came up wrong — because the list was still one member short of
+       boot's. The stage is height:var(--vh), and setVh() was called from
+       setLayout() at boot and never again; so relayout faithfully fitted the
+       board into a frame whose height was the OLD orientation's, read from a
+       stale CSS variable, and a refresh healed it by rewriting the variable.
+       The same fault as v153 — boot's list and the handler's list differing
+       by one entry — one level down.
+
+       Guarded on layoutStale, not unconditional: the keyboard resizes the
+       visual viewport too, and the stage deliberately does not chase the
+       keyboard. A rotation changes innerWidth/innerHeight; an iOS keyboard
+       does not — layoutStale() already draws exactly that line. */
+    if (layoutStale()) setVh();
     droppedBelow = false;            // decide again for the new size
     placeToolbar();
     placeTable();
@@ -6330,7 +6344,10 @@
        be measured until that has been laid out — measured too early it reports
        zero and the fit is meaningless. */
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () { if (puzzle) fitCells(); scaleClue(); });
+      /* relayout, not a hand-picked subset — boot and rotation now run the
+         SAME list, which is the only arrangement under which they cannot
+         drift apart again. Third time this lesson has been paid for. */
+      requestAnimationFrame(relayout);
     });
   }
 

@@ -784,6 +784,22 @@ server.listen(0, "127.0.0.1", async () => {
     t("no listener responds to resize with a subset of relayout",
       !/addEventListener\("resize", function \(\) \{ if \(puzzle\) fitCells\(\); scaleClue\(\); \}\)/.test(js),
       "the partial healer was WHY rotation looked half-fixed");
+
+    /* v001b: the watchdog got relayout RUNNING on rotation and the board was
+       still wrong — the stage is height:var(--vh), setVh() ran at boot only,
+       and relayout fitted the board into a frame read from the stale
+       variable. Boot's list and relayout's list differed by one member for
+       the third time. The cure and its guard, both pinned: relayout owns
+       setVh (on a real window change; the keyboard must not move the
+       stage), and boot's deferred pass IS relayout — one list, literally. */
+    t("relayout refreshes the stage height variable",
+      /function relayout\(\)[\s\S]{0,200}if \(layoutStale\(\)\) setVh\(\)/.test(js),
+      "the stage is height:var(--vh); a stale --vh is a wrong frame however often relayout runs");
+    t("but only on a real window change, so the keyboard cannot move the stage",
+      !/function relayout\(\)[\s\S]{0,120}^\s*setVh\(\);/m.test(js));
+    t("boot's deferred layout pass IS relayout, not a hand-picked subset",
+      /requestAnimationFrame\(relayout\)/.test(js),
+      "one list is the only arrangement under which boot and rotation cannot drift");
   }
 
   t("and the decision is sticky, so it cannot oscillate", (() => {
@@ -1165,9 +1181,13 @@ server.listen(0, "127.0.0.1", async () => {
        the literal call in every handler's text, which is testing the shape
        of the code rather than the property; the resize path now routes
        through relayout by reference and is MORE complete, not less. */
-    const scroll = /visualViewport\.addEventListener\("scroll"[\s\S]{0,120}?scaleClue\(\)/.test(js);
-    const resize = /visualViewport\.addEventListener\("resize", relayout\)/.test(js) &&
-      /function relayout\(\)[\s\S]{0,300}scaleClue\(\)/.test(js);
+    /* Comments stripped before matching: the character-window test was
+       tripped by a comment growing inside relayout, which is testing prose
+       length, not the property. */
+    const bare = js.replace(/\/\*[\s\S]*?\*\//g, "");
+    const scroll = /visualViewport\.addEventListener\("scroll"[\s\S]{0,120}?scaleClue\(\)/.test(bare);
+    const resize = /visualViewport\.addEventListener\("resize", relayout\)/.test(bare) &&
+      /function relayout\(\)[\s\S]{0,300}scaleClue\(\)/.test(bare);
     return scroll && resize;
   })());
   t("button labels cannot be drawn on top of each other", (() => {
