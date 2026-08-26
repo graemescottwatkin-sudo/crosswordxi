@@ -124,6 +124,39 @@ t("and no reader filters results on a stored phase",
   !/r\.phase === "season"/.test(code),
   "that filter was never true for any row");
 
+console.log("\nThe clock and the score come from the same place");
+/* The score transferred to server authority and the clock did not. Measured
+   live: plays.srv_elapsed_secs 3086 against a stored record of 3229. Both were
+   past full time so both floored at 36 and nothing looked wrong — but
+   FCW.outcome() reads elapsedSeconds to decide W against D at 90'. */
+t("there is one reader for what goes in the record",
+  /function recordedElapsed\(\)/.test(code));
+t("and both record paths use it, neither reads `elapsed` directly",
+  (code.match(/elapsedSeconds: recordedElapsed\(\)/g) || []).length === 2 &&
+  !/elapsedSeconds: elapsed\b/.test(code),
+  "daily and themed");
+t("the server's clock is captured where its score is",
+  /verifiedElapsed = r\.elapsedSeconds/.test(code));
+t("read off r, not r.breakdown",
+  !/breakdown[^;]*elapsedSeconds/.test(code),
+  "breakdown is computeScore's return: score and timePenalty only");
+t("and it is reset per board, in the same statement as the others",
+  /verifiedBreakdown = null;[^\n]*\n\s*verifiedElapsed = null;/.test(code),
+  "or one board's clock reaches the next");
+
+/* 90' is the win/draw line. At the measured 143s of drift, a board either side
+   of it resolves differently depending on which clock was stored. */
+{
+  const SEC = 1800 / 90;
+  const near = 89 * SEC;                       // 1780s — a win
+  const drifted = near + 143;                  // 1923s — 96', a draw
+  const rec = (e) => ({ complete: true, elapsedSeconds: e,
+                        revealedLetters: 0, revealedAnswers: 0 });
+  t("the drift is enough to flip a result at full time",
+    FCW.outcome(rec(near)) === "W" && FCW.outcome(rec(drifted)) === "D",
+    "89' is a win; the same board 143s adrift is 96' and a draw");
+}
+
 console.log("\nOne rule for W/D/L");
 t("the Season tile reads FCW.outcome",
   /FCW\.outcomePoints\(FCW\.outcome\(r\)\)/.test(code));

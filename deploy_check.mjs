@@ -45,7 +45,7 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    back and the site looked unchanged.
 
    LAST_SHIPPED is the version that is live now. Bump it when you deploy. */
-const LAST_SHIPPED = "v148";   // <- bump this after each deploy
+const LAST_SHIPPED = "v149";   // <- bump this after each deploy
 t("the build tag has moved past the version now live",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";

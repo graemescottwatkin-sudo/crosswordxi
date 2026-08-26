@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v149";
+  var BUILD = "v150";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -896,6 +896,7 @@
       renderCirculation();
       verified = {}; verifySent = {}; gridStats = { wrongCells: 0, wrongEntries: 0 };
       verifiedScore = null; verifiedBreakdown = null;   // last game's, not this one's
+      verifiedElapsed = null;   // reset with them, or one board's clock reaches the next
       showLoading(false);
       finishBuild(restore);
     }).catch(function (err) {
@@ -3901,7 +3902,8 @@
       bankVersion: FCW.QUESTION_BANK_VERSION,
       club: club, season: season ? season.season : null,
       score: score, position: pos,
-      elapsedSeconds: elapsed, matchMinute: FCW.matchMinute(elapsed),
+      elapsedSeconds: recordedElapsed(),
+      matchMinute: FCW.matchMinute(recordedElapsed()),
       checks: checksUsed,
       revealedLetters: revealedLetterCount(),
       revealedAnswers: revealedAnswerCount(),
@@ -3946,7 +3948,8 @@
       playId: playId,          // so a verified rewrite replaces its own row
       club: club, season: season ? season.season : null,
       score: score, position: pos,
-      elapsedSeconds: elapsed, matchMinute: FCW.matchMinute(elapsed),
+      elapsedSeconds: recordedElapsed(),
+      matchMinute: FCW.matchMinute(recordedElapsed()),
       checks: checksUsed,
       revealedLetters: revealedLetterCount(),
       revealedAnswers: revealedAnswerCount(),
@@ -4726,6 +4729,31 @@
   /* The server's own breakdown, kept whole. The share text needs the same
      shape computeScore returns, not just the total. */
   var verifiedBreakdown = null;
+  /* The clock the verified score was computed from — `elapsed + helpSeconds`
+     on the server, the same figure it writes to plays.srv_elapsed_secs.
+
+     Kept because the browser was throwing it away. /api/finish has returned it
+     since 017, under a comment describing exactly the fault it was meant to
+     end: a Full Time screen showing a time that could not produce the score
+     beside it. The server was fixed to report the right figure; nothing was
+     changed to make the browser use it, so the stored record carried the
+     server's score beside the browser's clock. Measured live at 3086 against
+     3229 — 143 seconds, which is seven match minutes.
+
+     That is cosmetic while both figures are past full time and the score has
+     floored. It stops being cosmetic in the season: FCW.outcome() reads
+     elapsedSeconds to decide win against draw at the 90' line, so a board
+     finishing near full time could be a win by one clock and a draw by the
+     other, with the wrong one stored. */
+  var verifiedElapsed = null;
+  /* What goes in the record. The server's clock once it has answered, the
+     browser's until then — a finished board must always say how long it took,
+     even with nothing reachable. One function so the two record paths cannot
+     answer this differently, which is how the score and the clock came apart
+     in the first place. */
+  function recordedElapsed() {
+    return verifiedElapsed === null ? elapsed : verifiedElapsed;
+  }
   /* Where the score put you, so a rewritten record carries the right position
      rather than the one the browser's arithmetic implied. */
   var lastPosition = null;
@@ -4745,6 +4773,9 @@
         }
         verifiedScore = r.score;
         verifiedBreakdown = Object.assign({}, r.breakdown || {}, { score: r.score });
+        /* Read off r, not r.breakdown: breakdown is computeScore's return, which
+           carries score and timePenalty only. The clock is a sibling of score. */
+        if (typeof r.elapsedSeconds === "number") verifiedElapsed = r.elapsedSeconds;
         /* Ranked here rather than beside the call to verifyScore(): the rank
            has to include the score just posted, and that is only true once the
            server has answered. Hung off a timer instead, it would sometimes
@@ -4814,7 +4845,6 @@
           if (note) {
             note.textContent = "verified \u2014 timed from when the board was opened, " +
               "which does not pause";
-	    note.className = "verify-note verified";
           }
         }
       })

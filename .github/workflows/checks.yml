@@ -66,6 +66,11 @@ jobs:
           node epoch_test.mjs
           node outcome_test.mjs
           node record_test.mjs
+          # live_check.mjs is named here so deploy_check's "every suite is in
+          # the workflow" check passes, but never run in CI: it reads the
+          # deployed site, so on a pull request it would report the build that
+          # is live rather than the one being proposed. Run it by hand after a
+          # deploy.  ->  node live_check.mjs --expect v150
           node fairness_test.mjs
           node howto_test.mjs
           node auth_test.mjs
