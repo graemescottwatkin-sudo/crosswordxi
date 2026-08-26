@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v132";
+  var BUILD = "v133";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6156,10 +6156,23 @@
     try { localStorage.setItem("fcw.mode", which); } catch (e) {}
     setHomeVisible(false);
     if (which === "daily") {
-      dailyNo = FCW.dailyNumber();
+      /* The board being opened, which is not always today's.
+
+         This read dailyNo = FCW.dailyNumber() unconditionally and then only
+         restored a save whose dailyNo matched it. With the archive open that
+         compared an archive board against today and never matched — so the
+         board loaded empty, with the letters and the clock still sitting in
+         storage untouched.
+
+         The same comparison in boot() was fixed one release ago; this is the
+         second copy of it, which is why the symptom moved from "goes to the
+         menu" to "stays on the board and it is blank". Two places deciding one
+         thing. */
+      dailyNo = dailyWanted || FCW.dailyNumber();
       var saved = savedFor("daily");
-      newPuzzle(saved && saved.dailyNo === dailyNo && saved.seed != null ? saved.seed : FCW.dailySeed(dailyNo),
-                saved && saved.dailyNo === dailyNo ? saved : null);
+      var mine = saved && saved.dailyNo === dailyNo;
+      newPuzzle(mine && saved.seed != null ? saved.seed : FCW.dailySeed(dailyNo),
+                mine ? saved : null);
     } else {
       var sp = savedFor("practice");
       if (sp && !sp.complete && sp.seed != null) newPuzzle(sp.seed, sp);
