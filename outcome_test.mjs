@@ -158,5 +158,47 @@ console.log("\nThe board is frozen, and has exactly two constructors");
     "a caller could otherwise make a board that lies about itself");
 }
 
+console.log("\nResuming picks the right board");
+{
+  /* Slots are keyed per board, so several can be part-played at once and the
+     scan has to choose. The first version of unfinishedTheme took whichever key
+     came first, on the assumption that themed boards shared one slot: open a
+     club board, type, refresh, and you landed on Board of the week because an
+     earlier session had left that behind.
+
+     Tested as arithmetic rather than through the page, because the page needs
+     jsdom and this is the part that was wrong. */
+  const byRecency = (saves) => {
+    let best = null;
+    Object.keys(saves).forEach((k) => {
+      const raw = saves[k];
+      if (!raw || raw.complete) return;
+      if (!best || (raw.savedAt || 0) > (best.savedAt || 0)) best = raw;
+    });
+    return best;
+  };
+  const now = Date.now();
+  const three = {
+    a: { themeKey: "board-of-the-week-2", complete: false, savedAt: now - 86400000 },
+    b: { themeKey: "arsenal-wenger-era-3", complete: false, savedAt: now - 60000 },
+    c: { themeKey: "man-united-ferguson-1", complete: true, savedAt: now },
+  };
+  t("the most recently played unfinished board wins",
+    byRecency(three).themeKey === "arsenal-wenger-era-3",
+    byRecency(three).themeKey);
+  t("a finished board is never resumed, however recent",
+    byRecency({ c: three.c }) === null);
+  t("and the code orders by savedAt, not by key order", (() => {
+    const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = game.slice(game.indexOf("function unfinishedTheme"),
+                          game.indexOf("function unfinishedDailies"));
+    return /savedAt \|\| 0\) > \(best\.savedAt \|\| 0\)/.test(fn);
+  })(), "key order is insertion order, not recency");
+  t("every save carries the timestamp this depends on", (() => {
+    const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    return /savedAt: Date\.now\(\)/.test(game);
+  })());
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

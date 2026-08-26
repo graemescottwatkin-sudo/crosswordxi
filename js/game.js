@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v147";
+  var BUILD = "v148";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -701,27 +701,30 @@
      them rather than the first lets boot tell the difference between "resume
      this" and "you have three going" — one resumes, several go to the landing
      screen with the count. */
-  /* The themed board left unfinished, if there is one.
+  /* The themed board most recently left unfinished.
 
-     Same shape as unfinishedDailies and for the same reason: slots are keyed
-     per board, and at boot `board` is the empty default with no theme on it —
-     so savedFor("theme") looked in "fcw.v04.theme.none" and found nothing.
-     That is why a daily resumed after a refresh and every club board did not.
+     Slots are keyed per board — fcw.v04.theme.<theme>-<no> — so several club
+     boards can be part-played at once. The first version took whichever key
+     came first, on the assumption that themed boards shared one slot and
+     overwrote each other. They do not: open a board from Clubs and themes,
+     type, refresh, and you landed on Board of the week instead, because that
+     is what an earlier session had left behind.
 
-     Singular because only one themed board can be in progress: they share one
-     slot family and openThemed overwrites, unlike dailies which each keep their
-     own. */
+     Ordered by savedAt, which every save carries. Key order in localStorage is
+     insertion order, not recency, and is not a fact worth relying on either
+     way. */
   function unfinishedTheme() {
-    var found = null;
+    var best = null;
     try {
       Object.keys(localStorage).forEach(function (k) {
-        if (found || k.indexOf(THEME_PREFIX) !== 0) return;
+        if (k.indexOf(THEME_PREFIX) !== 0) return;
         var raw = null;
         try { raw = JSON.parse(localStorage.getItem(k)); } catch (e) { return; }
-        if (raw && !raw.complete && inProgress(raw)) found = raw;
+        if (!raw || raw.complete || !inProgress(raw)) return;
+        if (!best || (raw.savedAt || 0) > (best.savedAt || 0)) best = raw;
       });
     } catch (e) {}
-    return found;
+    return best;
   }
 
   function unfinishedDailies() {
@@ -734,6 +737,10 @@
         if (raw && !raw.complete && inProgress(raw)) out.push(raw);
       });
     } catch (e) {}
+    /* By board number, newest first — deliberately not by savedAt, which is
+       what unfinishedTheme uses. For dailies the newest board is the one being
+       kept up with; for club boards there is no such order, so recency is the
+       only honest answer there. Two scanners, two questions. */
     return out.sort(function (a, b) { return (b.dailyNo || 0) - (a.dailyNo || 0); });
   }
 
@@ -1183,7 +1190,7 @@
      Its declaration was removed with the old board variables — the name looked
      like part of that family and is not. Three references survived, so every
      reveal threw ReferenceError: reveal letter, reveal answer and reveal
-     everything were all dead on v147.
+     everything were all dead on v148.
 
      Declared here, next to its only reader, rather than back among the board
      state where it was mistaken for it. */
