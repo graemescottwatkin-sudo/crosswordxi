@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v133";
+  var BUILD = "v134";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6554,6 +6554,18 @@
     if (!synced) return;
     var trueNo = FCW.dailyNumber();
     if (trueNo === dailyNo) return;
+    /* An earlier board is not a wrong clock.
+
+       This exists for a device whose date is off: it corrects the puzzle before
+       kick-off, when nothing is at stake. But since the archive opened,
+       dailyNo is deliberately not today's whenever an earlier board is being
+       played — so the sync read that as a bad clock and called bootDaily(),
+       which loaded today's board over the top.
+
+       That is what showed as the letters appearing for a moment and then a
+       blank grid with the Kick Off card: the restore worked, and this replaced
+       it a second later. */
+    if (dailyWanted) return;
     if (mode === "daily" && !started && !complete) bootDaily();
   });
 })();
