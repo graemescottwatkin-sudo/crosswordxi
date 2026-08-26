@@ -464,13 +464,23 @@ export async function onRequest({ request, env, params }) {
   if (route === "plays.csv" && request.method === "GET") {
     const rows = await env.DB.prepare(
       `SELECT started_at, ended_at, mode, daily_no, theme_key, phase,
-              play_no, solved, total, completed, elapsed_secs, checks, reveals,
+              play_no, solved, total, completed, elapsed_secs, checks,
+              /* The split columns, not the legacy merged 'reveals'. A letter
+                 costs +3' and an answer +14', so eleven of one and eleven of
+                 the other differ by 33 minutes — merged, the table could not
+                 say which it was looking at. Line ~370 in this same file read
+                 the split correctly the whole time. Falls back to the merged
+                 figure for rows from before migration 014, shown as letters,
+                 which is the conservative reading. */
+              COALESCE(srv_reveal_letters, reveals, 0) AS reveal_letters,
+              COALESCE(srv_reveal_answers, 0) AS reveal_answers,
               by_owner, utm_source, utm_medium, utm_campaign, utm_content,
               utm_term, referrer
          FROM plays ORDER BY started_at DESC LIMIT 20000`).all();
     const esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
     const head = ["Started", "Ended", "Mode", "Board", "Reference", "Solved",
-                  "Of", "Finished", "Seconds", "Checks", "Reveals", "Owner test",
+                  "Of", "Finished", "Seconds", "Checks",
+                  "Reveal letters", "Reveal answers", "Owner test",
                   "Source", "Medium", "Campaign", "Content", "Term", "Referrer"];
     const lines = [head.map(esc).join(",")];
     for (const r of rows.results || []) {
@@ -480,7 +490,8 @@ export async function onRequest({ request, env, params }) {
         r.started_at, r.ended_at || "", r.mode, board,
         r.play_no ? String(r.play_no).padStart(6, "0") : "",
         r.solved, r.total, r.completed ? "yes" : "no",
-        r.elapsed_secs, r.checks, r.reveals, r.by_owner ? "yes" : "",
+        r.elapsed_secs, r.checks, r.reveal_letters, r.reveal_answers,
+        r.by_owner ? "yes" : "",
         r.utm_source || "", r.utm_medium || "", r.utm_campaign || "",
         r.utm_content || "", r.utm_term || "", r.referrer || "",
       ].map(esc).join(","));

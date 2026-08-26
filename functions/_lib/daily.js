@@ -36,3 +36,22 @@ export function playableDailyNo(token) {
   if (asked < 1) return false;
   return asked <= dailyNumber() ? asked : false;
 }
+
+/* When a board's answers may be published.
+
+   The archive is replayable, which Wordle's is not — so where Wordle can let
+   yesterday's answer circulate at no cost, publishing ours spoils a board
+   someone could still play. The trade taken here: boards stay sealed for a
+   week, then their answers become an indexable page. The fresh archive — the
+   boards people compete on, share and challenge each other with — stays
+   clean; the older ones become the pages a searcher can find.
+
+   ONE rule, used by the answers pages and asserted by their tests. Anything
+   else that ever needs to know (a sitemap, an archive badge) reads this,
+   never its own copy of the arithmetic. */
+export const ANSWERS_AFTER_DAYS = 7;
+
+export function answersAvailable(no, today) {
+  const t = today || dailyNumber();
+  return Number.isInteger(no) && no >= 1 && t - no > ANSWERS_AFTER_DAYS;
+}

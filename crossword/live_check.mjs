@@ -76,6 +76,20 @@ console.log(`\n${SITE}\n`);
     landed.includes("?") ? landed.slice(landed.indexOf("?")) : "query dropped");
 }
 
+/* ---- the apex redirects to www ---- */
+{
+  /* Verified live during the v153 review: thexigames.com answered 200 and
+     served the whole site — two hostnames, identical content, the day
+     indexing switched on. The _redirects apex rule died of the same
+     paths-only limitation as the subdomain one. This asserts the zone
+     Redirect Rule that replaces it. */
+  const res = await fetch("https://thexigames.com/crossword/", { redirect: "manual" });
+  const loc = res.headers.get("location") || "";
+  t("the apex redirects to www rather than serving a second copy",
+    res.status >= 301 && res.status <= 308 && loc.startsWith("https://www.thexigames.com"),
+    res.status === 200 ? "HTTP 200 — apex is serving content directly" : `${res.status} -> ${loc}`);
+}
+
 /* ---- the hub ---- */
 {
   const hub = await fetch(HUB + "/");
@@ -90,6 +104,39 @@ console.log(`\n${SITE}\n`);
                   "Career Path","Link XI","Odd One Out"].filter((n) => html.includes(n));
   t("and names no unreleased game", leaked.length === 0,
     leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");
+  /* Every link the hub's own markup carries must resolve. The first hub
+     shipped with /account, /how-to-play and /privacy in its chrome — all
+     404 — and nothing noticed, because this script checked those pages under
+     the game path and never clicked the front door's own links. */
+  const hrefs = [...new Set([...html.matchAll(/href="(\/[^"#]*)"/g)].map((m) => m[1]))];
+  let dead = [];
+  for (const h of hrefs) {
+    const r = await fetch(HUB + h, { redirect: "follow" });
+    if (!r.ok) dead.push(`${h} -> ${r.status}`);
+  }
+  t("every link on the hub resolves", dead.length === 0,
+    dead.length ? dead.join(", ") : `${hrefs.length} checked`);
+}
+
+/* ---- the answers pages hold the line ----
+   The security property, checked against production: today's board must be
+   refused with nothing cached, and the index must serve. The first released
+   page appears on day nine; until then the index's empty state is the
+   correct answer, not a fault. */
+{
+  const idx = await fetch(HUB + "/crossword/answers/");
+  t("the answers index is served", idx.ok, `HTTP ${idx.status}`);
+  const dailyRes = await fetch(HUB + "/api/daily", { headers: { accept: "application/json" } });
+  const day = dailyRes.ok ? await dailyRes.json() : null;
+  if (day && day.dailyNo) {
+    const sealed = await fetch(HUB + "/crossword/answers/" + day.dailyNo);
+    t("today's answers are refused", sealed.status === 404, `HTTP ${sealed.status}`);
+    t("and the refusal is not cacheable",
+      /no-store/.test(sealed.headers.get("cache-control") || ""),
+      "a cached refusal would outlive its release date");
+    const sealedBody = await sealed.text();
+    t("and the refusal names no clue", !/class="ans"/.test(sealedBody));
+  }
 }
 
 /* ---- which build is being served ---- */

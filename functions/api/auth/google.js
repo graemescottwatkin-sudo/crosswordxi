@@ -10,8 +10,11 @@ import {
   verifyGoogleIdToken, findOrCreateUser, createSession,
   sessionCookie, publicUser, csrfOk,
 } from "../../_lib/auth.js";
+import { limited } from "../../_lib/limit.js";
 
 export async function onRequestPost({ request, env }) {
+  if (await limited(env, request, "signin", 20, 3600))
+    return json({ error: "Too many requests. Give it a minute." }, 429);
   if (!csrfOk(request)) return bad("Missing request header.", 403);
   if (!hasDB(env)) return bad("Accounts need the D1 binding — see README step F.", 503);
   if (!env.GOOGLE_CLIENT_ID) {
@@ -36,5 +39,5 @@ export async function onRequestPost({ request, env }) {
   const session = await createSession(env, user.id);
 
   return json({ user: publicUser(user), created }, 200,
-    { "Set-Cookie": sessionCookie(session.id, session.expires) });
+    { "Set-Cookie": sessionCookie(session.id, session.expires, request) });
 }

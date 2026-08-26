@@ -200,5 +200,38 @@ console.log("\nResuming picks the right board");
   })());
 }
 
+console.log("\nWhat counts: a board's own day, and the day after");
+{
+  /* Settled at a full day of grace, on the condition the page explains it —
+     howto_test pins the sentence. Anything past midnight of the day after
+     banks nothing: not the run, not the season. The Full Time card still
+     scores a late play; it is a friendly against the past, not a matchday. */
+  const day = (n) => new Date(2026, 7, 25 + n).getTime();
+  const rec = (no, min) => ({ dailyNo: no, at: day(no) + min * 60000, complete: true });
+  t("a board finished on its own day counts", FCW.onTimeResult(rec(3, 14 * 60)));
+  t("yesterday's board finished this morning counts",
+    FCW.onTimeResult(rec(3, 33 * 60)), "clearing yesterday first is playing the game as meant");
+  t("right up to midnight tonight", FCW.onTimeResult(rec(3, 48 * 60 - 1)));
+  t("and one minute past it does not", !FCW.onTimeResult(rec(3, 48 * 60 + 1)),
+    "midnight is the line the page states");
+  t("a deep-archive play never counts", !FCW.onTimeResult(rec(3, 96 * 60)));
+  t("a legacy next-day date is within the grace",
+    FCW.onTimeResult({ dailyNo: 3, date: "2026-08-29" }));
+  t("a legacy two-days-on date is not",
+    !FCW.onTimeResult({ dailyNo: 3, date: "2026-08-30" }));
+  t("the season consumes the same rule — late plays bank nothing", (() => {
+    const st = FCW.seasonStats(
+      [rec(1, 600), rec(2, 600), rec(3, 600), rec(1, 200 * 60), { dailyNo: 2, at: day(40) }], 3);
+    return st.played === 3 && st.currentStreak === 3 && st.longestStreak === 3;
+  })(), "five results, three matchdays");
+  t("and the rule is one exported function, not a copy per reader", (() => {
+    const eng = fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return (eng.match(/function onTimeResult/g) || []).length === 1 &&
+           /records\.filter\(onTimeResult\)/.test(eng) &&
+           /\(records \|\| \[\]\)\.filter\(onTimeResult\)/.test(eng);
+  })(), "streaks and seasonStats both call it");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

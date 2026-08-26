@@ -1269,6 +1269,12 @@ var FCW = (function () {
     return {
       v: 1,
       date: o.date,                       // ISO yyyy-mm-dd, local calendar day
+      /* WHEN it was finished, to the millisecond. The date above is a day and
+         a day is too coarse for the streak rule: yesterday's board counts only
+         if it was finished within the grace period after midnight, and
+         "23:55 or 09:00 the next morning" cannot be told apart from a date.
+         Legacy rows have no `at`; they fall back to strict same-day. */
+      at: o.at,
       dailyNo: o.dailyNo,
       /* Eight readers filter results on `mode === "daily"` — mergeResults,
          renderHome, alreadyPlayedElsewhere, nextUnplayedDaily,
@@ -1357,11 +1363,45 @@ var FCW = (function () {
       ("0" + (t.getMonth() + 1)).slice(-2) + "-" +
       ("0" + t.getDate()).slice(-2);
   }
+  /* What counts: a board's own day, and the whole of the day after.
+
+     A board finished on its own day counts. Yesterday's board still counts
+     if it is finished before the end of TODAY — the player who opens the app
+     in the morning and clears yesterday first is playing the game as meant.
+     Midnight tonight is the line: anything older banks NOTHING here — not
+     the run, not the season, not points. The Full Time card still scores a
+     late play; it is a friendly against the past, not a matchday.
+
+     Why the line exists at all: past seven days the archive is open-book by
+     design (the answers pages), and a late score can never be told from a
+     looked-up one. A record that cannot be trusted is worse than one that is
+     simply not kept.
+
+     Considered at one hour past midnight; settled at the full day after, ON
+     THE CONDITION that the page says so — how-to-play carries the sentence,
+     and howto_test pins it. A rule this consequential that players only
+     discover when a run fails to move is a bug wearing a rule's clothes.
+
+     ONE rule. streaks() and seasonStats() both consume it; C4's season index
+     must too. The record's `at` timestamp is kept — it is a true fact,
+     costs nothing, and day arithmetic uses it when present; legacy rows
+     fall back to their date, where next-day is within the grace and counts. */
+  var GRACE_DAYS = 1;
+  function onTimeResult(r) {
+    if (!r || typeof r.dailyNo !== "number") return false;
+    var own = dailyDate(r.dailyNo);
+    if (typeof r.at === "number") {
+      return r.at < own.getTime() + (1 + GRACE_DAYS) * 86400000;
+    }
+    if (!r.date) return true;   // pre-date legacy: the archive did not exist
+    return r.date === localDateKey(own) ||
+           r.date === localDateKey(new Date(own.getTime() + 86400000));
+  }
   /* Streaks run on consecutive Daily numbers. Practice never appears here,
      because only Daily completions are recorded. */
   function streaks(records, todayNo) {
-    var nums = records.map(function (r) { return r.dailyNo; })
-      .filter(function (n) { return typeof n === "number"; })
+    var nums = records.filter(onTimeResult)
+      .map(function (r) { return r.dailyNo; })
       .sort(function (a, b) { return a - b; });
     if (!nums.length) return { current: 0, longest: 0 };
     var longest = 1, run = 1;
@@ -1408,7 +1448,11 @@ var FCW = (function () {
   }
 
   function seasonStats(records, todayNo) {
-    var r = records || [];
+    /* The season counts what the streak counts — onTimeResult, one rule. A
+       deep-archive play banks nothing here: no played, no points, no average.
+       The Full Time card still scores it; it is a friendly against the past,
+       not a matchday. */
+    var r = (records || []).filter(onTimeResult);
     var n = r.length;
     var st = streaks(r, todayNo);
     var out = {
@@ -1733,6 +1777,7 @@ var FCW = (function () {
     clearTrustedTime: clearTrustedTime,
     timeState: timeState,
     streaks: streaks,
+    onTimeResult: onTimeResult,
     seasonStats: seasonStats,
     timePenalty: timePenalty,
     // Exported so tests can be written against the launch date rather than

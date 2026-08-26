@@ -16,6 +16,7 @@
 import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
 import { newId, isAdmin} from "../_lib/auth.js";
+import { limited } from "../_lib/limit.js";
 
 const int = (v, max = 100000) => {
   const n = Number(v);
@@ -23,6 +24,8 @@ const int = (v, max = 100000) => {
 };
 
 export async function onRequestPost({ request, env }) {
+  if (await limited(env, request, "play", 120, 3600))
+    return json({ error: "Too many requests. Give it a minute." }, 429);
   /* Deliberately no CSRF header requirement: this is fired from a page-hide
      handler via sendBeacon, which cannot set headers. It writes nothing that
      belongs to anybody and reads nothing back, so there is nothing to protect

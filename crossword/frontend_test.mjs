@@ -222,6 +222,11 @@ server.listen(0, "127.0.0.1", async () => {
     d.querySelectorAll("#downList li").length >= 10,
     (d.querySelectorAll("#acrossList li").length + d.querySelectorAll("#downList li").length) + " clues");
   t("no uncaught errors during boot", errors.length === 0, errors[0]);
+  /* The collector keeps listening after this line; the whole-run assertion is
+     at the end of the file. Scoped to boot alone, this suite reported 185
+     passed while a TypeError from the pinch handler printed a stack trace in
+     the middle of its own output — the same shape as the v146 bulkReveal
+     fault, which also threw after boot and also shipped green. */
 
   console.log("\nNo answers in the browser");
   const html = d.documentElement.outerHTML;
@@ -731,6 +736,34 @@ server.listen(0, "127.0.0.1", async () => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /TIGHT_CELL = 26/.test(js) && /size < TIGHT_CELL/.test(js);
   })());
+  /* Rotating an iPad left a correctly sized board inside the wrong chrome, and
+     a refresh healed it. The resize handler redid four things; orientationchange
+     redid one. iOS fires resize DURING the rotation with the dimensions of
+     neither orientation, and droppedBelow is sticky by design, so a toolbar
+     decision taken mid-rotation stayed taken while the late correction only
+     re-sized the board. Boot ran the full list, hence the refresh.
+
+     Asserted as "one function, every caller" rather than by counting steps in
+     two places — the fault was the two lists drifting, so the fix is that there
+     is only one. */
+  {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    t("a viewport change has one relayout, not a list per listener",
+      /function relayout\(\)/.test(js));
+    t("and resize uses it", /addEventListener\("resize", relayout\)/.test(js));
+    t("and so does orientationchange",
+      /setTimeout\(relayout,/.test(js),
+      "this ran fitCells() alone, so the toolbar kept its mid-rotation decision");
+    t("relayout retakes the sticky toolbar decision",
+      /function relayout\(\)[\s\S]{0,200}droppedBelow = false/.test(js));
+    t("and places the league table too",
+      /function relayout\(\)[\s\S]{0,200}placeTable\(\)/.test(js),
+      "registered on its own resize listener before, so it could run alone");
+    t("nothing re-registers placeTable on its own",
+      !/addEventListener\("resize", placeTable\)/.test(js));
+  }
+
   t("and the decision is sticky, so it cannot oscillate", (() => {
     /* Once below, the board is no longer squeezed — a rule that only asked
        "is it squeezed now" would move it back up, squeeze it, and flip forever.
@@ -1132,11 +1165,23 @@ server.listen(0, "127.0.0.1", async () => {
   })());
 
   console.log("\nPausing is recorded, not forbidden");
-  t("pausing hides the puzzle, so it buys no thinking time", (() => {
+  t("hiding blurs the puzzle, so it buys no thinking time", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     const fn = js.slice(js.indexOf("function pauseGame"), js.indexOf("function resumeGame"));
-    return /classList\.add\("prestart"\)/.test(fn) && /stopTimer\(\)/.test(fn);
+    return /classList\.add\("prestart"\)/.test(fn);
   })());
+  /* This used to require stopTimer() inside pauseGame — the local clock
+     freeze. That freeze was one of three contradictory statements about
+     pausing: the page said the clock never pauses, the button said pressing
+     it stops the clock, and the server scored wall time regardless, so a
+     paused player watched a score that verification then took back with no
+     explanation anywhere. The rule is now the one the page always stated:
+     the clock does not stop, for anything. Hiding remains, and is recorded. */
+  t("and the clock genuinely does not stop for it", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+    const fn = js.slice(js.indexOf("function pauseGame"), js.indexOf("function resumeGame"));
+    return !/stopTimer\(\)/.test(fn);
+  })(), "how-to-play, the button and the verified score now agree");
   t("a pause is counted and its duration measured", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /pauseCount\+\+/.test(js) && /pausedMs \+= Date\.now\(\) - pauseStartedAt/.test(js);
@@ -1543,6 +1588,15 @@ server.listen(0, "127.0.0.1", async () => {
   await wait(200);
   t("the next-clue arrow still moves the selection",
     !!d.querySelector("#acrossList li.active, #downList li.active"));
+
+  /* Everything above ran with the error collector still attached. An
+     exception anywhere in the session — a click handler, a pointer event, a
+     timer — lands here, so a fault that throws after boot can no longer hide
+     inside a passing suite. This is the check that would have caught v146's
+     dead reveals and the pinch handler's drifted pointer count, both of which
+     threw after boot and shipped green under the boot-only assertion. */
+  t("and no uncaught errors across the whole run", errors.length === 0,
+    errors.length ? errors.length + " thrown; first: " + errors[0] : "");
 
   console.log(`\n${pass} passed, ${fail} failed`);
   dom.window.close();

@@ -28,6 +28,9 @@
 <meta property="og:description" content="Eleven daily football puzzles. A new board every day.">
 <meta property="og:url" content="https://www.thexigames.com/">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://www.thexigames.com/crossword/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23123B27'/%3E%3Ctext x='16' y='22' font-family='Arial Narrow,Arial' font-size='15' font-weight='700' fill='%23F2C94C' text-anchor='middle'%3EXI%3C/text%3E%3C/svg%3E">
 <style>
 :root{
   /* Straight from xi-tokens: the hub must not invent a second palette. */
@@ -176,17 +179,20 @@ footer a:hover{text-decoration:underline}
 <header class="masthead">
   <div class="wrap">
     <a class="brand" href="/">The <span class="xi">XI</span> Games</a>
-    <a class="acct" href="/account">Sign in</a>
+    <!-- No Sign in link. It pointed at /account, which does not exist — the
+         front door's most prominent button led to the 404 page. Sign-in lives
+         inside the game until there is a hub-level account page; a link that
+         works from inside the game is better than one that 404s from here. -->
   </div>
 </header>
 
 <section class="sheet">
   <div class="wrap">
     <h1>Today's XI</h1>
-    <p class="date">Wednesday 26 August</p>
+    <p class="date" id="sheetDate">Today</p>
 
     <div class="xi-strip">
-      <a class="shirt done" href="/crossword/" title="Crossword XI — played today">1</a>
+      <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI">1</a>
       <span class="shirt soon" title="Not out yet">2</span>
       <span class="shirt soon" title="Not out yet">3</span>
       <span class="shirt soon" title="Not out yet">4</span>
@@ -199,7 +205,7 @@ footer a:hover{text-decoration:underline}
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
 
-    <p class="played"><b>1</b> played today \u00B7 ten still to sign</p>
+    <p class="played" id="playedLine">Ten still to sign</p>
   </div>
 </section>
 
@@ -292,10 +298,52 @@ footer a:hover{text-decoration:underline}
 <footer>
   <div class="wrap">
     <span>The <strong>XI</strong> Games · unofficial football puzzles</span>
-    <a href="/how-to-play">How to play</a>
-    <a href="/privacy">Privacy</a>
+    <!-- Absolute into the game's pages. /how-to-play and /privacy at the hub
+         root do not exist; these 404ed from the footer of an indexed front
+         page. Hub-level pages come with game two, when per-game how-to-play
+         stops scaling. -->
+    <a href="/crossword/how-to-play.html">How to play</a>
+    <a href="/crossword/answers/">Answers</a>
+    <a href="/crossword/privacy.html">Privacy</a>
   </div>
 </footer>
 
+<script>
+/* Progressive enhancement only: everything above renders complete without
+   this. The date is the device's; the shirt state is read the same way the
+   game itself decides "played today" — its own record in this origin's
+   storage, keyed by the daily number the SERVER says is today. The epoch is
+   deliberately not duplicated here: the hub asking /api/daily for the number
+   is one network call, while a second copy of the epoch in a second file is
+   how the client and server disagreed about dates in the first place. */
+(function () {
+  try {
+    var d = new Date();
+    document.getElementById("sheetDate").textContent =
+      d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  } catch (e) {}
+  try {
+    fetch("/api/daily", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (day) {
+        if (!day || !day.dailyNo) return;
+        var done = false;
+        try {
+          var list = JSON.parse(localStorage.getItem("fcw.results.v1") || "[]");
+          done = list.some(function (r) {
+            return r && r.dailyNo === day.dailyNo && r.complete !== false;
+          });
+        } catch (e) {}
+        if (done) {
+          var s1 = document.getElementById("shirt1");
+          s1.classList.remove("live"); s1.classList.add("done");
+          s1.title = "Crossword XI \u2014 played today";
+          document.getElementById("playedLine").innerHTML =
+            "<b>1</b> played today \u00B7 ten still to sign";
+        }
+      }).catch(function () {});
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

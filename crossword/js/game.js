@@ -249,7 +249,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v152";
+  var BUILD = "v154";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1130,26 +1130,36 @@
     }
     if (restore) checkComplete(); // a finished daily boots straight to Full Time
   }
-  /* The icon shows what pressing it would do next: pause bars while running,
-     a play triangle once the clock is stopped. */
+  /* The icon shows what pressing it would do next: pause bars while showing,
+     a play triangle once the board is hidden. */
   function syncPauseIcon() {
     var b = $("pauseBtn");
     if (!b) return;
     b.classList.toggle("playing", paused);
-    var label = paused ? "Resume" : "Pause";
+    var label = paused ? "Show the board" : "Hide the board";
     b.setAttribute("aria-label", label);
-    b.title = paused ? "Restart the clock" : "Stop the clock and hide the puzzle";
+    b.title = paused ? "Show the board" : "Hide the board \u2014 the clock keeps running";
   }
+  /* Hiding, not pausing. Three surfaces said three things: how-to-play said
+     the clock never pauses, this button said pressing it stops the clock, and
+     the server scored wall time from kick-off regardless — so a paused player
+     watched a better score right up until verification took it back, roughly a
+     point per three hidden minutes, with nothing on the page explaining why.
+
+     One rule now, everywhere: the clock does not stop. The board can be
+     hidden — the doorbell case is real — and hiding is recorded, because a
+     leaderboard should still be able to tell a four-minute solve from a
+     four-minute solve spread across two hours. What was removed is only the
+     local clock freeze, which was a promise the verified score never kept. */
   function pauseGame() {
     if (!started || complete || paused) return;
     paused = true;
     pauseCount++;
     pauseStartedAt = Date.now();
-    stopTimer();
     // Same treatment as pre-kick-off: the whole stage (grid, selected clue,
     // and both clue lists) is blurred and interaction is disabled.
     document.querySelector(".stage").classList.add("prestart");
-    $("pauseMode").textContent = "Clock stopped at " + fmt(elapsed);
+    $("pauseMode").textContent = "Board hidden \u2014 the clock keeps running";
     $("pauseOverlay").classList.add("show");
     $("pauseBtn").disabled = true; syncPauseIcon();
   }
@@ -1161,7 +1171,9 @@
     $("pauseOverlay").classList.remove("show");
     $("pauseBtn").disabled = false; syncPauseIcon();
     updateSelection();
-    startTimer();
+    /* The timer never stopped, so there is nothing to restart. startTimer()
+       here would be harmless only if it guards against double intervals;
+       relying on that is how two clocks happen. */
   }
   on("pauseBtn", "click", pauseGame);
   on("resumeBtn", "click", resumeGame);
@@ -2202,12 +2214,28 @@
     }
   }
   placeToolbar();
-  window.addEventListener("resize", function () {
+  /* Everything a viewport change has to redo, in one place.
+
+     This list lived in the resize handler while orientationchange ran only
+     fitCells(), and the two drifted — which is the whole bug behind rotating
+     the iPad and getting a correctly sized board inside the wrong chrome.
+
+     Why rotating broke and refreshing fixed it: iOS fires resize DURING the
+     rotation, with the dimensions of neither orientation. All four steps ran
+     against those, and droppedBelow is deliberately sticky so it cannot
+     oscillate — so a wrong toolbar decision taken mid-rotation stayed taken.
+     The 250ms correction that followed re-sized the board and nothing else.
+     Boot ran the full list once, correctly, which is why a refresh healed it.
+
+     Anything added here is now had by every caller, which is the point. */
+  function relayout() {
     droppedBelow = false;            // decide again for the new size
     placeToolbar();
+    placeTable();
     if (puzzle) fitCells();
     scaleClue();
-  });
+  }
+  window.addEventListener("resize", relayout);
 
   /* Where the league table goes.
      In the rail beside the controls, which is where it belongs on anything
@@ -2238,7 +2266,8 @@
     }
   }
   placeTable();
-  window.addEventListener("resize", placeTable);
+  /* placeTable is called by relayout, not on its own. Registered separately it
+     could run without the toolbar decision it shares a viewport with. */
 
   /* Help starts closed on a phone. Its three rows became 44px each when the
      controls were sized for touch, which pushed the board 70px down the page
@@ -3922,7 +3951,7 @@
        is bounded. See capFinishedDailies. */
     capFinishedDailies();
     list.push(FCW.makeResultRecord({
-      date: FCW.localDateKey(), dailyNo: board.no, seed: seed,
+      date: FCW.localDateKey(), at: Date.now(), dailyNo: board.no, seed: seed,
       /* So a verified rewrite can find its own row. recordThemed has carried
          this for the same reason; the daily never did, which is why the
          verified score could not replace the browser's. */
@@ -3990,7 +4019,7 @@
     });
     if (prev && (prev.score || 0) >= score) return list;
     var rec = {
-      themeKey: key, themeLabel: themeLabel, date: FCW.localDateKey(),
+      themeKey: key, themeLabel: themeLabel, date: FCW.localDateKey(), at: Date.now(),
       playId: playId,          // so a verified rewrite replaces its own row
       club: club, season: season ? season.season : null,
       score: score, position: pos,
@@ -5086,8 +5115,19 @@
     window.visualViewport.addEventListener("resize", function () { if (puzzle) fitCells(); scaleClue(); });
     window.visualViewport.addEventListener("scroll", function () { if (puzzle) fitCells(); scaleClue(); });
   }
+  /* The full relayout, not just the board.
+
+     The delay is because iOS reports the old dimensions until the rotation
+     finishes; 250ms was already here for that reason and is kept. What
+     changed is what runs at the end of it — every step resize does, so the
+     mid-rotation decisions are all retaken rather than only the sizing.
+
+     Fired twice deliberately: once when the rotation settles, once a beat
+     later, because iPad Safari can still be mid-animation at 250ms and the
+     second pass is cheap. Both are idempotent. */
   window.addEventListener("orientationchange", function () {
-    setTimeout(function () { if (puzzle) fitCells(); }, 250);
+    setTimeout(relayout, 250);
+    setTimeout(relayout, 600);
   });
 
   /* ---------- Dev panel ---------- */
@@ -5913,22 +5953,30 @@
   (function () {
     var wrap = document.querySelector(".grid-wrap");
     if (!wrap) return;
-    var pts = {}, n = 0, startD = 0, startK = 1, startMid = null, moved = false;
+    /* `n` is gone. It was a second count of how many pointers are down, kept
+       beside `pts` which already knows — and the two drifted: n++ ran on every
+       pointerdown while pts[id] overwrites a repeated id, so a touch released
+       outside the frame leaked an entry in both, and the next touch either
+       threw on mid()[1].x or started a phantom pinch against a stale finger.
+       Either way startD never got set and the board stopped panning.
+       One fact, one place: the count is derived. */
+    var pts = {}, startD = 0, startK = 1, startMid = null, moved = false;
 
     function mid() {
       var a = [], k;
       for (k in pts) a.push(pts[k]);
       return a;
     }
+    function down() { return Object.keys(pts).length; }
     wrap.addEventListener("pointerdown", function (ev) {
       if (!flexOn) return;
       /* The board controls sit inside the frame. Capturing the pointer here
          would redirect their own pointerup to the frame and they would never
          fire — they would look broken while being merely intercepted. */
       if (ev.target.closest && ev.target.closest(".fx-zoom, .fx-fit")) return;
-      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY }; n++;
+      pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
       moved = false;
-      if (n === 2) {
+      if (down() === 2) {
         var a = mid();
         startD = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
         startK = fxScale;
@@ -5940,7 +5988,7 @@
       if (!flexOn || !pts[ev.pointerId]) return;
       var prev = pts[ev.pointerId];
       pts[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
-      if (n === 2 && startD) {
+      if (down() === 2 && startD) {
         var a = mid();
         var d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
         var k = Math.min(FX_MAX, Math.max(fxMin, startK * (d / startD)));
@@ -5952,7 +6000,7 @@
         moved = true; fxClamp(); fxApply();
         return;
       }
-      if (n === 1) {
+      if (down() === 1) {
         var dx = ev.clientX - prev.x, dy = ev.clientY - prev.y;
         /* Slop, so a tap that wobbles is still a tap and still selects a
            square — the cell handlers are left to fire on their own. */
@@ -5961,7 +6009,7 @@
         fxTx += dx; fxTy += dy; fxClamp(); fxApply();
       }
     });
-    function up(ev) { if (pts[ev.pointerId]) { delete pts[ev.pointerId]; n--; } if (n < 2) startD = 0; }
+    function up(ev) { delete pts[ev.pointerId]; if (down() < 2) startD = 0; }
     wrap.addEventListener("pointerup", up);
     wrap.addEventListener("pointercancel", up);
 

@@ -103,9 +103,22 @@ export async function onRequestPost({ request, env }) {
                produce the score beside it, under a comment claiming the two
                agree by construction. One figure, written once, read by all. */
             srv_elapsed_secs = ?,
+            /* The server judged the whole grid two lines up, so it KNOWS the
+               solved count: all of them. The row's solved column was written
+               only by the end beacon, which counts the browser's verified map
+               — a map cleared on every load, so a refresh mid-puzzle dropped
+               everything solved before it and finished boards sat in the admin
+               table at 4/11 and 7/11. The one number the "how far do people
+               get" view exists for was the unreliable one. The beacon still
+               writes it for abandoned boards, which never reach here and are
+               the case the view is really about; on completion the authority
+               overwrites. */
+            solved = ?, total = ?,
             completed = 1, ended_at = COALESCE(ended_at, datetime('now'))
       WHERE play_id = ?`)
-    .bind(res.score, elapsed + helpSeconds, String(playId || "")).run();
+    .bind(res.score, elapsed + helpSeconds,
+          stored.puzzle.entries.length, stored.puzzle.entries.length,
+          String(playId || "")).run();
 
   return json({
     complete: true, verified: true, score: res.score,

@@ -18,6 +18,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import {
+import { limited } from "../../_lib/limit.js";
   findOrCreateUser, createSession, sessionCookie, publicUser, csrfOk, currentUser,
 } from "../../_lib/auth.js";
 
@@ -45,6 +46,8 @@ function normalise(raw) {
 }
 
 export async function onRequestPost({ request, env }) {
+  if (await limited(env, request, "acct-code", 10, 3600))
+    return json({ error: "Too many requests. Give it a minute." }, 429);
   if (!hasDB(env)) return bad("Accounts are not configured.", 503);
   if (!csrfOk(request)) return bad("Bad request.", 400);
 
@@ -72,5 +75,5 @@ export async function onRequestPost({ request, env }) {
   const session = await createSession(env, user.id);
 
   return json({ user: publicUser(user), created },
-    200, { "Set-Cookie": sessionCookie(session.id, session.expires) });
+    200, { "Set-Cookie": sessionCookie(session.id, session.expires, request) });
 }

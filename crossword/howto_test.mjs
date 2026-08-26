@@ -61,5 +61,21 @@ t("links are relative, so the site can move", !/href="\//.test(page));
 t("divs balance",
   (page.match(/<div/g) || []).length === (page.match(/<\/div>/g) || []).length);
 
+
+/* The day of grace was settled ON THE CONDITION the page explains it — a
+   rule players only discover when a run fails to move is a bug wearing a
+   rule's clothes. If the sentence goes, the grace goes with it or this
+   fails. */
+{
+  const flat = page.replace(/\s+/g, " ");
+  t("the page says yesterday's board counts until the end of today",
+    /Yesterday.{1,9}s board still counts/.test(flat) &&
+    /before the end of today/.test(flat));
+  t("and that anything older banks nothing",
+    /does not bank a matchday or extend a run/.test(flat));
+  t("and why — the answers pages make old scores untrustable",
+    /answers are published/.test(flat));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

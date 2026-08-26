@@ -10,8 +10,11 @@
 import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../_lib/auth.js";
+import { limited } from "../_lib/limit.js";
 
 export async function onRequestPost({ request, env }) {
+  if (await limited(env, request, "report-clue", 20, 3600))
+    return json({ error: "Too many requests. Give it a minute." }, 429);
   if (!csrfOk(request)) return bad("Missing request header.", 403);
   if (!hasDB(env)) return bad("Not configured.", 503);
   const user = await currentUser(request, env);

@@ -143,22 +143,37 @@ export async function destroySession(request, env) {
  *
  * Set now, with the move to paths on thexigames.com. The leading dot is what
  * makes one sign-in work across every game in the family rather than only the
- * one that happened to serve the page. */
-const COOKIE_DOMAIN = ".thexigames.com";
+ * one that happened to serve the page.
+ *
+ * Derived per request rather than fixed. A page served from
+ * crosswordxi.pages.dev — every preview deployment — cannot set a cookie for
+ * .thexigames.com; the browser drops it silently, so a fixed constant meant
+ * sign-in on previews failed with no error anywhere. The first auth change
+ * tested on a preview would have looked broken when it was not. Off the family
+ * domain the cookie falls back to host-only, which is what previews want. */
+function cookieDomain(request) {
+  try {
+    const host = new URL(request.url).hostname;
+    return host === "thexigames.com" || host.endsWith(".thexigames.com")
+      ? ".thexigames.com" : null;
+  } catch (e) { return null; }
+}
 
-export function sessionCookie(id, expires) {
+export function sessionCookie(id, expires, request) {
   /* HttpOnly so script cannot read it. Secure so it never crosses plain HTTP.
      Lax so it survives a normal navigation but is not sent on cross-site
      posts. */
+  const dom = cookieDomain(request);
   return `${SESSION_COOKIE}=${encodeURIComponent(id)}; Path=/; HttpOnly; Secure; ` +
-    (COOKIE_DOMAIN ? `Domain=${COOKIE_DOMAIN}; ` : "") +
+    (dom ? `Domain=${dom}; ` : "") +
     `SameSite=Lax; Expires=${new Date(expires).toUTCString()}`;
 }
 
-export function clearedCookie() {
+export function clearedCookie(request) {
   // Must match sessionCookie's domain, or signing out leaves the cookie behind.
+  const dom = cookieDomain(request);
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; ` +
-    (COOKIE_DOMAIN ? `Domain=${COOKIE_DOMAIN}; ` : "") + `SameSite=Lax; Max-Age=0`;
+    (dom ? `Domain=${dom}; ` : "") + `SameSite=Lax; Max-Age=0`;
 }
 
 /* Cookies ride along on cross-site posts; a custom header does not. */

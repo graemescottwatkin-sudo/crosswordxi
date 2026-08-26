@@ -64,6 +64,7 @@ jobs:
           node crossword/circulation_test.mjs
           node crossword/d1_test.mjs
           node crossword/epoch_test.mjs
+          node crossword/answers_test.mjs
           node crossword/outcome_test.mjs
           node crossword/record_test.mjs
           # live_check.mjs is named here so deploy_check's "every suite is in

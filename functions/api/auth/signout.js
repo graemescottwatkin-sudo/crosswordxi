@@ -7,5 +7,5 @@ import { destroySession, clearedCookie, csrfOk } from "../../_lib/auth.js";
 export async function onRequestPost({ request, env }) {
   if (!csrfOk(request)) return bad("Missing request header.", 403);
   if (hasDB(env)) await destroySession(request, env);
-  return json({ ok: true }, 200, { "Set-Cookie": clearedCookie() });
+  return json({ ok: true }, 200, { "Set-Cookie": clearedCookie(request) });
 }
