@@ -26,10 +26,17 @@ export const SCORING = {
   /* These MUST match js/engine.js. The server is authoritative, so a
      divergence does not show as an error — it shows as a Full Time screen
      whose number changes a second after it appears, with no explanation. */
-  CHECK_PENALTY: 2,
-  CHECK_ALL_PENALTY: 9,
-  REVEAL_LETTER_PENALTY: 3,
-  REVEAL_ANSWER_PENALTY: 12,
+  /* Zero: the clock is the score cost now, and the server reads elapsed from
+     started_at. See js/engine.js — HELP_MINUTES was converted from these, so
+     charging both charged the same thing twice. MUST match engine.js. */
+  CHECK_PENALTY: 0,
+  CHECK_ALL_PENALTY: 0,
+  REVEAL_LETTER_PENALTY: 0,
+  REVEAL_ANSWER_PENALTY: 0,
+  /* MUST match js/engine.js. This is the only score cost now, so a divergence
+     here does not show as an error — it shows as the Full Time number changing
+     a second after it appears. */
+  HELP_MINUTES: { check: 2, checkAll: 10, revealLetter: 3, revealAnswer: 14 },
   MATCH_CLOCK_REAL_SECONDS: 1800,
   MATCH_CLOCK_MAX_MINUTES: 90,
   DECAY_CURVE: [

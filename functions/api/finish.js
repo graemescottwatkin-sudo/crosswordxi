@@ -27,7 +27,7 @@ import { json, bad, normalise } from "../_lib/puzzle.js";
 import { getPuzzleForToken, hasDB } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
 import { isAdmin } from "../_lib/auth.js";
-import { computeScore, gridIsComplete } from "../_lib/scoring.js";
+import { computeScore, gridIsComplete, SCORING } from "../_lib/scoring.js";
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -73,7 +73,24 @@ export async function onRequestPost({ request, env }) {
   const elapsed = Number.isFinite(started)
     ? Math.max(0, Math.round((Date.now() - started) / 1000)) : 0;
 
-  const res = computeScore(elapsed, row.srv_checks || 0, row.srv_reveal_letters || 0,
+  /* Help costs match minutes, and the server has to add them itself.
+
+     `elapsed` above is wall-clock from started_at, which knows nothing about
+     what was asked for. The browser adds help time to its own clock; without
+     the same arithmetic here the verified score would come back HIGHER than the
+     one on screen, and the number would jump upward a second after Full Time.
+
+     The counts are the server's own — srv_checks and the rest are incremented
+     by the check and reveal endpoints, not reported by the browser. */
+  const perMin = SCORING.MATCH_CLOCK_REAL_SECONDS / SCORING.MATCH_CLOCK_MAX_MINUTES;
+  const helpSeconds = Math.round(perMin * (
+    (row.srv_checks || 0) * SCORING.HELP_MINUTES.check +
+    (row.srv_check_alls || 0) * SCORING.HELP_MINUTES.checkAll +
+    (row.srv_reveal_letters || 0) * SCORING.HELP_MINUTES.revealLetter +
+    (row.srv_reveal_answers || 0) * SCORING.HELP_MINUTES.revealAnswer));
+
+  const res = computeScore(elapsed + helpSeconds,
+                           row.srv_checks || 0, row.srv_reveal_letters || 0,
                            row.srv_reveal_answers || 0, row.srv_check_alls || 0);
 
   await env.DB.prepare(

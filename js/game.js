@@ -149,7 +149,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v135";
+  var BUILD = "v137";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -4716,7 +4716,14 @@
     var state = "";
     if (d && d.dailyNo === today) {
       if (d.complete) state = "Played \u00B7 " + (d.score != null ? d.score + "/114" : "done");
-      else if (inProgress(d)) state = "In progress \u00B7 " + fmt(d.elapsed || 0);
+      /* No number. It showed the elapsed time from the save, which stopped
+         being true the moment you left — the clock does not pause, so a figure
+         frozen at whatever it read when you walked away is quietly wrong and
+         gets wronger the longer you look at it.
+
+         "In progress" is the part that is still true. The real number is on the
+         board, where it is live. */
+      else if (inProgress(d)) state = "In progress";
     }
     $("homeDailyState").textContent = state;
 
@@ -4725,9 +4732,11 @@
        still does anything. "One in progress" now means "and you can still
        finish it", which is the opposite of what the Coming soon label implies,
        so it says so. */
-    $("homePracticeState").textContent = inProgress(p)
-      ? "One in progress \u00B7 " + fmt(p.elapsed || 0) + " \u00B7 you can finish this one"
-      : "";
+    /* Same as the daily tile: no number, because a clock that does not pause
+       cannot be reported from a save. And the old wording — "you can finish
+       this one" — dated from when practice was suspended and finishing was the
+       exception; these are ordinary boards now. */
+    $("homePracticeState").textContent = inProgress(p) ? "One in progress" : "";
 
     /* How many are out, so the card says something before it is opened. Fails
        quietly: a themed count is not worth a broken landing screen. */

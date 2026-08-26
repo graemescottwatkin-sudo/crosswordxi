@@ -761,10 +761,20 @@ var FCW = (function () {
        help late is riskier than help early, and that is the interesting part. */
     HELP_MINUTES: { check: 2, checkAll: 10, revealLetter: 3, revealAnswer: 14 },
 
-    CHECK_PENALTY: 2,            // now names which letters are wrong, not just that they are
-    CHECK_ALL_PENALTY: 9,        // break-even at 4.5 single checks, so both buttons stay useful
-    REVEAL_LETTER_PENALTY: 3,
-    REVEAL_ANSWER_PENALTY: 12,   // 11 of them is 132, so revealing everything cannot be afforded
+    /* Zero, deliberately. HELP_MINUTES is the score cost now.
+
+       These were the score cost, and HELP_MINUTES was CONVERTED FROM THEM —
+       12 points is 14 match minutes at the decay rate. Charging both charged
+       the same cost twice: a revealed answer took 35 points instead of 12, and
+       three of them left you on 34 out of 114.
+
+       Kept as named constants rather than deleted because the breakdown, the
+       share text and the server all read them, and a zero says "this is not
+       what it costs" more plainly than an absent field. */
+    CHECK_PENALTY: 0,
+    CHECK_ALL_PENALTY: 0,
+    REVEAL_LETTER_PENALTY: 0,
+    REVEAL_ANSWER_PENALTY: 0,
     // Football match clock: 30 real minutes maps to 90 football minutes.
     MATCH_CLOCK_REAL_SECONDS: 1800,
     MATCH_CLOCK_MAX_MINUTES: 90,
