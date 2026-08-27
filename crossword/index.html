@@ -95,7 +95,16 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Crect x='6' y='6' width='8' height='8' fill='%23fff'/%3E%3Crect x='18' y='6' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='6' y='18' width='8' height='8' fill='%23fff' opacity='.45'/%3E%3Crect x='18' y='18' width='8' height='8' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=v001m">
+<!-- Shared tokens FIRST, then the chrome, then this game's own sheet.
+     The crossword carried a private copy of the palette and was missing
+     --tint, --tap and --xi-ink entirely, so the shared chrome had nothing
+     to resolve against: render_test measured the burger at 20px because
+     width:var(--tap) was invalid, not because it was styled small. Order
+     matters — style.css comes after and still wins wherever the crossword
+     genuinely differs. -->
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
+<link rel="stylesheet" href="css/style.css?v=v001o">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -236,6 +245,14 @@
     <button class="btn outline sheet-close" id="statusClose">Close</button>
   </div>
 </div>
+
+<!-- The shared bar, above the in-game masthead. Before this, the in-game view
+     used a header with no navigation at all — no wordmark, no way to the hub,
+     no way to the other game — so a player who opened a board was stranded on
+     it. The burger and the wordmark are inserted by shared/xi-chrome.js, so
+     this bar and the word search's are the same bar rather than two that look
+     alike. -->
+<header class="xic-bar"></header>
 
 <header>
   <div class="masthead">Crossword <span class="xi">XI</span></div>
@@ -792,6 +809,17 @@
      are. -->
 <div class="home-view show" id="homeOverlay">
 
+  <!-- Bar, then this game's own row. The bar is identical in every game; the
+       row below is where the games differ, and keeping the difference on its
+       own row is what lets the bar stay identical. -->
+  <header class="xic-bar">
+    <div class="xic-right">
+      <button class="xic-ghost" id="homeSignIn" hidden>Sign in</button>
+      <button class="xic-ghost" id="homeAccount">Account</button>
+      <button class="xic-ghost" id="homeSettings" data-optional>Settings</button>
+    </div>
+  </header>
+
   <header class="site-head">
     <div class="site-bar">
       <div class="site-mast">Crossword <span class="site-xi">XI</span></div>
@@ -801,11 +829,6 @@
         <button id="navSeason">My season</button>
         <a class="site-navlink" href="how-to-play.html">How to play</a>
       </nav>
-      <div class="site-right">
-        <button class="site-ghost" id="homeSignIn" hidden>Sign in</button>
-        <button class="site-ghost" id="homeAccount">Account</button>
-        <button class="site-ghost" id="homeSettings">Settings</button>
-      </div>
     </div>
   </header>
 
@@ -891,29 +914,14 @@
 
   <!-- The rest of the family. Five more titles are coming, so this is a band
        that grows rather than a link that has to be redesigned when it does. -->
-  <footer class="site-foot">
-    <div class="site-fw">
-      <div class="foot-games">
-        <div class="fg-kicker">MORE FROM THE XI GAMES</div>
-        <div class="fg-row">
-          <a class="fg-card" href="https://wordsearch.thexigames.com">
-            <span class="fg-name">Wordsearch XI</span>
-            <span class="fg-note">Find the eleven</span>
-          </a>
-          <span class="fg-card soon"><span class="fg-name">QuickFire XI</span>
-            <span class="fg-note">Coming soon</span></span>
-          <span class="fg-card soon"><span class="fg-name">Scrambled XI</span>
-            <span class="fg-note">Coming soon</span></span>
-        </div>
-      </div>
-      <div class="foot-legal">
-        <a href="privacy.html">How we handle your data</a>
-        <span>&middot;</span>
-        <a href="https://thexigames.com">The XI Games</a>
-        <span class="foot-end">Not affiliated with any club or competition.</span>
-      </div>
-    </div>
-  </footer>
+  <!-- The shared footer, built by shared/xi-chrome.js from the one squad list.
+       What was here carried three faults at once: it linked to
+       https://wordsearch.thexigames.com, a subdomain migrated away from; it
+       NAMED QuickFire XI and Scrambled XI, two unreleased games, against the
+       standing rule that unbuilt names appear nowhere in markup; and it was a
+       second hand-maintained list of the family. live_check enforces the
+       naming rule on the hub, which is why none of it was caught here. -->
+  <footer class="xic-foot"></footer>
 </div>
 
 <div class="overlay" id="startOverlay">
@@ -1078,7 +1086,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001m</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001o</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1091,8 +1099,9 @@
   <button id="devToggle">dev</button>
 </footer>
 
-<script src="js/seasons.js?v=v001m"></script>
-<script src="js/engine.js?v=v001m"></script>
-<script src="js/game.js?v=v001m"></script>
+<script src="../shared/xi-chrome.js?v=v1"></script>
+<script src="js/seasons.js?v=v001o"></script>
+<script src="js/engine.js?v=v001o"></script>
+<script src="js/game.js?v=v001o"></script>
 </body>
 </html>

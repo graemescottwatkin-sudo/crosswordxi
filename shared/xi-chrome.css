@@ -1,0 +1,264 @@
+/* xi-chrome.css v1 — the furniture every game in the family wears.
+ *
+ * WHY THIS FILE EXISTS. Two games grew two chromes. The crossword had a solid
+ * green bar with game navigation and no way home; the word search had a paper
+ * bar with family navigation and no game navigation. Each had the half the
+ * other was missing, and once you were on a board the crossword swapped to a
+ * third header with no navigation at all — which is why a player could get
+ * stranded mid-puzzle with no route back to the hub or the other game.
+ *
+ * ON THE GREEN. The crossword's masthead was --pitch, the same green that marks
+ * a correct answer. Spending the one colour that means something on furniture
+ * is why a correct answer had to shout to be heard. The bar is paper; green
+ * appears when you get something right, and otherwise it does not appear.
+ *
+ * ON THE SHAPE. Bar, then the game's own tools row, then the board. The bar is
+ * identical in every game — that is what makes it read as a squad rather than
+ * as two sites that share a host. The tools row is where the games differ, and
+ * keeping the difference on its own row is what lets the bar stay identical.
+ *
+ * THE CLOCK IS NOT IN HERE. Both games already pair the clock with the score
+ * (.match-clock beside 114, .scoreCluster holding both). That pairing is a
+ * family pattern that already existed; moving the clock up here to fill the
+ * bar would have broken it to satisfy a sketch.
+ *
+ * NO COLOURS ARE DEFINED IN THIS FILE. Every value comes from xi-tokens.css.
+ * A palette restated in a second place is the fault this project keeps paying
+ * for, and the gate asserts it.
+ */
+
+/* ---- the bar ---------------------------------------------------------- */
+
+.xic-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  /* Not sticky. A sticky bar on a phone eats the board's height for something
+     nobody looks at while solving, and the board is already scaled to fit. */
+}
+
+.xic-burger {
+  display: grid;
+  place-items: center;
+  /* THE BOX IS THE TARGET. This was a 34px button with a --tap pseudo-element
+     stretched over it, on the theory that the hit area is what matters. It is
+     not what render_test measures, and render_test is right: a pseudo-element
+     is invisible to assistive tech and to anything reasoning about the control
+     itself. Reported as "xic-burger:34" across every viewport. The button is
+     the size of the target. */
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: -10px;             /* optical: the icon reads inset otherwise */
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.xic-burger:hover { background: var(--tint); }
+.xic-burger:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.xic-burger svg { width: 20px; height: 20px; display: block; }
+
+/* The wordmark goes home. Every game, every view, including mid-board — this
+   is the actual fix for being stranded on a puzzle. */
+.xic-home {
+  font-family: var(--disp);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.xic-home:hover { text-decoration: underline; text-underline-offset: 3px; }
+.xic-home .xi { color: var(--xi-ink); }
+
+.xic-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xic-ghost {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.xic-ghost:hover { color: var(--ink); background: var(--tint); }
+.xic-ghost:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Under about 430px the bar keeps the way out and drops the rest. The
+   hamburger holds everything it drops, which is the whole reason it exists. */
+@media (max-width: 430px) {
+  .xic-ghost[data-optional] { display: none; }
+}
+
+/* SHORT SCREENS. The bar keeps its --tap control and loses its padding: the
+   button IS the bar's height. Every pixel here comes off the board — with the
+   padding in, render_test measured the board frame down to 119px on a 320x568
+   phone, "the board has nowhere to go".
+
+   This lived in the crossword's own stylesheet for one build, which the gate
+   caught: a game defining .xic- rules has started a second chrome, and a
+   second chrome is the fault this file exists to end. Nothing about a short
+   screen is specific to one game. */
+@media (max-height: 620px) {
+  .xic-bar { padding: 0 12px; }
+}
+
+/* ---- the drawer ------------------------------------------------------- */
+
+.xic-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / .38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+  z-index: 200;
+}
+.xic-scrim.open { opacity: 1; pointer-events: auto; }
+
+.xic-drawer {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: min(300px, 86vw);
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  transition: transform .2s ease;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.xic-drawer.open { transform: none; }
+
+/* A player who has asked for no animation gets none — the drawer still opens,
+   it simply arrives. */
+@media (prefers-reduced-motion: reduce) {
+  .xic-scrim, .xic-drawer { transition: none; }
+}
+
+.xic-dhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.xic-dhead .xic-home { font-size: 17px; }
+.xic-close {
+  margin-left: auto;
+  width: var(--tap); height: var(--tap);
+  display: grid; place-items: center;
+  border: 0; border-radius: 8px;
+  background: none; color: var(--ink-soft);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.xic-close:hover { background: var(--tint); color: var(--ink); }
+.xic-close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.xic-dlabel {
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 14px 16px 6px;
+}
+
+.xic-squad { list-style: none; margin: 0; padding: 0 8px; }
+
+.xic-slot {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  min-height: var(--tap);         /* a tap target, not a line of text */
+  box-sizing: border-box;
+}
+a.xic-slot:hover { background: var(--tint); }
+a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.xic-slot[aria-current="page"] { background: var(--tint); font-weight: 600; }
+
+/* The shirt number. Filled for a released game, outlined for one that is not —
+   so the drawer reads as a team sheet filling up rather than a list of dead
+   links. */
+.xic-shirt {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 5px;
+  font-family: var(--disp);
+  font-size: 12px;
+  background: var(--pitch);
+  color: var(--paper);
+}
+.xic-slot.soon { color: var(--ink-soft); }
+.xic-slot.soon .xic-shirt {
+  background: none;
+  border: 1px dashed var(--line);
+  color: var(--ink-soft);
+}
+/* An unreleased game is never named — live_check asserts the site names none
+   of them, and the status is all there is to say about it anyway. */
+.xic-status { font-size: 12px; color: var(--ink-soft); }
+
+.xic-dfoot {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.xic-dfoot .xic-slot { font-size: 14px; }
+
+/* ---- the footer ------------------------------------------------------- */
+
+.xic-foot {
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  padding: 26px 16px 30px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.xic-foot-in {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.xic-foot h2 {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 9px;
+}
+.xic-foot ul { list-style: none; margin: 0; padding: 0; }
+.xic-foot li { margin: 0 0 7px; }
+.xic-foot a { color: var(--ink); text-decoration: none; }
+.xic-foot a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.xic-foot .xic-note {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  line-height: 1.6;
+}

@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001f";
+  var BUILD = "v001h";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -109,6 +109,16 @@
      everything the account has from anywhere. The other way round fetches,
      merges, and then pushes rows the account already had. */
   var account = null;
+  /* A caught account failure is LOGGED, never re-thrown and never surfaced as
+     an error to the player — the device's copy is intact and the next sync
+     carries it, so the game must not degrade. But silence is how migration 002
+     sat unapplied for months while every write threw, and how an INSERT with
+     the wrong number of placeholders reached production behind a green suite.
+     The console line is for the person with devtools open asking exactly the
+     question these catches used to eat. */
+  function accountNote(what, err) {
+    try { console.warn("[account] " + what + " failed:", err && err.message ? err.message : err); } catch (e) {}
+  }
   function apiAuth(path, body) {
     var opts = {
       method: body ? "POST" : "GET",
@@ -127,7 +137,7 @@
   function pushResults() {
     if (!account) return Promise.resolve(null);
     return apiAuth("/api/account/migrate",
-      { game: "wordsearch", results: readResults() }).catch(function () { return null; });
+      { game: "wordsearch", results: readResults() }).catch(function (e) { accountNote("push", e); return null; });
   }
   function pullResults() {
     if (!account) return Promise.resolve(null);
@@ -155,14 +165,14 @@
       var merged = Object.keys(byDay).sort().map(function (k) { return byDay[k]; });
       try { localStorage.setItem(RESULTS_KEY, JSON.stringify(merged.slice(-800))); } catch (e) {}
       return merged.length;
-    }).catch(function () { return null; });
+    }).catch(function (e) { accountNote("pull", e); return null; });
   }
   function syncAccount() {
     return apiAuth("/api/auth/session").then(function (r) {
       account = (r && r.user) || null;
       if (!account) return null;
       return pushResults().then(pullResults);
-    }).catch(function () { account = null; return null; });
+    }).catch(function (e) { accountNote("session", e); account = null; return null; });
   }
   function pruneDailyState() {
     try {

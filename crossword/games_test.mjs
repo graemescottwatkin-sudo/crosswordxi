@@ -217,6 +217,27 @@ t("neither game calls migrate directly outside its own pusher",
   (cw.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1 &&
   (ws.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1);
 
+console.log("\nA caught account failure says what it caught");
+/* Migration 002 sat unapplied for months while every migrate call threw into
+   .catch(function () {}); the arity bug hid the same way for an hour. The
+   failures stay caught — the device copy is intact and the game must not
+   degrade — but each one logs through accountNote. Counted, not spot-checked:
+   a bare account catch anywhere in either sync path is the fault returning. */
+t("the crossword's account catches all speak", (() => {
+  const sync = cw.slice(cw.indexOf("function accountNote"), cw.indexOf("function saveResults"));
+  return /function accountNote/.test(cw) &&
+         (cw.match(/accountNote\(/g) || []).length >= 6 &&
+         !/\.catch\(function \(\) \{\s*\}\)/.test(sync);
+})());
+t("the word search's account catches all speak", (() => {
+  const sync = ws.slice(ws.indexOf("function accountNote"), ws.indexOf("function syncAccount") + 600);
+  return /function accountNote/.test(ws) &&
+         (ws.match(/accountNote\(/g) || []).length >= 4 &&
+         !/\.catch\(function \(\) \{ return null; \}\)/.test(sync);
+})());
+t("and neither ever surfaces the failure to the player as an error",
+  !/accountNote[\s\S]{0,200}?throw /.test(cw) && !/toast\([^)]*account/i.test(cw));
+
 console.log("\nFirst banked wins, and the account holds it");
 /* A PC showing 1/11 and an iPad showing 4/11 of the same board, forever: each
    pull discarded the account's row, each push was ignored server-side by

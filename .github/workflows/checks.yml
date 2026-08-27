@@ -81,8 +81,14 @@ jobs:
           # One account, more than one game: the rules that only exist
           # once there are two, which no older suite could have caught.
           node crossword/games_test.mjs
+          # The shared chrome: one bar, one drawer, one squad list, and
+          # the rule that an unreleased game is never named.
+          node crossword/chrome_test.mjs
           node wordsearch/frontend_test.mjs
           node wordsearch/functions_test.mjs
+          # The answers pages: the seal, the refusal that names nothing,
+          # and the window imported rather than restated.
+          node wordsearch/answers_test.mjs
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.

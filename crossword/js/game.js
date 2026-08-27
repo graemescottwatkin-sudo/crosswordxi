@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001m";
+  var BUILD = "v001o";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2533,7 +2533,7 @@
       } else {
         note.textContent = "No results on this device to carry over.";
       }
-    }).catch(function () {});
+    }).catch(function (e) { accountNote("sign-in sync", e); });
   }
 
   function loadGoogle(clientId) {
@@ -2588,13 +2588,17 @@
          session are re-rendered here rather than on the next refresh: signing
          out should look like something that happened, not like nothing did. */
       if (typeof renderHome === "function") renderHome();
-    }).catch(function () {});
+    }).catch(function (e) {
+      /* A failed sign-out is the one of these that MISLEADS if silent: the
+         page shows signed-out while the cookie is still live. */
+      accountNote("sign-out", e);
+    });
   });
   on("acctSave", "click", function () {
     var name = $("acctName") ? $("acctName").value : "";
     apiAuth("/api/account/profile", { displayName: name, club: club || null })
       .then(function (r) { account = r.user; renderAccount(); })
-      .catch(function () {});
+      .catch(function (e) { accountNote("profile save", e); });
   });
 
   /* One call at boot, and the game does not wait for it. */
@@ -3997,7 +4001,10 @@
          season table go on showing this device's slice of the history. */
       renderStreak();
       if (typeof renderHome === "function") renderHome();
-    }).catch(function () { /* offline or signed out: leave the device as it is */ });
+    }).catch(function (e) {
+      /* Offline or signed out: leave the device as it is — but say so. */
+      accountNote("pull", e);
+    });
   }
 
   function saveResults(list) {
@@ -4016,10 +4023,20 @@
      completed board, so from v001e the two games disagreed about when a result
      reaches the account — one fact, two behaviours. This is the crossword
      catching up, not the word search being changed. */
+  /* A caught account failure is LOGGED, never surfaced as an error — the
+     device's copy is intact and the next sync carries it, so the game must not
+     degrade. But silence is how migration 002 sat unapplied for months while
+     every one of these calls threw, and how a 21-placeholder INSERT reached
+     production behind a green suite. The console line is for the person with
+     devtools open asking exactly the question these catches used to eat. */
+  function accountNote(what, err) {
+    try { console.warn("[account] " + what + " failed:", err && err.message ? err.message : err); } catch (e) {}
+  }
+
   function pushResults() {
     if (!account) return Promise.resolve(null);
     return apiAuth("/api/account/migrate", guestPayload())
-      .catch(function () { return null; });   // the device keeps its copy regardless
+      .catch(function (e) { accountNote("push", e); return null; });   // the device keeps its copy
   }
   function recordDaily(pos, score, res) {
     /* Friendlies are recorded, but to their own record. A pre-season streak is

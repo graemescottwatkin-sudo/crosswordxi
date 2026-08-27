@@ -20,14 +20,10 @@ button{touch-action:manipulation;cursor:pointer}
 h1,h2,h3{font-family:var(--disp);letter-spacing:.01em;margin:0}
 :focus-visible{outline:2px solid var(--pitch);outline-offset:2px}
 
-/* ---- masthead -------------------------------------------------------- */
-.mast{border-bottom:1px solid var(--line);background:var(--card)}
-.mastInner{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.mastBrand{font-family:var(--disp);font-weight:700;font-size:19px;color:var(--ink);text-decoration:none}
-.mastNav{display:flex;gap:14px;font-size:13px}
-.mastNav a{color:var(--ink-soft);text-decoration:none}
-.mastNav a:hover{color:var(--ink)}
-.mastNav [aria-current]{color:var(--ink);font-weight:600}
+/* ---- masthead --------------------------------------------------------
+   Gone. The bar is shared/xi-chrome.css now — one bar for every game rather
+   than each game growing its own. These rules were the second chrome in the
+   family and the reason the two games looked nothing alike. */
 
 /* ---- pre-match ------------------------------------------------------- */
 .prematch{display:grid;place-items:center;padding:36px 16px}

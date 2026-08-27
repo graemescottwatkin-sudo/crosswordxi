@@ -27,20 +27,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
-<link rel="stylesheet" href="css/style.css?v=v001f">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
+<link rel="stylesheet" href="css/style.css?v=v001h">
 </head>
 <body>
 
 <!-- One H1 on the page, first in the body, and it says what the game is.
      The board title is an h2: the theme changes daily; what the page IS
      does not. -->
-<header class="mast">
-  <div class="mastInner">
-    <a class="mastBrand" href="../">The <span class="xi-mark">XI</span> Games</a>
-    <nav class="mastNav">
-      <a href="../crossword/">Crossword XI</a>
-      <span aria-current="page">Wordsearch XI</span>
-    </nav>
+<!-- The shared bar. The burger and the wordmark are inserted by
+     shared/xi-chrome.js so that every game's bar is the same bar rather than
+     two that happen to look alike. The family navigation that used to live
+     here is in the drawer now: the bar holds THIS game, the drawer holds the
+     squad. -->
+<header class="xic-bar">
+  <div class="xic-right">
+    <button class="xic-ghost" id="wsHowTo" data-optional>How to play</button>
   </div>
 </header>
 
@@ -168,6 +170,8 @@
 <div class="penaltyPop" id="penaltyPop">FOUL +1'</div>
 <div class="toast" id="toast">Copied</div>
 
-<script src="js/game.js?v=v001f"></script>
+<footer class="xic-foot"></footer>
+<script src="../shared/xi-chrome.js?v=v1"></script>
+<script src="js/game.js?v=v001h"></script>
 </body>
 </html>

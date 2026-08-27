@@ -86,14 +86,14 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v001l";    // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001m";    // <- what is LIVE; bump after each deploy
 /* What was last PRESENTED — a different question from what is live, and the
    burn rule is about this one: a tag dies the moment its package is handed
    over, deployed or not. One constant tried to answer both questions and the
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001l";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001n";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -143,9 +143,15 @@ t("the build tag has moved past the version now live, and past the last presente
   })(),
   `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
 
+/* The GAME's own script, not the first versioned asset on the page. This read
+   `?v=` wherever it first appeared, which was the game's stylesheet until a
+   SHARED one arrived above it — shared/xi-chrome.css carries its own v1
+   lifecycle, and the check started comparing the game's BUILD against "v1".
+   The tag being asserted is the game's, so ask the game's file for it. */
+const ownTag = (html.match(/js\/game\.js\?v=([^"]+)"/) || [])[1];
 t("the build tag matches the one the script reports",
-  read("js/game.js").includes('var BUILD = "' + (html.match(/\?v=([^"]+)"/) || [])[1] + '"'),
-  (html.match(/\?v=([^"]+)"/) || [])[1]);
+  !!ownTag && read("js/game.js").includes('var BUILD = "' + ownTag + '"'),
+  ownTag);
 /* A comment that lost its opening marker renders as page content. It happened:
    moving a block cut the "<!--" and left the "-->" behind, and three lines of
    explanation about board width appeared on the live site above the puzzle.
@@ -611,6 +617,30 @@ t("each game's name is identical in title, og:title, JSON-LD and h1", (() => {
   }
   return true;
 })(), nameSpread);
+
+/* v001n: the chrome is shared, or it is not chrome. Both games must reference
+   shared/xi-chrome.{css,js} rather than keeping a private copy — the whole
+   fault it replaces was two games with two chromes. This is the first of the
+   forbidden-copy checks the cross-game contract suite will generalise. */
+let chromeGap = "";
+t("both games use the shared chrome rather than a copy of it", (() => {
+  const missing = [];
+  for (const p of ["crossword/index.html", "wordsearch/index.html"]) {
+    if (!hasRoot(p)) continue;
+    const html = readRoot(p);
+    if (!/shared\/xi-chrome\.css/.test(html)) missing.push(p + " css");
+    if (!/shared\/xi-chrome\.js/.test(html)) missing.push(p + " js");
+    if (!/class="xic-bar"/.test(html)) missing.push(p + " bar");
+  }
+  /* A game defining .xic- rules in its own sheet has started a second chrome. */
+  for (const p of ["crossword/css/style.css", "wordsearch/css/style.css"]) {
+    if (hasRoot(p) && /^\s*\.xic-[a-z-]+\s*\{/m.test(readRoot(p))) {
+      missing.push(p + " defines .xic- rules of its own");
+    }
+  }
+  chromeGap = missing.join(", ");
+  return missing.length === 0;
+})(), chromeGap);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
