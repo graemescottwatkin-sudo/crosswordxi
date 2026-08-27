@@ -25,7 +25,7 @@
 <meta property="og:image" content="https://www.thexigames.com/crossword/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta name="twitter:image" content="og-image.png">
+<meta name="twitter:image" content="https://www.thexigames.com/crossword/og-image.png">
 
 <!-- Structured data: what this page IS, in the form a search engine parses.
 
@@ -104,7 +104,7 @@
      genuinely differs. -->
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
-<link rel="stylesheet" href="css/style.css?v=v001p">
+<link rel="stylesheet" href="css/style.css?v=v001q">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -522,12 +522,17 @@
     </div>
   </div>
 
-  <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs points">
+  <div class="tb-group tb-box tb-help" role="group" aria-label="Help — costs time">
     <!-- A label, not a control. Help used to collapse because it sat above the
          board and its five rows pushed the grid 70px down a phone screen. It
          sits below the board now, so hiding it protects nothing and only asks
          somebody to find it. -->
-    <span class="tb-label">Help &middot; costs points</span>
+    <!-- "costs time", because that is what the rules page says and what is
+      true: asking for help moves the match clock forward, and the clock eats
+      the score. "costs points" survived here from the era the gate's deleted-
+      penalty-constants check closed — the toolbar contradicted the how-to-play
+      page the suite polices. External review, finding 10. -->
+    <span class="tb-label">Help &middot; costs time</span>
     <!-- Two labelled pairs rather than four loose buttons. Section and button
          read as one phrase — "Check: Answer", "Reveal: Letter" — so each button
          says what it acts on and the row says what it does. "All" and "Answer"
@@ -1086,7 +1091,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001p</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001q</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1100,8 +1105,8 @@
 </footer>
 
 <script src="../shared/xi-chrome.js?v=v1"></script>
-<script src="js/seasons.js?v=v001p"></script>
-<script src="js/engine.js?v=v001p"></script>
-<script src="js/game.js?v=v001p"></script>
+<script src="js/seasons.js?v=v001q"></script>
+<script src="js/engine.js?v=v001q"></script>
+<script src="js/game.js?v=v001q"></script>
 </body>
 </html>

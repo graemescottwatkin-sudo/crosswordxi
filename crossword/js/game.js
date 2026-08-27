@@ -68,12 +68,6 @@
      Kept because placing a player in a table is a table concern and a real one:
      running the clock out should finish last in the season being shown. Where
      that lands is presentation. What the score IS must not depend on it. */
-  function seasonFloor() {
-    if (!season || !season.table || !season.table.length) return undefined;
-    var last = season.table[season.table.length - 1];
-    return Math.max(0, (last.points || 0) - 1);
-  }
-
   /* ---------- Puzzle state ---------- */
   var puzzle = null;
   var letters = {};          // "x,y" -> typed letter
@@ -263,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001p";
+  var BUILD = "v001q";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3965,6 +3959,11 @@
          on to top up rather than duplicate. Anything else keys on what it has,
          so a themed board played twice stays two rows. */
       return r && r.mode === "daily" && r.dailyNo != null
+        /* Same format as dailyKey() in functions/_lib/daily.js — the one
+           place the key is composed server-side. This file is a plain browser
+           script and cannot import it; if the format ever changes, it changes
+           there and here, and games_test's SQL-literal check fails if the two
+           drift. */
         ? "daily:" + r.dailyNo
         : [r && r.mode, r && r.date, r && r.completedAt, r && r.score].join("|");
     };

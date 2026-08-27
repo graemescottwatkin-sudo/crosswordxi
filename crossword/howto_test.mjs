@@ -9,6 +9,7 @@
  * engine.js and not here will now fail rather than mislead.
  */
 import fs from "node:fs";
+import { ANSWERS_AFTER_DAYS } from "../functions/_lib/daily.js";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
@@ -57,7 +58,18 @@ t("does not say the cost is shown before you confirm as a points figure",
   !/at \d+ points each/i.test(page));
 
 console.log("\nStructure");
-t("links are relative, so the site can move", !/href="\//.test(page));
+/* Root-relative, not document-relative. The old rule was "no leading slash,
+   so the site can move" — written when the game lived on a subdomain that
+   might. It lives at a fixed path in a monorepo now, the shared chrome links
+   root-relative (/crossword/), and document-relative hrefs were what pointed
+   this page's canonical at a URL Pages 308-redirects. What portability still
+   requires is no hardcoded ORIGIN — pages dev serves the same paths at
+   127.0.0.1 — so that is the assertion: no absolute http(s) href except the
+   canonical and social meta, which must name the real origin. */
+t("no <a> carries an origin, so local serving still works", (() => {
+  const anchors = [...page.matchAll(/<a\s[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  return anchors.length > 0 && anchors.every((h) => !/^https?:/.test(h));
+})());
 t("divs balance",
   (page.match(/<div/g) || []).length === (page.match(/<\/div>/g) || []).length);
 
@@ -83,8 +95,13 @@ t("divs balance",
    FAQ must agree with the page — a rich result contradicting the page it
    links to is worse than no rich result. */
 {
-  t("the page declares its canonical",
-    /rel="canonical" href="https:\/\/www\.thexigames\.com\/crossword\/how-to-play\.html"/.test(page));
+  /* Extensionless, because that is the URL that actually serves: Pages
+     308-redirects the .html form, so the old canonical named a URL that
+     always redirects — and the sitemap listed it. External review, finding
+     11; this assertion pinned the wrong form and now pins the right one. */
+  t("the page declares its canonical, at the URL that serves",
+    /rel="canonical" href="https:\/\/www\.thexigames\.com\/crossword\/how-to-play"/.test(page) &&
+    !/how-to-play\.html"/.test(page.match(/rel="canonical"[^>]+/)[0]));
   const m = page.match(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g) || [];
   let faq = null;
   for (const b of m) {
@@ -95,8 +112,16 @@ t("divs balance",
   t("and the FAQ tells the same story as the page", (() => {
     if (!faq) return false;
     const all = JSON.stringify(faq);
+    /* The word form is DERIVED from the constant in force, like every other
+       number on this page. /seven days/ was a spelling test: setting
+       ANSWERS_AFTER_DAYS = 14 passed 30/30 while the FAQ still told Google
+       "seven". External review, finding 9. */
+    const WORDS = ["zero","one","two","three","four","five","six","seven",
+                   "eight","nine","ten","eleven","twelve","thirteen","fourteen"];
+    const windowWord = WORDS[ANSWERS_AFTER_DAYS] || String(ANSWERS_AFTER_DAYS);
     return /114/.test(all) && /does not stop/.test(all) &&
-           /before the end of today/.test(all) && /seven days/.test(all);
+           /before the end of today/.test(all) &&
+           new RegExp(windowWord + " days").test(all);
   })(), "score, clock, grace and answers window all consistent");
 }
 

@@ -30,7 +30,15 @@ const page = async (no) => {
 };
 
 console.log("The rule itself");
-t("one constant, exported and used", ANSWERS_AFTER_DAYS === 7, `ANSWERS_AFTER_DAYS = ${ANSWERS_AFTER_DAYS}`);
+/* The old form here was `ANSWERS_AFTER_DAYS === 7` — a tripwire on the
+   constant itself, which guards the value rather than the copies of it. The
+   copies are what drift: howto_test now derives the FAQ's word form from the
+   constant, and this asserts the constant is a positive whole number of days
+   rather than pinning which number it is. Changing the window is allowed;
+   changing it in one place and not the other is what must fail. */
+t("one constant, exported and used",
+  Number.isInteger(ANSWERS_AFTER_DAYS) && ANSWERS_AFTER_DAYS >= 1,
+  `ANSWERS_AFTER_DAYS = ${ANSWERS_AFTER_DAYS}`);
 t("a board inside the window is not available", !answersAvailable(today, today));
 t("nor the boundary day itself", !answersAvailable(today - ANSWERS_AFTER_DAYS, today),
   "older than seven days means eight or more");

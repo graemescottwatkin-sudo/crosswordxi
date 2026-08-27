@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001i";
+  var BUILD = "v001j";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -184,7 +184,16 @@
       account = (r && r.user) || null;
       if (!account) return null;
       return pushResults().then(pullResults);
-    }).catch(function (e) { accountNote("session", e); account = null; return null; });
+    }).catch(function (e) {
+      /* A TRANSIENT failure is not a sign-out. This used to null the account,
+         so one flaky /api/auth/session call silently disabled sync for the
+         whole page load — every later push and pull short-circuited on
+         if (!account), with nothing shown. External review, finding 8. The
+         signed-OUT case is the .then above resolving with no user; a network
+         failure leaves whatever we knew in place. */
+      accountNote("session", e);
+      return null;
+    });
   }
   function pruneDailyState() {
     try {

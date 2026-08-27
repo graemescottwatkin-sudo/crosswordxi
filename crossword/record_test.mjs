@@ -15,6 +15,7 @@
  * So this suite tests the seam rather than either side of it: what recordDaily
  * hands over, what comes back, and whether the readers can use it.
  */
+import { dailyKey } from "../functions/_lib/daily.js";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
@@ -90,7 +91,7 @@ t("the stored record carries `mode`", built.mode === "daily");
    from the account must land on one key or the row is duplicated. */
 const keyOf = (r) =>
   r && r.mode === "daily" && r.dailyNo != null
-    ? "daily:" + r.dailyNo
+    ? dailyKey(r.dailyNo)
     : [r && r.mode, r && r.date, r && r.completedAt, r && r.score].join("|");
 const remote = { mode: "daily", dailyNo: 3, date: "2026-08-26", score: 114,
                  completedAt: built.completedAt, complete: true };

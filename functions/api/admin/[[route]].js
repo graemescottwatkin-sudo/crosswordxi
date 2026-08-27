@@ -11,7 +11,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB, serverToday } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
-import { dailyNumber } from "../../_lib/daily.js";
+import { dailyNumber, dailyKey } from "../../_lib/daily.js";
 
 async function requireAdmin(request, env) {
   if (!hasDB(env)) return { error: bad("Accounts are not configured.", 503) };
@@ -153,7 +153,7 @@ export async function onRequest({ request, env, params }) {
          played is the whole question: they are the ones passed between
          friends, so "Bolton #1 thirty times, #4 twice" is the answer worth
          being able to read. */
-      const key = r.mode === "daily" ? "daily:" + r.daily_no
+      const key = r.mode === "daily" ? dailyKey(r.daily_no)
                 : r.mode === "theme" ? "theme:" + (r.theme_key || "unknown")
                 : "practice";
       if (!byDay.has(key)) {

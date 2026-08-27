@@ -38,9 +38,9 @@
   /* The pages every game shares. Kept here for the same reason as the squad:
      a footer written into each page is a footer that drifts. */
   var PAGES = [
-    { name: "How to play", href: "/crossword/how-to-play.html" },
+    { name: "How to play", href: "/crossword/how-to-play" },
     { name: "Answers",     href: "/crossword/answers/" },
-    { name: "Privacy",     href: "/crossword/privacy.html" }
+    { name: "Privacy",     href: "/crossword/privacy" }
   ];
 
   var WORDMARK = 'The <span class="xi">XI</span> Games';

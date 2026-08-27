@@ -750,16 +750,14 @@ var FCW = (function () {
        help late is riskier than help early, and that is the interesting part. */
     HELP_MINUTES: { check: 2, checkAll: 10, revealLetter: 3, revealAnswer: 14 },
 
-    /* Zero, deliberately. HELP_MINUTES is the score cost now.
-
-       These were the score cost, and HELP_MINUTES was CONVERTED FROM THEM —
-       12 points is 14 match minutes at the decay rate. Charging both charged
-       the same cost twice: a revealed answer took 35 points instead of 12, and
-       three of them left you on 34 out of 114.
-
-       Kept as named constants rather than deleted because the breakdown, the
-       share text and the server all read them, and a zero says "this is not
-       what it costs" more plainly than an absent field. */
+    /* The penalty constants that once sat here are DELETED, not zeroed — the
+       gate's "the deleted penalty constants have not returned" check enforces
+       it. A comment survived them for four builds claiming they were "kept as
+       named constants because the breakdown, the share text and the server all
+       read them": nothing read them, and external review caught the comment
+       describing MATCH_CLOCK_REAL_SECONDS below as "Zero, deliberately". A
+       comment that outlives its code is a statement a future reader acts on
+       and is wrong. */
     // Football match clock: 30 real minutes maps to 90 football minutes.
     MATCH_CLOCK_REAL_SECONDS: 1800,
     MATCH_CLOCK_MAX_MINUTES: 90,

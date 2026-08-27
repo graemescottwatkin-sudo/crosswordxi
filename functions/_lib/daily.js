@@ -52,6 +52,14 @@ export function playableDailyNo(token) {
    never its own copy of the arithmetic. */
 export const ANSWERS_AFTER_DAYS = 7;
 
+/* The daily entry key, COMPOSED next to the parser that reads it. External
+   review counted "daily:" + n built in six independent places — client,
+   suite, server normaliser, two admin sites — the entrant-key fault in its
+   original costume. Server-side callers ask here; the browser's game.js is a
+   plain script that cannot import this module, so its one copy in keyOf()
+   carries a comment pointing here instead. */
+export const dailyKey = (n) => "daily:" + n;
+
 export function answersAvailable(no, today) {
   const t = today || dailyNumber();
   return Number.isInteger(no) && no >= 1 && t - no > ANSWERS_AFTER_DAYS;

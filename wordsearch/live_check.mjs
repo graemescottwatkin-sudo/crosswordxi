@@ -140,6 +140,12 @@ if (d && d.puzzle) {
     d.puzzle.answers.every((a) => refText.indexOf(a.display) === -1));
 }
 
+/* ---- HEAD --------------------------------------------------------------- */
+for (const p of ["/api/wordsearch/daily", "/wordsearch/answers/"]) {
+  const r = await get(p, { method: "HEAD" });
+  t(`HEAD ${p} answers like its GET`, r.status === 200, "HTTP " + r.status);
+}
+
 /* ---- the schema, asked through the endpoints ---------------------------- */
 /* Migration 002 hid because nothing compared the migrations folder against
    the live database. live_check speaks HTTP, not wrangler, so the probe is

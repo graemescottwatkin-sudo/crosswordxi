@@ -175,6 +175,26 @@ t("shared assets carry their own plain vN lifecycle",
   shared.every((a) => /^v\d+$/.test(a.tag)),
   [...new Set(shared.map((a) => a.tag))].join(", ") || "none on this page");
 
+/* ---- HEAD, which every Function route 404d until v001q ---------------- */
+/* Pages routes by method BEFORE middleware, so handlers exporting only
+   onRequestGet never saw HEAD; it fell to the static handler and 404d — on
+   every API route and every answers page, including the sitemap-listed index.
+   The fix is a middleware self-fetch, and the self-fetch has one caveat that
+   only production can prove: a same-zone subrequest. These assertions ARE that
+   proof, run after every deploy. */
+for (const p of ["/api/daily", "/crossword/answers/"]) {
+  const r = await fetch(BASE + p, { method: "HEAD", redirect: "manual" });
+  t(`HEAD ${p} answers like its GET`, r.status === 200, "HTTP " + r.status);
+  const body = await r.text();
+  t(`and carries no body`, body.length === 0, body.length + " bytes");
+}
+{
+  const r = await fetch(BASE + "/api/daily", { method: "HEAD", redirect: "manual" });
+  t("HEAD /api/daily carries the API noindex",
+    (r.headers.get("x-robots-tag") || "").indexOf("noindex") > -1,
+    "the _headers rule never reached a Function response before the middleware");
+}
+
 /* ---- caching ---- */
 const cc = home.res.headers.get("cache-control") || "";
 t("index.html is not stored, so nobody is pinned to an old build",

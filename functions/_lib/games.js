@@ -15,6 +15,8 @@
 /* Released games only. An id here is a value that can reach the database, so
    an unreleased game must not appear — the same rule the hub and live_check
    already keep about naming unbuilt games. */
+import { dailyKey } from "./daily.js";
+
 export const GAMES = ["crossword", "wordsearch"];
 
 export const DEFAULT_GAME = "crossword";
@@ -38,7 +40,7 @@ export function validGame(v) {
 export function entryKey(game, row) {
   if (game === "crossword") {
     const n = Number(row && row.dailyNo);
-    return Number.isFinite(n) && n > 0 ? "daily:" + Math.floor(n) : null;
+    return Number.isFinite(n) && n > 0 ? dailyKey(Math.floor(n)) : null;
   }
   if (game === "wordsearch") {
     /* The day the board was the daily, not the day it was played: a board

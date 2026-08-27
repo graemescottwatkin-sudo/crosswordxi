@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<link rel="canonical" href="https://www.thexigames.com/crossword/how-to-play.html">
+<link rel="canonical" href="https://www.thexigames.com/crossword/how-to-play">
 <!-- Pages serves this page at .html and extensionless — two URLs, one
-     document. The canonical names the .html form because that is what every
+     document. WRONG, and kept wrong for four builds: Pages 308-redirects the
+     .html form to the extensionless one, so the old canonical named a URL
+     that always redirects — and the sitemap listed it. The canonical names
+     the URL that actually serves. External review, finding 11. The old line
+     read: "The canonical names the .html form because that is what every
      link on the site points at; without it Google picks one arbitrarily and
      splits what little signal a new domain has. -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -204,8 +208,8 @@ table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:no
 <body>
 <div class="wrap">
 <header>
-  <a class="brand" href="index.html">The <span class="xi">XI</span> Games</a>
-  <nav><a href="index.html">&larr; Back to the game</a></nav>
+  <a class="brand" href="/crossword/">The <span class="xi">XI</span> Games</a>
+  <nav><a href="/crossword/">&larr; Back to the game</a></nav>
 </header>
 <main>
 
@@ -294,7 +298,7 @@ table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:no
 
 <footer>
   <p>The <span class="xi">XI</span> Games &middot; unofficial football word puzzles &middot;
-  <a href="index.html">Play</a> &middot;
+  <a href="/crossword/">Play</a> &middot;
   <a href="privacy.html">How we handle your data</a></p>
 </footer>
 </div>

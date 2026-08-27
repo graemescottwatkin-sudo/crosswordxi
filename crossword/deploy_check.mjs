@@ -93,7 +93,7 @@ const LAST_SHIPPED = "v001o";    // <- what is LIVE; bump after each deploy
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001o";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001p";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -414,7 +414,17 @@ t("every test suite is named in the workflow", (() => {
   const wf = "\u002egithub/workflows/checks.yml";
   if (!hasRoot(wf)) return false;   // a missing workflow is a failure, not a pass
   const yml = readRoot(wf);
-  const suites = fs.readdirSync(DIR).filter((f) => /_test\.mjs$/.test(f));
+  /* EVERY suite folder, not this game's. This read only crossword/, so the
+     word search could grow suites that ran nowhere and nothing said so —
+     which is precisely the gap that let its sentinel tag law and its unrun
+     suites in. External review, finding 4. */
+  const suites = [];
+  for (const dir of ["crossword", "wordsearch", "tools"]) {
+    if (!hasRoot(dir)) continue;
+    for (const f of fs.readdirSync(path.join(ROOT, dir))) {
+      if (/_test\.mjs$/.test(f)) suites.push(dir + "/" + f);
+    }
+  }
   /* Suites that need a live URL or a real browser cannot run in the offline
      job. Named here so the exemption is a decision on the record rather than
      something that quietly grew:
@@ -424,12 +434,17 @@ t("every test suite is named in the workflow", (() => {
        preview_test  needs a built preview, and exits 0 without one — which is
                      the "test that cannot fail" fault; it should be fixed or
                      deleted rather than added here permanently. */
-  const needsLive = ["render_test.mjs", "journey_test.mjs", "signin_test.mjs",
-                     "preview_test.mjs"];
+  const needsLive = ["crossword/render_test.mjs", "crossword/journey_test.mjs",
+                     "crossword/signin_test.mjs", "crossword/preview_test.mjs"];
   const missing = suites.filter((f) => needsLive.indexOf(f) === -1 && !yml.includes(f));
-  const named = (yml.match(/node (\w+_test\.mjs)/g) || [])
+  /* The reverse direction: every suite the workflow names must exist. The old
+     regex was /node (\w+_test\.mjs)/ — no slash in the class — and every
+     workflow entry is "node dir/suite.mjs", so it matched NOTHING and this
+     half of the check had been vacuous since it was written. Found while
+     widening the forward half. */
+  const named = (yml.match(/node ([\w/]+_test\.mjs)/g) || [])
     .map((m) => m.replace("node ", ""));
-  const absent = named.filter((f) => !has(f));
+  const absent = named.filter((f) => !hasRoot(f));
   suiteGap = [
     missing.length ? "not in CI: " + missing.join(", ") : "",
     absent.length ? "in CI but missing: " + absent.join(", ") : "",

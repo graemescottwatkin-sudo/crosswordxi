@@ -137,6 +137,18 @@ jobs:
           # hub's layout, never a crossword grid.
           BASE: http://127.0.0.1:8788/crossword/
         run: node crossword/render_test.mjs
+      # journey_test and signin_test were EXEMPTED from the offline job as
+      # browser suites — and then never added to the browser job, so they ran
+      # in neither. External review, finding 5: three of the four exempted
+      # suites executed nowhere. This job already has Chromium and the server.
+      - name: Player journeys in a real browser
+        env:
+          BASE: http://127.0.0.1:8788/crossword/
+        run: node crossword/journey_test.mjs
+      - name: Sign-in flow in a real browser
+        env:
+          BASE: http://127.0.0.1:8788/crossword/
+        run: node crossword/signin_test.mjs
 
       # A failure names the viewport and the measurement, which is usually
       # enough to work from. The screenshots make it obvious.
