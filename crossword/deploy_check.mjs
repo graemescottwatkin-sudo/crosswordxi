@@ -86,7 +86,7 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v001g";    // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001i";    // <- what is LIVE; bump after each deploy
 /* What was last PRESENTED — a different question from what is live, and the
    burn rule is about this one: a tag dies the moment its package is handed
    over, deployed or not. One constant tried to answer both questions and the
