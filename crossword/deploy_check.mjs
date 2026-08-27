@@ -86,14 +86,14 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v001b";    // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001d";    // <- what is LIVE; bump after each deploy
 /* What was last PRESENTED — a different question from what is live, and the
    burn rule is about this one: a tag dies the moment its package is handed
    over, deployed or not. One constant tried to answer both questions and the
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001c";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001e";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -543,6 +543,57 @@ t("no preview build is in the package", (() => {
   return !fs.readdirSync(DIR).some((f) => /^crosswordxi-preview-.*\.html$/.test(f)) &&
     /crosswordxi-preview-\*\.html/.test(readRoot(".gitignore"));
 })());
+
+/* v001e: three \u2014 escapes shipped to the live front page and read as six
+   literal characters in the card copy AND in the meta description search
+   engines show. Copy was written as JS string literals and pasted into markup,
+   where nothing interprets an escape. Proven to fail before it was trusted: it
+   found four sites, including one in how-to-play.html nobody had noticed.
+   Script blocks are stripped first — there the escape is valid and correct. */
+let escapeHits = "";
+t("no literal unicode escapes in markup", (() => {
+  const pages = ["index.html", "404.html", "crossword/index.html",
+                 "crossword/how-to-play.html", "crossword/privacy.html",
+                 "wordsearch/index.html"];
+  const found = [];
+  for (const p of pages) {
+    if (!hasRoot(p)) continue;
+    const markup = readRoot(p).replace(/<script[\s\S]*?<\/script>/gi, "");
+    for (const m of markup.matchAll(/\\u[0-9a-fA-F]{4}/g)) found.push(`${p} ${m[0]}`);
+  }
+  escapeHits = found.join(", ");
+  return found.length === 0;
+})(), escapeHits);
+
+/* v001e: the game's name lived in six player-facing places in its own page
+   with nothing holding them together — the rename from "XI Word Search" to
+   "Wordsearch XI" is exactly when four of them agree and two do not. One fact,
+   asserted across the places that state it. */
+let nameSpread = "";
+t("each game's name is identical in title, og:title, JSON-LD and h1", (() => {
+  const pages = ["crossword/index.html", "wordsearch/index.html"];
+  for (const p of pages) {
+    if (!hasRoot(p)) continue;
+    const html = readRoot(p);
+    /* The tagline is separated by a dash or a pipe, and the dash is a literal
+       character in one page and an &mdash; entity in another. Split on any of
+       them: the name is what comes first. */
+    const grab = (re) =>
+      ((html.match(re) || [])[1] || "").split(/&mdash;|&ndash;|—|–|\|/)[0].trim();
+    const names = [
+      grab(/<title>([^<]+)<\/title>/),
+      grab(/property="og:title" content="([^"]+)"/),
+      grab(/"name":\s*"([^"]+)"/),
+      grab(/<h1[^>]*>([^<]+)<\/h1>/),
+    ].filter(Boolean);
+    const uniq = [...new Set(names)];
+    if (names.length < 4 || uniq.length !== 1) {
+      nameSpread = `${p}: ${uniq.join(" / ")}`;
+      return false;
+    }
+  }
+  return true;
+})(), nameSpread);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

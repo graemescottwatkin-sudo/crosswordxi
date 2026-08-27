@@ -1,4 +1,4 @@
-/* XI Word Search — style.css
+/* Wordsearch XI — style.css
  *
  * Palette, type and the mark come from ../shared/xi-tokens.css and are not
  * restated here; anything with a board, grid or cell in its name is this
@@ -91,12 +91,21 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:.01em;margin:0}
   grid-auto-rows:var(--cell);width:max-content;margin:0 auto;padding:8px;
   touch-action:none; user-select:none;-webkit-user-select:none;
 }
-.cell{display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:calc(var(--cell)*.52);color:var(--ink);border-radius:6px}
+/* The letters sit ON something. The rebuild dropped the tile and left bare
+   letters on the card, which reads as text rather than a board and gives the
+   eye nothing to track a drag across. Inset ring rather than a border so the
+   tile does not change size and the grid geometry render_test measures stays
+   exactly as it was. */
+.cell{display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:calc(var(--cell)*.52);color:var(--ink);border-radius:6px;
+  background:var(--tint);box-shadow:0 0 0 1px var(--line) inset}
 .cell.preview{background:var(--tint-strong)}
 .cell.bad{background:color-mix(in srgb,var(--danger) 22%,transparent)}
 .cell.first-hint{animation:hintFlash 2.2s ease}
 .cell.live-hint{animation:hintFlash 6.2s ease}
-@keyframes hintFlash{0%,80%{background:var(--gold);color:var(--gold-ink)}100%{background:none}}
+/* Lands back on the tile, not on nothing. With the cell background restored,
+   ending at 'none' would leave a hinted cell permanently paler than its
+   neighbours once the animation finished. */
+@keyframes hintFlash{0%,80%{background:var(--gold);color:var(--gold-ink)}100%{background:var(--tint)}}
 .highlightLayer{position:absolute;inset:0;pointer-events:none}
 .hl{position:absolute;border-radius:999px;opacity:.4}
 .hl.bonus{opacity:.55;box-shadow:0 0 0 2px var(--gold) inset}

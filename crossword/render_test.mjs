@@ -5,7 +5,7 @@
  * viewport_test.mjs reasons about the CSS *text* and says so honestly in its
  * own header: "jsdom does no real layout, so this cannot judge appearance."
  * That is a fair statement of its limits, and it means an entire class of
- * defect is invisible to it — the class that cost XI Word Search five
+ * defect is invisible to it — the class that cost Wordsearch XI five
  * release cycles to find:
  *
  *   - a long puzzle title wrapping to two lines and pushing the grid below

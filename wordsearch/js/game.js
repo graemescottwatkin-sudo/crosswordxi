@@ -1,4 +1,4 @@
-/* XI Word Search — game.js (v500, the ground-up rebuild)
+/* Wordsearch XI — game.js (v500, the ground-up rebuild)
  *
  * Crossword XI's architecture, applied where it fits and not where it
  * doesn't. The bank and the schedule live in D1 behind /api/wordsearch/;
@@ -15,9 +15,9 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001a";
+  var BUILD = "v001c";
   window.WORDSEARCHXI_BUILD = BUILD;
-  try { console.log("XI Word Search build " + BUILD); } catch (e) {}
+  try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -40,6 +40,12 @@
   var mode = "daily";           // daily | free
   var puzzle = null, serverDay = null, catalogBoards = [];
   var found = new Set(), bonusFound = false;
+  /* One palette. It was declared inside renderWords AND inside drawHighlight —
+     two copies of eleven hex strings that agreed only because nobody had
+     edited one of them yet. The name in the list and the line through the
+     grid are the same word, so they read the same array. */
+  var WORD_COLOURS = ["#61dda1","#63c6ff","#f1bf61","#d991ff","#ff9975",
+                      "#78ded2","#b5dc70","#a79cff","#f0a0c5","#8bd3a4","#d6b276"];
   var startedAt = null, elapsed = 0, penaltyMinutes = 0, wrongRun = 0;
   var timer = null, wrongResetTimer = null, finishTimeout = null, toastTimer = null;
   var helpUsed = new Set(), assisted = false;
@@ -216,13 +222,24 @@
     grid.setAttribute("aria-label", puzzle.theme + " word search grid");
     syncPanelHeight();
   }
+  /* THE LIST ORDER. The DOM order is the payload order and never changes:
+     the colour index, the highlight lookup and dataset.word all key off it,
+     and rebuilding the list mid-play would lose the scroll position. What
+     changes is the ORDER property — alphabetical while a name is unfound,
+     pushed below every unfound name once it is found. One rank per word,
+     computed once, read in two places. */
   function renderWords() {
-    var COLORSN = ["#61dda1","#63c6ff","#f1bf61","#d991ff","#ff9975","#78ded2","#b5dc70","#a79cff","#f0a0c5","#8bd3a4","#d6b276"];
     var list = $("wordList"); list.innerHTML = "";
+    var rank = {};
+    puzzle.answers.map(function (a) { return a.display; })
+      .slice().sort(function (x, y) { return x.localeCompare(y, "en"); })
+      .forEach(function (name, r) { rank[name] = r; });
     puzzle.answers.forEach(function (a, i) {
       var d = document.createElement("div");
       d.className = "word"; d.dataset.word = a.grid; d.textContent = a.display;
-      d.style.setProperty("--c", COLORSN[i % COLORSN.length]);
+      d.dataset.rank = rank[a.display];
+      d.style.order = rank[a.display];
+      d.style.setProperty("--c", WORD_COLOURS[i % WORD_COLOURS.length]);
       list.appendChild(d);
     });
   }
@@ -392,8 +409,7 @@
     el.style.transformOrigin = (th / 2) + "px " + (th / 2) + "px";
     el.style.transform = "rotate(" + Math.atan2(y2 - y1, x2 - x1) + "rad)";
     var idx = puzzle.answers.findIndex(function (x) { return x.grid === item.grid; });
-    var COLORSN = ["#61dda1","#63c6ff","#f1bf61","#d991ff","#ff9975","#78ded2","#b5dc70","#a79cff","#f0a0c5","#8bd3a4","#d6b276"];
-    el.style.background = isBonus ? "var(--gold)" : COLORSN[(idx + 11) % COLORSN.length];
+    el.style.background = isBonus ? "var(--gold)" : WORD_COLOURS[idx % WORD_COLOURS.length];
     hlayer.appendChild(el);
   }
   function redrawHighlights() {
@@ -457,7 +473,11 @@
     $("count").textContent = found.size;
     $("progress").style.width = (found.size / 11 * 100) + "%";
     Array.prototype.forEach.call($("wordList").children, function (x) {
-      x.classList.toggle("done", found.has(x.dataset.word));
+      var done = found.has(x.dataset.word);
+      x.classList.toggle("done", done);
+      /* +100 clears the eleven unfound ranks, so every found name sits below
+         every unfound one while both groups stay alphabetical inside. */
+      x.style.order = (done ? 100 : 0) + Number(x.dataset.rank || 0);
     });
     $("bonusState").textContent = bonusFound ? "★ " + puzzle.bonus.display : "Undiscovered";
     $("bonusSub").textContent = bonusFound ? "A full +10 points at full time." : "Hidden in the grid · +10 points";
@@ -519,7 +539,7 @@
     var line = scorePart + " · " + found.size + "/11 · " + footballMinute() + "'" + (assisted ? " · assisted" : "");
     var url = "https://www.thexigames.com/wordsearch/";
     var invite = mode === "daily" ? url : "Beat it: " + url + "#p=" + puzzle.id;
-    return "XI Word Search · " + label + "\n" + line + "\n" + invite;
+    return "Wordsearch XI · " + label + "\n" + line + "\n" + invite;
   }
   function doShare() {
     var text = shareText();

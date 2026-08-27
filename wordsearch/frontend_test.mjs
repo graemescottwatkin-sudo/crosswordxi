@@ -67,7 +67,7 @@ t("the build tag is on the page", d.getElementById("buildTag").textContent === w
 t("no schedule and no bank in the served page",
   !/DAILY_SCHEDULE|const PUZZLES/.test(d.documentElement.outerHTML));
 t("one H1, and it is the game's name, not the board's",
-  d.querySelectorAll("h1").length === 1 && /XI Word Search/.test(d.querySelector("h1").textContent));
+  d.querySelectorAll("h1").length === 1 && /Wordsearch XI/.test(d.querySelector("h1").textContent));
 
 /* ---- kick off the daily ----------------------------------------------- */
 d.getElementById("kickBtn").click();

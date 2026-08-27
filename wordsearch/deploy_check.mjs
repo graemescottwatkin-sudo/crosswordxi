@@ -1,4 +1,4 @@
-/* deploy_check.mjs — XI Word Search's gate.
+/* deploy_check.mjs — Wordsearch XI's gate.
  *
  * Crossword's 34 checks, split honestly: the general ones carried over, the
  * crossword-specific ones left behind, and the two bank checks adopted

@@ -151,7 +151,11 @@ else console.log(`      serving ${tag} — pass --expect vNNN to assert it`);
 
 /* Every asset must carry the same tag, or a browser holding a cached CSS or JS
    from the previous build will pair it with the new HTML. */
-const assetTags = [...home.text.matchAll(/[?&]v=(v\d+)/g)].map((m) => m[1]);
+/* v001e: /v\d+/ stopped at the digits, so ?v=v001d captured "v001" and the
+   comparison with the footer's "v001d" failed on every lettered build. The
+   tag scheme grew a letter; this regex did not. Both sides now read the same
+   shape. */
+const assetTags = [...home.text.matchAll(/[?&]v=(v\d+[a-z]?)/g)].map((m) => m[1]);
 t("every asset URL carries a build tag", assetTags.length > 0,
   `${assetTags.length} tagged`);
 t("and they all match the footer",

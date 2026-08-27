@@ -22,7 +22,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The XI Games — daily football puzzles</title>
-<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI and XI Word Search are out now \u2014 eleven answers each, 114 points, a new board every day.">
+<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI and Wordsearch XI are out now — a new board every day.">
 <link rel="canonical" href="https://www.thexigames.com/">
 <script type="application/ld+json">
 {
@@ -228,7 +228,7 @@ footer a:hover{text-decoration:underline}
 
     <div class="xi-strip">
       <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI">1</a>
-      <a class="shirt live" id="shirt2" href="/wordsearch/" title="XI Word Search">2</a>
+      <a class="shirt live" id="shirt2" href="/wordsearch/" title="Wordsearch XI">2</a>
       <span class="shirt soon" title="Not out yet">3</span>
       <span class="shirt soon" title="Not out yet">4</span>
       <span class="shirt soon" title="Not out yet">5</span>
@@ -285,7 +285,7 @@ footer a:hover{text-decoration:underline}
           <h3>Crossword XI</h3>
         </div>
         <div class="body">
-          <p>Eleven football clues, scored out of 114 against a real league season. The clock runs like a match \u2014 help costs time, not points.</p>
+          <p>A daily football crossword. Eleven clues drawn from the history of the game.</p>
           <a class="btn primary" href="/crossword/">Play today</a>
           <a class="btn" href="/crossword/#archive">Past puzzles</a>
         </div>
@@ -299,10 +299,10 @@ footer a:hover{text-decoration:underline}
             <path d="M2 13h44M2 24h44M2 35h44M13 2v44M24 2v44M35 2v44" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
             <rect x="5" y="27.2" width="30" height="7.6" rx="3.8" transform="rotate(-45 24 24)" stroke="currentColor" stroke-width="2.5"/>
           </svg>
-          <h3>XI Word Search</h3>
+          <h3>Wordsearch XI</h3>
         </div>
         <div class="body">
-          <p>Eleven names hidden in the grid, one secret bonus worth ten. Wrong guesses are fouls \u2014 the referee adds minutes, and the clock eats your score.</p>
+          <p>A daily football word search. Eleven to find in the grid, plus a hidden bonus word.</p>
           <a class="btn primary" href="/wordsearch/">Play today</a>
         </div>
       </article>
@@ -424,7 +424,7 @@ footer a:hover{text-decoration:underline}
         if (!day || !day.day) return;
         var list = JSON.parse(localStorage.getItem("xiws.results") || "[]");
         if (list.some(function (r) { return r && r.day === day.day; })) {
-          markDone("shirt2", "XI Word Search"); played.push(2); settle();
+          markDone("shirt2", "Wordsearch XI"); played.push(2); settle();
         }
       }).catch(function () {});
   } catch (e) {}
