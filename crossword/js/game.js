@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001l";
+  var BUILD = "v001m";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3959,13 +3959,26 @@
     };
     (local || []).forEach(function (r) { byKey[keyOf(r)] = r; });
     (remote || []).forEach(function (r) {
-      var k = keyOf(r), have = byKey[k];
-      /* The account wins a tie only where it has more to say. A local row for
-         the same daily is the same run — this device reported it — so keeping
-         the better-scored of the two is wrong; keeping the one that is not
-         missing fields is right. */
-      if (!have) { byKey[k] = r; return; }
-      if (have.score == null && r.score != null) byKey[k] = r;
+      /* FIRST BANKED WINS, and the account holds it.
+
+         This used to keep the local row unless it was missing fields, on the
+         reasoning that "a local row for the same daily is the same run — this
+         device reported it". True with one device. With two it is false, and
+         the two never reconciled: a PC showing 1/11 and an iPad showing 4/11
+         for the same board, each discarding the other's row on every pull,
+         while the server held one answer and neither device would take it.
+
+         The server already decides this — INSERT OR IGNORE against
+         UNIQUE(user_id, game, entry_key) keeps whichever row was banked first
+         and drops the rest. A device that overrules it is simply wrong, and
+         wrong in a way that never heals. So the account's row wins outright
+         and the devices converge on it. Same rule as the crossword has always
+         stated for a replay: a Daily is recorded once, and a later attempt
+         never overwrites the original.
+
+         A local row the account has never seen is untouched — it is the row
+         that has not been pushed yet, not a row in conflict. */
+      byKey[keyOf(r)] = r;
     });
     return Object.keys(byKey).map(function (k) { return byKey[k]; })
       .sort(function (a, b) { return (a.dailyNo || 0) - (b.dailyNo || 0); });

@@ -217,6 +217,68 @@ t("neither game calls migrate directly outside its own pusher",
   (cw.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1 &&
   (ws.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1);
 
+console.log("\nFirst banked wins, and the account holds it");
+/* A PC showing 1/11 and an iPad showing 4/11 of the same board, forever: each
+   pull discarded the account's row, each push was ignored server-side by
+   INSERT OR IGNORE. Neither device was wrong by its own rule and they never
+   reconciled. Both merges now let the account's row win outright.
+
+   These run the real merge functions, lifted from the shipped source, rather
+   than asserting that a comment exists. A regex could not have caught the
+   fault they replace — it was a rule, not a spelling. */
+function crosswordMerge(local, remote) {
+  const src = cw.match(/function mergeResults\(local, remote\) \{[\s\S]*?\n  \}/);
+  if (!src) throw new Error("mergeResults not found — it moved or was renamed");
+  return new Function("local", "remote", src[0] + "\nreturn mergeResults(local, remote);")(local, remote);
+}
+t("the crossword takes the account's row over its own for the same daily", (() => {
+  const merged = crosswordMerge(
+    [{ mode: "daily", dailyNo: 2, score: 40 }],
+    [{ mode: "daily", dailyNo: 2, score: 111 }]);
+  return merged.length === 1 && merged[0].score === 111;
+})());
+/* Even when the account's figure is WORSE. First banked wins is the rule; a
+   merge that quietly kept the higher score would be rule B wearing rule A's
+   clothes, and streaks would depend on which device synced first. */
+t("even when the account's row scored lower", (() => {
+  const merged = crosswordMerge(
+    [{ mode: "daily", dailyNo: 2, score: 111 }],
+    [{ mode: "daily", dailyNo: 2, score: 40 }]);
+  return merged.length === 1 && merged[0].score === 40;
+})());
+/* A row the account has never seen is not in conflict — it is a row that has
+   not been pushed yet, and throwing it away would lose a board just played. */
+t("a local row the account has never seen survives the merge", (() => {
+  const merged = crosswordMerge(
+    [{ mode: "daily", dailyNo: 3, score: 90 }],
+    [{ mode: "daily", dailyNo: 2, score: 111 }]);
+  return merged.length === 2 && merged.some((r) => r.dailyNo === 3 && r.score === 90);
+})());
+/* Themed boards key on their own fields, so two attempts stay two rows. */
+t("and a themed board played twice is still two rows", (() => {
+  const merged = crosswordMerge(
+    [{ mode: "themed", date: "2026-08-01", completedAt: "a", score: 50 },
+     { mode: "themed", date: "2026-08-01", completedAt: "b", score: 60 }], []);
+  return merged.length === 2;
+})());
+t("the word search applies the account's rows after its own, so they win", (() => {
+  /* Run the real merge rather than reading its order: the two lines could be
+     reordered without changing which object wins if the shape ever changes. */
+  const fn = ws.match(/var byDay = \{\};[\s\S]*?var merged = /);
+  if (!fn) return false;
+  const body = fn[0].replace(/var merged = $/, "");
+  const merged = new Function("readResults", "remote", body +
+    "\nreturn Object.keys(byDay).sort().map(function (k) { return byDay[k]; });")(
+      () => [{ day: "2026-08-27", score: 0, foundCount: 1 }],
+      [{ day: "2026-08-27", score: 0, foundCount: 4 }]);
+  return merged.length === 1 && merged[0].foundCount === 4;
+})());
+/* Two merge rules that agree by coincidence is the fault this whole night kept
+   finding. They must agree on purpose. */
+t("neither game keeps a merge that prefers its own copy",
+  !/have\.score == null && r\.score != null/.test(cw) &&
+  !/readResults\(\)\.forEach[\s\S]{0,80}\n\s*var merged/.test(ws));
+
 console.log("\nThe word search actually asks");
 t("it reads the session", /api\/auth\/session/.test(ws));
 t("it pushes under its own game id", /game:\s*["']wordsearch["']/.test(ws));

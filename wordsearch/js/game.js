@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001e";
+  var BUILD = "v001f";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -136,11 +136,22 @@
       if (!remote.length) return null;
       /* Merge by day, which is what a row is unique by — the same key the
          server dedupes on, so the two sides cannot disagree about what counts
-         as the same board. The device's own row wins a tie: it is the one
-         that was actually played here, and it carries the found list. */
+         as the same board.
+
+         FIRST BANKED WINS, and the account holds it. This used to let the
+         device's own row win, on the reasoning that it was the one actually
+         played here. With two devices that produced a PC showing 1/11 and an
+         iPad showing 4/11 of the same board forever: each pull threw away the
+         account's answer, and each push was ignored server-side because
+         INSERT OR IGNORE keeps the row banked first. Neither device was wrong
+         by its own rule, and they never reconciled.
+
+         The account's row wins outright. A local row the account has never
+         seen survives — that is a row not yet pushed, not a row in conflict.
+         Local is applied FIRST and remote second, so remote overwrites. */
       var byDay = {};
-      remote.forEach(function (r2) { if (r2 && r2.day) byDay[r2.day] = r2; });
       readResults().forEach(function (r2) { if (r2 && r2.day) byDay[r2.day] = r2; });
+      remote.forEach(function (r2) { if (r2 && r2.day) byDay[r2.day] = r2; });
       var merged = Object.keys(byDay).sort().map(function (k) { return byDay[k]; });
       try { localStorage.setItem(RESULTS_KEY, JSON.stringify(merged.slice(-800))); } catch (e) {}
       return merged.length;
