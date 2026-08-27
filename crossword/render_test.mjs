@@ -262,6 +262,42 @@ const run = async () => {
   const matrix = only.length
     ? VIEWPORTS.filter(([n]) => only.some((o) => n.includes(o)))
     : VIEWPORTS;
+
+  /* PREFLIGHT. "BASE is not the game" and "the grid overflows" produced the
+     same red for every build from v121: sixteen identical layout failures,
+     which read as one flaky job rather than as a suite pointed at the wrong
+     page. A setup fault should look like a setup fault. Check once, before any
+     measuring, that the page BASE names is a crossword — then a bad BASE costs
+     one line naming the URL instead of sixteen misleading measurements. */
+  {
+    const pre = await browser.newPage();
+    let controls = null;
+    try {
+      await pre.goto(BASE, { waitUntil: "domcontentloaded", timeout: 20000 });
+      controls = await pre.evaluate(() => ({
+        daily: !!document.querySelector("#dailyBtn"),
+        kick: !!document.querySelector("#kickOffBtn"),
+        home: !!document.querySelector("#homeOverlay"),
+      }));
+    } catch (e) {
+      console.error(`\nPREFLIGHT: could not open ${BASE}\n  ${String(e).split("\n")[0]}\n`);
+      await browser.close();
+      process.exit(2);
+    }
+    if (!controls.daily && !controls.kick && !controls.home) {
+      console.error(
+        `\nPREFLIGHT: ${BASE} is not the crossword.\n` +
+        `  none of #dailyBtn, #kickOffBtn or #homeOverlay are on that page, so\n` +
+        `  every viewport would fail with "overlay never cleared" and measure\n` +
+        `  whatever page this actually is. Set BASE to the game, e.g.\n` +
+        `    BASE=http://127.0.0.1:8788/crossword/\n`);
+      await pre.close();
+      await browser.close();
+      process.exit(2);
+    }
+    await pre.close();
+  }
+
   for (const [name, w, h] of matrix) {
     /* The on-screen keyboard is built for touch devices, so a context without
        touch never renders it and the keyboard assertions quietly never run.

@@ -114,7 +114,16 @@ jobs:
 
       - name: Measure
         env:
-          BASE: http://127.0.0.1:8788
+          # /crossword/, not the site root. The v152 restructure moved the game
+          # under a path and left the root as the hub, which has no #dailyBtn,
+          # no #kickOffBtn and no #startOverlay. render_test kept opening the
+          # root, found none of them, fell into its catch and reported
+          # "overlay never cleared" at all sixteen viewports — for every build
+          # from v121 to v001f. Suites stayed green throughout, so the red was
+          # easy to read as one flaky job rather than a suite measuring the
+          # wrong page. The widths in those reports (1198 at desktop) were the
+          # hub's layout, never a crossword grid.
+          BASE: http://127.0.0.1:8788/crossword/
         run: node crossword/render_test.mjs
 
       # A failure names the viewport and the measurement, which is usually
