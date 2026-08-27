@@ -86,14 +86,14 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v154";     // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001b";    // <- what is LIVE; bump after each deploy
 /* What was last PRESENTED — a different question from what is live, and the
    burn rule is about this one: a tag dies the moment its package is handed
    over, deployed or not. One constant tried to answer both questions and the
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001b";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001c";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -301,10 +301,19 @@ t("the board shadow variables have not returned", (() => {
    lives. */
 let robotsGap = "";
 t("noindex matches the address the page claims", (() => {
-  if (!has("index.html") || !hasRoot("_headers")) return true;
+  /* Ported back from the wordsearch gate, which found this passing by TWO
+     faults cancelling and a third waiting: the subdomain regex matched
+     "www." (the canonical host read as staging), the /api/* noindex
+     satisfied the header side, and the _headers comment DOCUMENTING this
+     rule read as a live header. Corrected: www is not a subdomain, comment
+     lines are stripped, and only a global noindex — one before any /api/
+     block — counts as blocking. */
+  if (!has("index.html") || !hasRoot("_headers")) return false;
   const url = (read("index.html").match(/og:url" content="([^"]+)"/) || [])[1] || "";
-  const onSubdomain = /:\/\/[a-z]+\.thexigames\.com/.test(url);
-  const noindexed = /X-Robots-Tag:\s*noindex/i.test(readRoot("_headers"));
+  const onSubdomain = /:\/\/(?!www\.)[a-z0-9-]+\.thexigames\.com/.test(url);
+  const rules = readRoot("_headers").split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
+  const global = rules.split(/^\/api\//m)[0];
+  const noindexed = /X-Robots-Tag:\s*noindex/i.test(global);
   if (onSubdomain && !noindexed) {
     robotsGap = "on a subdomain (" + url + ") and indexable";
   } else if (!onSubdomain && noindexed) {

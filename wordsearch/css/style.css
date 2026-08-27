@@ -1,0 +1,166 @@
+/* XI Word Search — style.css
+ *
+ * Palette, type and the mark come from ../shared/xi-tokens.css and are not
+ * restated here; anything with a board, grid or cell in its name is this
+ * game's own, because the crossword's --cell is a crossword square and this
+ * game has no squares to fill, only letters to find.
+ *
+ * THE LAYOUT RULE (from the brief, and it drives everything below):
+ * the board is the bottom of the used space. .main takes its height from the
+ * grid; the panel on the right is clamped to that height and scrolls inside
+ * itself. There is no strip under the board — no active clue, no keyboard —
+ * because this game needs neither.
+ */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 var(--body)}
+button,select{font:inherit}
+button{touch-action:manipulation;cursor:pointer}
+.hidden{display:none!important}
+h1,h2,h3{font-family:var(--disp);letter-spacing:.01em;margin:0}
+:focus-visible{outline:2px solid var(--pitch);outline-offset:2px}
+
+/* ---- masthead -------------------------------------------------------- */
+.mast{border-bottom:1px solid var(--line);background:var(--card)}
+.mastInner{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mastBrand{font-family:var(--disp);font-weight:700;font-size:19px;color:var(--ink);text-decoration:none}
+.mastNav{display:flex;gap:14px;font-size:13px}
+.mastNav a{color:var(--ink-soft);text-decoration:none}
+.mastNav a:hover{color:var(--ink)}
+.mastNav [aria-current]{color:var(--ink);font-weight:600}
+
+/* ---- pre-match ------------------------------------------------------- */
+.prematch{display:grid;place-items:center;padding:36px 16px}
+.pmCard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px 26px;max-width:460px;width:100%;text-align:center}
+.eyebrow{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--pitch)}
+.pmCard h1{font-size:44px;line-height:1;margin:6px 0 10px;text-transform:uppercase}
+.pmLede{color:var(--ink-soft);margin:0 0 18px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mode{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:left;color:var(--ink);min-height:var(--tap)}
+.mode strong{display:block;font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em}
+.mode span{display:block;font-size:12px;color:var(--ink-soft);margin-top:2px}
+.mode.active{border-color:var(--pitch);background:var(--card);box-shadow:inset 0 0 0 1px var(--pitch)}
+.browser{display:grid;gap:8px;margin-bottom:12px;text-align:left}
+.browser label{display:grid;gap:3px;font-size:12px;color:var(--ink-soft)}
+.browser select{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-height:var(--tap)}
+.kick{width:100%;min-height:var(--tap);border:0;border-radius:10px;background:var(--pitch);color:#fff;font-family:var(--disp);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em;padding:11px}
+.kick:hover{background:var(--pitch-deep)}
+.tiny{font-size:12px;color:var(--ink-faint);margin:10px 0 0}
+.legal{font-size:11px;color:var(--ink-faint);margin:16px 0 0;line-height:1.5}
+
+/* ---- toolbar and menus ----------------------------------------------- */
+.app{max-width:1080px;margin:0 auto;padding:10px 16px 18px}
+.toolbar{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.menuWrap{position:relative}
+.menuWrap.right{margin-left:auto}
+.btn{min-height:38px;padding:6px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--ink-faint)}
+.menuPanel{position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:230px;padding:5px;box-shadow:0 10px 28px rgba(0,0,0,.14)}
+.menuPanel.right{left:auto;right:0}
+.menuRow{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:40px;padding:7px 10px;border:0;border-radius:7px;background:none;color:var(--ink);text-align:left}
+.menuRow:hover{background:var(--tint)}
+.menuRow:disabled{color:var(--ink-faint);cursor:default;background:none}
+.menuMeta{font-size:11px;color:var(--ink-faint)}
+.menuNote{font-size:11px;color:var(--ink-faint);padding:7px 10px;border-top:1px solid var(--line);margin-top:4px}
+.menuVer{font-size:10px;color:var(--ink-faint);padding:6px 10px}
+
+/* ---- match head ------------------------------------------------------ */
+.matchHead{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:8px}
+.matchTitle h2{font-size:26px;line-height:1.05;text-transform:uppercase}
+.scoreCluster{display:flex;align-items:center;gap:12px;flex:none}
+.clock{font-family:var(--disp);font-weight:700;font-size:30px;color:var(--xi-ink);min-width:56px;text-align:right}
+.scoreBox{background:var(--pitch-deep);color:#fff;border-radius:10px;padding:6px 12px;display:flex;align-items:baseline;gap:5px}
+.scoreVal{font-family:var(--disp);font-weight:700;font-size:24px}
+.scoreStar{color:var(--gold);font-size:15px}
+.scoreStar.found{text-shadow:0 0 6px rgba(242,201,76,.8)}
+.scoreOf{font-size:12px;opacity:.75}
+.varBanner{display:flex;gap:10px;align-items:center;background:var(--gold);color:var(--gold-ink);border-radius:9px;padding:7px 12px;margin-bottom:8px;font-size:13px}
+.varBanner b{font-family:var(--disp);text-transform:uppercase}
+
+/* ---- the main layout rule -------------------------------------------- */
+/* The grid sizes the row (align-items:start + the board's intrinsic height);
+   game.js measures the board and sets --board-h, which clamps the panel.
+   Belt and braces: even before the first measurement the panel cannot
+   overflow the viewport. */
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,300px);gap:12px;align-items:start}
+.boardWrap{min-width:0}
+.gridShell{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);max-height:calc(100dvh - 190px)}
+.grid{
+  --cell:34px; /* the board zoom variable — the ONLY thing zoom touches */
+  position:relative;display:grid;grid-template-columns:repeat(12,var(--cell));
+  grid-auto-rows:var(--cell);width:max-content;margin:0 auto;padding:8px;
+  touch-action:none; user-select:none;-webkit-user-select:none;
+}
+.cell{display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:calc(var(--cell)*.52);color:var(--ink);border-radius:6px}
+.cell.preview{background:var(--tint-strong)}
+.cell.bad{background:color-mix(in srgb,var(--danger) 22%,transparent)}
+.cell.first-hint{animation:hintFlash 2.2s ease}
+.cell.live-hint{animation:hintFlash 6.2s ease}
+@keyframes hintFlash{0%,80%{background:var(--gold);color:var(--gold-ink)}100%{background:none}}
+.highlightLayer{position:absolute;inset:0;pointer-events:none}
+.hl{position:absolute;border-radius:999px;opacity:.4}
+.hl.bonus{opacity:.55;box-shadow:0 0 0 2px var(--gold) inset}
+
+/* ---- the side panel, clamped to the board ---------------------------- */
+.side{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px;display:flex;flex-direction:column;min-height:0;
+  max-height:var(--board-h,calc(100dvh - 190px));
+}
+.sideHead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.sideHead h3{font-size:17px;text-transform:uppercase}
+.foundCount{font-size:12px;color:var(--ink-soft)}
+.foundCount strong{font-family:var(--disp);font-size:16px;color:var(--ink)}
+.progress{height:5px;border-radius:99px;background:var(--tint);overflow:hidden;margin-bottom:8px;flex:none}
+.progress div{height:100%;width:0;background:var(--pitch);border-radius:99px;transition:width .25s}
+/* The scroll rule from the brief: too many names, the LIST scrolls — never
+   the panel past the board, never the page. */
+.words{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;gap:5px;align-content:start;padding-right:2px}
+.word{border:1px solid var(--line);border-left:4px solid var(--c,var(--line));border-radius:8px;padding:7px 9px;font-size:13px;font-weight:600;background:var(--card)}
+.word.done{color:var(--ink-faint);text-decoration:line-through;background:var(--tint);border-left-color:var(--c)}
+.bonusBox{flex:none;margin-top:8px;border:1px dashed var(--gold);border-radius:9px;padding:8px 10px;background:color-mix(in srgb,var(--gold) 9%,transparent)}
+.bonusTitle{font-family:var(--disp);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.06em;color:var(--xi-ink)}
+.bonusState{font-weight:700;font-size:14px}
+.bonusSub{font-size:11px;color:var(--ink-soft)}
+
+/* ---- finish prompt, result, toast ------------------------------------ */
+.finishPrompt{display:none;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px;background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:10px 14px}
+.finishPrompt.show{display:flex}
+.finishBtns{display:flex;gap:8px}
+.action{min-height:38px;padding:7px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-weight:600}
+.action.gold{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.action.quiet{border-color:transparent;color:var(--ink-soft)}
+.overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--paper) 80%,transparent);backdrop-filter:blur(8px);z-index:100;display:grid;place-items:center;padding:18px;opacity:0;pointer-events:none;transition:opacity .18s}
+.overlay.show{opacity:1;pointer-events:auto}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:380px;width:100%;text-align:center;display:grid;gap:9px}
+.modal h2{text-transform:uppercase;font-size:24px}
+.big{font-family:var(--disp);font-weight:700;font-size:56px;line-height:1;color:var(--pitch)}
+.resultEquation{font-size:13px;color:var(--ink-soft)}
+.resultMissed{font-size:12px;color:var(--ink-soft);background:var(--tint);border-radius:8px;padding:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--tint);border-radius:9px;padding:8px 4px}
+.stat b{font-family:var(--disp);font-size:18px;display:block}
+.stat span{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
+.penaltyPop{position:fixed;left:50%;top:26%;transform:translateX(-50%);background:var(--danger);color:#fff;font-family:var(--disp);font-weight:700;border-radius:999px;padding:7px 16px;opacity:0;pointer-events:none;z-index:90}
+.penaltyPop.show{animation:pop .9s ease}
+@keyframes pop{10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:999px;padding:9px 16px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:110;max-width:92vw;text-align:center}
+.toast.show{opacity:1}
+
+/* ---- narrow screens --------------------------------------------------- */
+/* One column. The board keeps the bottom of the used space: names become a
+   horizontally scrolling rail ABOVE the grid, the grid sits last and fills
+   what remains. No keyboard exists to reserve room for. */
+@media (max-width:760px){
+  .main{grid-template-columns:1fr;gap:8px}
+  .side{order:-1;max-height:none;flex-direction:column;padding:9px}
+  .words{display:flex;overflow-x:auto;overflow-y:hidden;gap:6px;padding-bottom:4px}
+  .word{flex:none;border-left-width:3px;white-space:nowrap}
+  .bonusBox{margin-top:6px}
+  .gridShell{max-height:none}
+  .matchHead{flex-wrap:wrap}
+  .matchTitle h2{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}

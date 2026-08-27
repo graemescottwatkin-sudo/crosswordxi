@@ -78,6 +78,8 @@ jobs:
           node crossword/admin_test.mjs
           node crossword/themes_test.mjs
           node crossword/challenge_test.mjs
+          node wordsearch/frontend_test.mjs
+          node wordsearch/functions_test.mjs
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.
@@ -85,6 +87,7 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json package.json
           node crossword/deploy_check.mjs
+          node wordsearch/deploy_check.mjs
 
   render:
     name: Sixteen viewports, real browser

@@ -100,7 +100,9 @@ console.log(`\n${SITE}\n`);
     `${(html.match(/class="shirt/g) || []).length} found`);
   /* The roster must not name unreleased games — two of them are built under
      names live competitors already hold. */
-  const leaked = ["Word Search","QuickFire","Scrambled","Missing XI",
+  /* Word Search left this list when shirt 2 went live — a released game's
+     name on the hub is the point, not a leak. */
+  const leaked = ["QuickFire","Scrambled","Missing XI",
                   "Career Path","Link XI","Odd One Out"].filter((n) => html.includes(n));
   t("and names no unreleased game", leaked.length === 0,
     leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");

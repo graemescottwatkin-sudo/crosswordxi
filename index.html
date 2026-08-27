@@ -22,7 +22,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The XI Games — daily football puzzles</title>
-<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI is out now \u2014 eleven answers, a hundred and fourteen points, a new board every day.">
+<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI and XI Word Search are out now \u2014 eleven answers each, 114 points, a new board every day.">
 <link rel="canonical" href="https://www.thexigames.com/">
 <script type="application/ld+json">
 {
@@ -228,7 +228,7 @@ footer a:hover{text-decoration:underline}
 
     <div class="xi-strip">
       <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI">1</a>
-      <span class="shirt soon" title="Not out yet">2</span>
+      <a class="shirt live" id="shirt2" href="/wordsearch/" title="XI Word Search">2</a>
       <span class="shirt soon" title="Not out yet">3</span>
       <span class="shirt soon" title="Not out yet">4</span>
       <span class="shirt soon" title="Not out yet">5</span>
@@ -240,7 +240,7 @@ footer a:hover{text-decoration:underline}
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
 
-    <p class="played" id="playedLine">Ten still to sign</p>
+    <p class="played" id="playedLine">Nine still to sign</p>
   </div>
 </section>
 
@@ -291,6 +291,22 @@ footer a:hover{text-decoration:underline}
         </div>
       </article>
 
+      <article class="game">
+        <div class="cap on-light" style="background:var(--kit-02)">
+          <span class="num">2</span>
+          <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
+            <rect x="2" y="2" width="44" height="44" rx="3" stroke="currentColor" stroke-width="2.5"/>
+            <path d="M2 13h44M2 24h44M2 35h44M13 2v44M24 2v44M35 2v44" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+            <rect x="5" y="27.2" width="30" height="7.6" rx="3.8" transform="rotate(-45 24 24)" stroke="currentColor" stroke-width="2.5"/>
+          </svg>
+          <h3>XI Word Search</h3>
+        </div>
+        <div class="body">
+          <p>Eleven names hidden in the grid, one secret bonus worth ten. Wrong guesses are fouls \u2014 the referee adds minutes, and the clock eats your score.</p>
+          <a class="btn primary" href="/wordsearch/">Play today</a>
+        </div>
+      </article>
+
     </div>
   </section>
 
@@ -308,10 +324,6 @@ footer a:hover{text-decoration:underline}
          familiar before the name ever appears. The status line is the only
          thing that moves. -->
     <div class="soon-grid">
-      <div class="soon-card">
-        <span class="sq" style="background:var(--kit-02)">2</span>
-        <span class="nm">Number two<span>Back shortly</span></span>
-      </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-03)">3</span>
         <span class="nm">Number three<span>Nearly ready</span></span>
@@ -380,24 +392,39 @@ footer a:hover{text-decoration:underline}
     document.getElementById("sheetDate").textContent =
       d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   } catch (e) {}
+  /* Two live shirts now, each judged by its own game's record against its
+     own server's idea of today — the crossword by dailyNo, the word search
+     by day string. The roll-call line is composed from whichever answered,
+     so one API being down never blanks the other's result. */
   try {
+    var played = [];
+    var settle = function () {
+      if (!played.length) return;
+      played.sort();
+      document.getElementById("playedLine").innerHTML =
+        "<b>" + played.join("</b> and <b>") + "</b> played today \u00B7 nine still to sign";
+    };
+    var markDone = function (id, title) {
+      var el = document.getElementById(id);
+      el.classList.remove("live"); el.classList.add("done");
+      el.title = title + " \u2014 played today";
+    };
     fetch("/api/daily", { headers: { accept: "application/json" } })
       .then(function (r) { return r.json(); })
       .then(function (day) {
         if (!day || !day.dailyNo) return;
-        var done = false;
-        try {
-          var list = JSON.parse(localStorage.getItem("fcw.results.v1") || "[]");
-          done = list.some(function (r) {
-            return r && r.dailyNo === day.dailyNo && r.complete !== false;
-          });
-        } catch (e) {}
-        if (done) {
-          var s1 = document.getElementById("shirt1");
-          s1.classList.remove("live"); s1.classList.add("done");
-          s1.title = "Crossword XI \u2014 played today";
-          document.getElementById("playedLine").innerHTML =
-            "<b>1</b> played today \u00B7 ten still to sign";
+        var list = JSON.parse(localStorage.getItem("fcw.results.v1") || "[]");
+        if (list.some(function (r) { return r && r.dailyNo === day.dailyNo && r.complete !== false; })) {
+          markDone("shirt1", "Crossword XI"); played.push(1); settle();
+        }
+      }).catch(function () {});
+    fetch("/api/wordsearch/daily", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (day) {
+        if (!day || !day.day) return;
+        var list = JSON.parse(localStorage.getItem("xiws.results") || "[]");
+        if (list.some(function (r) { return r && r.day === day.day; })) {
+          markDone("shirt2", "XI Word Search"); played.push(2); settle();
         }
       }).catch(function () {});
   } catch (e) {}

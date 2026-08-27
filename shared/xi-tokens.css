@@ -1,0 +1,33 @@
+/* xi-tokens.css — v1
+ *
+ * The XI Games shared design layer. One copy at shared/, referenced (not
+ * copied) by every game on the same origin. Each game's deploy check asserts
+ * the version marker on the first line; bump it when this file changes.
+ *
+ * LIGHT IS THE FAMILY DEFAULT. [data-theme="dark"] opts in. Crossword XI's
+ * contrast values are the source (11.9:1 typed letter, 5.4:1 deep-amber XI on
+ * paper); everything here is lifted from its measured stylesheet rather than
+ * re-derived. The XI mark asymmetry is deliberate: gold reads directly on
+ * dark, but measures 1.45:1 as text on paper — hence --xi-ink for light.
+ */
+:root{
+  --paper:#F4F5F2; --card:#FFFFFF;
+  --ink:#182219; --ink-soft:#5A675D; --ink-faint:#8A968D;
+  --pitch:#1E6B45; --pitch-deep:#123B27;
+  --gold:#F2C94C; --gold-ink:#3A2D00; --xi-ink:#8A5A00;
+  --line:#D9DDD6; --danger:#8E2F45; --ok:#1E6B45;
+  --tint:rgba(24,34,25,.06); --tint-strong:rgba(24,34,25,.12);
+  --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",-apple-system,"Segoe UI",Arial,sans-serif;
+  --radius:12px;
+  --tap:44px; /* the tap floor — nothing interactive smaller than this */
+}
+:root[data-theme="dark"]{
+  --paper:#121711; --card:#1B231A;
+  --ink:#EAF0E8; --ink-soft:#A9B5A9; --ink-faint:#76816F;
+  --pitch:#2C8A5C; --pitch-deep:#0D2B1C;
+  --gold:#F2C94C; --gold-ink:#3A2D00; --xi-ink:#F2C94C;
+  --line:#2C352A; --danger:#D9758C; --ok:#61DDA1;
+  --tint:rgba(234,240,232,.07); --tint-strong:rgba(234,240,232,.14);
+}
+.xi-mark{font-family:var(--disp);font-weight:700;color:var(--xi-ink)}

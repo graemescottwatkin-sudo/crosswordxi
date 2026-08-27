@@ -57,6 +57,24 @@
 /crossword/js/*
   Cache-Control: public, max-age=31536000, immutable
 
+# XI Word Search — same three rules as the crossword, one pair per game.
+/wordsearch/
+  Cache-Control: no-store
+
+/wordsearch/index.html
+  Cache-Control: no-store
+
+/wordsearch/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/wordsearch/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shared token layer. Immutable is safe because every reference carries a
+# ?v= tag and the wordsearch gate asserts the version marker in the file.
+/shared/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /api/*
   Cache-Control: no-store
   X-Robots-Tag: noindex

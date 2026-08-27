@@ -8,6 +8,7 @@
 data/clues-production.sql
 data/puzzles-production.sql
 data/*-production.sql
+data/ws-production.sql
 # The themed build plan: every board with its answer list. It exists to be read
 # before import and must never be committed, for the same reason the generated
 # SQL must not be — it is the clue bank with the answers attached.
