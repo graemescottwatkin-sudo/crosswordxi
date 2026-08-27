@@ -17,11 +17,45 @@
  * Assertions only ever READ. Nothing here plays, finishes, or writes.
  */
 
+import { execSync } from "node:child_process";
+
 const BASE = "https://www.thexigames.com";
 const expectArg = process.argv.indexOf("--expect");
 const EXPECT = expectArg > -1 ? process.argv[expectArg + 1] : null;
 
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, warn = 0;
+/* An outcome that is neither pass nor fail: a question this run could not ask.
+   Mirrors the crossword's, and is printed — never silently skipped. */
+const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`); };
+
+/* ---- the completion guard ----------------------------------------------- */
+/* v001r: this file crashed at assertion 17 of 38 on a ReferenceError and
+   printed a short list of green ticks with no summary at all. Nothing in the
+   output said "incomplete" — a truncated run and a clean run differed only by
+   an exit code nobody was reading. Two nets: the marker, set only by reaching
+   the last line, catches a crash anywhere above it; the floor catches a block
+   that goes quiet without crashing. Proven by EXECUTION, not by parse —
+   node --check called the crashing file fine.
+   The uncaughtException hook is load-bearing: a rejection out of top-level
+   await terminates by a path that never runs 'exit' listeners, so a guard
+   hung on 'exit' alone stays as silent as the bug it is meant to catch. */
+const MIN_ASSERTIONS = 26;
+let reachedEnd = false, announced = false;
+function incomplete() {
+  if (announced) return;
+  announced = true;
+  console.log(`\nFAIL  the run did not complete — ${pass + fail + warn} assertion(s) ` +
+    `ran, floor ${MIN_ASSERTIONS}. A crash mid-file is a failed run, not a ` +
+    `short green list.`);
+  process.exitCode = 1;
+}
+process.on("uncaughtException", (e) => {
+  console.log("\n" + ((e && e.stack) || e));
+  incomplete();
+  process.exit(1);
+});
+process.on("unhandledRejection", (e) => { throw e; });
+process.on("exit", () => { if (!reachedEnd) incomplete(); });
 function t(name, ok, note) {
   if (ok) { pass++; console.log(`  ok  ${name}${note ? "  — " + note : ""}`); }
   else { fail++; console.log(`FAIL  ${name}${note ? "  — " + note : ""}`); }
@@ -97,11 +131,44 @@ const c = cat.status === 200 ? await cat.json() : null;
 const releasedCount = c && c.boards ? c.boards.length : 0;
 t("the catalog answers", cat.status === 200 && releasedCount > 0,
   releasedCount + " released boards");
-t("the catalog carries no grids and no answers", (() => {
-  if (!c || !c.boards || !c.boards.length) return false;
-  const p = c.boards[0];
-  return !("grid" in p) && !("answers" in p) && !("bonus" in p);
-})());
+/* v001r: this sampled boards[0] and generalised to all 239 — a name broader
+   than its behaviour, the same fault as the wrong key one line above it, only
+   quieter. Every entry is scanned now, and a failure names the id and the key
+   it carried, never the theme. */
+const LEAK_KEYS = ["grid", "answers", "bonus", "words", "solution", "placements"];
+const leaks = [];
+for (const b of (c && c.boards) || []) {
+  const bad = LEAK_KEYS.filter((k) => k in b);
+  if (bad.length) leaks.push(b.id + ": " + bad.join("+"));
+}
+t("the catalog carries no grids and no answers",
+  releasedCount > 0 && leaks.length === 0,
+  leaks.length ? leaks.slice(0, 5).join(", ") : releasedCount + " entries scanned");
+
+/* ---- the unscheduled tripwire (D1; HTTP cannot see the schedule) --------- */
+/* released() treats a board with no schedule row as released — "an unscheduled
+   board has no date to protect", functions/_lib/wsdata.js. Deliberate, and
+   harmless only while every board is scheduled. HTTP cannot check it: an
+   unscheduled board and a released one are byte-identical over the wire, which
+   is why this one question goes to D1. Never silently skipped — if wrangler is
+   not there, the run says so rather than passing. */
+let unscheduled = null;
+try {
+  const out = execSync(
+    "npx wrangler d1 execute crosswordxi --remote --json --command " +
+    "\"SELECT COUNT(*) AS n FROM ws_puzzles p WHERE NOT EXISTS " +
+    "(SELECT 1 FROM ws_schedule s WHERE s.puzzle_id = p.id)\"",
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 180000 });
+  const m = out.match(/"n":\s*(\d+)/);
+  if (m) unscheduled = Number(m[1]);
+} catch { /* wrangler absent, unauthenticated, or offline */ }
+if (unscheduled === null) {
+  w("every board is scheduled, so nothing rides the unscheduled path",
+    "D1 unreachable — wrangler absent or not logged in");
+} else {
+  t("every board is scheduled, so nothing rides the unscheduled path",
+    unscheduled === 0, unscheduled + " board(s) with no schedule row");
+}
 
 /* An id the schedule has not released yet. The catalog lists what IS released,
    so any XIWS id not in it and within the bank's range is a sealed board —
@@ -169,5 +236,12 @@ for (const [path, wants] of [["/api/account/results?game=wordsearch", 401],
     `HTTP ${r.status}${r.status === 500 ? " — the query is broken, check the schema" : ""}`);
 }
 
-console.log(`\n${pass} passed, ${fail} failed`);
+/* The floor, for a block that goes quiet without crashing. */
+const ran = pass + fail + warn;
+if (ran < MIN_ASSERTIONS) {
+  fail++;
+  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
+}
+reachedEnd = true;
+console.log(`\n${pass} passed, ${fail} failed${warn ? `, ${warn} unknown` : ""}`);
 process.exit(fail ? 1 : 0);

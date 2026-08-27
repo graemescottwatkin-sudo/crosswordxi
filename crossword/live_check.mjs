@@ -25,6 +25,35 @@ const want = (() => {
 })();
 
 let pass = 0, fail = 0, warn = 0;
+
+/* ---- the completion guard ----------------------------------------------- */
+/* v001r: this file crashed at assertion 17 of 38 on a ReferenceError and
+   printed a short list of green ticks with no summary at all. Nothing in the
+   output said "incomplete" — a truncated run and a clean run differed only by
+   an exit code nobody was reading. Two nets: the marker, set only by reaching
+   the last line, catches a crash anywhere above it; the floor catches a block
+   that goes quiet without crashing. Proven by EXECUTION, not by parse —
+   node --check called the crashing file fine.
+   The uncaughtException hook is load-bearing: a rejection out of top-level
+   await terminates by a path that never runs 'exit' listeners, so a guard
+   hung on 'exit' alone stays as silent as the bug it is meant to catch. */
+const MIN_ASSERTIONS = 34;
+let reachedEnd = false, announced = false;
+function incomplete() {
+  if (announced) return;
+  announced = true;
+  console.log(`\nFAIL  the run did not complete — ${pass + fail + warn} assertion(s) ` +
+    `ran, floor ${MIN_ASSERTIONS}. A crash mid-file is a failed run, not a ` +
+    `short green list.`);
+  process.exitCode = 1;
+}
+process.on("uncaughtException", (e) => {
+  console.log("\n" + ((e && e.stack) || e));
+  incomplete();
+  process.exit(1);
+});
+process.on("unhandledRejection", (e) => { throw e; });
+process.on("exit", () => { if (!reachedEnd) incomplete(); });
 const t = (n, ok, d) => { ok ? pass++ : fail++;
   console.log(`${ok ? "  ok  " : "FAIL  "}${n}${d ? "  — " + d : ""}`); };
 const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`); };
@@ -297,5 +326,12 @@ console.log(`
         cross-device sign-in         needs two devices
         srv_elapsed_secs populating  wrangler d1, not HTTP`);
 
+/* The floor, for a block that goes quiet without crashing. */
+const ran = pass + fail + warn;
+if (ran < MIN_ASSERTIONS) {
+  fail++;
+  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
+}
+reachedEnd = true;
 console.log(`\n${pass} passed, ${fail} failed${warn ? `, ${warn} unknown` : ""}`);
 process.exit(fail ? 1 : 0);

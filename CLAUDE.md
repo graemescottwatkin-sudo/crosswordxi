@@ -56,6 +56,12 @@ and diagnose before anything ships. Never push past a red gate.
 - **Every new check must be proven to FAIL before it is trusted.** Sabotage the
   thing it guards, watch it fail, restore. Six vacuous checks have been found
   in this project's history; this rule exists because of them.
+  Proven by EXECUTION, not by parse — `node --check` proves a file parses, not
+  that it runs; the crossword live_check's HEAD block shipped referencing a
+  variable from the other game's file and crashed on first contact with
+  production. And a check's name must not be broader than its behaviour — a
+  check that samples one row while claiming to check all of them is the same
+  fault quieter.
 - **Regexes cannot count and cannot catch rule-bugs.** Anything about SQL
   arity, merge behaviour, or ordering must EXECUTE the real code.
 - Totals only from CI-shaped runs: suites run **from the repo root**, after
