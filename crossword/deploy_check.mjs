@@ -93,7 +93,7 @@ const LAST_SHIPPED = "v001i";    // <- what is LIVE; bump after each deploy
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001i";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001j";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would

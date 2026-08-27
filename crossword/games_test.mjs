@@ -11,7 +11,7 @@
  *
  *   node crossword/games_test.mjs        (from the repo root)
  */
-import { GAMES, DEFAULT_GAME, validGame, entryKey, detailOf }
+import { GAMES, DEFAULT_GAME, validGame, entryKey, detailOf, playedOn }
   from "../functions/_lib/games.js";
 import { csrfOk, CSRF_HEADER } from "../functions/_lib/auth.js";
 import fs from "node:fs";
@@ -58,8 +58,28 @@ t("the key is the board's day, not the day it was played",
   entryKey("wordsearch", { day: "2026-08-26", playedAt: "2026-08-27" }) === "ws:2026-08-26");
 t("an unknown game composes no key at all", entryKey("scrambled", { dailyNo: 1 }) === null);
 
-console.log("\nGame-specific facts go in detail, not in columns");
-t("the crossword adds no detail — its fields are already columns",
+console.log("\nThe day a row belongs to");
+/* The crossword's browser record calls it `date`, the word search's calls it
+   `day`. migrate.js read only `date`, so every word search row landed with
+   played_on NULL — and results.js ORDERS BY that column, so a whole game's
+   history sorted as null. Reconciled in one place now; asserted here against
+   both real record shapes rather than one. */
+t("a crossword row's day is read from `date`",
+  playedOn("crossword", { date: "2026-08-26" }) === "2026-08-26");
+t("a word search row's day is read from `day`",
+  playedOn("wordsearch", { day: "2026-08-27" }) === "2026-08-27");
+t("a full timestamp is trimmed to the date",
+  playedOn("wordsearch", { day: "2026-08-27T22:14:00Z" }) === "2026-08-27");
+t("and a row carrying neither gives null rather than a broken string",
+  playedOn("wordsearch", {}) === null && playedOn("crossword", { date: "soon" }) === null);
+/* The column is NOT NULL-tolerant in practice: results.js sorts on it. If a
+   game is ever added whose record uses a third name, this fails rather than
+   filing its whole history under null. */
+t("every released game can produce a day from its own record shape",
+  playedOn("crossword", { date: "2026-08-26" }) !== null &&
+  playedOn("wordsearch", { day: "2026-08-27" }) !== null);
+
+console.log("\nGame-specific facts go in detail, not in columns");t("the crossword adds no detail — its fields are already columns",
   detailOf("crossword", { dailyNo: 1 }) === null);
 t("a word search carries its own facts as JSON", (() => {
   const d = JSON.parse(detailOf("wordsearch",
@@ -68,9 +88,24 @@ t("a word search carries its own facts as JSON", (() => {
          d.puzzleId === "XIWS-0239";
 })());
 t("it reads either spelling, because the browser writes snake_case", (() => {
-  const a = JSON.parse(detailOf("wordsearch", { foundCount: 7, bonusFound: false }));
-  const b = JSON.parse(detailOf("wordsearch", { found_count: 7, bonus_found: false }));
-  return a.foundCount === b.foundCount && a.bonusFound === b.bonusFound;
+  const a = JSON.parse(detailOf("wordsearch", { foundCount: 7, bonusFound: false, puzzleId: "XIWS-0001" }));
+  const b = JSON.parse(detailOf("wordsearch", { found_count: 7, bonus_found: false, puzzle_id: "XIWS-0001" }));
+  return a.foundCount === b.foundCount && a.bonusFound === b.bonusFound &&
+         a.puzzleId === b.puzzleId && a.puzzleId === "XIWS-0001";
+})());
+/* EVERY field, not most of them. Two were handled for both spellings and two
+   were not, so puzzleId arrived null on every row that reached production —
+   the same fault as `date` vs `day`, in the same commit, found separately. */
+t("the record the word search actually writes loses nothing", (() => {
+  const written = {
+    game: "wordsearch", day: "2026-08-27", puzzle_id: "XIWS-0239",
+    score: 94, minute: 63, found_count: 11, bonus_found: true, complete: true,
+  };
+  const d = JSON.parse(detailOf("wordsearch", written));
+  return d.puzzleId === "XIWS-0239" && d.foundCount === 11 &&
+         d.bonusFound === true && d.minute === 63 &&
+         playedOn("wordsearch", written) === "2026-08-27" &&
+         entryKey("wordsearch", written) === "ws:2026-08-27";
 })());
 t("absurd numbers are clamped rather than stored", (() => {
   const d = JSON.parse(detailOf("wordsearch", { found_count: -5, minute: 1e12 }));

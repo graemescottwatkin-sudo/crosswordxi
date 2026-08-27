@@ -50,6 +50,20 @@ export function entryKey(game, row) {
   return null;
 }
 
+/* THE DAY THE ROW BELONGS TO, for the shared `played_on` column.
+ *
+ * The crossword's browser record calls it `date`; the word search's calls it
+ * `day`. migrate.js read only `date`, so every word search row landed with
+ * played_on NULL — and results.js orders by that column, so an entire game's
+ * history sorted as null. Read here, once, for the same reason the key is:
+ * a field name that differs per game must be reconciled in one place or it is
+ * reconciled in several and one of them is forgotten. It was.
+ */
+export function playedOn(game, row) {
+  const d = String((row && (row.date || row.day)) || "");
+  return /^\d{4}-\d{2}-\d{2}/.test(d) ? d.slice(0, 10) : null;
+}
+
 /* The fields a game keeps that the others have no column for. The shared
    columns — score, elapsed_seconds, played_on, solved — stay shared; this is
    everything else, and it goes to `detail` as JSON.
@@ -62,11 +76,18 @@ export function detailOf(game, row) {
     const x = Number(v);
     return Number.isFinite(x) && x >= 0 ? Math.min(Math.floor(x), 1e6) : 0;
   };
+  const pick = (a, b) => {
+    const v = a === undefined || a === null ? b : a;
+    return v === undefined || v === null ? null : String(v).slice(0, 40);
+  };
   return JSON.stringify({
     foundCount: n(row.foundCount != null ? row.foundCount : row.found_count),
     bonusFound: !!(row.bonusFound != null ? row.bonusFound : row.bonus_found),
     minute: n(row.minute),
-    puzzleId: row.puzzleId ? String(row.puzzleId).slice(0, 40) : null,
+    /* Both spellings, like the fields above it. The browser writes snake_case
+       and an earlier build of this file read only camelCase, which is how
+       puzzleId arrived null on every row. */
+    puzzleId: pick(row.puzzleId, row.puzzle_id),
     assisted: !!row.assisted,
   });
 }

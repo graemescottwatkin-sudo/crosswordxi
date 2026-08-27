@@ -17,7 +17,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
-import { validGame, entryKey, detailOf } from "../../_lib/games.js";
+import { validGame, entryKey, detailOf, playedOn } from "../../_lib/games.js";
 
 const MAX_RESULTS = 400;
 
@@ -95,7 +95,7 @@ export async function onRequestPost({ request, env }) {
       .bind(
         newId(), user.id, game, key, detailOf(game, r),
         key, mode, dailyNo,
-        str(r.date, 10), r.score === undefined ? 0 : 1, intOr(r.score, null),
+        playedOn(game, r), r.score === undefined ? 0 : 1, intOr(r.score, null),
         intOr(r.elapsedSeconds, null), intOr(r.checks), intOr(r.checkAlls),
         intOr(r.revealedLetters), intOr(r.revealedAnswers), intOr(r.substitutions),
         intOr(r.pauses), intOr(r.pausedSeconds),
