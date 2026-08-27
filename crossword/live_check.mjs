@@ -182,14 +182,19 @@ t("shared assets carry their own plain vN lifecycle",
    The fix is a middleware self-fetch, and the self-fetch has one caveat that
    only production can prove: a same-zone subrequest. These assertions ARE that
    proof, run after every deploy. */
+/* v001r: this block referenced a BASE that this file never defined, so it
+   threw ReferenceError on the first HEAD and took the whole tail of the run
+   with it — the middleware proof and 18 assertions after it. It was shipped
+   without ever being run; node --check proves parsing, not execution. The
+   base is HUB: both paths are hub-relative and SITE already ends /crossword. */
 for (const p of ["/api/daily", "/crossword/answers/"]) {
-  const r = await fetch(BASE + p, { method: "HEAD", redirect: "manual" });
+  const r = await fetch(HUB + p, { method: "HEAD", redirect: "manual" });
   t(`HEAD ${p} answers like its GET`, r.status === 200, "HTTP " + r.status);
   const body = await r.text();
   t(`and carries no body`, body.length === 0, body.length + " bytes");
 }
 {
-  const r = await fetch(BASE + "/api/daily", { method: "HEAD", redirect: "manual" });
+  const r = await fetch(HUB + "/api/daily", { method: "HEAD", redirect: "manual" });
   t("HEAD /api/daily carries the API noindex",
     (r.headers.get("x-robots-tag") || "").indexOf("noindex") > -1,
     "the _headers rule never reached a Function response before the middleware");

@@ -86,18 +86,27 @@ t("placements are 0-based on the wire",
 /* ---- the schedule guard ------------------------------------------------- */
 const cat = await get("/api/wordsearch/catalog");
 const c = cat.status === 200 ? await cat.json() : null;
-const releasedCount = c && c.puzzles ? c.puzzles.length : 0;
-t("the catalog answers", cat.status === 200, releasedCount + " released boards");
+/* v001r: the endpoint returns { boards: [...] }; this file read c.puzzles.
+   One wrong key made three checks lie — the count read 0 in green on a live
+   site with 239 boards, the no-leak guard never inspected a board and failed
+   on its own empty-input branch, and releasedIds below came back empty, which
+   left the sealed-board check picking the top of the scan every time instead
+   of deriving it from the schedule. Shipped without ever being run;
+   node --check proves parsing, not execution. A live catalog with zero
+   released boards is a failure, not a pass, so the count is asserted. */
+const releasedCount = c && c.boards ? c.boards.length : 0;
+t("the catalog answers", cat.status === 200 && releasedCount > 0,
+  releasedCount + " released boards");
 t("the catalog carries no grids and no answers", (() => {
-  if (!c || !c.puzzles || !c.puzzles.length) return false;
-  const p = c.puzzles[0];
+  if (!c || !c.boards || !c.boards.length) return false;
+  const p = c.boards[0];
   return !("grid" in p) && !("answers" in p) && !("bonus" in p);
 })());
 
 /* An id the schedule has not released yet. The catalog lists what IS released,
    so any XIWS id not in it and within the bank's range is a sealed board —
    asking for it must 404 with nothing said. */
-const releasedIds = new Set(c && c.puzzles ? c.puzzles.map((p) => p.id) : []);
+const releasedIds = new Set(c && c.boards ? c.boards.map((p) => p.id) : []);
 let sealedId = null;
 for (let n = 374; n >= 1; n--) {
   const id = "XIWS-" + String(n).padStart(4, "0");
