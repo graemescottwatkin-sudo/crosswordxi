@@ -78,6 +78,9 @@ jobs:
           node crossword/admin_test.mjs
           node crossword/themes_test.mjs
           node crossword/challenge_test.mjs
+          # One account, more than one game: the rules that only exist
+          # once there are two, which no older suite could have caught.
+          node crossword/games_test.mjs
           node wordsearch/frontend_test.mjs
           node wordsearch/functions_test.mjs
 

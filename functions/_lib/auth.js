@@ -176,9 +176,19 @@ export function clearedCookie(request) {
     (dom ? `Domain=${dom}; ` : "") + `SameSite=Lax; Max-Age=0`;
 }
 
-/* Cookies ride along on cross-site posts; a custom header does not. */
+/* Cookies ride along on cross-site posts; a custom header does not.
+ *
+ * TWO NAMES, ONE RULE. "X-Crossword-XI" was the header when the crossword was
+ * the only game. Wordsearch XI posting the same value under a game-specific
+ * name would be a second copy of one fact, and game three a third — so the
+ * family header "X-XI-Games" is what new callers send, and the original stays
+ * accepted because a browser holding a cached game.js is still sending it and
+ * must not start failing mid-session. Either satisfies the check; neither
+ * rides along on a cross-site post, which is the whole property. */
+export const CSRF_HEADER = "X-XI-Games";
 export function csrfOk(request) {
-  return request.headers.get("X-Crossword-XI") === "1";
+  return request.headers.get(CSRF_HEADER) === "1" ||
+         request.headers.get("X-Crossword-XI") === "1";
 }
 
 /* Is this request from the owner? Read from the database every time, never

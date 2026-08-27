@@ -86,14 +86,14 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v001d";    // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001g";    // <- what is LIVE; bump after each deploy
 /* What was last PRESENTED — a different question from what is live, and the
    burn rule is about this one: a tag dies the moment its package is handed
    over, deployed or not. One constant tried to answer both questions and the
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001f";  // <- bump when a package is handed over
+const LAST_PRESENTED = "v001h";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -441,8 +441,18 @@ let brokenImports = [];
    parses; so does the gate now. */
 {
   /* Node's own parser via stdin — no dependency, because this gate must run
-     with no node_modules present (its own check demands it). */
-  const { execSync } = await import("node:child_process");
+     with no node_modules present (its own check demands it).
+
+     execFILEsync, not execSync. execSync passes the command to cmd.exe as a
+     string, and on Windows process.execPath is "C:\Program Files\nodejs\
+     node.exe" — unquoted, cmd reads that as the program "C:\Program" and
+     fails with an empty stderr. All 43 files failed, on every Windows run,
+     for as long as this check has existed; CI passed throughout because
+     /usr/bin/node has no space in it. A check that cannot run on the machine
+     the developer uses is the same fault as one that returns true on a folder
+     that is not there, only louder. execFileSync takes the arguments as an
+     array and spawns the binary directly, so no shell parses the path. */
+  const { execFileSync } = await import("node:child_process");
   const files = [];
   (function walk(d) {
     for (const e of fs.readdirSync(d)) {
@@ -453,11 +463,18 @@ let brokenImports = [];
   let broken = null;
   for (const f of files) {
     try {
-      execSync(process.execPath + " --input-type=module --check",
+      execFileSync(process.execPath, ["--input-type=module", "--check"],
         { input: fs.readFileSync(f), stdio: ["pipe", "pipe", "pipe"] });
     } catch (e) {
+      /* Report the parse error when there is one, and the raw exit and stderr
+         when there is not. The old line printed only the first stderr line
+         matching /Error/ and, finding none, printed "undefined" — which said a
+         check had failed while hiding that the cause was the environment
+         rather than the file. */
+      const err = String(e.stderr || "");
+      const named = err.split("\n").find((l) => /Error/.test(l));
       broken = path.relative(ROOT, f) + " — " +
-        String(e.stderr || e.message).split("\n").find((l) => /Error/.test(l));
+        (named || `no parse error reported; exit=${e.status} stderr=${JSON.stringify(err.trim())}`);
       break;
     }
   }

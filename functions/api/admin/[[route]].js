@@ -101,7 +101,11 @@ export async function onRequest({ request, env, params }) {
     try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
     const n = parseInt(body.dailyNo, 10);
     if (!Number.isInteger(n) || n < 1) return bad("Give a day number.");
-    await env.DB.prepare("DELETE FROM results WHERE user_id = ? AND daily_no = ?")
+    /* game = 'crossword': this route takes a DAY NUMBER, which is a crossword
+       idea. Unqualified it would have deleted any row whose daily_no happened
+       to match — word search rows carry NULL there today, but a future game
+       that reuses the column would silently lose rows to a crossword tool. */
+    await env.DB.prepare("DELETE FROM results WHERE user_id = ? AND game = 'crossword' AND daily_no = ?")
       .bind(me.id, n).run();
     return json({ ok: true, dailyNo: n });
   }

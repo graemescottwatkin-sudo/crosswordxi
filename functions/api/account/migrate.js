@@ -1,4 +1,4 @@
-/* POST /api/account/migrate  { club?, results: [...] }
+/* POST /api/account/migrate  { game?, club?, results: [...] }
  *
  * A guest who signs in must not lose what they have already played. The
  * browser posts what it has in localStorage once, and it is written against
@@ -17,6 +17,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
+import { validGame, entryKey, detailOf } from "../../_lib/games.js";
 
 const MAX_RESULTS = 400;
 
@@ -44,6 +45,14 @@ export async function onRequestPost({ request, env }) {
       .bind(String(body.club).slice(0, 60), user.id).run();
   }
 
+  /* Which game's history this is. Absent means crossword, because every
+     migration posted before 020 existed was a crossword one and those bodies
+     must keep meaning what they meant. An unknown id is refused rather than
+     defaulted: a typo silently filed under 'crossword' is worse than an
+     error. */
+  const game = validGame(body.game === undefined ? undefined : body.game);
+  if (!game) return bad("Unknown game.");
+
   const list = Array.isArray(body.results) ? body.results.slice(0, MAX_RESULTS) : [];
   let added = 0, skipped = 0;
 
@@ -57,24 +66,35 @@ export async function onRequestPost({ request, env }) {
        deduplicate on, so anything without a daily number would be inserted
        again on every migration. Signing in on a third device would then treble
        it. Skipped rather than trusted. */
-    const dailyNo = r.dailyNo === null || r.dailyNo === undefined ? null : intOr(r.dailyNo, null);
-    if (!dailyNo) { skipped++; continue; }
+    /* ONE key, composed in _lib/games.js and nowhere else. A row with nothing
+       to be unique by is skipped — that is why practice boards never migrated,
+       and it is now the same sentence for every game rather than a per-game
+       rule each caller reimplements. */
+    const key = entryKey(game, r);
+    if (!key) { skipped++; continue; }
+    const dailyNo = game === "crossword" ? intOr(r.dailyNo, null) : null;
     const mode = "daily";
 
     const seen = await env.DB
-      .prepare("SELECT id FROM results WHERE user_id = ? AND mode = 'daily' AND daily_no = ?")
-      .bind(user.id, dailyNo).first();
-    if (seen) { skipped++; continue; }           // already have this day
+      .prepare("SELECT id FROM results WHERE user_id = ? AND game = ? AND entry_key = ?")
+      .bind(user.id, game, key).first();
+    if (seen) { skipped++; continue; }           // already have this one
 
+    /* OR IGNORE, against the unique index 020 adds. The SELECT above is the
+       cheap path; this is the one that holds when two devices migrate the same
+       history at the same moment and both SELECTs come back empty. A duplicate
+       daily makes a streak meaningless, so the rule belongs in the schema and
+       not only in the order these statements happen to run. */
     await env.DB.prepare(
-      `INSERT INTO results (id, user_id, puzzle_token, mode, daily_no, played_on,
+      `INSERT OR IGNORE INTO results (id, user_id, game, entry_key, detail,
+        puzzle_token, mode, daily_no, played_on,
         solved, score, elapsed_seconds, checks, check_alls, revealed_letters,
         revealed_answers, substitutions, pauses, paused_seconds,
         club, season, completed_at, source)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
       .bind(
-        newId(), user.id,
-        "daily:" + dailyNo, mode, dailyNo,
+        newId(), user.id, game, key, detailOf(game, r),
+        key, mode, dailyNo,
         str(r.date, 10), r.score === undefined ? 0 : 1, intOr(r.score, null),
         intOr(r.elapsedSeconds, null), intOr(r.checks), intOr(r.checkAlls),
         intOr(r.revealedLetters), intOr(r.revealedAnswers), intOr(r.substitutions),

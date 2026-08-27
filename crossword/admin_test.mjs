@@ -190,7 +190,10 @@ console.log("\nReplaying a day");
      be played again, the other wipes the history and leaves the game alone. */
   const src = await import("node:fs").then((fs) =>
     fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8"));
-  t("replay only ever touches one day", /DELETE FROM results WHERE user_id = \? AND daily_no = \?/.test(src));
+  /* Qualified by game since 020. This route takes a DAY NUMBER, which is a
+     crossword idea; unqualified it would reach any row whose daily_no matched. */
+  t("replay only ever touches one day, and only the crossword's",
+    /DELETE FROM results WHERE user_id = \? AND game = 'crossword' AND daily_no = \?/.test(src));
   t("and clearing the record never touches the saved game",
     /DELETE FROM results WHERE user_id = \?"/.test(src));
 }

@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001c";
+  var BUILD = "v001d";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -95,6 +95,63 @@
       all.push(rec);
       localStorage.setItem(RESULTS_KEY, JSON.stringify(all.slice(-800)));
     } catch (e) {}
+    /* The device keeps the record whatever happens next. Pushing it to the
+       account is a best effort on top: a failed push leaves the row exactly
+       where it was, and the next sync carries it. */
+    pushResults();
+  }
+
+  /* ---- the account ------------------------------------------------------
+     The session cookie is scoped to .thexigames.com, so a player signed in on
+     the crossword is already signed in here — there was simply nothing for it
+     to carry until migration 020 gave results a game column. Same two calls
+     the crossword makes, in the same order: push this device's rows, then pull
+     everything the account has from anywhere. The other way round fetches,
+     merges, and then pushes rows the account already had. */
+  var account = null;
+  function apiAuth(path, body) {
+    var opts = {
+      method: body ? "POST" : "GET",
+      headers: { "X-XI-Games": "1" },     // the CSRF check on the server
+      credentials: "same-origin",
+    };
+    if (body) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    return fetch(path, opts).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    });
+  }
+  function pushResults() {
+    if (!account) return Promise.resolve(null);
+    return apiAuth("/api/account/migrate",
+      { game: "wordsearch", results: readResults() }).catch(function () { return null; });
+  }
+  function pullResults() {
+    if (!account) return Promise.resolve(null);
+    return apiAuth("/api/account/results?game=wordsearch").then(function (r) {
+      var remote = (r && r.results) || [];
+      if (!remote.length) return null;
+      /* Merge by day, which is what a row is unique by — the same key the
+         server dedupes on, so the two sides cannot disagree about what counts
+         as the same board. The device's own row wins a tie: it is the one
+         that was actually played here, and it carries the found list. */
+      var byDay = {};
+      remote.forEach(function (r2) { if (r2 && r2.day) byDay[r2.day] = r2; });
+      readResults().forEach(function (r2) { if (r2 && r2.day) byDay[r2.day] = r2; });
+      var merged = Object.keys(byDay).sort().map(function (k) { return byDay[k]; });
+      try { localStorage.setItem(RESULTS_KEY, JSON.stringify(merged.slice(-800))); } catch (e) {}
+      return merged.length;
+    }).catch(function () { return null; });
+  }
+  function syncAccount() {
+    return apiAuth("/api/auth/session").then(function (r) {
+      account = (r && r.user) || null;
+      if (!account) return null;
+      return pushResults().then(pullResults);
+    }).catch(function () { account = null; return null; });
   }
   function pruneDailyState() {
     try {
@@ -680,6 +737,10 @@
     grid = $("grid"); hlayer = $("highlightLayer");
     $("buildTag").textContent = BUILD;
     pruneDailyState();
+    /* Fire and forget: nothing on this page waits for an account. A signed-out
+       player, an offline device and a failed request all reach the board at
+       the same speed. */
+    syncAccount();
 
     grid.addEventListener("pointerdown", onPointerDown);
     grid.addEventListener("pointermove", onPointerMove);

@@ -1,0 +1,140 @@
+/* games_test.mjs — one account, more than one game.
+ *
+ * Migration 020 exists because the session cookie has always been scoped to
+ * .thexigames.com while `results` was keyed on daily_no, a crossword idea. A
+ * player signed in on the crossword was already signed in on the word search
+ * and there was nothing for that to carry.
+ *
+ * What this suite is for: the rules that only appear once there are two games,
+ * and which no existing suite could have caught because no existing suite knew
+ * a second game existed.
+ *
+ *   node crossword/games_test.mjs        (from the repo root)
+ */
+import { GAMES, DEFAULT_GAME, validGame, entryKey, detailOf }
+  from "../functions/_lib/games.js";
+import { csrfOk, CSRF_HEADER } from "../functions/_lib/auth.js";
+import fs from "node:fs";
+
+let pass = 0, fail = 0;
+function t(name, ok, note) {
+  if (ok) { pass++; console.log(`  ok  ${name}${note ? "  — " + note : ""}`); }
+  else { fail++; console.log(`FAIL  ${name}${note ? "  — " + note : ""}`); }
+}
+
+console.log("The list of games");
+t("every game id is lower case and plain", GAMES.every((g) => /^[a-z]+$/.test(g)));
+t("the default is one of them", GAMES.indexOf(DEFAULT_GAME) > -1);
+t("an unknown id is refused, not coerced", validGame("wordsearchxi") === null &&
+  validGame("../etc") === null && validGame("CROSSWORD") === "crossword");
+/* Absent is not the same question as wrong. Every caller written before 020
+   asked about the crossword and must keep getting that answer; a typo must
+   not quietly become one. */
+t("absent means the crossword, so old callers keep working",
+  validGame(undefined) === "crossword");
+t("but empty and null are still absent, not errors",
+  validGame(null) === "crossword" && validGame("") === "crossword");
+
+console.log("\nThe one entry key");
+t("a crossword row is keyed by its daily number",
+  entryKey("crossword", { dailyNo: 2 }) === "daily:2");
+t("a word search row is keyed by the board's day",
+  entryKey("wordsearch", { day: "2026-08-27" }) === "ws:2026-08-27");
+/* The two games must never compose the same key for different rows, or one
+   game's history would deduplicate against the other's. */
+t("the two games cannot collide", (() => {
+  const a = entryKey("crossword", { dailyNo: 20260827 });
+  const b = entryKey("wordsearch", { day: "2026-08-27" });
+  return a !== b;
+})());
+t("a row with nothing to be unique by has no key, so it is skipped",
+  entryKey("crossword", {}) === null &&
+  entryKey("crossword", { dailyNo: 0 }) === null &&
+  entryKey("wordsearch", {}) === null &&
+  entryKey("wordsearch", { day: "not-a-day" }) === null);
+/* The grace rule: a board finished the day after still belongs to its own
+   day. Keying on when it was played would file it as a second board. */
+t("the key is the board's day, not the day it was played",
+  entryKey("wordsearch", { day: "2026-08-26", playedAt: "2026-08-27" }) === "ws:2026-08-26");
+t("an unknown game composes no key at all", entryKey("scrambled", { dailyNo: 1 }) === null);
+
+console.log("\nGame-specific facts go in detail, not in columns");
+t("the crossword adds no detail — its fields are already columns",
+  detailOf("crossword", { dailyNo: 1 }) === null);
+t("a word search carries its own facts as JSON", (() => {
+  const d = JSON.parse(detailOf("wordsearch",
+    { found_count: 11, bonus_found: true, minute: 42, puzzleId: "XIWS-0239" }));
+  return d.foundCount === 11 && d.bonusFound === true && d.minute === 42 &&
+         d.puzzleId === "XIWS-0239";
+})());
+t("it reads either spelling, because the browser writes snake_case", (() => {
+  const a = JSON.parse(detailOf("wordsearch", { foundCount: 7, bonusFound: false }));
+  const b = JSON.parse(detailOf("wordsearch", { found_count: 7, bonus_found: false }));
+  return a.foundCount === b.foundCount && a.bonusFound === b.bonusFound;
+})());
+t("absurd numbers are clamped rather than stored", (() => {
+  const d = JSON.parse(detailOf("wordsearch", { found_count: -5, minute: 1e12 }));
+  return d.foundCount === 0 && d.minute === 1e6;
+})());
+
+console.log("\nOne CSRF rule, two header names");
+const withHeader = (name) => new Request("https://www.thexigames.com/api/x",
+  { method: "POST", headers: { [name]: "1" } });
+t("the family header is accepted", csrfOk(withHeader(CSRF_HEADER)));
+/* A browser holding a cached crossword game.js is still sending the old name
+   and must not start failing mid-session. */
+t("the crossword's original header is still accepted",
+  csrfOk(withHeader("X-Crossword-XI")));
+t("and a request carrying neither is refused",
+  !csrfOk(new Request("https://www.thexigames.com/api/x", { method: "POST" })));
+
+console.log("\nWhat migration 020 must actually contain");
+const sql = fs.readFileSync("data/migrations/020-results-game.sql", "utf8");
+t("it adds the game column with a default, so existing rows stay valid",
+  /ALTER TABLE results ADD COLUMN game TEXT NOT NULL DEFAULT 'crossword'/.test(sql));
+t("it adds the key column", /ADD COLUMN entry_key/.test(sql));
+/* A unique index over a column that is NULL on old rows does not constrain
+   them: the backfill is what makes the constraint describe the data. */
+t("it backfills the key from daily_no before constraining it", (() => {
+  const backfill = sql.indexOf("SET entry_key = 'daily:'");
+  const index = sql.indexOf("CREATE UNIQUE INDEX");
+  return backfill > -1 && index > -1 && backfill < index;
+})());
+t("and leaves no row without a key for the index to let through repeatedly",
+  /SET entry_key = 'row:' \|\| id/.test(sql));
+t("the uniqueness rule is in the schema, not only in application code",
+  /CREATE UNIQUE INDEX IF NOT EXISTS idx_results_entry\s+ON results \(user_id, game, entry_key\)/.test(sql));
+
+console.log("\nThe endpoints ask the shared module, not their own copy");
+const migrate = fs.readFileSync("functions/api/account/migrate.js", "utf8");
+const results = fs.readFileSync("functions/api/account/results.js", "utf8");
+t("migrate composes no key of its own", !/["'`]daily:["'`]\s*\+/.test(migrate) &&
+  /entryKey\(/.test(migrate));
+t("results filters by game rather than returning everything",
+  /WHERE user_id = \? AND game = \?/.test(results));
+/* The insert must be OR IGNORE or the unique index turns a race between two
+   devices into a 500 rather than a skip. */
+t("the insert defers to the index instead of racing it",
+  /INSERT OR IGNORE INTO results/.test(migrate));
+t("neither file keeps a private list of games",
+  !/\[\s*["']crossword["']\s*,\s*["']wordsearch["']/.test(migrate + results));
+
+console.log("\nThe word search actually asks");
+const ws = fs.readFileSync("wordsearch/js/game.js", "utf8");
+t("it reads the session", /api\/auth\/session/.test(ws));
+t("it pushes under its own game id", /game:\s*["']wordsearch["']/.test(ws));
+t("it pulls under its own game id", /account\/results\?game=wordsearch/.test(ws));
+/* Push then pull. The other order fetches, merges, and then pushes rows the
+   account already had. */
+t("it pushes before it pulls", (() => {
+  const m = ws.match(/pushResults\(\)\.then\(pullResults\)/);
+  return !!m;
+})());
+t("it sends the CSRF header, or every post is a 403",
+  new RegExp(`["']${CSRF_HEADER}["']\\s*:\\s*["']1["']`).test(ws));
+/* Nothing on the board waits for an account: signed out, offline and failed
+   all reach the grid at the same speed. */
+t("the sync is fire and forget at boot", /^\s*syncAccount\(\);/m.test(ws));
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

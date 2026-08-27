@@ -43,7 +43,12 @@ function makeDB() {
             return s ? users.find((u) => u.id === s.user_id) || null : null;
           }
           if (like(sql, "FROM results WHERE user_id")) {
-            return results.find((r) => r.user_id === b[0] && r.daily_no === b[1]) || null;
+            /* Matches on the entry key, as migration 020 does. Keying the stub
+               on daily_no kept it agreeing with an endpoint that had stopped
+               asking that question — a double that models the old schema turns
+               a passing suite into a statement about nothing. */
+            return results.find((r) => r.user_id === b[0] && r.game === b[1] &&
+                                       r.entry_key === b[2]) || null;
           }
           return null;
         },
@@ -62,9 +67,18 @@ function makeDB() {
           } else if (like(sql, "UPDATE users SET club")) {
             const u = users.find((x) => x.id === b[1]);
             if (u) u.club = b[0];
-          } else if (like(sql, "INSERT INTO results")) {
-            results.push({ id: b[0], user_id: b[1], mode: b[3], daily_no: b[4],
-              score: b[7], source: "migrated" });
+          } else if (like(sql, "INSERT OR IGNORE INTO results") ||
+                     like(sql, "INSERT INTO results")) {
+            /* OR IGNORE against UNIQUE(user_id, game, entry_key). The stub has
+               to enforce it too: without this the endpoint's second guard is
+               untested and a race that reaches production passes here. */
+            const clash = results.some((r) => r.user_id === b[1] &&
+              r.game === b[2] && r.entry_key === b[3]);
+            if (!clash) {
+              results.push({ id: b[0], user_id: b[1], game: b[2], entry_key: b[3],
+                detail: b[4], mode: b[6], daily_no: b[7],
+                score: b[10], source: "migrated" });
+            }
           }
           return { success: true };
         },

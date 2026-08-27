@@ -1,4 +1,4 @@
-/* GET /api/account/results
+/* GET /api/account/results?game=crossword|wordsearch
  *
  * Everything this account has played, in the shape the browser keeps in
  * localStorage. The other half of migrate.js.
@@ -15,6 +15,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB } from "../../_lib/db.js";
 import { currentUser } from "../../_lib/auth.js";
+import { validGame } from "../../_lib/games.js";
 
 /* The same ceiling migrate.js uses. A player with more than this has years of
    history and the tail of it is not what any screen shows. */
@@ -27,15 +28,25 @@ export async function onRequestGet({ request, env }) {
 
   /* Newest first, so the cap keeps recent history rather than the oldest.
      A streak is read from the recent end. */
+  /* Absent means crossword: every caller written before 020 asked this
+     question about the crossword and must keep getting that answer. */
+  const asked = new URL(request.url).searchParams.get("game");
+  const game = validGame(asked === null ? undefined : asked);
+  if (!game) return bad("Unknown game.");
+
+  /* Ordered by played_on, not daily_no: a word search row has no daily number,
+     and ordering by a column half the table leaves NULL puts that game's whole
+     history at one end regardless of when it was played. completed_at breaks
+     ties, as it always did. */
   const rows = await env.DB.prepare(
     `SELECT mode, daily_no, played_on, score, elapsed_seconds,
             checks, check_alls, revealed_letters, revealed_answers,
             substitutions, pauses, paused_seconds, club, season,
-            solved, completed_at, source
+            solved, completed_at, source, detail
        FROM results
-      WHERE user_id = ?
-      ORDER BY daily_no DESC, completed_at DESC
-      LIMIT ?`).bind(user.id, MAX_RESULTS).all();
+      WHERE user_id = ? AND game = ?
+      ORDER BY played_on DESC, completed_at DESC
+      LIMIT ?`).bind(user.id, game, MAX_RESULTS).all();
 
   /* Renamed back to the browser's own field names rather than sending the
      column names. The browser has read this shape since before accounts
@@ -74,8 +85,24 @@ export async function onRequestGet({ request, env }) {
        from one a browser reported. Nothing uses it yet; a leaderboard that
        needs to trust its own rows will. */
     source: r.source,
+    /* Spread flat rather than nested, so a word search row read back from an
+       account has the same shape as one the browser wrote itself. A row that
+       behaves differently depending on where it came from is a bug waiting for
+       the screen that reads it. */
+    ...(r.detail ? safeDetail(r.detail) : {}),
   }));
 
-  return json({ results, count: results.length, capped: results.length >= MAX_RESULTS },
+  return json({ game, results, count: results.length, capped: results.length >= MAX_RESULTS },
     200, { "Cache-Control": "no-store" });
+}
+
+/* `detail` is JSON this server wrote, but it is still parsed defensively: a row
+   written by an older build, or by hand during an import, must not take the
+   whole history down with it. A row with unreadable detail is still a real
+   score, an elapsed time and a day. */
+function safeDetail(raw) {
+  try {
+    const d = JSON.parse(raw);
+    return d && typeof d === "object" && !Array.isArray(d) ? d : {};
+  } catch (e) { return {}; }
 }
