@@ -86,20 +86,62 @@ t("asset URLs carry a build tag so a cached copy cannot be reused", (() => {
    (>= v100) with a new-scheme build passes with a note. Once LAST_SHIPPED is
    new-scheme, ordering is strict again: number first, then letter, where
    "v001" < "v001b" < "v002". */
-const LAST_SHIPPED = "v154";   // <- bump this after each deploy
-t("the build tag has moved past the version now live",
+const LAST_SHIPPED = "v154";     // <- what is LIVE; bump after each deploy
+/* What was last PRESENTED — a different question from what is live, and the
+   burn rule is about this one: a tag dies the moment its package is handed
+   over, deployed or not. One constant tried to answer both questions and the
+   burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
+   restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
+   v001a after v001b, anything below 100. Two facts, two constants. */
+const LAST_PRESENTED = "v001b";  // <- bump when a package is handed over
+t("no package manifest or tool state in the repo root", (() => {
+  /* The repo deliberately has no package.json: its absence is why Pages logs
+     "No build command specified. Skipping build step." One appearing would
+     silently change the deploy pipeline. And it nearly did — running the CI
+     suite locally wrote package.json, a lockfile and a .wrangler/ state
+     directory into the tree, and 181 files went into a package that should
+     hold 136. Tools that write into the tree are a standing hazard; the gate
+     now refuses their droppings. */
+  for (const f of ["package.json", "package-lock.json", ".wrangler",
+                   "yarn.lock", "pnpm-lock.yaml"]) {
+    if (hasRoot(f)) return false;
+  }
+  return true;
+})());
+
+t("every og:image is an absolute https URL", (() => {
+  /* Scrapers fetch og:image verbatim: Facebook, WhatsApp and Slack do not
+     resolve a relative URL against the page, they just fail to render a
+     card. "og-image.png" survived the migration in two heads, and every
+     share of the game page has been rendering imageless. Enforced by scheme,
+     not by fixing the two instances. */
+  for (const f of ["index.html", "how-to-play.html", "privacy.html"]) {
+    if (!has(f)) continue;
+    for (const m of read(f).matchAll(/property="og:image" content="([^"]+)"/g)) {
+      if (!/^https:\/\//.test(m[1])) return false;
+    }
+  }
+  return true;
+})());
+
+t("the build tag has moved past the version now live, and past the last presented",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
     const parse = (v) => {
       const m = /^v(\d+)([a-z]?)$/.exec(String(v).trim());
       return m ? [parseInt(m[1], 10), m[2] || ""] : null;
     };
-    const a = parse(now), b = parse(LAST_SHIPPED);
-    if (!a || !b) return false;
-    if (b[0] >= 100 && a[0] < 100) return true;   // the one restart, v156 -> v001
-    return a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]);
+    const gt = (x, y) => x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]);
+    const a = parse(now), live = parse(LAST_SHIPPED), pres = parse(LAST_PRESENTED);
+    if (!a || !live || !pres) return false;
+    /* The one lineage restart: while what is LIVE is still the old numbering
+       (>= v100), only number one — v001 and its letters — may follow it, in
+       presentation order. v002 cannot leapfrog the bridge, and this clause
+       retires itself the first time LAST_SHIPPED becomes a new-scheme tag. */
+    const shippedOk = live[0] >= 100 ? a[0] === 1 : gt(a, live);
+    return shippedOk && gt(a, pres);
   })(),
-  `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}`);
+  `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
 
 t("the build tag matches the one the script reports",
   read("js/game.js").includes('var BUILD = "' + (html.match(/\?v=([^"]+)"/) || [])[1] + '"'),
@@ -349,9 +391,14 @@ t("the deleted penalty constants have not returned", (() => {
 
 let suiteGap = "";
 t("every test suite is named in the workflow", (() => {
+  /* hasRoot, not has: the workflow lives at the repo root, and has() looks in
+     crossword/ — where .github does not exist, so this check returned true
+     unconditionally from the v152 restructure until now. A gate that reports
+     a pass it never evaluated is the silent-pass fault wearing the gate's own
+     uniform, and it was reported outward as "34/34" for four builds. */
   const wf = "\u002egithub/workflows/checks.yml";
-  if (!has(wf)) return true;
-  const yml = read(wf);
+  if (!hasRoot(wf)) return false;   // a missing workflow is a failure, not a pass
+  const yml = readRoot(wf);
   const suites = fs.readdirSync(DIR).filter((f) => /_test\.mjs$/.test(f));
   /* Suites that need a live URL or a real browser cannot run in the offline
      job. Named here so the exemption is a decision on the record rather than
@@ -411,18 +458,19 @@ let brokenImports = [];
 t("every import resolves to something the target actually exports", (() => {
   const walk = (dir) => {
     const out = [];
-    for (const e of fs.readdirSync(path.join(DIR, dir), { withFileTypes: true })) {
+    for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
       if (e.isDirectory()) out.push(...walk(path.join(dir, e.name)));
       else if (e.name.endsWith(".js")) out.push(path.join(dir, e.name));
     }
     return out;
   };
-  if (!has("functions")) return true;
+  if (!hasRoot("functions")) return false;   // vacuous-true here hid nothing for
+                                             // months only by luck
   const broken = [];
   for (const f of walk("functions")) {
-    const src = fs.readFileSync(path.join(DIR, f), "utf8");
+    const src = fs.readFileSync(path.join(ROOT, f), "utf8");
     for (const m of src.matchAll(/import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["']/g)) {
-      const target = path.resolve(path.dirname(path.join(DIR, f)), m[2]);
+      const target = path.resolve(path.dirname(path.join(ROOT, f)), m[2]);
       if (!fs.existsSync(target)) { broken.push(`${f} -> ${m[2]} (no such file)`); continue; }
       const t2 = fs.readFileSync(target, "utf8");
       for (const raw of m[1].split(",")) {
@@ -441,16 +489,16 @@ t("every import resolves to something the target actually exports", (() => {
 t("no Functions file collides with a directory of the same name", (() => {
   const walk = (dir) => {
     const out = [];
-    for (const e of fs.readdirSync(path.join(DIR, dir), { withFileTypes: true })) {
+    for (const e of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
       if (e.isDirectory()) out.push(...walk(path.join(dir, e.name)));
       else if (e.name.endsWith(".js")) out.push(path.join(dir, e.name));
     }
     return out;
   };
-  if (!has("functions")) return true;
+  if (!hasRoot("functions")) return false;
   return !walk("functions").some((f) =>
-    has(f.replace(/\.js$/, "")) &&
-    fs.statSync(path.join(DIR, f.replace(/\.js$/, ""))).isDirectory());
+    hasRoot(f.replace(/\.js$/, "")) &&
+    fs.statSync(path.join(ROOT, f.replace(/\.js$/, ""))).isDirectory());
 })());
 
 t("no local build scratch in the package", !has(".wrangler"));

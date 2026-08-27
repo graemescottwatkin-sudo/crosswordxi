@@ -169,9 +169,18 @@ server.listen(0, "127.0.0.1", async () => {
        things you can choose, not one control with a mode buried in it. */
     return !!$("homeDaily") && !!$("homePrevious");
   })());
-  t("the daily says which phase it is", (() => {
+  t("the daily tile agrees with the engine about the phase", (() => {
+    /* Was: title must contain "friendly" or "matchday" — which was true on
+       the two phases that existed when it was written, and turned red at
+       midnight on 27 August when day two opened the THIRD phase, whose
+       honest label is "Today's puzzle". A suite that is green one calendar
+       day and red the next on unchanged code is reading the wall clock; the
+       date-proof form asserts the property itself — the tile shows what the
+       engine says the phase is, one source, whatever today happens to be. */
+    const eng = w.FCW || w.window.FCW;
+    const label = eng.dailyPhase(eng.dailyNumber()).label;
     const title = $("homeDailyTitle").textContent;
-    return /friendly|matchday/i.test(title);
+    return !!label && title.indexOf(label) !== -1;
   })(), $("homeDailyTitle").textContent);
 
   /* The daily tile is suspended, so it refuses the click. dailyBtn is the
@@ -775,9 +784,20 @@ server.listen(0, "127.0.0.1", async () => {
       /layoutFor = window\.innerWidth \+ "x" \+ window\.innerHeight/.test(js));
     t("staleness is a checkable fact, not a caught event",
       /function layoutStale\(\)/.test(js));
-    t("the clock tick heals a stale layout",
-      /function tick\(\)[\s\S]{0,700}if \(layoutStale\(\)\) relayout\(\)/.test(js),
-      "the watchdog: worst case one wrong second, never wrong-until-refresh");
+    /* The watchdog's first home was tick(), which runs only mid-game — so
+       rotating on Kick Off, Full Time or a hidden board had no watchdog at
+       all, in the screens a player sits still longest. It runs on its own
+       interval from boot now, and the assertion FORBIDS it inside tick so
+       it cannot quietly move back to the narrower home. */
+    t("the watchdog runs on its own clock, from boot",
+      /setInterval\(function \(\) \{ if \(layoutStale\(\)\) relayout\(\); \}, 1000\)/.test(js),
+      "worst case one wrong second on ANY screen, never wrong-until-refresh");
+    t("and not inside the game clock, whose ticks stop",
+      !/function tick\(\)[\s\S]{0,700}layoutStale/.test(
+        js.replace(/\/\*[\s\S]*?\*\//g, "")),
+      "tick runs only mid-game; Kick Off and Full Time had no watchdog");
+    t("and returning to a backgrounded tab checks immediately",
+      /visibilitychange[\s\S]{0,120}layoutStale\(\)\) relayout\(\)/.test(js));
     t("the modern rotation signals call the one relayout",
       /screen\.orientation\.addEventListener\("change"/.test(js) &&
       /visualViewport\.addEventListener\("resize", relayout\)/.test(js));
@@ -1211,6 +1231,18 @@ server.listen(0, "127.0.0.1", async () => {
   t("the card height still never changes between clues", (() => {
     const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "");
     return /\.now-clue\{[^}]*height:96px/.test(flat) && !/\.now-clue\{[^}]*height:auto/.test(flat);
+  })());
+
+  console.log("\nA clamped board keeps its life");
+  t("an adopted board reloads its own save, not a blank second copy", (() => {
+    const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return /adoptServerBoard\(res\.dailyNo\);\s*if \(!restore\) restore = readSlot\("daily"\)/.test(js);
+  })(), "finish at 11pm, return past midnight, get your finished board back");
+  t("and the trusted clock counts the server's day, so the ask is right to begin with", (() => {
+    const eng = fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return /timeSource === "server"[\s\S]{0,300}getUTCFullYear/.test(eng);
   })());
 
   console.log("\nThe answers window reaches the client from the payload");

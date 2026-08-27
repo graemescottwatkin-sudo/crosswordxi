@@ -1,5 +1,6 @@
 /* functions/_lib/daily.js — which day it is, decided in one place.
-   Daily #1 is 16 August 2026. This is one of TWO places the launch date is
+   Daily #1 is 26 August 2026 — the day of the thexigames.com move and the
+   epoch reset. This is one of TWO places the launch date is
    written; the other is DAILY_EPOCH in js/engine.js, which stores the day
    *before* #1 in local-time components. Change one without the other and the
    browser asks for a puzzle the server will not accept reveals for, so every

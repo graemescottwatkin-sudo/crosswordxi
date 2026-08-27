@@ -1621,6 +1621,29 @@ var FCW = (function () {
              label: "Matchday " + (no - start + 1), counts: true };
   }
   function dailyNumber(at) {
+    /* Which DAY the trusted instant falls in is a second question after
+       which instant it is — and it was answered differently on each side:
+       the server counts UTC days, this counted device-local days of the
+       same synced clock. Every UK summer night between twelve and one the
+       two named different boards; the server's clamp stopped that killing
+       the daily, but the hero tile, the calendar and the save slot still
+       spent an hour on a board the server would not serve.
+
+       When the clock is trusted — it came from the server — the day is
+       counted the server's way: UTC, same arithmetic, DAILY_EPOCH.d + 1
+       being the UTC epoch the server stores (#1's day; the local form keeps
+       the day BEFORE, a difference epoch_test pins). Local calendar days
+       remain for two cases only: an explicit `at` (the archive calendar
+       maps its cells through local dates, and the grace rule reasons about
+       local days deliberately), and an untrusted clock, where local is all
+       there is. So the disagreement window exists only offline, where the
+       server cannot contradict anyone anyway. */
+    if (!at && timeSource === "server") {
+      var d = new Date(now());
+      var mid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      var utcEpoch = Date.UTC(DAILY_EPOCH.y, DAILY_EPOCH.m, DAILY_EPOCH.d + 1);
+      return Math.max(1, Math.floor((mid - utcEpoch) / 86400000) + 1);
+    }
     var t = at || new Date(now());
     var today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
     var epoch = new Date(DAILY_EPOCH.y, DAILY_EPOCH.m, DAILY_EPOCH.d);

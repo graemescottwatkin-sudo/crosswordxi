@@ -50,5 +50,42 @@ t("client and server agree on every date checked", disagree.length === 0,
 t("before the first day everything clamps to #1, so testing never runs it down",
   serverDaily(Date.UTC(2026, 0, 1)) === 1, "#" + serverDaily(Date.UTC(2026, 0, 1)));
 
+
+/* The client's trusted-mode day must be THE SERVER'S day — same instant in,
+   same board number out, at every boundary hour. Run both implementations
+   side by side across the dangerous instants: just before and after UTC
+   midnight, which is the hour the two used to disagree in UK summer. */
+{
+  const srv = await import("../functions/_lib/daily.js");
+  const instants = [
+    Date.UTC(2026, 7, 27, 22, 59), Date.UTC(2026, 7, 27, 23, 30),
+    Date.UTC(2026, 7, 28, 0, 0),  Date.UTC(2026, 7, 28, 0, 30),
+    Date.UTC(2026, 7, 28, 1, 0),  Date.UTC(2026, 8, 2, 23, 59),
+  ];
+  let diverged = null;
+  for (const ms of instants) {
+    FCW.setTrustedTime(ms);
+    /* setTrustedTime records an offset against the REAL clock; freeze the
+       comparison by asking both sides about the same instant. */
+    const client = FCW.dailyNumber();
+    const server = srv.dailyNumber(FCW.timeState().now);
+    if (client !== server) { diverged = `${new Date(ms).toISOString()}: client #${client}, server #${server}`; break; }
+  }
+  FCW.clearTrustedTime();
+  t("a trusted client counts the same day as the server at every boundary hour",
+    !diverged, diverged || instants.length + " instants, including both sides of UTC midnight");
+  /* First draft of this ended "|| true" — an assertion that cannot fail,
+     written the same night a review caught five of them. The real property:
+     an explicit `at` answers from LOCAL calendar components regardless of
+     trust, because the archive calendar maps its cells through local dates
+     and must not shift when a sync lands. Local epoch day is the 25th, so
+     local 28 August is board #3, trusted or not. */
+  FCW.setTrustedTime(Date.UTC(2026, 7, 20));   // trust pointing at a different day entirely
+  t("an explicit date still answers from the local calendar, trust or no trust",
+    FCW.dailyNumber(new Date(2026, 7, 28, 0, 30)) === 3,
+    "the calendar's cells must not move when a sync lands");
+  FCW.clearTrustedTime();
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

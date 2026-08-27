@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001b";
+  var BUILD = "v001c";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -530,11 +530,6 @@
   }
   function tick() {
     elapsed++; renderClock();
-    /* The layout watchdog. If a rotation's events were all missed — the
-       iPad case — the next tick notices the viewport no longer matches the
-       one the layout was computed for, and relays out. Worst case the board
-       looks wrong for one second; it cannot stay wrong until a refresh. */
-    if (layoutStale()) relayout();
     /* Written straight through once a second, not through the 400ms debounce.
 
        saveSoon() cancels the pending write each time it is called, and this is
@@ -965,6 +960,17 @@
            board is frozen so a stray assignment throws rather than
            drifting. */
         adoptServerBoard(res.dailyNo);
+        /* The adopted board may have a life this device already lived — the
+           reviewer's repro: finish #N at 11pm on an untrusted clock, come
+           back at half midnight thinking it is #N+1, get clamped back to #N,
+           and without this line arrive at a BLANK second copy of a board
+           already banked, plus a fresh play row. The adopted board's own
+           slot is the truth; finishBuild fingerprints whatever this hands
+           it against the fetched puzzle, so a stale or foreign save is
+           dropped there rather than trusted here. With the trusted clock
+           counting the server's day this path is rare — but rare is not
+           never, and the offline fallback is exactly where it still runs. */
+        if (!restore) restore = readSlot("daily");
       }
       if (res.mode === "theme") {
         themeLabel = res.label || "";
@@ -2320,9 +2326,20 @@
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", relayout);
   }
-  /* And the watchdog. Anything that runs periodically anyway can notice a
-     stale layout and heal it — the clock tick does, below — so a rotation
-     whose every event was missed still corrects itself within a second. */
+  /* And the watchdog — on its own clock, deliberately not the game's. Its
+     first home was inside tick(), which runs only mid-game; rotate on the
+     Kick Off card, the Full Time screen or with the board hidden and no
+     tick was coming, so a missed event stayed wrong until the next event or
+     a refresh — the exact state the watchdog exists to make impossible, in
+     exactly the screens where a player sits still longest. One second,
+     from boot, forever; the check is two integer reads when nothing has
+     changed, which is free. visibilitychange is belt to that brace: coming
+     back to a backgrounded tab is the likeliest moment for the viewport to
+     have changed with every event missed. */
+  setInterval(function () { if (layoutStale()) relayout(); }, 1000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && layoutStale()) relayout();
+  });
 
   /* Where the league table goes.
      In the rail beside the controls, which is where it belongs on anything

@@ -42,7 +42,7 @@ jobs:
       # cheaper to hear about here than as a ReferenceError inside a suite, and
       # this is the gap that put broken reveals on the live v146 build.
       - name: Names resolve
-        run: node names_test.mjs
+        run: node crossword/names_test.mjs
 
       # The generator suite needs the clue bank, which is not in the repository.
       # Skipped rather than failed: a suite that cannot run is not a suite that
@@ -112,7 +112,7 @@ jobs:
       - name: Measure
         env:
           BASE: http://127.0.0.1:8788
-        run: node render_test.mjs
+        run: node crossword/render_test.mjs
 
       # A failure names the viewport and the measurement, which is usually
       # enough to work from. The screenshots make it obvious.

@@ -1,7 +1,7 @@
 # Crossword XI — deployment repository
 
-**Crossword XI — The Football Crossword**, by The XI Games. Part of the
-XI Games suite alongside Scrambled XI and Missing XI.
+**Crossword XI — The Football Crossword**, by The XI Games. The number one
+shirt of an eleven-game squad; the others are named on launch, not before.
 
 > **Status: complete and ready to upload.** The game, the API, the database
 > schema and the tooling are all here and tested together — 441 checks across
@@ -10,11 +10,11 @@ XI Games suite alongside Scrambled XI and Missing XI.
 
 ---
 
-## URLs, decided now and used later
+## URLs — the move happened
 
-The game is at `crossword.thexigames.com` and moves to a path on the hub. The
-scheme is written down before anything uses it, so every piece of URL-shaped
-work targets one address rather than being redone:
+The game lives at **`https://www.thexigames.com/crossword/`** as of 26 August
+2026. The subdomain `crossword.thexigames.com` 301s there via a zone Redirect
+Rule, tokens preserved; the apex does the same. One hostname owns the site:
 
 | | |
 |---|---|
@@ -38,14 +38,18 @@ be changed by hand at the move:
 
 ### Held until the move
 
-Not oversights. Each is a URL, and doing it now means doing it twice:
+Done since the move, at the final address:
 
-- `sitemap.xml`
-- crawlable pages per past daily and per club board — clue text only, never
-  answers. The largest gain available, and the one most wasted at the wrong
-  address.
-- internal links to the other games and the hub
-- directory listings, subreddit posts, any outreach at all
+- `sitemap.xml` — live at the root, lists the hub, the game pages and the
+  answers index
+- `/crossword/answers/` — a page per board once it is more than seven days
+  old, rendered from D1, sealed boards refused; the archive calendar and the
+  board strap link into it
+- hub ↔ game internal links, canonicals on every page, FAQ markup on
+  how-to-play
+
+Still to come at this address: club landing pages (`/crossword/clubs/…`),
+directory listings and outreach.
 
 ### While on a subdomain
 
@@ -324,8 +328,12 @@ project → APIs & Services → Credentials → Create credentials → OAuth cli
 Web application. Under *Authorised JavaScript origins* add:
 
 ```text
-https://crossword.thexigames.com
+https://www.thexigames.com
+https://thexigames.com
 ```
+
+(The old `https://crossword.thexigames.com` origin can stay listed; it is
+harmless and covers anyone on a very stale cached page.)
 
 Copy the client ID (it ends `.apps.googleusercontent.com`).
 

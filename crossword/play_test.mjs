@@ -127,8 +127,16 @@ console.log("\nThemed boards are counted as themselves");
     return !/user|account|device|ip\b/i.test(code);
   })());
   const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  /* Rewritten after the board refactor: the old assertion matched the
+     pre-refactor source string (`mode === "theme" && themeWanted`), variables
+     that no longer exist — so this failed on every run since v14x and sat in
+     the suite as a permanent red that "everyone knows about", which is how a
+     real failure gets to hide beside it. The property is unchanged: the play
+     row names the board actually open, read from the one frozen `board`
+     value rather than a parallel variable. */
   t("the client sends the board it is actually on",
-    /themeKey: mode === "theme" && themeWanted/.test(client));
+    /themeKey: board\.kind === "theme" && board\.theme/.test(client),
+    "read from the frozen board, not a shadow variable");
   const admin = fs.readFileSync(path.join(DIR, "../functions/api/admin/[[route]].js"), "utf8");
   t("the funnel groups by board rather than heaping them together",
     /"theme:" \+ \(r\.theme_key \|\| "unknown"\)/.test(admin));

@@ -66,7 +66,7 @@ if (hasPlan) {
      managers — asking a City supporter to write in "Manchester City" is a
      label, not a clue. Grounds and stands are fair game and deliberately not
      caught here; club nicknames are, because a nickname is the club. */
-  const { THEMES, isSelfAnswer } = await import("./tools/themes.js").then((m) => m.default || m);
+  const { THEMES, isSelfAnswer } = await import("../tools/themes.js").then((m) => m.default || m);
   const themeById = Object.fromEntries(THEMES.map((x) => [x.id, x]));
   /* The bank itself, so membership can be judged on the clue rather than the
      answer — which is the only place the mistake is visible. */
@@ -90,7 +90,7 @@ if (hasPlan) {
      clues disambiguate with "— not X", so "London — not Chelsea, Tottenham or
      Queens" answers West Ham and named two big clubs purely as wrong answers;
      both boards carried it before this. */
-  const { namedOnlyToExclude } = await import("./tools/themes.js").then((m) => m.default || m);
+  const { namedOnlyToExclude } = await import("../tools/themes.js").then((m) => m.default || m);
   const excluded = [];
   for (const b of plan) {
     const th = themeById[b.theme];
@@ -235,8 +235,8 @@ if (hasPlan) {
 
 /* ---------- The API ---------- */
 console.log("\nThe API");
-const { onRequestGet: themes } = await import("./functions/api/themes.js");
-const { onRequestGet: board } = await import("./functions/api/theme-board.js");
+const { onRequestGet: themes } = await import("../functions/api/themes.js");
+const { onRequestGet: board } = await import("../functions/api/theme-board.js");
 
 /* A stub that answers the three shapes the endpoints ask for. Enough SQL
    awareness to tell a released board from an unreleased one, which is the
