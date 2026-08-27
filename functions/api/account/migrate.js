@@ -91,7 +91,7 @@ export async function onRequestPost({ request, env }) {
         solved, score, elapsed_seconds, checks, check_alls, revealed_letters,
         revealed_answers, substitutions, pauses, paused_seconds,
         club, season, completed_at, source)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'migrated')`)
       .bind(
         newId(), user.id, game, key, detailOf(game, r),
         key, mode, dailyNo,

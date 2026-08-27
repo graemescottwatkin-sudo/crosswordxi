@@ -119,6 +119,42 @@ t("the insert defers to the index instead of racing it",
 t("neither file keeps a private list of games",
   !/\[\s*["']crossword["']\s*,\s*["']wordsearch["']/.test(migrate + results));
 
+/* THE INSERT ADDS UP.
+ *
+ * Adding `game`, `entry_key` and `detail` meant three more columns, three more
+ * binds and three more placeholders. Two placeholders were added. 23 columns,
+ * 21 marks, 22 binds — and D1 threw on every single migrate call, into a
+ * `.catch` that said nothing. It shipped because every assertion about this
+ * statement was a regex looking for words in it, and a regex cannot count.
+ *
+ * The three numbers must agree, and they are counted rather than eyeballed.
+ * The bind count is taken from the argument list of the .bind() that follows,
+ * which is the only other place the number lives. */
+t("the results INSERT has as many placeholders as columns, and as many binds as placeholders",
+  (() => {
+    const stmt = migrate.match(/INSERT OR IGNORE INTO results \(([\s\S]*?)\)\s*\n\s*VALUES \(([^)]*)\)`\)\s*\n\s*\.bind\(([\s\S]*?)\)\.run\(\)/);
+    if (!stmt) return false;                       // the shape changed; look again
+    const columns = stmt[1].split(",").map((x) => x.trim()).filter(Boolean).length;
+    const slots = stmt[2].split(",").map((x) => x.trim());
+    const marks = slots.filter((v) => v === "?").length;
+    const literals = slots.length - marks;
+    /* Binds are split on top-level commas only: intOr(r.score, null) is one
+       argument, not two, and counting raw commas would have "agreed" with the
+       wrong number. */
+    let depth = 0, binds = 1, seen = false;
+    for (const ch of stmt[3]) {
+      if (ch === "(" || ch === "[") depth++;
+      else if (ch === ")" || ch === "]") depth--;
+      else if (ch === "," && depth === 0) binds++;
+      if (!/\s/.test(ch)) seen = true;
+    }
+    /* A trailing comma before the closing paren is idiomatic here and would
+       otherwise count as an extra argument. */
+    if (/,\s*$/.test(stmt[3])) binds--;
+    return seen && columns === marks + literals && binds === marks;
+  })(),
+  "23 columns, 22 placeholders, 22 binds");
+
 console.log("\nThe word search actually asks");
 const ws = fs.readFileSync("wordsearch/js/game.js", "utf8");
 t("it reads the session", /api\/auth\/session/.test(ws));
