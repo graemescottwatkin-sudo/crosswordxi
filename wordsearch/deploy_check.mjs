@@ -30,9 +30,17 @@ const hasRoot = (f) => fs.existsSync(path.join(ROOT, f));
    THE VERSION SCHEME (new line, starts here): vNNN with an optional minor
    letter. Major bumps by one — v001, v002 — and minors walk the alphabet
    within a major — v001a, v001b, v001c. Ordering: v001 < v001a < v001b
-   < v002. The old v4.x line is retired; "v000" below means nothing of this
-   line has shipped yet. */
-const LAST_SHIPPED = "v000";
+   < v002.
+
+   MAINTAINED, unlike its first draft. This sat at "v000" from the day the
+   game shipped: the check compared every build against nothing and could not
+   fail — a tag law half-implemented is the crossword's discipline worn as a
+   costume. The constants are real now and the deploy ritual bumps them, same
+   as the crossword's: LAST_SHIPPED after a deploy, LAST_PRESENTED when a
+   package is handed over. aligned_test asserts neither game's constants are
+   sentinel values. */
+const LAST_SHIPPED = "v001h";     // <- what is LIVE; bump after each deploy
+const LAST_PRESENTED = "v001h";   // <- bump when a package is handed over
 
 t("the game has its own index.html", has("index.html"));
 t("functions are shared at the repository root", hasRoot("functions/api/wordsearch/daily.js"));
@@ -60,8 +68,9 @@ const num = (v) => {
   if (!m) return 0;
   return parseInt(m[1], 10) + (m[2] ? (m[2].charCodeAt(0) - 96) / 100 : 0);
 };
-t("the build tag has moved past the version now live", num(tagJs) > num(LAST_SHIPPED),
-  `now ${tagJs}, live ${LAST_SHIPPED}`);
+t("the build tag has moved past the version now live, and past the last presented",
+  num(tagJs) > num(LAST_SHIPPED) && num(tagJs) > num(LAST_PRESENTED),
+  `now ${tagJs}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
 
 /* ---- markup sanity ---------------------------------------------------- */
 t("HTML comments are balanced, so none can render as text",

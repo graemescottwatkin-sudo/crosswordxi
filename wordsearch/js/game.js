@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001h";
+  var BUILD = "v001i";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -58,11 +58,23 @@
   function finalScore() { return Math.min(114, liveScore() + (bonusFound ? 10 : 0)); }
 
   /* ---- theme — the family vocabulary, all three values ----------------- */
-  /* fcw.theme is shared with Crossword XI on this origin and speaks
-     auto | light | dark. Writing only two of the three is how one theme tap
-     here destroyed a crossword player's "auto" — so the cycle keeps all
-     three, and "auto" means the family default (light). */
-  function themeRead() { try { return localStorage.getItem("fcw.theme") || "auto"; } catch (e) { return "auto"; } }
+  /* The theme is a FAMILY preference — set dark mode once, every game keeps
+     it — and it speaks auto | light | dark. Writing only two of the three is
+     how one theme tap here destroyed a crossword player's "auto", so the
+     cycle keeps all three.
+
+     xi.theme is its home. It lived at fcw.theme, the crossword's prefix,
+     because the crossword named it first and this game borrowed the key — a
+     family-wide fact under one game's namespace, which the cross-game
+     contract now forbids. The legacy key stays as a read fallback so nobody's
+     setting resets; writes go only to the family key, so the fallback retires
+     itself one tap at a time. */
+  function themeRead() {
+    try {
+      return localStorage.getItem("xi.theme") ||
+             localStorage.getItem("fcw.theme") || "auto";
+    } catch (e) { return "auto"; }
+  }
   function themeApply() {
     var v = themeRead();
     if (v === "dark") document.documentElement.setAttribute("data-theme", "dark");
@@ -72,7 +84,7 @@
   }
   function themeCycle() {
     var next = { auto: "dark", dark: "light", light: "auto" }[themeRead()] || "auto";
-    try { localStorage.setItem("fcw.theme", next); } catch (e) {}
+    try { localStorage.setItem("xi.theme", next); } catch (e) {}
     themeApply();
   }
   themeApply();

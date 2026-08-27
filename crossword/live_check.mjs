@@ -155,12 +155,25 @@ else console.log(`      serving ${tag} — pass --expect vNNN to assert it`);
    comparison with the footer's "v001d" failed on every lettered build. The
    tag scheme grew a letter; this regex did not. Both sides now read the same
    shape. */
-const assetTags = [...home.text.matchAll(/[?&]v=(v\d+[a-z]?)/g)].map((m) => m[1]);
-t("every asset URL carries a build tag", assetTags.length > 0,
-  `${assetTags.length} tagged`);
-t("and they all match the footer",
-  assetTags.every((a) => a === tag),
-  [...new Set(assetTags)].join(", "));
+/* Two lifecycles on one page, deliberately. The GAME's assets carry the game's
+   build tag and must match the footer; SHARED assets (../shared/xi-*) carry
+   their own plain vN, because bumping every game's tag to redeploy a shared
+   file would burn tags for nothing. The first draft of this check asserted
+   every tag matched the footer, which failed the moment the shared chrome
+   shipped — the same wrong assumption the gate's tag check had, fixed there
+   and missed here. One assumption, two checks, found separately. */
+const tagged = [...home.text.matchAll(/(?:src|href)="([^"]+)\?v=(v[0-9a-z]+)"/g)]
+  .map((m) => ({ path: m[1], tag: m[2] }));
+const own = tagged.filter((a) => !/shared\//.test(a.path));
+const shared = tagged.filter((a) => /shared\//.test(a.path));
+t("every asset URL carries a build tag", tagged.length > 0,
+  `${tagged.length} tagged`);
+t("the game's own assets all match the footer",
+  own.length > 0 && own.every((a) => a.tag === tag),
+  [...new Set(own.map((a) => a.tag))].join(", "));
+t("shared assets carry their own plain vN lifecycle",
+  shared.every((a) => /^v\d+$/.test(a.tag)),
+  [...new Set(shared.map((a) => a.tag))].join(", ") || "none on this page");
 
 /* ---- caching ---- */
 const cc = home.res.headers.get("cache-control") || "";

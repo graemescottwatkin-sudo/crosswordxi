@@ -415,8 +415,15 @@ server.listen(0, "127.0.0.1", async () => {
       btn.dispatchEvent(new w.Event("click", { bubbles: true }));
       seen.push(btn.textContent.replace("theme: ", ""));
     }
-    const stored = w.localStorage.getItem("fcw.theme");
+    /* xi.theme, the FAMILY key — dark mode set in any game holds in all of
+       them. It lived at fcw.theme when this was the only game; writes moved to
+       the family key when the cross-game contract caught the word search
+       borrowing the crossword's prefix. The legacy key is read as a fallback
+       and never written, so this asserts both halves of the migration. */
+    const stored = w.localStorage.getItem("xi.theme");
+    const legacyWritten = w.localStorage.getItem("fcw.theme");
     return seen.join(",") === "light,dark,auto" && stored === "auto" &&
+      legacyWritten === null &&
       !d.documentElement.hasAttribute("data-theme");
   })(), $("themeToggle") && $("themeToggle").textContent);
   t("forcing light beats the OS dark setting", (() => {

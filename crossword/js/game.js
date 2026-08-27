@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001o";
+  var BUILD = "v001p";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2191,7 +2191,14 @@
      dark on one device and light on another. Light and dark override it. */
   var THEMES = ["auto", "light", "dark"];
   var theme = "auto";
-  try { theme = localStorage.getItem("fcw.theme") || "auto"; } catch (e) {}
+  /* xi.theme is the family key — dark mode set in any game holds in all of
+     them. fcw.theme is where it lived when this was the only game; it stays
+     as a read fallback so no one's setting resets, and writes go only to the
+     family key. */
+  try {
+    theme = localStorage.getItem("xi.theme") ||
+            localStorage.getItem("fcw.theme") || "auto";
+  } catch (e) {}
   if (THEMES.indexOf(theme) === -1) theme = "auto";
   function applyTheme() {
     if (theme === "auto") document.documentElement.removeAttribute("data-theme");
@@ -2201,7 +2208,7 @@
   }
   on("themeToggle", "click", function () {
     theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
-    try { localStorage.setItem("fcw.theme", theme); } catch (e) {}
+    try { localStorage.setItem("xi.theme", theme); } catch (e) {}
     applyTheme();
   });
   applyTheme();
@@ -2907,7 +2914,7 @@
            individually in the KEEP list, because a reset clears what you have
            done, not how you like the thing to look. */
         WIPE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
-        var KEEP = ["fcw.clubPref", "fcw.deviceCode", "fcw.theme", "fcw.pitch",
+        var KEEP = ["xi.theme", "fcw.clubPref", "fcw.deviceCode", "fcw.theme", "fcw.pitch",
                     "fcw.bank", "fcw.skip", "fcw.fxmode", "fcw.filter"];
         var doomed = [], i, k;
         for (i = 0; i < localStorage.length; i++) {
