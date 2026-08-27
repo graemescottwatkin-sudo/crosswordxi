@@ -263,7 +263,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001k";
+  var BUILD = "v001l";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2513,8 +2513,9 @@
        to the account, and the pull then brings back everything the account has
        from anywhere — including what was just pushed. The other way round would
        fetch, merge, and then push rows the account already had. */
-    apiAuth("/api/account/migrate", guestPayload()).then(function (m) {
+    pushResults().then(function (m) {
       pullAccountResults();
+      if (!m) return;
       var note = $("acctMigrated");
       if (!note) return;
       if (m.added) {
@@ -3989,6 +3990,24 @@
   function saveResults(list) {
     try { localStorage.setItem(RESULTS_KEY, JSON.stringify(list)); } catch (e) {}
   }
+
+  /* Send this device's history to the account.
+     The call was written out twice — in afterSignIn and in claimCode — and a
+     third copy was needed the moment a finished board had to push too. Named
+     once instead. Signed out it resolves to null rather than posting: an
+     endpoint that answers 401 is not a useful thing to ask.
+
+     WHY A FINISHED BOARD PUSHES AT ALL. Until now the crossword only pushed at
+     sign-in and at code-claim, so a board finished while already signed in sat
+     on the device until the next sign-in. Word search pushes after every
+     completed board, so from v001e the two games disagreed about when a result
+     reaches the account — one fact, two behaviours. This is the crossword
+     catching up, not the word search being changed. */
+  function pushResults() {
+    if (!account) return Promise.resolve(null);
+    return apiAuth("/api/account/migrate", guestPayload())
+      .catch(function () { return null; });   // the device keeps its copy regardless
+  }
   function recordDaily(pos, score, res) {
     /* Friendlies are recorded, but to their own record. A pre-season streak is
        a real thing to build, and it ending on Matchday 1 is the point rather
@@ -4095,6 +4114,9 @@
     }));
     list.sort(function (a, b) { return a.dailyNo - b.dailyNo; });
     saveResults(list);
+    /* After the device has its copy, never before: a failed push must leave the
+       record exactly where it was, and the next push carries it. */
+    pushResults();
     return list;
   }
   /* A themed board keeps its own record, and deliberately not the season's.
@@ -6287,7 +6309,7 @@
       /* Push what this device has, then pull everything the account holds.
          Merged, never replaced — linking a second device must not wipe what
          was played on it before linking. */
-      apiAuth("/api/account/migrate", guestPayload()).then(function () {
+      pushResults().then(function () {
         pullAccountResults();
       });
       if (then) then(d);

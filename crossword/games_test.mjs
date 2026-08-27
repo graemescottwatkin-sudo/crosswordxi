@@ -190,8 +190,34 @@ t("the results INSERT has as many placeholders as columns, and as many binds as 
   })(),
   "23 columns, 22 placeholders, 22 binds");
 
-console.log("\nThe word search actually asks");
 const ws = fs.readFileSync("wordsearch/js/game.js", "utf8");
+console.log("\nBoth games push at the same moments");
+const cw = fs.readFileSync("crossword/js/game.js", "utf8");
+/* The crossword pushed only at sign-in and at code-claim, so a board finished
+   while already signed in sat on the device until the next sign-in — while the
+   word search pushed after every completed board. One fact, two behaviours,
+   and the kind that is invisible until someone plays on two devices. */
+t("the crossword pushes after recording a finished daily", (() => {
+  const rec = cw.match(/list\.sort\([\s\S]{0,400}?saveResults\(list\);[\s\S]{0,400}?return list;/);
+  return !!rec && /pushResults\(\)/.test(rec[0]);
+})());
+/* After the device has its copy, never before: a failed push must leave the
+   record where it was. */
+t("and only after the device has saved its own copy", (() => {
+  const rec = cw.match(/saveResults\(list\);[\s\S]{0,400}?return list;/);
+  return !!rec && rec[0].indexOf("saveResults(list)") < rec[0].indexOf("pushResults()");
+})());
+t("the word search pushes after recording a completed board", (() => {
+  const rec = ws.match(/function recordResult\([\s\S]{0,600}?\n  \}/);
+  return !!rec && /pushResults\(\)/.test(rec[0]);
+})());
+/* The migrate call was written out twice before this and would have been three
+   times. One named function, asked in three places. */
+t("neither game calls migrate directly outside its own pusher",
+  (cw.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1 &&
+  (ws.match(/apiAuth\(["']\/api\/account\/migrate["']/g) || []).length === 1);
+
+console.log("\nThe word search actually asks");
 t("it reads the session", /api\/auth\/session/.test(ws));
 t("it pushes under its own game id", /game:\s*["']wordsearch["']/.test(ws));
 t("it pulls under its own game id", /account\/results\?game=wordsearch/.test(ws));
