@@ -39,7 +39,7 @@ const hasRoot = (f) => fs.existsSync(path.join(ROOT, f));
    as the crossword's: LAST_SHIPPED after a deploy, LAST_PRESENTED when a
    package is handed over. aligned_test asserts neither game's constants are
    sentinel values. */
-const LAST_SHIPPED = "v001h";     // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001j";     // <- what is LIVE; bump after each deploy
 const LAST_PRESENTED = "v001i";   // <- bump when a package is handed over
 
 t("the game has its own index.html", has("index.html"));

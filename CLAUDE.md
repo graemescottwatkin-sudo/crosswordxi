@@ -1,0 +1,125 @@
+# CLAUDE.md — The XI Games monorepo
+
+Read this before doing anything. It is the project's law, learned the hard way;
+every rule below exists because its absence cost a real release.
+
+## What this is
+
+A family of football-themed daily puzzle games at **thexigames.com**, targeting
+eleven titles. Live: **Crossword XI** (`/crossword/`) and **Wordsearch XI**
+(`/wordsearch/`). Cloudflare Pages + D1 (database `crosswordxi`) + Functions at
+the repo root, shared by all games. The hub is `/index.html`; shared assets in
+`shared/` (tokens, chrome). No package.json in the repo — Pages must not build.
+
+## The tag law (non-negotiable)
+
+- Versions: `vNNN` majors, minors walk the alphabet (`v001a` … `v001z < v002`).
+- Each game's `deploy_check.mjs` holds `LAST_SHIPPED` (what is live) and
+  `LAST_PRESENTED` (last package handed over). **A tag is burned the moment it
+  is presented, even if never deployed.**
+- **Never change a tag or a `LAST_*` constant without saying so explicitly.**
+- After every deploy: bump `LAST_SHIPPED` in BOTH gates to what is now live,
+  commit, push. Skipping this widens the range the gate cannot refuse.
+- After the bump, `deploy_check` fails "moved past the version now live" until
+  the next release moves the tag. That is the law working, not a bug.
+
+## The deploy sequence
+
+1. `rmdir /s /q node_modules` if present — **gates must run with no
+   node_modules, no package.json, no .wrangler in the tree** (the gate checks).
+2. `node crossword\deploy_check.mjs` → expect **0 failed**.
+3. `node wordsearch\deploy_check.mjs` → expect **0 failed**.
+4. `git add -A && git commit && git push`. Watch the Actions run (30+ jobs).
+5. `node crossword\live_check.mjs --expect vNNN` and
+   `node wordsearch\live_check.mjs --expect vNNN` — including the HEAD
+   assertions (production proof of `functions/_middleware.js`).
+6. Bump both `LAST_SHIPPED` constants, commit "LAST_SHIPPED …", push.
+
+A red gate is a stop, not a speed bump. If a gate fails, name the failing check
+and diagnose before anything ships. Never push past a red gate.
+
+## Reviewing a deployment (what "check the deploy" means)
+
+- Live build tags match `origin/main`: footer `buildTag`, `js/game.js?v=` on
+  both games. Game assets must match the footer; `shared/` assets carry their
+  own plain `vN` lifecycle and must NOT match the game tag.
+- Both live_checks pass with `--expect`.
+- `results`/`plays` sanity via wrangler if relevant:
+  `npx wrangler d1 execute crosswordxi --remote --command="..."`.
+  **Never run a migration that is already applied** — `ALTER TABLE` is not
+  idempotent. Migration state: 001–020 applied (002 was applied late, 27 Aug).
+- HEAD on `/api/daily` and both `/…/answers/` answers 200, empty body, and
+  `/api/*` carries `X-Robots-Tag: noindex`.
+
+## Tests and gates — the rules of evidence
+
+- **Every new check must be proven to FAIL before it is trusted.** Sabotage the
+  thing it guards, watch it fail, restore. Six vacuous checks have been found
+  in this project's history; this rule exists because of them.
+- **Regexes cannot count and cannot catch rule-bugs.** Anything about SQL
+  arity, merge behaviour, or ordering must EXECUTE the real code.
+- Totals only from CI-shaped runs: suites run **from the repo root**, after
+  `npm install -D jsdom acorn --no-save`, and node_modules removed again before
+  gates. Suite roster is in `.github/workflows/checks.yml`; the gate asserts
+  every `*_test.mjs` in `crossword/`, `wordsearch/`, `tools/` is named there.
+- `tools/aligned_test.mjs` is the cross-game contract. **A new game is a row in
+  its GAMES table** (dir, team-sheet name, storage prefix); its failures are
+  the integration checklist. Run it first when integrating a game.
+- Browser suites (`render_test`, `journey_test`, `signin_test`) run in the CI
+  render job, not offline. `render_test` needs
+  `BASE=http://127.0.0.1:8788/crossword/` against `wrangler pages dev`.
+
+## One fact, one place (the project's core principle)
+
+Every major bug traced to a value computed or stored twice that drifted.
+Where facts live — extend these, never copy them:
+
+- Games list + entry keys + `played_on`: `functions/_lib/games.js`
+  (`daily:N` / `ws:YYYY-MM-DD`; a new game adds a prefix, never a column;
+  game-specific facts go in `results.detail` as JSON).
+- Daily key composition: `dailyKey()` in `functions/_lib/daily.js`, beside
+  `ANSWERS_AFTER_DAYS` (the ONE answers window — never restate the number).
+- CSRF: `csrfOk`/`CSRF_HEADER` in `functions/_lib/auth.js` (`X-XI-Games`;
+  legacy `X-Crossword-XI` accepted).
+- Palette: `shared/xi-tokens.css`. Chrome (bar/drawer/footer + squad list):
+  `shared/xi-chrome.{css,js}`. Games must not define `.xic-` rules or restate
+  tokens — the gates check.
+- localStorage: each game under its own prefix (`fcw.` / `xiws.`); family-wide
+  facts under `xi.` (e.g. `xi.theme`). Never write another game's prefix.
+- Merge rule (both games): **first result banked wins; the account's row wins
+  outright on pull; unpushed local rows survive.**
+- Account sync failures: log via `accountNote()`, stay caught, never surface
+  to the player. A transient session failure is NOT signed-out.
+
+## Content and safety rules
+
+- **An unreleased game is named NOWHERE in served markup** (HTML comments
+  exempt). Enforced by `chrome_test`, `aligned_test` and both live_checks.
+  Unbuilt games appear only as shirt numbers + status.
+- **The banks are secret.** `bank.json`, `ws-production.sql`, daily SQL files
+  are gitignored and live OUTSIDE the repo
+  (`..\crosswordxi-source`, `..\wordsearchxi-source`). Never commit them,
+  never print answers into anything that ships. The D1 database is the only
+  authoritative copy of the crossword bank — treat it accordingly.
+- Answers pages: sealed until `ANSWERS_AFTER_DAYS` past a board's FIRST
+  scheduled day; sealed/unknown/malformed ids get one identical 404
+  (no-store, noindex, zero content).
+- Date/time: the SERVER decides what day it is, in UTC. Never compute a date
+  client-side and send it up.
+
+## Working style
+
+- Root cause before solution: name the failure pattern, then fix it.
+- Findings over vibes: five specific findings beat a general assessment.
+- Honest failure reports — including when a check turns out vacuous.
+- The repo may live at different paths per machine (OneDrive on one, `C:\Users\graem\repos\` on another); never hardcode either — resolve from the repo root.
+- OneDrive hosts the repo: transient file locks happen; retry before diagnosing.
+- Real-device checks (iPhone/iPad rotation) find bugs suites cannot; treat
+  them as real.
+
+## Known open items (do not "fix" without asking)
+
+- Legal review: ON HOLD by owner decision.
+- In-progress board sync between devices: a planned feature, not a bug.
+- `preview_test` exits 0 with no preview (on record; fix or delete, not exempt).
+- Repo rename `crosswordxi` → `thexigames`: pending, Settings rename only.
