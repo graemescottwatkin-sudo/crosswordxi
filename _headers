@@ -78,3 +78,25 @@
 /api/*
   Cache-Control: no-store
   X-Robots-Tag: noindex
+
+# QuickFire XI — the same three rules again, one pair per game.
+/quickfire/
+  Cache-Control: no-store
+
+/quickfire/index.html
+  Cache-Control: no-store
+
+/quickfire/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/quickfire/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shared token layer. Immutable is safe because every reference carries a
+# ?v= tag and the wordsearch gate asserts the version marker in the file.
+/shared/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/api/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex

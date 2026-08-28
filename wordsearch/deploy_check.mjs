@@ -127,9 +127,14 @@ t("the stylesheet's braces and comments balance",
   `${(css.match(/{/g) || []).length} braces`);
 
 /* ---- one H1, and it is the first heading in the body ------------------ */
-t("exactly one H1, before any other heading",
-  (html.match(/<h1\b/g) || []).length === 1 &&
-  html.indexOf("<h1") < html.indexOf("<h2"));
+/* Comments stripped before anything counts tags. The family template documents
+   the identity rule in a comment containing the text <h1>, and a gate counting
+   raw markup reads that as a second heading — it fails a correct page. The
+   crossword gate already strips for its <div> count; this one did not. */
+t("exactly one H1, before any other heading", (() => {
+  const m = html.replace(/<!--[\s\S]*?-->/g, "");
+  return (m.match(/<h1\b/g) || []).length === 1 && m.indexOf("<h1") < m.indexOf("<h2");
+})());
 
 /* ---- SEO surface ------------------------------------------------------ */
 t("canonical, og:url and JSON-LD agree on the address", (() => {

@@ -16,6 +16,7 @@
  * be the fault this suite exists to end.
  */
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 
 let pass = 0, fail = 0;
 function t(name, ok, note) {
@@ -171,6 +172,41 @@ t("the server's game list and this table agree", (() => {
 t("no game carries a private copy of a shared file",
   GAMES.every((g) => !has(`${g.dir}/xi-tokens.css`) && !has(`${g.dir}/xi-chrome.css`) &&
                      !has(`${g.dir}/xi-chrome.js`)));
+
+/* THE SHARED LAYER HAS THE SAME PROBLEM EVERY GAME HAD, AND HAD NO GATE FOR IT.
+   Each game's gate refuses assets that change without their tag moving. The
+   shared files are outside every one of those gates: _headers marks /shared/*
+   immutable for a year, and the pages reference it as ?v=v1. So editing
+   xi-chrome.js — the squad list, which decides what the drawer shows in EVERY
+   game — changes what every page renders while every browser holding the old
+   file keeps it for a year.
+
+   Found by the QuickFire integration: adding a game to the squad list changes
+   all three drawers and nothing anywhere required the ?v= to move. The same
+   fault as v001t, one layer up, and the game-level gates cannot see it.
+
+   Move both constants together, in the post-deploy commit, exactly as a game's
+   LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
+const SHARED_TAG = "v1";
+const SHARED_HASH = "55ff5bc7f79e2d83";
+t("the shared chrome cannot change without its ?v= moving", (() => {
+  const h = createHash("sha256");
+  for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {
+    h.update(f); h.update("\0"); h.update(read(f));
+  }
+  const now = h.digest("hex").slice(0, 16);
+  const tagged = GAMES.every((g) =>
+    read(`${g.dir}/index.html`).indexOf(`shared/xi-chrome.js?v=${SHARED_TAG}`) > -1);
+  if (now === SHARED_HASH) return tagged;
+  console.log(`        shared/ CHANGED — bump SHARED_TAG past ${SHARED_TAG} in every ` +
+    `page, then set SHARED_HASH to ${now}`);
+  return false;
+})(), `shared tag ${SHARED_TAG}`);
+t("every game references the shared layer at the same version", (() => {
+  const tags = GAMES.map((g) =>
+    (read(`${g.dir}/index.html`).match(/shared\/xi-chrome\.js\?v=([a-z0-9]+)/) || [])[1]);
+  return tags.length > 0 && new Set(tags).size === 1;
+})(), "one game on an older shared build is two chromes again");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

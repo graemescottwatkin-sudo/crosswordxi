@@ -136,8 +136,12 @@ console.log(`\n${SITE}\n`);
      names live competitors already hold. */
   /* Word Search left this list when shirt 2 went live — a released game's
      name on the hub is the point, not a leak. */
-  const leaked = ["QuickFire","Scrambled","Missing XI",
-                  "Career Path","Link XI","Odd One Out"].filter((n) => html.includes(n));
+  /* QuickFire XI is BUILT but not launched — it stays on this list until it
+     has a bank and a squad-list slot. Career Path is now Transfer XI, and
+     Player Chain was missing here while the word search listed it: one set,
+     both games. */
+  const leaked = ["QuickFire","Scrambled","Missing XI","Transfer XI",
+                  "Player Chain","Link XI","Odd One Out"].filter((n) => html.includes(n));
   t("and names no unreleased game", leaked.length === 0,
     leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");
   /* Every link the hub's own markup carries must resolve. The first hub

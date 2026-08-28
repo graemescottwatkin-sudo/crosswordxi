@@ -1,0 +1,528 @@
+{
+  "fixtures": [
+    {
+      "response": [
+        {
+          "fixture": {
+            "id": 1,
+            "date": "2026-08-29T15:00:00+00:00",
+            "status": {
+              "short": "FT"
+            }
+          },
+          "league": {
+            "id": 39,
+            "name": "x",
+            "country": "England"
+          },
+          "teams": {
+            "home": {
+              "name": "Arsenal"
+            },
+            "away": {
+              "name": "Burnley"
+            }
+          },
+          "goals": {
+            "home": 5,
+            "away": 0
+          },
+          "score": {
+            "halftime": {
+              "home": null,
+              "away": null
+            }
+          },
+          "events": [
+            {
+              "time": {
+                "elapsed": 11,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Arsenal"
+              },
+              "player": {
+                "name": "A Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 30,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Arsenal"
+              },
+              "player": {
+                "name": "A Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 55,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Arsenal"
+              },
+              "player": {
+                "name": "A Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 70,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Arsenal"
+              },
+              "player": {
+                "name": "B Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 88,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Arsenal"
+              },
+              "player": {
+                "name": "C Player"
+              },
+              "assist": {
+                "name": null
+              }
+            }
+          ]
+        },
+        {
+          "fixture": {
+            "id": 2,
+            "date": "2026-08-29T15:00:00+00:00",
+            "status": {
+              "short": "FT"
+            }
+          },
+          "league": {
+            "id": 39,
+            "name": "x",
+            "country": "England"
+          },
+          "teams": {
+            "home": {
+              "name": "Everton"
+            },
+            "away": {
+              "name": "Chelsea"
+            }
+          },
+          "goals": {
+            "home": 3,
+            "away": 2
+          },
+          "score": {
+            "halftime": {
+              "home": null,
+              "away": null
+            }
+          },
+          "events": [
+            {
+              "time": {
+                "elapsed": 5,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Chelsea"
+              },
+              "player": {
+                "name": "D Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 20,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Chelsea"
+              },
+              "player": {
+                "name": "E Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 50,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Everton"
+              },
+              "player": {
+                "name": "F Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 75,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Everton"
+              },
+              "player": {
+                "name": "G Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 90,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Everton"
+              },
+              "player": {
+                "name": "H Player"
+              },
+              "assist": {
+                "name": null
+              }
+            }
+          ]
+        },
+        {
+          "fixture": {
+            "id": 3,
+            "date": "2026-08-30T15:00:00+00:00",
+            "status": {
+              "short": "FT"
+            }
+          },
+          "league": {
+            "id": 39,
+            "name": "x",
+            "country": "England"
+          },
+          "teams": {
+            "home": {
+              "name": "Liverpool"
+            },
+            "away": {
+              "name": "Everton"
+            }
+          },
+          "goals": {
+            "home": 1,
+            "away": 1
+          },
+          "score": {
+            "halftime": {
+              "home": null,
+              "away": null
+            }
+          },
+          "events": [
+            {
+              "time": {
+                "elapsed": 22,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Liverpool"
+              },
+              "player": {
+                "name": "I Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 64,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Everton"
+              },
+              "player": {
+                "name": "J Player"
+              },
+              "assist": {
+                "name": null
+              }
+            }
+          ]
+        },
+        {
+          "fixture": {
+            "id": 4,
+            "date": "2026-08-30T15:00:00+00:00",
+            "status": {
+              "short": "FT"
+            }
+          },
+          "league": {
+            "id": 40,
+            "name": "x",
+            "country": "England"
+          },
+          "teams": {
+            "home": {
+              "name": "Norwich"
+            },
+            "away": {
+              "name": "Ipswich"
+            }
+          },
+          "goals": {
+            "home": 0,
+            "away": 1
+          },
+          "score": {
+            "halftime": {
+              "home": null,
+              "away": null
+            }
+          },
+          "events": [
+            {
+              "time": {
+                "elapsed": 18,
+                "extra": null
+              },
+              "type": "Card",
+              "detail": "Red Card",
+              "team": {
+                "name": "Norwich"
+              },
+              "player": {
+                "name": "K Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 66,
+                "extra": null
+              },
+              "type": "Card",
+              "detail": "Red Card",
+              "team": {
+                "name": "Ipswich"
+              },
+              "player": {
+                "name": "L Player"
+              },
+              "assist": {
+                "name": null
+              }
+            },
+            {
+              "time": {
+                "elapsed": 80,
+                "extra": null
+              },
+              "type": "Goal",
+              "detail": "Normal Goal",
+              "team": {
+                "name": "Ipswich"
+              },
+              "player": {
+                "name": "M Player"
+              },
+              "assist": {
+                "name": null
+              }
+            }
+          ]
+        },
+        {
+          "fixture": {
+            "id": 5,
+            "date": "2026-08-31T15:00:00+00:00",
+            "status": {
+              "short": "NS"
+            }
+          },
+          "league": {
+            "id": 39,
+            "name": "x",
+            "country": "England"
+          },
+          "teams": {
+            "home": {
+              "name": "Fulham"
+            },
+            "away": {
+              "name": "Brentford"
+            }
+          },
+          "goals": {
+            "home": null,
+            "away": null
+          },
+          "score": {
+            "halftime": {
+              "home": null,
+              "away": null
+            }
+          },
+          "events": []
+        }
+      ]
+    }
+  ],
+  "standings": [
+    {
+      "response": [
+        {
+          "league": {
+            "id": 39,
+            "name": "Premier League",
+            "standings": [
+              [
+                {
+                  "rank": 1,
+                  "team": {
+                    "name": "Arsenal"
+                  },
+                  "points": 12,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 2,
+                  "team": {
+                    "name": "Chelsea"
+                  },
+                  "points": 10,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 3,
+                  "team": {
+                    "name": "Liverpool"
+                  },
+                  "points": 9,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 4,
+                  "team": {
+                    "name": "Brentford"
+                  },
+                  "points": 7,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 5,
+                  "team": {
+                    "name": "Fulham"
+                  },
+                  "points": 6,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 6,
+                  "team": {
+                    "name": "Tottenham"
+                  },
+                  "points": 6,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 14,
+                  "team": {
+                    "name": "Everton"
+                  },
+                  "points": 4,
+                  "all": {
+                    "played": 4
+                  }
+                },
+                {
+                  "rank": 20,
+                  "team": {
+                    "name": "Burnley"
+                  },
+                  "points": 0,
+                  "all": {
+                    "played": 4
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

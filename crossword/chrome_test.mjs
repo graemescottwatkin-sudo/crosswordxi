@@ -76,7 +76,7 @@ console.log("\nAn unreleased game is never named");
 /* The standing rule, and live_check enforces it on the hub only — which is how
    the crossword's landing footer named QuickFire XI and Scrambled XI, and
    privacy.html named five, on live indexed pages. */
-const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Career Path",
+const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Transfer XI",
                     "Player Chain", "Link XI", "Odd One Out"];
 for (const [label, file] of [
   ["the crossword page", "crossword/index.html"],
@@ -92,10 +92,17 @@ for (const [label, file] of [
   const found = UNRELEASED.filter((n) => markup.indexOf(n) > -1);
   t(`${label} names none`, found.length === 0, found.join(", "));
 }
+/* The count is derived from the squad rather than written down: hard-coding 9
+   means this assertion has to be edited every time a game ships, and an
+   assertion nobody remembers to edit is the next frozen constant. */
+/* Scoped to the squad list. Unscoped, this also counts the drawer footer’s
+   How to play / Answers / Privacy links, which are .xic-slot too. */
+const releasedSlots = cw.querySelectorAll(".xic-squad .xic-slot[href]").length;
 t("the drawer shows unbuilt slots as a number and a status, never a name",
   [...cw.querySelectorAll(".xic-slot.soon")].every((e) =>
     e.querySelector(".xic-shirt") && e.querySelector(".xic-status")) &&
-  cw.querySelectorAll(".xic-slot.soon").length === 9);
+  cw.querySelectorAll(".xic-slot.soon").length === 11 - releasedSlots,
+  `${releasedSlots} released, ${cw.querySelectorAll(".xic-slot.soon").length} unbuilt`);
 
 console.log("\nOne palette, and the chrome defines none of it");
 t("xi-chrome.css sets no colour of its own",

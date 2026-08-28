@@ -98,6 +98,10 @@ jobs:
           # The cross-game contract: what every game must have, checked
           # identically. Game three is a row in its GAMES table.
           node tools/aligned_test.mjs
+          # QuickFire XI's gate, and the proof that its gate can fail. The
+          # second one is the point: every check in that file is watched
+          # failing before it is trusted.
+          node quickfire/gate_test.mjs
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.
@@ -106,6 +110,7 @@ jobs:
           rm -rf node_modules package-lock.json package.json
           node crossword/deploy_check.mjs
           node wordsearch/deploy_check.mjs
+          node quickfire/deploy_check.mjs
 
   render:
     name: Sixteen viewports, real browser

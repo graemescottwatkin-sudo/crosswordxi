@@ -115,7 +115,11 @@ t("the shared chrome is referenced, not copied",
 /* The standing rule, now checked where players actually land. The crossword's
    landing footer named two unreleased games and privacy.html named five, on
    live indexed pages, because this rule was only ever enforced on the hub. */
-const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Career Path",
+/* QuickFire XI is BUILT but not launched: its page exists in the repo, it is
+   not on the squad list, not in the sitemap, and not in the server game list,
+   so it must still never be NAMED in served markup. Career Path is now
+   Transfer XI. */
+const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Transfer XI",
                     "Player Chain", "Link XI", "Odd One Out"];
 function namesNone(label, markup) {
   const clean = markup.replace(/<!--[\s\S]*?-->/g, "");
