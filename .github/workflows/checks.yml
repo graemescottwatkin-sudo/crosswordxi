@@ -87,6 +87,9 @@ jobs:
           # A board in progress follows the player: the state endpoint
           # executed, and the convergence rules both clients keep.
           node crossword/state_test.mjs
+          # The same feature from the OUTSIDE: a daily opened the normal way,
+          # the account holding a journey, and the letters on the screen.
+          node crossword/adopt_test.mjs
           node wordsearch/frontend_test.mjs
           node wordsearch/functions_test.mjs
           # The answers pages: the seal, the refusal that names nothing,

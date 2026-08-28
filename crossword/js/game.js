@@ -603,6 +603,9 @@
      Daily boards only. A practice board is disposable by design, and its
      token-keyed slot has no cross-device identity to sync under. */
   var statePushT = null, stateSyncedAt = "", statePushArmedAt = 0;
+  /* One adoption per page load. The rebuild it triggers runs buildPuzzle
+     again, which pulls again — without this the pair recurse for ever. */
+  var stateAdopted = false;
   function stateKey() {
     return board && board.kind === "daily" && board.no ? "daily:" + board.no : null;
   }
@@ -625,6 +628,15 @@
     var snap = null;
     try { snap = localStorage.getItem(slotKey("daily")); } catch (e) {}
     if (!snap) return;
+    /* THE LETTERS-OR-TIME FLOOR, PUSH SIDE. save() has carried this since a
+       "complete, well-formed, entirely empty record" landed on a game in
+       progress; the push shipped without it, so a device showing a blank
+       board could overwrite another device's journey with nothing. The adopt
+       path already refuses such a snapshot — both sides now agree. */
+    try {
+      var probe = JSON.parse(snap);
+      if (!Object.keys(probe.letters || {}).length && !probe.elapsed) return;
+    } catch (e) { return; }
     apiAuth("/api/account/state", { game: "crossword", key: k, state: snap })
       .then(function (r) { if (r && r.updatedAt) stateSyncedAt = r.updatedAt; })
       .catch(function (e) { accountNote("state push", e); });
@@ -1033,31 +1045,6 @@
            counting the server's day this path is rare — but rare is not
            never, and the offline fallback is exactly where it still runs. */
         if (!restore) restore = readSlot("daily");
-        /* The account may hold a NEWER journey for this board, pushed by
-           another device. Adopt it into the local slot and rebuild — the slot
-           stays the single source finishBuild fingerprints against, so a
-           stale or foreign snapshot is dropped by the same guard that already
-           polices local saves. Async on purpose: the board renders from the
-           local copy immediately and upgrades if the account knows better,
-           rather than blocking first paint on a network call. */
-        (function (no) {
-          pullState(no, function (remote) {
-            if (!remote) return;
-            try {
-              var snap = JSON.parse(remote);
-              var local = readSlot("daily");
-              /* The letters-or-time floor, same as save(): a snapshot holding
-                 neither never replaces one holding either. */
-              if (local && !local.complete &&
-                  (Object.keys(local.letters || {}).length || local.elapsed) &&
-                  !(Object.keys(snap.letters || {}).length || snap.elapsed)) return;
-              localStorage.setItem(slotKey("daily"), remote);
-              if (board && board.kind === "daily" && board.no === no && !complete) {
-                adoptServerBoard(no);
-              }
-            } catch (e) { accountNote("state adopt", e); }
-          });
-        })(res.dailyNo);
       }
       if (res.mode === "theme") {
         themeLabel = res.label || "";
@@ -1075,6 +1062,50 @@
       verifiedScore = null; verifiedBreakdown = null;   // last game's, not this one's
       verifiedElapsed = null;   // reset with them, or one board's clock reaches the next
       showLoading(false);
+      /* THE ACCOUNT'S JOURNEY FOR THIS BOARD, pulled on every daily open.
+         v001t: this block lived INSIDE the clock-clamp branch above — the one
+         entered only when the server's daily number disagrees with ours. On a
+         normal open the numbers agree, the branch is skipped, and the pull
+         never ran at all. The push was always fine; nothing was ever pulled,
+         which is why even a reload showed nothing: no snapshot ever reached
+         the device. Guarded by mode alone now, and it takes the EFFECTIVE
+         number so a clamped open still pulls the board it landed on.
+         Async on purpose: the board renders from the local copy immediately
+         and upgrades if the account knows better, rather than blocking first
+         paint on a network call. */
+      if (res.mode === "daily") {
+        (function (no) {
+          pullState(no, function (remote) {
+            if (!remote || stateAdopted) return;
+            try {
+              var snap = JSON.parse(remote);
+              var local = readSlot("daily", { kind: "daily", no: no });
+              /* The letters-or-time floor, same as save(): a snapshot holding
+                 neither never replaces one holding either. */
+              if (local && !local.complete &&
+                  (Object.keys(local.letters || {}).length || local.elapsed) &&
+                  !(Object.keys(snap.letters || {}).length || snap.elapsed)) return;
+              /* Addressed by the board this pull was FOR, not by whatever
+                 `board` happens to be when the network answers — slotKey()
+                 reads the CURRENT board, so a pull landing after the player
+                 moved on wrote the snapshot into the wrong board's slot. */
+              localStorage.setItem(boardSlot({ kind: "daily", no: no }), remote);
+              if (board && board.kind === "daily" && board.no === no && !complete) {
+                /* A REBUILD, not a re-stamp. adoptServerBoard() only re-freezes
+                   the identity object, and openBoard() on its own is the same:
+                   in this codebase the repaint is always openBoard + newPuzzle,
+                   as chooseMode's daily route does it. stateAdopted stops that
+                   rebuild's own buildPuzzle from pulling and rebuilding for
+                   ever — the crossword's version of the wordsearch's re-entry
+                   guard, which it shipped without. */
+                stateAdopted = true;
+                openBoard({ kind: "daily", no: no }, snap);
+                newPuzzle(snap.seed != null ? snap.seed : FCW.dailySeed(no), snap);
+              }
+            } catch (e) { accountNote("state adopt", e); }
+          });
+        })(res.dailyNo || board.no);
+      }
       finishBuild(restore);
     }).catch(function (err) {
       showLoading(false);
