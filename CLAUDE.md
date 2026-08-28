@@ -126,6 +126,5 @@ Where facts live — extend these, never copy them:
 ## Known open items (do not "fix" without asking)
 
 - Legal review: ON HOLD by owner decision.
-- In-progress board sync between devices: a planned feature, not a bug.
+- In-progress board sync: SHIPPED and confirmed on two devices (v001u).
 - `preview_test` exits 0 with no preview (on record; fix or delete, not exempt).
-- Repo rename `crosswordxi` → `thexigames`: pending, Settings rename only.
