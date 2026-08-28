@@ -116,8 +116,15 @@ export async function getPuzzleForToken(env, token) {
   if (!hasDB(env)) {
     return SAMPLE_PUZZLES.practice.find((p) => String(p.rowId) === String(t.id)) || null;
   }
+  /* Retired rows are still resolvable BY NAME, and only by name. Retiring the
+     pool is `mode = 'practice_retired'`, which every selection query above
+     filters out — so no new practice game can reach one. This lookup is the
+     other half: a player holding a saved board has its token already, and
+     without this their game turns into "that practice puzzle is no longer
+     stored" mid-solve. Naming a retired board grants nothing a fresh request
+     would not have granted the day before it was retired. */
   const row = await env.DB
-    .prepare("SELECT payload FROM puzzles WHERE mode = 'practice' AND id = ? LIMIT 1")
+    .prepare("SELECT payload FROM puzzles WHERE mode IN ('practice', 'practice_retired') AND id = ? LIMIT 1")
     .bind(Number(t.id))
     .first();
   return row ? JSON.parse(row.payload) : null;
