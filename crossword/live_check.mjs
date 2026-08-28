@@ -16,6 +16,11 @@
  * Anything it cannot see from outside is listed at the end rather than passed
  * over in silence — a check that quietly skips is worse than no check.
  */
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+
 const SITE = "https://www.thexigames.com/crossword";
 const HUB = "https://www.thexigames.com";
 const OLD = "https://crossword.thexigames.com";
@@ -203,6 +208,31 @@ t("the game's own assets all match the footer",
 t("shared assets carry their own plain vN lifecycle",
   shared.every((a) => /^v\d+$/.test(a.tag)),
   [...new Set(shared.map((a) => a.tag))].join(", ") || "none on this page");
+
+/* ---- the bytes behind the tag, which the gate cannot see ---------------- */
+/* The gate proves the tag moved when the assets changed. It cannot prove the
+   DEPLOY landed: a push that never built, or a CDN still serving the previous
+   file under the same ?v=, is indistinguishable from success by tag alone —
+   and the tag is all anything was checking. So compare the bytes.
+   Only comparable when the live tag and this checkout agree; when they do not
+   the run says so rather than skipping quietly, because a check that goes
+   silent is the fault this suite exists to catch. */
+{
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const localJs = fs.readFileSync(path.join(here, "js/game.js"), "utf8");
+  const localTag = (localJs.match(/BUILD\s*=\s*"(v\d+[a-z]?)"/) || [])[1] || "";
+  const sum = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
+  if (!tag || !localTag || tag !== localTag) {
+    w("the deployed game.js is the file in this checkout",
+      `not comparable — live ${tag || "?"}, this checkout ${localTag || "?"}`);
+  } else {
+    const r = await fetch(SITE + "/js/game.js?v=" + tag);
+    const body = r.ok ? await r.text() : "";
+    t("the deployed game.js is the file in this checkout",
+      r.ok && sum(body) === sum(localJs),
+      r.ok ? `live ${sum(body)} vs local ${sum(localJs)}` : `HTTP ${r.status}`);
+  }
+}
 
 /* ---- HEAD, which every Function route 404d until v001q ---------------- */
 /* Pages routes by method BEFORE middleware, so handlers exporting only

@@ -19,6 +19,11 @@
 
 import { execSync } from "node:child_process";
 
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+
 const BASE = "https://www.thexigames.com";
 const expectArg = process.argv.indexOf("--expect");
 const EXPECT = expectArg > -1 ? process.argv[expectArg + 1] : null;
@@ -81,6 +86,31 @@ t("the canonical names this page",
   pageText.indexOf('href="https://www.thexigames.com/wordsearch/"') > -1);
 t("the shared chrome is referenced, not copied",
   /shared\/xi-chrome\.css/.test(pageText) && /shared\/xi-chrome\.js/.test(pageText));
+
+/* ---- the bytes behind the tag, which the gate cannot see ---------------- */
+/* The gate proves the tag moved when the assets changed. It cannot prove the
+   DEPLOY landed: a push that never built, or a CDN still serving the previous
+   file under the same ?v=, is indistinguishable from success by tag alone —
+   and the tag is all anything was checking. So compare the bytes.
+   Only comparable when the live tag and this checkout agree; when they do not
+   the run says so rather than skipping quietly, because a check that goes
+   silent is the fault this suite exists to catch. */
+{
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const localJs = fs.readFileSync(path.join(here, "js/game.js"), "utf8");
+  const localTag = (localJs.match(/BUILD\s*=\s*"(v\d+[a-z]?)"/) || [])[1] || "";
+  const sum = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
+  if (!tag || !localTag || tag !== localTag) {
+    w("the deployed game.js is the file in this checkout",
+      `not comparable — live ${tag || "?"}, this checkout ${localTag || "?"}`);
+  } else {
+    const r = await fetch(BASE + "/wordsearch/js/game.js?v=" + tag);
+    const body = r.ok ? await r.text() : "";
+    t("the deployed game.js is the file in this checkout",
+      r.ok && sum(body) === sum(localJs),
+      r.ok ? `live ${sum(body)} vs local ${sum(localJs)}` : `HTTP ${r.status}`);
+  }
+}
 
 /* The standing rule, now checked where players actually land. The crossword's
    landing footer named two unreleased games and privacy.html named five, on

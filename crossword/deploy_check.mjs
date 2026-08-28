@@ -2,6 +2,7 @@
    §12, run rather than eyeballed. */
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -142,6 +143,47 @@ t("the build tag has moved past the version now live, and past the last presente
     return shippedOk && gt(a, pres);
   })(),
   `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
+
+/* THE ASSETS MOVED BUT THE TAG DID NOT.
+   v001t: a client fix was committed with the build tag left on the live
+   version, so the same ?v= URL would have named different bytes — and the
+   browsers holding that URL cached are exactly the devices the fix was for.
+   Every existing tag check passed: they ask whether the four tags AGREE and
+   whether the tag is AHEAD of LAST_SHIPPED, and both were true of a tag that
+   had not moved since the last deploy. The property nobody was checking is
+   the one that matters — if the bytes changed, the tag must have changed too.
+
+   LAST_SHIPPED_ASSETS is the other half of LAST_SHIPPED: what is live is a
+   tag AND the bytes it names. Both move together, in the post-deploy commit.
+   On failure this prints the value to paste, because a constant that is
+   laborious to update is a constant that goes stale — which is how
+   LAST_SHIPPED itself ended two releases behind. */
+const LAST_SHIPPED_ASSETS = "45340c3b1151bab1";
+function ownAssetHash() {
+  /* Discovered from the page, never a hardcoded list: an asset added to
+     index.html is covered the day it is added, so this check cannot quietly
+     go narrower than the page it guards. */
+  const paths = [...html.matchAll(/(?:src|href)="((?:css|js)\/[^"?]+)\?v=[^"]*"/g)]
+    .map((m) => m[1]).sort();
+  if (!paths.length) return null;
+  const h = crypto.createHash("sha256");
+  for (const p of paths) {
+    if (!has(p)) return null;          // fail closed: the page names a file that is not there
+    h.update(p); h.update("\0");
+    h.update(fs.readFileSync(path.join(DIR, p)));
+  }
+  return h.digest("hex").slice(0, 16);
+}
+const assetsNow = ownAssetHash();
+const tagNow = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
+t("the game's own assets cannot change without its build tag moving",
+  !!assetsNow && (assetsNow === LAST_SHIPPED_ASSETS || tagNow !== LAST_SHIPPED),
+  assetsNow === LAST_SHIPPED_ASSETS
+    ? "unchanged since " + LAST_SHIPPED
+    : tagNow !== LAST_SHIPPED
+      ? "changed, and the tag moved " + LAST_SHIPPED + " -> " + tagNow
+      : "CHANGED with the tag still on " + tagNow +
+        " — bump the tag, then set LAST_SHIPPED_ASSETS to " + assetsNow);
 
 /* The GAME's own script, not the first versioned asset on the page. This read
    `?v=` wherever it first appeared, which was the game's stylesheet until a
