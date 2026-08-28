@@ -37,11 +37,10 @@ const hasRoot = (f) => fs.existsSync(path.join(ROOT, f));
    game shipped: the check compared every build against nothing and could not
    fail — a tag law half-implemented is the crossword's discipline worn as a
    costume. The constants are real now and the deploy ritual bumps them, same
-   as the crossword's: LAST_SHIPPED after a deploy, LAST_PRESENTED when a
-   package is handed over. aligned_test asserts neither game's constants are
-   sentinel values. */
+   as the crossword's: LAST_SHIPPED after a deploy, beside the hash of the
+   bytes it names. aligned_test asserts neither game's constant is a sentinel
+   and that LAST_PRESENTED is gone rather than frozen. */
 const LAST_SHIPPED = "v001l";     // <- what is LIVE; bump after each deploy
-const LAST_PRESENTED = "v001k";   // <- bump when a package is handed over
 
 t("the game has its own index.html", has("index.html"));
 t("functions are shared at the repository root", hasRoot("functions/api/wordsearch/daily.js"));
@@ -69,9 +68,9 @@ const num = (v) => {
   if (!m) return 0;
   return parseInt(m[1], 10) + (m[2] ? (m[2].charCodeAt(0) - 96) / 100 : 0);
 };
-t("the build tag has moved past the version now live, and past the last presented",
-  num(tagJs) > num(LAST_SHIPPED) && num(tagJs) > num(LAST_PRESENTED),
-  `now ${tagJs}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
+t("the build tag has moved past the version now live",
+  num(tagJs) > num(LAST_SHIPPED),
+  `now ${tagJs}, live ${LAST_SHIPPED}`);
 
 /* THE ASSETS MOVED BUT THE TAG DID NOT.
    v001t: a client fix was committed with the build tag left on the live

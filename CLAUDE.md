@@ -14,9 +14,12 @@ the repo root, shared by all games. The hub is `/index.html`; shared assets in
 ## The tag law (non-negotiable)
 
 - Versions: `vNNN` majors, minors walk the alphabet (`v001a` … `v001z < v002`).
-- Each game's `deploy_check.mjs` holds `LAST_SHIPPED` (what is live) and
-  `LAST_PRESENTED` (last package handed over). **A tag is burned the moment it
-  is presented, even if never deployed.**
+- Each game's `deploy_check.mjs` holds `LAST_SHIPPED` (what is live) beside
+  `LAST_SHIPPED_ASSETS` (a hash of the bytes it names). **A tag is burned the
+  moment it ships, and a tag never goes backwards.** `LAST_PRESENTED` was
+  retired in v001v: it tracked packages handed over, the zips have stopped, and
+  a constant nothing moves is a comparison against nothing — the sentinel fault
+  under another name.
 - **Never change a tag or a `LAST_*` constant without saying so explicitly.**
 - After every deploy: bump `LAST_SHIPPED` in BOTH gates to what is now live,
   commit, push. Skipping this widens the range the gate cannot refuse.
@@ -62,6 +65,15 @@ and diagnose before anything ships. Never push past a red gate.
   production. And a check's name must not be broader than its behaviour — a
   check that samples one row while claiming to check all of them is the same
   fault quieter.
+- **The live_check floors are a contract, not a formality.** `MIN_ASSERTIONS`
+  in each `live_check.mjs` is the SECOND net under the completion guard: the
+  end-of-run marker catches a crash, the floor catches a block that goes quiet
+  without crashing. It is set BELOW the run's real count on purpose, by the
+  number of assertions that can legitimately skip (a branch with nothing to
+  refuse). So when assertions are added, REVIEW the floor rather than raising
+  it by reflex — a floor set to the exact count flaps on a legitimate skip, and
+  a floor left alone for five releases stops being able to refuse anything.
+  Both floors drifted once already, in the release that introduced them.
 - **Regexes cannot count and cannot catch rule-bugs.** Anything about SQL
   arity, merge behaviour, or ordering must EXECUTE the real code.
 - Totals only from CI-shaped runs: suites run **from the repo root**, after

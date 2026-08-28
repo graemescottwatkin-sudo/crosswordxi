@@ -12,8 +12,16 @@ const previewFile = fs.readdirSync(previewDir)
   .map((f) => ({ f, t: fs.statSync(previewDir + "/" + f).mtimeMs }))
   .sort((a, b) => b.t - a.t)[0];
 if (!previewFile) {
-  console.log("  --  no preview built; run tools/build_preview.js");
-  process.exit(0);
+  /* NOT A PASS. This printed a note and exited 0, so a run that verified
+     nothing was indistinguishable from thirteen green assertions — the
+     "test that cannot fail" fault, on the record in CLAUDE.md and in the
+     gate's exemption comment. The suite now says what happened and exits
+     non-zero: it did not check the preview, and a caller reading the exit
+     code is told so. Build one with tools/build_preview.js and re-run. */
+  console.log("  ??  the preview was NOT checked — no crosswordxi-preview-*.html in " + previewDir);
+  console.log("      this is not a pass: run tools/build_preview.js, then re-run this suite");
+  console.log("\n0 passed, 0 failed, 1 unknown");
+  process.exit(1);
 }
 console.log(`Testing ${previewFile.f}\n`);
 const html = fs.readFileSync(previewDir + "/" + previewFile.f, "utf8");

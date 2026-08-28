@@ -44,7 +44,7 @@ const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`);
    The uncaughtException hook is load-bearing: a rejection out of top-level
    await terminates by a path that never runs 'exit' listeners, so a guard
    hung on 'exit' alone stays as silent as the bug it is meant to catch. */
-const MIN_ASSERTIONS = 26;
+const MIN_ASSERTIONS = 30;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;

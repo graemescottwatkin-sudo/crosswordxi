@@ -94,7 +94,6 @@ const LAST_SHIPPED = "v001u";    // <- what is LIVE; bump after each deploy
    burn was unenforceable: while LAST_SHIPPED sat on the old lineage, the
    restart exemption waved through ANY new-scheme tag — v001 again tomorrow,
    v001a after v001b, anything below 100. Two facts, two constants. */
-const LAST_PRESENTED = "v001r";  // <- bump when a package is handed over
 t("no package manifest or tool state in the repo root", (() => {
   /* The repo deliberately has no package.json: its absence is why Pages logs
      "No build command specified. Skipping build step." One appearing would
@@ -125,7 +124,7 @@ t("every og:image is an absolute https URL", (() => {
   return true;
 })());
 
-t("the build tag has moved past the version now live, and past the last presented",
+t("the build tag has moved past the version now live",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
     const parse = (v) => {
@@ -133,16 +132,16 @@ t("the build tag has moved past the version now live, and past the last presente
       return m ? [parseInt(m[1], 10), m[2] || ""] : null;
     };
     const gt = (x, y) => x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]);
-    const a = parse(now), live = parse(LAST_SHIPPED), pres = parse(LAST_PRESENTED);
-    if (!a || !live || !pres) return false;
+    const a = parse(now), live = parse(LAST_SHIPPED);
+    if (!a || !live) return false;
     /* The one lineage restart: while what is LIVE is still the old numbering
        (>= v100), only number one — v001 and its letters — may follow it, in
        presentation order. v002 cannot leapfrog the bridge, and this clause
        retires itself the first time LAST_SHIPPED becomes a new-scheme tag. */
     const shippedOk = live[0] >= 100 ? a[0] === 1 : gt(a, live);
-    return shippedOk && gt(a, pres);
+    return shippedOk;
   })(),
-  `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}, presented ${LAST_PRESENTED}`);
+  `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}`);
 
 /* THE ASSETS MOVED BUT THE TAG DID NOT.
    v001t: a client fix was committed with the build tag left on the live

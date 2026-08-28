@@ -42,7 +42,7 @@ let pass = 0, fail = 0, warn = 0;
    The uncaughtException hook is load-bearing: a rejection out of top-level
    await terminates by a path that never runs 'exit' listeners, so a guard
    hung on 'exit' alone stays as silent as the bug it is meant to catch. */
-const MIN_ASSERTIONS = 34;
+const MIN_ASSERTIONS = 37;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;

@@ -55,12 +55,17 @@ for (const g of GAMES) {
   console.log("The tag law is real, not a costume");
   const gate = read(`${g.dir}/deploy_check.mjs`);
   const shipped = (gate.match(/const LAST_SHIPPED = "([^"]+)"/) || [])[1];
-  const presented = (gate.match(/const LAST_PRESENTED = "([^"]+)"/) || [])[1];
   /* "v000" compared every build against nothing for as long as the word
      search existed. A sentinel constant is a check that cannot fail. */
-  t("LAST_SHIPPED and LAST_PRESENTED exist and are not sentinels",
-    !!shipped && !!presented && shipped !== "v000" && presented !== "v000",
-    `shipped ${shipped}, presented ${presented}`);
+  t("LAST_SHIPPED exists and is not a sentinel",
+    !!shipped && shipped !== "v000", `shipped ${shipped}`);
+  /* v001v: LAST_PRESENTED retired. It tracked packages handed over, and the
+     zips have stopped — it had frozen at the last one while releases carried
+     on. A constant nothing moves is a comparison against nothing, which is the
+     sentinel fault under another name. The burn rule now rides on
+     LAST_SHIPPED alone. */
+  t("and LAST_PRESENTED is gone rather than frozen",
+    !/const LAST_PRESENTED/.test(gate));
   const ownTag = (html.match(/js\/game\.js\?v=(v[0-9a-z]+)"/) || [])[1];
   t("the page's script tag and the script's BUILD agree",
     !!ownTag && js.indexOf(`var BUILD = "${ownTag}"`) > -1, ownTag);
