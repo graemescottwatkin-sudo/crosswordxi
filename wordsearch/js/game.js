@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001j";
+  var BUILD = "v001k";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -222,6 +222,49 @@
     if (mode !== "daily" || !puzzle || !startedAt || !serverDay) return;
     if (!varActive()) elapsed = (Date.now() - startedAt) / 1000;
     try { localStorage.setItem(dailyStorageKey(), JSON.stringify(dailySnapshot("in_progress"))); } catch (e) {}
+    /* Mirror the SAME snapshot to the account so another device can pick the
+       journey up — the found list and the clock travel inside it. Same rules
+       as the crossword's: debounced, server-stamped, device clocks never
+       compared. */
+    pushStateSoon();
+  }
+
+  /* ---- the board follows the player ------------------------------------ */
+  var statePushT = null, stateSyncedAt = "";
+  function stateEntryKey() { return serverDay ? "ws:" + serverDay : null; }
+  function pushStateSoon() {
+    if (!account || !stateEntryKey()) return;
+    clearTimeout(statePushT);
+    statePushT = setTimeout(pushStateNow, 2500);
+  }
+  function pushStateNow() {
+    clearTimeout(statePushT);
+    var k = stateEntryKey();
+    if (!account || !k) return;
+    var snap = null;
+    try { snap = localStorage.getItem(dailyStorageKey()); } catch (e) {}
+    if (!snap) return;
+    apiAuth("/api/account/state", { game: "wordsearch", key: k, state: snap })
+      .then(function (r) { if (r && r.updatedAt) stateSyncedAt = r.updatedAt; })
+      .catch(function (e) { accountNote("state push", e); });
+  }
+  function clearRemoteState() {
+    var k = stateEntryKey();
+    if (!account || !k) return;
+    apiAuth("/api/account/state", { game: "wordsearch", key: k, state: null })
+      .catch(function (e) { accountNote("state clear", e); });
+  }
+  function pullState(then) {
+    var k = stateEntryKey();
+    if (!account || !k) { then(null); return; }
+    apiAuth("/api/account/state?game=wordsearch&key=" + k)
+      .then(function (r) {
+        if (r && r.state && String(r.updatedAt || "") > String(stateSyncedAt || "")) {
+          stateSyncedAt = r.updatedAt;
+          then(r.state);
+        } else then(null);
+      })
+      .catch(function (e) { accountNote("state pull", e); then(null); });
   }
   function saveDailyComplete(reason) {
     if (mode !== "daily" || !puzzle || !serverDay) return;
@@ -233,6 +276,8 @@
       bonus_found: snap.bonus_found, complete: snap.found_count >= 11,
       at: Date.now(),
     });
+    /* The journey ends when the result banks. */
+    clearRemoteState();
   }
   function getDailyRecord() {
     try {
@@ -666,9 +711,31 @@
     $("modeLabel").textContent = label;
     renderGrid(); renderWords(); updateUI(); refreshMenus();
   }
+  var stateAdopted = false;   /* one adoption per page: the re-entry guard */
   function startDaily(p) {
     mode = "daily";
     enterBoard(p, "Team of the day");
+    /* The account may hold a NEWER journey, pushed by another device. Async:
+       the board opens from the local record immediately and upgrades if the
+       account knows better — first paint never waits on a network call. The
+       adopted snapshot goes through the SAME localStorage slot and the same
+       getDailyRecord() guards (scoring version, puzzle id, grid hash), so a
+       stale or foreign snapshot is dropped by the checks that already police
+       local saves rather than by a second copy of them here. */
+    if (!stateAdopted) pullState(function (remote) {
+      if (!remote || stateAdopted) return;
+      try {
+        var snap = JSON.parse(remote);
+        var local = getDailyRecord();
+        /* A completed local record is settled; and a snapshot with fewer
+           found words than this device already has is history, not news. */
+        if (local && local.status === "complete") return;
+        if (local && (local.found_count || 0) >= (snap.found_count || 0)) return;
+        stateAdopted = true;
+        localStorage.setItem(dailyStorageKey(), remote);
+        if (mode === "daily") startDaily(puzzle);
+      } catch (e) { accountNote("state adopt", e); }
+    });
     var rec = getDailyRecord();
     if (rec && rec.status === "complete") { showStoredResult(rec); return; }
     if (rec) {

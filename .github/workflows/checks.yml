@@ -84,6 +84,9 @@ jobs:
           # The shared chrome: one bar, one drawer, one squad list, and
           # the rule that an unreleased game is never named.
           node crossword/chrome_test.mjs
+          # A board in progress follows the player: the state endpoint
+          # executed, and the convergence rules both clients keep.
+          node crossword/state_test.mjs
           node wordsearch/frontend_test.mjs
           node wordsearch/functions_test.mjs
           # The answers pages: the seal, the refusal that names nothing,

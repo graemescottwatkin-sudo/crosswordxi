@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001q";
+  var BUILD = "v001r";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -535,6 +535,7 @@
        started_at in the database, on the server's clock. But a clock that lies
        about a score which is genuinely falling is its own problem. */
     if (elapsed % 5 === 0) { clearTimeout(saveT); save(); } else { saveSoon(); }
+    pushStateSoon();
     // The score only moves when the football minute changes, so re-sort then.
     if (elapsed % Math.round(FCW.SCORING.MATCH_CLOCK_REAL_SECONDS / FCW.SCORING.MATCH_CLOCK_MAX_MINUTES) === 0) {
       updateScoreUI();
@@ -579,6 +580,61 @@
   /* ---------- Persistence (best-effort) ---------- */
   var saveT = null;
   function saveSoon() { clearTimeout(saveT); saveT = setTimeout(save, 400); }
+
+  /* ---- the board follows the player -------------------------------------
+     The letters of a board mid-solve lived only in this device's storage;
+     the owner tripped over the blank iPad three times in two days before
+     "by design" was retired. The device's save stays authoritative and
+     writes exactly as before — this mirrors the SAME snapshot to the
+     account, so another device can pick the journey up.
+
+     NEWEST WINS, BY THE SERVER'S CLOCK ONLY. stateSyncedAt is the updatedAt
+     the server returned from OUR last push; on open, the server's snapshot is
+     adopted iff its stamp is newer than that. Device time never enters the
+     comparison — the standing date-trap rule.
+
+     Daily boards only. A practice board is disposable by design, and its
+     token-keyed slot has no cross-device identity to sync under. */
+  var statePushT = null, stateSyncedAt = "";
+  function stateKey() {
+    return board && board.kind === "daily" && board.no ? "daily:" + board.no : null;
+  }
+  function pushStateSoon() {
+    if (!account || !stateKey()) return;
+    clearTimeout(statePushT);
+    /* 2.5s after the last keystroke: chatty enough to survive a closed lid,
+       quiet enough not to post per letter. visibilitychange flushes it. */
+    statePushT = setTimeout(pushStateNow, 2500);
+  }
+  function pushStateNow() {
+    clearTimeout(statePushT);
+    var k = stateKey();
+    if (!account || !k) return;
+    var snap = null;
+    try { snap = localStorage.getItem(slotKey("daily")); } catch (e) {}
+    if (!snap) return;
+    apiAuth("/api/account/state", { game: "crossword", key: k, state: snap })
+      .then(function (r) { if (r && r.updatedAt) stateSyncedAt = r.updatedAt; })
+      .catch(function (e) { accountNote("state push", e); });
+  }
+  function clearRemoteState(no) {
+    if (!account || !no) return;
+    apiAuth("/api/account/state", { game: "crossword", key: "daily:" + no, state: null })
+      .catch(function (e) { accountNote("state clear", e); });
+  }
+  function pullState(no, then) {
+    if (!account || !no) { then(null); return; }
+    apiAuth("/api/account/state?game=crossword&key=daily:" + no)
+      .then(function (r) {
+        /* Adopt only what is NEWER than our own last push — server stamps on
+           both sides of the comparison, so two device clocks never meet. */
+        if (r && r.state && String(r.updatedAt || "") > String(stateSyncedAt || "")) {
+          stateSyncedAt = r.updatedAt;
+          then(r.state);
+        } else then(null);
+      })
+      .catch(function (e) { accountNote("state pull", e); then(null); });
+  }
   /* What puzzle this actually is, as opposed to what it is called. A daily
      number or a practice token names a slot; the contents of that slot can
      change — a regenerated daily, a re-imported practice pool — and saved
@@ -965,6 +1021,31 @@
            counting the server's day this path is rare — but rare is not
            never, and the offline fallback is exactly where it still runs. */
         if (!restore) restore = readSlot("daily");
+        /* The account may hold a NEWER journey for this board, pushed by
+           another device. Adopt it into the local slot and rebuild — the slot
+           stays the single source finishBuild fingerprints against, so a
+           stale or foreign snapshot is dropped by the same guard that already
+           polices local saves. Async on purpose: the board renders from the
+           local copy immediately and upgrades if the account knows better,
+           rather than blocking first paint on a network call. */
+        (function (no) {
+          pullState(no, function (remote) {
+            if (!remote) return;
+            try {
+              var snap = JSON.parse(remote);
+              var local = readSlot("daily");
+              /* The letters-or-time floor, same as save(): a snapshot holding
+                 neither never replaces one holding either. */
+              if (local && !local.complete &&
+                  (Object.keys(local.letters || {}).length || local.elapsed) &&
+                  !(Object.keys(snap.letters || {}).length || snap.elapsed)) return;
+              localStorage.setItem(slotKey("daily"), remote);
+              if (board && board.kind === "daily" && board.no === no && !complete) {
+                adoptServerBoard(no);
+              }
+            } catch (e) { accountNote("state adopt", e); }
+          });
+        })(res.dailyNo);
       }
       if (res.mode === "theme") {
         themeLabel = res.label || "";
@@ -2340,6 +2421,10 @@
   setInterval(function () { if (layoutStale()) relayout(); }, 1000);
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && layoutStale()) relayout();
+    /* Hiding the tab is the last reliable moment before a lid closes or an
+       app switch happens — flush the pending state push rather than lose the
+       final 2.5 seconds of typing to the debounce. */
+    if (document.hidden) pushStateNow();
   });
 
   /* Where the league table goes.
@@ -4153,6 +4238,11 @@
     /* After the device has its copy, never before: a failed push must leave the
        record exactly where it was, and the next push carries it. */
     pushResults();
+    /* The journey ends when the result banks: the in-progress row is cleared
+       so no device later resumes a board that is already scored. Fire and
+       forget like every account call — a failed clear leaves a stale row the
+       next open ignores, because a completed local save wins. */
+    if (board && board.kind === "daily" && board.no) clearRemoteState(board.no);
     return list;
   }
   /* A themed board keeps its own record, and deliberately not the season's.

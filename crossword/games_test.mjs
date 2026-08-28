@@ -198,13 +198,18 @@ const cw = fs.readFileSync("crossword/js/game.js", "utf8");
    word search pushed after every completed board. One fact, two behaviours,
    and the kind that is invisible until someone plays on two devices. */
 t("the crossword pushes after recording a finished daily", (() => {
-  const rec = cw.match(/list\.sort\([\s\S]{0,400}?saveResults\(list\);[\s\S]{0,400}?return list;/);
+  /* The window was 400 chars and the board-state release put clearRemoteState
+     (with its comment) between pushResults() and return list, pushing the
+     terminator out of reach — the assertion failed with the behaviour intact.
+     800 admits the clear block; the order logic below is unchanged and still
+     fails if the push moves or vanishes. */
+  const rec = cw.match(/list\.sort\([\s\S]{0,800}?saveResults\(list\);[\s\S]{0,800}?return list;/);
   return !!rec && /pushResults\(\)/.test(rec[0]);
 })());
 /* After the device has its copy, never before: a failed push must leave the
    record where it was. */
 t("and only after the device has saved its own copy", (() => {
-  const rec = cw.match(/saveResults\(list\);[\s\S]{0,400}?return list;/);
+  const rec = cw.match(/saveResults\(list\);[\s\S]{0,800}?return list;/);
   return !!rec && rec[0].indexOf("saveResults(list)") < rec[0].indexOf("pushResults()");
 })());
 t("the word search pushes after recording a completed board", (() => {
