@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001r";
+  var BUILD = "v001s";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -535,7 +535,6 @@
        started_at in the database, on the server's clock. But a clock that lies
        about a score which is genuinely falling is its own problem. */
     if (elapsed % 5 === 0) { clearTimeout(saveT); save(); } else { saveSoon(); }
-    pushStateSoon();
     // The score only moves when the football minute changes, so re-sort then.
     if (elapsed % Math.round(FCW.SCORING.MATCH_CLOCK_REAL_SECONDS / FCW.SCORING.MATCH_CLOCK_MAX_MINUTES) === 0) {
       updateScoreUI();
@@ -579,7 +578,15 @@
 
   /* ---------- Persistence (best-effort) ---------- */
   var saveT = null;
-  function saveSoon() { clearTimeout(saveT); saveT = setTimeout(save, 400); }
+  function saveSoon() {
+    clearTimeout(saveT); saveT = setTimeout(save, 400);
+    /* The push shares this trigger — armed by PLAY, never by the clock. Its
+       first wiring sat on the tick line, directly under the comment recording
+       why that starves: a debounce re-armed every second never fires. The
+       owner proved it live — letters on the PC, blank iPad — because with the
+       page open the push was permanently 2.5 seconds away. */
+    pushStateSoon();
+  }
 
   /* ---- the board follows the player -------------------------------------
      The letters of a board mid-solve lived only in this device's storage;
@@ -595,19 +602,24 @@
 
      Daily boards only. A practice board is disposable by design, and its
      token-keyed slot has no cross-device identity to sync under. */
-  var statePushT = null, stateSyncedAt = "";
+  var statePushT = null, stateSyncedAt = "", statePushArmedAt = 0;
   function stateKey() {
     return board && board.kind === "daily" && board.no ? "daily:" + board.no : null;
   }
   function pushStateSoon() {
     if (!account || !stateKey()) return;
+    /* 2.5s after the last change — but with a MAX-WAIT: a player typing
+       continuously re-arms the debounce forever, and eight seconds of play is
+       worth having on the account even mid-flow. Hidden/pagehide flush the
+       rest. */
+    if (!statePushArmedAt) statePushArmedAt = Date.now();
+    if (Date.now() - statePushArmedAt > 8000) { pushStateNow(); return; }
     clearTimeout(statePushT);
-    /* 2.5s after the last keystroke: chatty enough to survive a closed lid,
-       quiet enough not to post per letter. visibilitychange flushes it. */
     statePushT = setTimeout(pushStateNow, 2500);
   }
   function pushStateNow() {
     clearTimeout(statePushT);
+    statePushArmedAt = 0;
     var k = stateKey();
     if (!account || !k) return;
     var snap = null;
@@ -2426,6 +2438,10 @@
        final 2.5 seconds of typing to the debounce. */
     if (document.hidden) pushStateNow();
   });
+  /* pagehide as well: closing a tab or navigating away does not reliably fire
+     visibilitychange on every browser, and the close is precisely the moment
+     the last letters are worth keeping. */
+  window.addEventListener("pagehide", function () { pushStateNow(); });
 
   /* Where the league table goes.
      In the rail beside the controls, which is where it belongs on anything

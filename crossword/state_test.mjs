@@ -166,6 +166,29 @@ for (const [name, js] of [["crossword", cw], ["wordsearch", ws]]) {
     js.indexOf("localStorage.getItem(" +
       (name === "crossword" ? 'slotKey("daily")' : "dailyStorageKey()")) > -1);
 }
+/* THE TRIGGER RULES — added after the owner's live test failed. The push was
+   first armed from the once-per-second tick, whose own comment records that a
+   debounce re-armed every second never fires; letters on the PC, blank iPad.
+   The rules: pushes are CHANGE-driven (typing, found words, fouls), never
+   clock-driven; a max-wait bounds continuous play; hidden AND pagehide flush. */
+t("the crossword's tick does not arm the push", (() => {
+  const tick = cw.match(/if \(elapsed % 5 === 0\)[^\n]*\n/);
+  return !!tick && tick[0].indexOf("pushStateSoon") === -1;
+})(), "a debounce the clock re-arms every second never fires");
+t("the crossword's push is armed by the change path (saveSoon)",
+  /function saveSoon\(\) \{[\s\S]{0,700}?pushStateSoon\(\);[\s\S]{0,100}?\}/.test(cw));
+t("the word search's push is armed by found words and fouls, not the save the clock calls", (() => {
+  const save = ws.match(/function saveDailyProgress\(\) \{[\s\S]{0,500}?\n  \}/);
+  return !!save && save[0].indexOf("pushStateSoon") === -1 &&
+    (ws.match(/pushStateSoon\(\);/g) || []).length >= 2;
+})());
+for (const [name, js] of [["crossword", cw], ["wordsearch", ws]]) {
+  t(`${name}: continuous play cannot postpone the push forever`,
+    /statePushArmedAt > 8000/.test(js) || /- statePushArmedAt > 8000/.test(js),
+    "max-wait 8s");
+  t(`${name}: pagehide flushes as well as visibilitychange`,
+    /pagehide[\s\S]{0,200}?pushStateNow\(\)/.test(js));
+}
 t("the crossword flushes the pending push when the tab hides",
   /if \(document\.hidden\) pushStateNow\(\);/.test(cw));
 t("the crossword adoption keeps the letters-or-time floor",

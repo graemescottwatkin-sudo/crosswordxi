@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001k";
+  var BUILD = "v001l";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -222,23 +222,21 @@
     if (mode !== "daily" || !puzzle || !startedAt || !serverDay) return;
     if (!varActive()) elapsed = (Date.now() - startedAt) / 1000;
     try { localStorage.setItem(dailyStorageKey(), JSON.stringify(dailySnapshot("in_progress"))); } catch (e) {}
-    /* Mirror the SAME snapshot to the account so another device can pick the
-       journey up — the found list and the clock travel inside it. Same rules
-       as the crossword's: debounced, server-stamped, device clocks never
-       compared. */
-    pushStateSoon();
   }
 
   /* ---- the board follows the player ------------------------------------ */
-  var statePushT = null, stateSyncedAt = "";
+  var statePushT = null, stateSyncedAt = "", statePushArmedAt = 0;
   function stateEntryKey() { return serverDay ? "ws:" + serverDay : null; }
   function pushStateSoon() {
     if (!account || !stateEntryKey()) return;
+    if (!statePushArmedAt) statePushArmedAt = Date.now();
+    if (Date.now() - statePushArmedAt > 8000) { pushStateNow(); return; }
     clearTimeout(statePushT);
     statePushT = setTimeout(pushStateNow, 2500);
   }
   function pushStateNow() {
     clearTimeout(statePushT);
+    statePushArmedAt = 0;
     var k = stateEntryKey();
     if (!account || !k) return;
     var snap = null;
@@ -299,9 +297,11 @@
     var away = Math.round((Date.now() - rec.saved_at) / 1000);
     return (rec.elapsed_seconds || 0) + Math.min(Math.max(away, 0), 3600);
   }
-  window.addEventListener("pagehide", saveDailyProgress);
+  window.addEventListener("pagehide", function () {
+    saveDailyProgress(); pushStateNow();
+  });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") saveDailyProgress();
+    if (document.visibilityState === "hidden") { saveDailyProgress(); pushStateNow(); }
   });
 
   /* ---- clock ----------------------------------------------------------- */
@@ -511,6 +511,13 @@
       }
       if (navigator.vibrate) navigator.vibrate(18);
       updateUI(); saveDailyProgress();
+      /* Mirror the snapshot to the account HERE — a found word is the change
+         worth carrying. The first wiring rode saveDailyProgress, which the
+         clock calls every second, so the 2.5s debounce was re-armed forever
+         and never fired — the exact starvation the crossword's tick comment
+         records, rebuilt in a second game the same evening. Change-driven,
+         never clock-driven. */
+      pushStateSoon();
       return;
     }
     /* The foul. Escalates +1' to +4' for consecutive wrongs, capped at 15'
@@ -525,6 +532,8 @@
     wrongResetTimer = setTimeout(function () { wrongRun = 0; }, 7000);
     if (applied > 0) { showPenalty(applied); } else { toast("Penalty limit reached"); }
     updateClock(); saveDailyProgress();
+    /* A foul is a change worth carrying too: penalties move the score. */
+    pushStateSoon();
     cells.forEach(function (i) {
       var c = cellEls[i]; if (!c) return;
       c.classList.add("bad"); setTimeout(function () { c.classList.remove("bad"); }, 300);
