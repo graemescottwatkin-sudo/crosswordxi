@@ -36,7 +36,13 @@ the repo root, shared by all games. The hub is `/index.html`; shared assets in
 5. `node crossword\live_check.mjs --expect vNNN` and
    `node wordsearch\live_check.mjs --expect vNNN` — including the HEAD
    assertions (production proof of `functions/_middleware.js`).
-6. Bump both `LAST_SHIPPED` constants, commit "LAST_SHIPPED …", push.
+6. `node tools\post_deploy.mjs` to see what it would record, then
+   `--write` to apply it; commit "LAST_SHIPPED …", push. The script DERIVES:
+   it reads the tag from the live page, recomputes each game's asset hash from
+   the tree, and refuses unless the live tag equals the tree's AND that game's
+   live_check passes — so a bump cannot be recorded for a deploy that never
+   landed. It refuses for ALL games if any one is refused. Step 5 is still
+   worth running by eye; the script runs it again as evidence, not as theatre.
 
 A red gate is a stop, not a speed bump. If a gate fails, name the failing check
 and diagnose before anything ships. Never push past a red gate.
