@@ -102,6 +102,22 @@ for (const g of GAMES) {
   t("the page mounts the shared footer that carries the disclaimer",
     /class="xic-foot"/.test(html) &&
     /Not affiliated with/.test(read("shared/xi-chrome.js")));
+  /* AND IT MUST NOT BE SEALED INSIDE A VIEW.
+     The check above greps for the class, which is true of a footer nested in a
+     container that hides. The crossword's sat inside #homeOverlay, so it left
+     the page the moment a board opened: the family footer was present in the
+     markup and absent from the screen for the whole of every game, and this
+     contract called that mounted. Depth is counted, not matched — a regex
+     cannot tell nesting. */
+  t("and the shared footer is at top level, not inside a view that hides", (() => {
+    const body = html.slice(html.indexOf("<body"));
+    const at = body.indexOf('<footer class="xic-foot"');
+    if (at < 0) return false;
+    const before = body.slice(0, at).replace(/<!--[\s\S]*?-->/g, "");
+    const opens = (before.match(/<div\b/g) || []).length;
+    const closes = (before.match(/<\/div>/g) || []).length;
+    return opens - closes === 0;
+  })());
 
   console.log("Its own keys, and only its own");
   t(`every localStorage key it writes is under "${g.prefix}." or the family's "xi."`, (() => {

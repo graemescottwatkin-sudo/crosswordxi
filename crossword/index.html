@@ -104,7 +104,7 @@
      genuinely differs. -->
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
-<link rel="stylesheet" href="css/style.css?v=v001t">
+<link rel="stylesheet" href="css/style.css?v=v001u">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -926,7 +926,6 @@
        standing rule that unbuilt names appear nowhere in markup; and it was a
        second hand-maintained list of the family. live_check enforces the
        naming rule on the hub, which is why none of it was caught here. -->
-  <footer class="xic-foot"></footer>
 </div>
 
 <div class="overlay" id="startOverlay">
@@ -1091,7 +1090,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001t</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v001u</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1104,9 +1103,15 @@
   <button id="devToggle">dev</button>
 </footer>
 
+<!-- Top level, NOT inside #homeOverlay. It sat in the home view, so it left
+     the page the moment a board opened and the crossword had no family footer
+     while you played — the word search, whose copy is top level, always did.
+     aligned_test only grepped for the class, which is true of an element
+     sealed inside a hidden container. -->
+<footer class="xic-foot"></footer>
 <script src="../shared/xi-chrome.js?v=v1"></script>
-<script src="js/seasons.js?v=v001t"></script>
-<script src="js/engine.js?v=v001t"></script>
-<script src="js/game.js?v=v001t"></script>
+<script src="js/seasons.js?v=v001u"></script>
+<script src="js/engine.js?v=v001u"></script>
+<script src="js/game.js?v=v001u"></script>
 </body>
 </html>

@@ -93,7 +93,7 @@ server.listen(0, "127.0.0.1", async () => {
   const origin = "http://127.0.0.1:" + server.address().port;
   console.log("Serving " + DIR + " at " + origin + "\n");
 
-  async function openDaily() {
+  async function openDaily(seed) {
     const dom = await JSDOM.fromURL(origin + "/", {
       runScripts: "dangerously", pretendToBeVisual: true, resources: "usable",
       beforeParse(w) {
@@ -101,6 +101,12 @@ server.listen(0, "127.0.0.1", async () => {
         w.scrollTo = () => {}; w.scrollBy = () => {};
         w.fetch = (u, o) => fetch(String(u).startsWith("http") ? u : origin + u, o);
         w.confirm = () => true;
+        /* jsdom shares a storage area per ORIGIN across windows, so without
+           this a later open inherits an earlier one's save and a "cold" open
+           is quietly a restored one. The first version of the season check
+           passed against the very bug it was written for because of it. */
+        w.localStorage.clear();
+        for (const k in seed || {}) if (seed[k] != null) w.localStorage.setItem(k, seed[k]);
       },
     });
     await wait(4000);
@@ -167,6 +173,41 @@ server.listen(0, "127.0.0.1", async () => {
     })());
   dom.window.close();
 
+
+  /* ---- 3. the season is the board's, not the device's ---- */
+  /* Two devices, one daily, two seasons: the PC showed 2001/02 and the iPad
+     2008/09. The season was derived at the TOP of finishBuild, before the
+     restore had put clubMode and club back — so it read the PRE-restore club,
+     which at boot is fcw.clubPref, a device-local value. Random is the same
+     for everybody, so the ONLY thing varied between these two opens is that
+     device-local preference. If it can move the season, the rule is broken.
+
+     Written first as cold-open vs restored-open, which passed against the very
+     bug it was for: on the old code both opens took the same wrong path. The
+     sabotage is what exposed that, not the reading. */
+  console.log("\nThe season is the board's, not the device's");
+  STATE_BODY = { state: null };
+  const inProgress = JSON.stringify({
+    mode: "daily", dailyNo: TODAY_NO, letters: {}, elapsed: 90, complete: false,
+    club: "Everton", clubMode: "random", revealedCells: [], revealAnswerCells: [],
+    revealedEntries: [], subbedCells: [], subs: 0, checks: 0, checkAlls: 0,
+    helpActions: [], pauseCount: 0, pausedMs: 0,
+  });
+  const seasonWith = async (clubPref) => {
+    const d = await openDaily({ [DAILY_SLOT]: inProgress, "fcw.clubPref": clubPref });
+    const v = d.window.document.getElementById("tableSeason").textContent.trim();
+    d.window.close();
+    return v;
+  };
+  /* Two prefs that DO reach different seasons through the club-keyed pool —
+     Everton 2008/09, Sunderland 2011/12 — so a pass cannot be an accident of
+     two clubs that happen to agree. */
+  const seasonA = await seasonWith("Everton");
+  const seasonB = await seasonWith("Sunderland");
+  t("a board in random mode names a season", !!seasonA, seasonA);
+  t("the device's club preference cannot move the season",
+    !!seasonA && seasonA === seasonB,
+    "clubPref Everton -> " + seasonA + ", clubPref Sunderland -> " + seasonB);
   console.log("\n" + pass + " passed, " + fail + " failed");
   server.close();
   process.exit(fail ? 1 : 0);

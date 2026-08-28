@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001t";
+  var BUILD = "v001u";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1128,17 +1128,36 @@
 
   var staleSave = false;
   var suppressSaveUntilPlayed = false;
+  /* THE SEASON AND CLUB, DERIVED ONCE, FROM SETTLED INPUTS.
+     v001u: this ran at the TOP of finishBuild, before the restore below had
+     put clubMode and club back — so a restored board derived its season from
+     the PRE-restore club, which at boot is fcw.clubPref, a device-local
+     value. That is how two devices on the same daily showed 2001/02 and
+     2008/09: the PC took the random pairing, the iPad derived from its own
+     stored club preference. The gate was `randomPick && clubMode === "random"`,
+     and randomPick is only ever set on a COLD open — so its truthiness was
+     standing in for "is this a fresh board", which the season must not depend
+     on. Random is the same for everybody: season and club both come from the
+     seed and the puzzle's difficulty, and nothing device-local reaches them. */
+  function settleClubAndSeason(diff) {
+    if (clubMode === "random" || !club) {
+      var pick = FCW.pickSeasonAndClub(seed, diff);
+      if (pick) { randomPick = pick; club = pick.club; season = pick.season; return; }
+      randomPick = null;
+      club = club || CLUBS[0];
+      season = FCW.pickSeason(club, seed, diff);
+      return;
+    }
+    /* Chosen: the club is the player's, and the season follows it — the same
+       answer on every device the player signs into, because club and clubMode
+       ride in the synced snapshot. */
+    randomPick = null;
+    season = FCW.pickSeason(club, seed, diff);
+  }
+
   function finishBuild(restore) {
     staleSave = false;
     var diff = FCW.puzzleDifficulty(puzzle);
-    if (randomPick && clubMode === "random") {
-      // Re-derive with the puzzle's difficulty now that the grid exists.
-      randomPick = FCW.pickSeasonAndClub(seed, diff);
-      club = randomPick.club;
-      season = randomPick.season;
-    } else {
-      season = FCW.pickSeason(club, seed, diff);
-    }
     $("grid").style.opacity = "";
     /* The board's own date, on the board.
 
@@ -1246,14 +1265,10 @@
       halfTimeShown = FCW.matchMinute(elapsed) >= 45;
       if (restore.clubMode) clubMode = restore.clubMode;
       if (restore.club && CLUBS.indexOf(restore.club) !== -1) club = restore.club;
-    } else if (clubMode === "random" || !club) {
-      // Season first, then a club from that season — and both derived from
-      // the puzzle seed, so a daily gives every player the same pairing.
-      randomPick = FCW.pickSeasonAndClub(seed, null);
-      club = randomPick ? randomPick.club : CLUBS[0];
-    } else {
-      randomPick = null;
     }
+    /* Derived HERE and nowhere else, from inputs the restore above has
+       finished settling. */
+    settleClubAndSeason(diff);
     syncClubSelect();
     updateSubUI();
     stopTimer();
@@ -4694,8 +4709,12 @@
       clubMode = "random";
       try { localStorage.removeItem("fcw.clubPref"); } catch (e) {}
       if (!started) {                       // reroll before kick-off
-        randomPick = FCW.pickSeasonAndClub(seed, null);
-        if (randomPick) { club = randomPick.club; season = randomPick.season; }
+        /* Through the one derivation, with the puzzle's difficulty — this
+           called pickSeasonAndClub(seed, null), a THIRD argument shape, and
+           a null difficulty picks from the whole season pool rather than the
+           difficulty window, so rerolling to Random gave a season no other
+           player on that board would see. */
+        settleClubAndSeason(FCW.puzzleDifficulty(puzzle));
       }
       // mid-puzzle: keep this puzzle's club; next New Puzzle rerolls
     } else {
