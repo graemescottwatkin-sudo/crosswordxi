@@ -356,9 +356,34 @@ html, body {
 .owner-bar select { max-width: 22rem; }
 .owner-note { opacity: .7; }
 
-/* The lifted letters: what the player has typed that this tile could supply,
-   above the bag they came from. Empty until something is typed, so the tile
-   keeps its size and the pitch does not jump on the first keystroke. */
-.slot .lifted { display: block; min-height: 1em; font-weight: 700;
-  letter-spacing: .12em; color: var(--accent, currentColor); }
-.slot.could { outline: 1px solid var(--accent, currentColor); outline-offset: 2px; }
+/* ---- The lifted letters ------------------------------------------------
+   What the player has typed that THIS tile could supply, above the bag it
+   came out of. It has to read as a different KIND of thing from the scramble,
+   not a bolder version of it — the whole point is "these letters are mine and
+   those are still the puzzle's".
+
+   Four things carry that, because colour alone fails in the two places it
+   matters: a gold-on-dark tile at arm's length, and anyone who cannot separate
+   gold from white.
+     - gold, the family's own highlight token, not a new colour
+     - wide tracking, so the letters read as counters rather than a word
+     - a rule underneath, which is the actual boundary between mine and the bag
+     - and the bag steps back to .55 while anything is held above it
+
+   Not an outline: .slot.picked already owns a gold outline, and two states
+   sharing one signal is how a player stops trusting either. */
+.slot .lifted {
+  display: block;
+  min-height: 1.15em;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: clamp(12px, 3.4vw, 17px);
+  letter-spacing: .28em;
+  line-height: 1.15;
+  color: var(--gold);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+}
+/* The rule appears only when something is held, so an empty tile is not a
+   tile with a line through it. */
+.slot.could .lifted { border-bottom: 2px solid var(--gold); padding-bottom: 2px; }
+.slot.could .letters { opacity: .55; }
