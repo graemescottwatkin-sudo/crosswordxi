@@ -58,12 +58,43 @@ function handler(file, names) {
   return `var ${names.as} = (function () {\n${plain(read(file))}\n  return { ${names.exports.join(", ")} };\n})();`;
 }
 
+/* THE TESTER GETS THE WHOLE BANK, not the four-board sample that ships.
+   sc-boards.js became a sample when the bank moved outside the repository and
+   the tester inherited it — a review tool that can show four boards out of two
+   hundred and sixty-two is not a review tool. This file is gitignored, has no
+   server, and says on its own face that the answers are inside it, so the bank
+   is exactly what belongs in it.
+   Built through the builder's own build(), so the tester plays the boards the
+   import sends to D1 rather than a second rendering of them. Falls back to the
+   shipped sample when the bank is absent, so a fresh clone still works. */
+const bankDir = path.join(ROOT, "..", "scrambledxi-source", "xi");
+let bankJs = null;
+if (fs.existsSync(bankDir)) {
+  const { gate, parseFormation, build } = await import(
+    "file://" + path.join(ROOT, "tools", "build_scrambled.js").split(path.sep).join("/"));
+  const built = fs.readdirSync(bankDir)
+    .filter((f) => f.endsWith(".json") && !f.startsWith("_"))
+    .sort()
+    .map((f) => {
+      const src = JSON.parse(fs.readFileSync(path.join(bankDir, f), "utf8"));
+      const problems = gate(src, parseFormation(src.formation)) || [];
+      if (problems.length) { console.error("REFUSED: " + f + "\n  x " + problems[0]); process.exit(1); }
+      return build(src, f);
+    });
+  bankJs = "var SC_BOARDS = " + JSON.stringify(built) + ";";
+  console.log("  bank: " + built.length + " boards");
+} else {
+  console.log("  bank not found — using the four-board sample");
+}
+
 const libs = [
   "functions/_lib/sc-names.js",
   "functions/_lib/daily.js",
-  "functions/_lib/sc-boards.js",
   "functions/_lib/sc-board.js",
 ].map((f) => `/* ===== ${f} ===== */\n${plain(read(f))}`).join("\n\n");
+
+/* Bank first: sc-board.js reads SC_BOARDS. */
+const libsAll = (bankJs ? "/* ===== the board bank ===== */" + String.fromCharCode(10) + bankJs + String.fromCharCode(10,10) : plain(read("functions/_lib/sc-boards.js")) + String.fromCharCode(10,10)) + libs;
 
 const handlers = [
   handler("functions/api/scrambled/daily.js", { as: "API_DAILY", exports: ["onRequestGet"] }),
@@ -149,7 +180,7 @@ ${body}
 /* ============================================================
    The real libraries, inlined verbatim from functions/_lib/
    ============================================================ */
-${libs}
+${libsAll}
 
 /* ============================================================
    The real endpoint handlers, inlined from functions/api/scrambled/

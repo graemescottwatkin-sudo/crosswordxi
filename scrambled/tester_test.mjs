@@ -73,9 +73,18 @@ await settle(20);
 
 t("no script threw on load", !!$("screenStart"), "the whole game is one <script>");
 t("the shim answered for the board", shown("screenStart"));
-t("the board picker lists every board",
-  $("tstBoard").options.length === SC_BOARDS.length,
-  `${$("tstBoard").options.length} boards`);
+/* Counted against the TESTER's own bank, not the module's.
+   The module became a four-board sample when the bank moved outside the
+   repository; the tester is built from the full bank because a review tool
+   that shows four of two hundred and sixty-two is not one. Comparing the
+   picker to SC_BOARDS.length asserted that those two are the same set, which
+   is now false by design — and it failed for that reason rather than for
+   anything wrong with the picker. What the check is actually for is that the
+   picker offers every board the tester carries, so that is what it reads. */
+const testerBoards = (html.match(/"title":"/g) || []).length;
+t("the board picker lists every board the tester carries",
+  testerBoards > 0 && $("tstBoard").options.length === testerBoards,
+  `${$("tstBoard").options.length} in the picker, ${testerBoards} in the file`);
 t("and the pinned board is the one on screen",
   $("tstBoard").value === "1" && $("startTitle").textContent === SC_BOARDS[0].title,
   `picker says #${$("tstBoard").value}, screen says "${$("startTitle").textContent}"`);
