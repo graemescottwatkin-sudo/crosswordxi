@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001";
+var BUILD = "v001a";
 
 (function () {
   "use strict";
@@ -388,10 +388,60 @@ var BUILD = "v001";
 
   /* ---- start ------------------------------------------------------------ */
 
+  /* ---- the owner's board picker ----------------------------------------
+     Revealed only when the server says this account is an admin, and every
+     board it loads comes back through the admin route which re-checks that on
+     each request. Convenience, not security — the same reasoning the crossword
+     writes above its own owner tools.
+
+     Addressed by board ID, not by the ?no= the public route takes. ?no= is a
+     position in the daily ring, and the ring is only the boards eligible for a
+     daily — so it moves the moment one is marked daily:false, and a proofing
+     link that points somewhere else next week is worse than none. */
+  function ownerTools() {
+    fetch("/api/admin/whoami", { headers: { "X-XI-Games": "1" }, credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.admin) return;
+        return fetch("/api/admin/scrambled?list=1", {
+          headers: { "X-XI-Games": "1" }, credentials: "same-origin"
+        }).then(function (r) { return r.json(); }).then(function (list) {
+          if (!list || !list.boards) return;
+          var sel = $("ownerBoard");
+          var asked = new URLSearchParams(location.search).get("id");
+          list.boards.forEach(function (b) {
+            var o = document.createElement("option");
+            o.value = b.id;
+            /* The ring flag is shown, because "why is this never my daily" is
+               the first question a picker full of boards invites. */
+            o.textContent = "#" + b.id + "  " + b.title + (b.daily ? "" : "   (not in the daily)");
+            if (String(b.id) === String(asked)) o.selected = true;
+            sel.appendChild(o);
+          });
+          $("ownerNote").textContent = list.boards.length + " boards, from " + list.source;
+          sel.addEventListener("change", function () {
+            location.search = "?id=" + encodeURIComponent(sel.value);
+          });
+          $("ownerBar").hidden = false;
+        });
+      })
+      .catch(function () { /* not an admin, or offline: the bar stays hidden */ });
+  }
+
   function boot() {
-    var asked = new URLSearchParams(location.search).get("no");
-    fetch("/api/scrambled/daily" + (asked ? "?no=" + encodeURIComponent(asked) : ""), {
-      headers: { "X-XI-Games": "1" }
+    /* ?id= is the OWNER's address — any board, through the admin route, which
+       re-checks the flag server-side. ?no= stays the public one: a position in
+       the daily ring, past and today only. A signed-out visitor sending ?id=
+       gets a 401 from that route and the start card says so, which is the
+       honest failure rather than a silent fall back to today's board. */
+    var params = new URLSearchParams(location.search);
+    var asked = params.get("no");
+    var byId = params.get("id");
+    var url = byId
+      ? "/api/admin/scrambled?id=" + encodeURIComponent(byId)
+      : "/api/scrambled/daily" + (asked ? "?no=" + encodeURIComponent(asked) : "");
+    fetch(url, {
+      headers: { "X-XI-Games": "1" }, credentials: "same-origin"
     })
       .then(function (r) { return r.json(); })
       .then(function (board) {
@@ -452,4 +502,11 @@ var BUILD = "v001";
   });
 
   boot();
+
+  /* After boot, deliberately: the board is the page, the owner bar is an extra.
+     Ahead of it, the admin check was the first request the page made and pushed
+     the board fetch second, which journey_test caught by asserting what the
+     FIRST call was. */
+
+  ownerTools();
 })();

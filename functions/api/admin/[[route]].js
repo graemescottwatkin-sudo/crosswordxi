@@ -111,6 +111,22 @@ export async function onRequest({ request, env, params }) {
      has the tester and its answer key. */
   if (route === "scrambled" && request.method === "GET") {
     const url = new URL(request.url);
+    /* ?list=1 — ids and titles only, so the owner's picker has something to
+       populate from. Deliberately NOT the boards: a list that carried slots
+       would be the whole bank in one response, and the point of the preview
+       route is proofing one board at a time. Titles are already public on the
+       start card of any board that has come round. */
+    if (url.searchParams.get("list")) {
+      const { loadBoards, dailyRing } = await import("../../_lib/sc-board.js");
+      const { boards, source } = await loadBoards(env);
+      const ring = new Set(dailyRing(boards).map((b) => b.id));
+      return json({
+        source,
+        boards: (boards || []).map((b) => ({
+          id: b.id, title: b.title, daily: ring.has(b.id),
+        })),
+      });
+    }
     const id = parseInt(url.searchParams.get("id") || "", 10);
     if (!Number.isInteger(id) || id < 1) return bad("Give a board id.");
     const { loadBoards, publicBoard, scKey } = await import("../../_lib/sc-board.js");

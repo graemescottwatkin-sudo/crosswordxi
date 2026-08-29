@@ -28,7 +28,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
-<link rel="stylesheet" href="css/style.css?v=v001">
+<link rel="stylesheet" href="css/style.css?v=v001a">
 </head>
 <body>
 
@@ -53,6 +53,17 @@
   <!-- The H1 says what the page IS and lives on the pre-match card, the same
        place the other games keep theirs. The board changes daily; the game
        does not, so the board's own title is an h2. -->
+<!-- OWNER ONLY, and hidden until the server says so. The public route serves
+     the past and today and refuses the future, which is right for players and
+     useless for proofing 262 boards four days in. This is the same shape as
+     the crossword's owner tools: the control is revealed by /api/admin/whoami
+     and every board it loads is re-checked server-side, because a hidden
+     control is not a lock. -->
+<div class="owner-bar" id="ownerBar" hidden>
+  <label for="ownerBoard">Board</label>
+  <select id="ownerBoard"></select>
+  <span class="owner-note" id="ownerNote"></span>
+</div>
   <section class="screen prematch" id="screenStart" hidden>
     <div class="pmCard">
       <div class="eyebrow" id="startKicker">Today's board</div>
@@ -125,8 +136,8 @@
 <footer class="xic-foot"></footer>
 
 <script src="../shared/xi-chrome.js?v=v2"></script>
-<script src="js/config.js?v=v001"></script>
-<script src="js/scoring.js?v=v001"></script>
-<script src="js/game.js?v=v001"></script>
+<script src="js/config.js?v=v001a"></script>
+<script src="js/scoring.js?v=v001a"></script>
+<script src="js/game.js?v=v001a"></script>
 </body>
 </html>
