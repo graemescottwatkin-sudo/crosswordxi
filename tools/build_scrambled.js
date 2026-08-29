@@ -200,6 +200,51 @@ export function gate(src, shape) {
     }
   });
 
+
+  /* A SURNAME SITTING INSIDE ANOTHER ON THE SAME BOARD.
+     The bag rule above catches two slots whose letters are IDENTICAL. It
+     cannot catch one accepted spelling contained in another: Milan 2003 field
+     Costacurta and Rui Costa — different bags, so the bag rule passes — and a
+     lone COSTA tile beside COSTACURTA invites the wrong answer, because the
+     longer scramble contains every letter of the shorter one.
+
+     Found in the bank rather than in review. The generated boards already
+     author the shorter name in full for this reason, which means the rule was
+     being kept by whoever remembered it; forty slots across the bank are
+     multi-word for this or for the five true collisions. A rule kept by memory
+     is the next board's bug.
+
+     Substring, not prefix: the letters are shown scrambled, so where inside
+     the longer name the shorter one sits makes no difference to what the
+     player is looking at. */
+  /* Compared WORD BY WORD, not against the whole name with its spaces
+     removed. The first version normalised the lot and flagged NANDO inside
+     JON ANDONI GOIKOETXEA — a match spanning the JON/ANDONI boundary that no
+     player looking at a five-letter bag beside a nineteen-letter one could
+     ever make. Per word still catches COSTA inside the single word
+     COSTACURTA, which is the case this rule exists for. */
+  const spellings = [];
+  xi.forEach((p, i) => {
+    for (const s of [p.name, ...(p.aliases || [])]) {
+      const k = normalise(s);
+      if (!k) continue;
+      const words = String(s).split(/[^A-Za-z]+/).map(normalise).filter(Boolean);
+      spellings.push({ k, i, s, words });
+    }
+  });
+  const flagged = new Set();
+  for (const a of spellings) {
+    for (const b of spellings) {
+      if (a.i === b.i || a.k.length >= b.k.length) continue;
+      if (!b.words.some((w) => w.includes(a.k))) continue;
+      const pair = `${a.i}:${a.k}>${b.i}:${b.k}`;
+      if (flagged.has(pair)) continue;
+      flagged.add(pair);
+      problems.push(
+        `player ${a.i + 1} ("${a.s}"): its letters sit inside player ${b.i + 1} ` +
+        `("${b.s}") — author the shorter one in full, as Rui Costa is beside Costacurta`);
+    }
+  }
   if (!["club", "nationality"].includes(src.hintField)) {
     problems.push(`hintField must be "club" or "nationality", not ${JSON.stringify(src.hintField)}`);
   } else {
