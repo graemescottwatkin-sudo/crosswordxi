@@ -92,6 +92,33 @@ export async function onRequest({ request, env, params }) {
     });
   }
 
+
+  /* ---- Any Scrambled board, for proofing ----
+     The public route serves the past and today and refuses the future — "the
+     future is shut, because opening it gives away everything" — which is right
+     for players and useless for reviewing 262 boards four days in. Weakening
+     that guard would hand the schedule to everyone; this is the answer the
+     crossword's ?n= preview already gives, admin-checked on the server on every
+     request.
+
+     ADDRESSED BY BOARD ID, not by position in the ring. Ring position is a
+     function of which boards are daily-eligible, so it moves the day a board is
+     added or taken out of rotation, and a proofing link that points at a
+     different board next week is worse than no link. The id is the board.
+
+     Redacted the same way as the public route: publicBoard(), not the stored
+     row. Proofing is about the board as it PLAYS; an owner wanting the names
+     has the tester and its answer key. */
+  if (route === "scrambled" && request.method === "GET") {
+    const url = new URL(request.url);
+    const id = parseInt(url.searchParams.get("id") || "", 10);
+    if (!Number.isInteger(id) || id < 1) return bad("Give a board id.");
+    const { loadBoards, publicBoard, scKey } = await import("../../_lib/sc-board.js");
+    const { boards, source } = await loadBoards(env);
+    const board = (boards || []).find((b) => Number(b.id) === id);
+    if (!board) return bad(`No board with id ${id}.`, 404);
+    return json({ ...publicBoard(board, scKey(id)), id, source, preview: true });
+  }
   /* ---- Forget one day, so it can be played again ----
      Separate from clearing the record: this removes a single day's result so
      the same puzzle can be replayed, which is the thing wanted twenty times

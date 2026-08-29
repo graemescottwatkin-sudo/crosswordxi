@@ -62,10 +62,32 @@ export async function loadBoards(env) {
    "which board" is how they end up disagreeing. */
 export const scKey = (n) => "sc:" + n;
 
+/* THE DAILY RING IS THE ELIGIBLE BOARDS, NOT THE WHOLE BANK.
+   Not every board belongs in a daily. Some are simply too hard to be anyone's
+   Tuesday — a 1963 side of eleven names most players have never read — and a
+   daily that hands those out burns the streak it exists to build. A board can
+   be in the bank, playable, and out of the rotation.
+
+   `daily: false` in the source takes a board out. Anything not saying so is in,
+   so the flag is opt-OUT: a board added without an opinion behaves the way
+   every board did before this existed, and nobody has to remember to mark 262
+   files.
+
+   THE ID IS NOT THE RING POSITION. Taking a board out shifts every later board
+   in the rotation by a day, which is why proofing links address boards by id
+   through the admin route and only the daily uses this. */
+export function dailyRing(boards) {
+  const all = boards && boards.length ? boards : SC_BOARDS;
+  const ring = all.filter((b) => b && b.daily !== false);
+  /* Every board excluded is a bank nobody can play a daily from. Falling back
+     to the whole bank is the honest failure: a wrong board beats no game. */
+  return ring.length ? ring : all;
+}
+
 /* Which board is board number N. The bank is a ring: with a small bank the
    rotation repeats, and it repeats visibly rather than pretending not to. */
 export function boardForNumber(n, boards) {
-  const ring = boards && boards.length ? boards : SC_BOARDS;
+  const ring = dailyRing(boards);
   if (!Number.isInteger(n) || n < 1 || !ring.length) return null;
   return ring[(n - 1) % ring.length];
 }

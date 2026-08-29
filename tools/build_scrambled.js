@@ -344,6 +344,10 @@ export function build(src, file) {
     pool: src.pool,
     formation: src.formation,
     hintField: src.hintField,
+    /* Carried through only when it is false. A board with no opinion has no
+       key, so the built shape does not gain a field stating the default — and
+       `daily !== false` in the ring reads the same either way. */
+    ...(src.daily === false ? { daily: false } : {}),
     source: src.source,
     bands: bands.map((b) => ({ id: b.id, y: b.y })),
     slots,
