@@ -355,3 +355,10 @@ html, body {
   font-size: .85rem; opacity: .8; }
 .owner-bar select { max-width: 22rem; }
 .owner-note { opacity: .7; }
+
+/* The lifted letters: what the player has typed that this tile could supply,
+   above the bag they came from. Empty until something is typed, so the tile
+   keeps its size and the pitch does not jump on the first keystroke. */
+.slot .lifted { display: block; min-height: 1em; font-weight: 700;
+  letter-spacing: .12em; color: var(--accent, currentColor); }
+.slot.could { outline: 1px solid var(--accent, currentColor); outline-offset: 2px; }

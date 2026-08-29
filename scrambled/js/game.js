@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001a";
+var BUILD = "v001b";
 
 (function () {
   "use strict";
@@ -114,6 +114,30 @@ var BUILD = "v001a";
     return known + " \u00B7 " + remainingBag(slot, known);
   }
 
+  /* ---- what the typing shows -------------------------------------------
+     Type a letter and every tile that could supply it lifts that letter out of
+     its bag. Type another and the tiles that cannot supply BOTH drop back to
+     their full scramble. So the board answers "which of these could my word
+     be" while it is being typed, rather than only when it is submitted.
+
+     Matched against the bag as a MULTISET, in the order typed: TTUB supplies a
+     T, and still supplies a second T, but never an S. That is why BUTT holds
+     on "T" and lets go on "TS" while STAM keeps both — which is the whole
+     point, because those two tiles are indistinguishable on a first look.
+
+     It reads only the letters already on screen. Nothing is asked of the
+     server, so this cannot leak which tile is the answer: a tile that can
+     supply the letters is not a tile that IS the word. */
+  function supplyFrom(bag, typed) {
+    var pool = bag.split("");
+    for (var i = 0; i < typed.length; i++) {
+      var at = pool.indexOf(typed[i]);
+      if (at === -1) return null;
+      pool.splice(at, 1);
+    }
+    return pool.join("");
+  }
+
   function remainingBag(slot, known) {
     var pool = slot.scramble.split("");
     known.split("").forEach(function (ch) {
@@ -121,6 +145,33 @@ var BUILD = "v001a";
       if (at > -1) pool.splice(at, 1);
     });
     return pool.join("");
+  }
+
+  /* Repaints the tiles for whatever is currently typed. Targeted rather than a
+     drawPitch(): the pitch is rebuilt on every change elsewhere, and rebuilding
+     eleven buttons on every keystroke would throw away focus and the picked
+     tile mid-word. */
+  function paintTyped() {
+    var typed = ($("answer").value || "").toUpperCase().replace(/[^A-Z]/g, "");
+    state.board.slots.forEach(function (slot) {
+      var el = document.querySelector('.slot[data-slot="' + slot.id + '"]');
+      if (!el) return;
+      var lifted = el.querySelector(".lifted");
+      var letters = el.querySelector(".letters");
+      if (!letters) return;
+      /* A solved tile shows its name and takes no further part. */
+      if (state.solved[slot.id]) { if (lifted) lifted.textContent = ""; return; }
+      var rest = typed ? supplyFrom(slot.scramble, typed) : null;
+      if (rest === null) {
+        if (lifted) lifted.textContent = "";
+        el.classList.remove("could");
+        letters.textContent = tileText(slot);
+        return;
+      }
+      if (lifted) lifted.textContent = typed;
+      el.classList.add("could");
+      letters.textContent = rest;
+    });
   }
 
   function drawPitch() {
@@ -148,6 +199,13 @@ var BUILD = "v001a";
       pos.className = "pos";
       pos.textContent = slot.pos;
       el.appendChild(pos);
+
+      /* The lifted line: the letters the player has typed that THIS tile could
+         supply, sitting above the bag they came out of. Empty for every tile
+         until something is typed. */
+      var lifted = document.createElement("span");
+      lifted.className = "lifted";
+      el.appendChild(lifted);
 
       var letters = document.createElement("span");
       letters.className = "letters";
@@ -177,6 +235,12 @@ var BUILD = "v001a";
 
     $("solvedCount").textContent = Object.keys(state.solved).length;
     $("helpSpent").textContent = state.help;
+    /* Painted at the end of every rebuild too, not only on input. drawPitch()
+       runs on any change — a solve, a bought letter, a pick — and it recreates
+       the tiles, so without this the lifted letters would vanish mid-word. It
+       also covers the reverse: submit() clears the box by assignment, and a
+       programmatic value change fires no input event. */
+    paintTyped();
   }
 
   /* ---- the bench -------------------------------------------------------- */
@@ -485,6 +549,12 @@ var BUILD = "v001a";
   $("submit").addEventListener("click", submit);
   $("answer").addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); submit(); }
+  });
+  /* "input", not "keydown": keydown fires before the character lands, so the
+     tiles would always be one letter behind, and it misses paste and the
+     backspace that empties the box. */
+  $("answer").addEventListener("input", function () {
+    if (state.board && !state.over) paintTyped();
   });
   $("buyHint").addEventListener("click", function () { buy("hint"); });
   $("buyLetter").addEventListener("click", function () { buy("letter"); });
