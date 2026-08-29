@@ -40,6 +40,30 @@ try {
   process.exit(1);
 }
 
+/* THE SECOND GATE, and the one build_scrambled.js structurally cannot be.
+   --check proves the boards are internally consistent and that the stored
+   module matches its sources. It cannot tell you a board is WRONG: a lineup
+   that gates perfectly and names the wrong nationality is exactly what a
+   summarising fetch produced once — "Bernardo Silva - Spain", on a club board
+   where nationality is the hint, so the one value a player pays for would have
+   been a lie.
+
+   Offline, against the snapshots pinned in the bank. Blocking here rather than
+   in CI because this is the moment a wrong board reaches D1, and because a CI
+   job fetching Wikipedia goes red for reasons that have nothing to do with the
+   boards — the author's own sweep read 202, 248, 256, 264 across re-runs with
+   nothing changed but the rate limiter. */
+try {
+  execFileSync(process.execPath, [path.join(ROOT, "tools", "verify_scrambled.mjs"), "check"],
+    { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
+} catch (e) {
+  const out = (e.stdout ? e.stdout.toString() : "") + (e.stderr ? e.stderr.toString() : "");
+  console.error("REFUSED: tools/verify_scrambled.mjs check did not pass.");
+  console.error("A board disagrees with the source it cites. Nothing written.\n");
+  console.error(out.split("\n").filter((l) => /!!|no pinned snapshot|boards:/.test(l)).join("\n"));
+  process.exit(1);
+}
+
 /* THE SOURCES, NOT THE MODULE. The module in functions/ is a four-board sample
    so that the bank is not committed to a public repository; reading it here
    would have quietly imported four boards over two hundred and sixty-one, and
