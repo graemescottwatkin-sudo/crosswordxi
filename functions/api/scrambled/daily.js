@@ -1,0 +1,35 @@
+/* GET /api/scrambled/daily            today's board
+   GET /api/scrambled/daily?no=12      board twelve, if it is not in the future
+
+   The SERVER decides what day it is, in UTC. A number sent up from a browser
+   is a number off a clock the player controls, so `no` is checked against
+   today here rather than trusted — the past is open so a missed day can be
+   caught up, the future is shut because opening it gives away everything.
+*/
+import {
+  publicBoard, boardForNumber, scKey, json, bad, loadBoards,
+} from "../../_lib/sc-board.js";
+import { dailyNumber } from "../../_lib/daily.js";
+
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const today = dailyNumber();
+  const asked = url.searchParams.get("no");
+  const no = asked === null ? today : Number(asked);
+
+  if (!Number.isInteger(no) || no < 1) return bad("Not a board number.");
+  if (no > today) return bad("That board is not out yet.", 403);
+
+  /* D1 when bound, the generated module when not. `source` rides in the
+     payload so a live_check can refuse a run that quietly fell back. */
+  const { boards, source } = await loadBoards(env);
+  const board = boardForNumber(no, boards);
+  if (!board) return bad("No board.", 404);
+
+  return json({ ...publicBoard(board, no), today, token: scKey(no), source });
+}
+
+export async function onRequestHead(ctx) {
+  const r = await onRequestGet(ctx);
+  return new Response(null, { status: r.status, headers: r.headers });
+}

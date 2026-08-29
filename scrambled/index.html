@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#F4F5F2">
+<title>Scrambled XI — the daily football anagram | The XI Games</title>
+<meta name="description" content="Eleven footballers, arranged in their real positions, every name scrambled. One answer box, solve in any order, 114 points on a 90 minute clock. A new eleven every day from The XI Games.">
+<link rel="canonical" href="https://www.thexigames.com/scrambled/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.thexigames.com/scrambled/">
+<meta property="og:title" content="Scrambled XI — the daily football anagram">
+<meta property="og:description" content="Eleven scrambled names in their real positions on the pitch. One answer box, solve in any order.">
+<meta property="og:site_name" content="The XI Games">
+<meta property="og:image" content="https://www.thexigames.com/scrambled/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Scrambled XI — the daily football anagram">
+<meta name="twitter:description" content="Eleven scrambled names in their real positions on the pitch. Unravel the XI.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication",
+ "name":"Scrambled XI","applicationCategory":"Game",
+ "url":"https://www.thexigames.com/scrambled/",
+ "operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},
+ "publisher":{"@type":"Organization","name":"The XI Games","url":"https://www.thexigames.com/"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v1">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v1">
+<link rel="stylesheet" href="css/style.css?v=v001">
+</head>
+<body>
+
+<!-- The shared bar. The burger and the wordmark are inserted by
+     shared/xi-chrome.js; only this game's own control is written here. -->
+<header class="xic-bar">
+  <div class="xic-right">
+    <button class="xic-ghost" id="scHowTo" data-optional>How to play</button>
+  </div>
+</header>
+
+<main class="app">
+
+  <section class="screen prematch" id="screenLoading">
+    <div class="pmCard">
+      <div class="eyebrow">Warming up</div>
+      <p class="pmDate">Scrambled XI</p>
+      <p class="pmLede">Fetching today's eleven.</p>
+    </div>
+  </section>
+
+  <!-- The H1 says what the page IS and lives on the pre-match card, the same
+       place the other games keep theirs. The board changes daily; the game
+       does not, so the board's own title is an h2. -->
+  <section class="screen prematch" id="screenStart" hidden>
+    <div class="pmCard">
+      <div class="eyebrow" id="startKicker">Today's board</div>
+      <h1>Scrambled XI</h1>
+      <h2 class="pmDate" id="startTitle">—</h2>
+      <p class="pmPool" id="startPool"></p>
+      <p class="pmLede">Eleven names, scrambled, in the positions they played.
+        One answer box, solve in any order. A hundred and fourteen points on a
+        ninety minute clock.</p>
+      <button class="kick" id="kickOff">Kick off</button>
+      <p class="tiny" id="startClock"></p>
+    </div>
+  </section>
+
+  <section class="screen" id="screenGame" hidden>
+
+    <div class="matchHead">
+      <span class="progress"><span id="solvedCount">0</span> / 11 unravelled</span>
+      <span class="clock"><span id="clockValue">0</span><span class="prime">'</span></span>
+    </div>
+
+    <p class="poolLine" id="poolLine"></p>
+
+    <div class="pitchWrap">
+      <div class="pitch" id="pitch" aria-label="The eleven, in their positions"></div>
+    </div>
+
+    <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+
+    <div class="entry">
+      <input id="answer" type="text" inputmode="text" autocomplete="off"
+             autocorrect="off" autocapitalize="characters" spellcheck="false"
+             placeholder="Type any name" aria-label="Type any name on the board">
+      <button class="kick" id="submit">Enter</button>
+    </div>
+
+    <div class="benchRow" id="benchRow" hidden>
+      <span class="benchFor" id="benchFor"></span>
+      <button class="benchBtn" id="buyHint"><span id="hintLabel">Reveal</span><span class="cost" id="hintCost"></span></button>
+      <button class="benchBtn" id="buyLetter">Reveal a letter<span class="cost" id="letterCost"></span></button>
+      <button class="benchBtn danger" id="buyName">Reveal the name<span class="cost" id="nameCost"></span></button>
+      <button class="benchBtn quiet" id="benchClose">Close</button>
+    </div>
+
+    <div class="scoreCluster">
+      <div class="scoreBox">
+        <span class="label">Worth now</span>
+        <span class="scoreVal" id="worthNow">114</span>
+      </div>
+      <div class="worthBox">
+        <span class="label">Off the bench</span>
+        <span class="worthVal" id="helpSpent">0</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screenResults" hidden>
+    <div class="eyebrow">Full time</div>
+    <div id="resultsBody"></div>
+    <div class="share">
+      <textarea id="shareText" rows="8" readonly aria-label="Shareable result"></textarea>
+      <button class="btn" id="copyShare">Copy result</button>
+    </div>
+    <button class="btn quiet" id="playAgain">Clear this board and replay</button>
+  </section>
+
+</main>
+
+<!-- THE SHARED FOOTER, AT TOP LEVEL. It carries the family disclaimer. -->
+<footer class="xic-foot"></footer>
+
+<script src="../shared/xi-chrome.js?v=v2"></script>
+<script src="js/config.js?v=v001"></script>
+<script src="js/scoring.js?v=v001"></script>
+<script src="js/game.js?v=v001"></script>
+</body>
+</html>

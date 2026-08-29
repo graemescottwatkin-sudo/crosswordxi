@@ -1,0 +1,149 @@
+/* sc-board.js — the one place a stored Scrambled XI board becomes a public
+ * payload, plus the rule for which board is today's.
+ *
+ * Every response carrying a board goes through publicBoard(), so there is a
+ * single function to audit rather than three endpoints each deciding for
+ * themselves what is safe to send.
+ *
+ * AN HONEST NOTE ABOUT WHAT THIS CAN AND CANNOT PROTECT
+ *
+ * Crossword XI strips the solution letter from every cell, and that genuinely
+ * hides the answer. Here it cannot: the scramble IS the name's letters,
+ * sitting on screen by design. Anybody determined enough to run an anagram
+ * solver against eleven letter bags will get the board out, and no server-side
+ * measure changes that — it is the game.
+ *
+ * So this is not pretending to hide today's names. What it protects is real:
+ *
+ *   - the hint values, which are the priced help
+ *   - the aliases, which name the exact spellings that will be accepted and
+ *     would narrow a solver's search
+ *   - every OTHER day's board, which is the leak that actually matters and is
+ *     handled by playableToken() before this is ever reached
+ */
+import { dailyNumber } from "./daily.js";
+import { SC_BOARDS } from "./sc-boards.js";
+
+/* THE TOKEN. Scrambled XI's own prefix, parsed beside the rotation that
+
+/* THE BOARDS COME FROM D1 WHEN IT IS BOUND, AND FROM THE MODULE WHEN IT IS NOT.
+   Boards began life generated into sc-boards.js and read from there. That is
+   gated and correct, but it makes changing a board a DEPLOY — a typo in an XI
+   waits for a release, and every board that ever shipped stays in the history.
+   The other three games keep their content in D1 for that reason: changing a
+   question is an import, not a deploy.
+
+   The fallback is the SAME boards, not sample data, so falling back is not a
+   quiet lie the way a sample crossword would be — but it is still a different
+   answer, so the payload says which one it gave. The word search learned this
+   the hard way: hasDB() falling back looked exactly like a working game with a
+   small bank, and nothing was reading the tell. */
+export function hasDB(env) { return !!(env && env.DB); }
+
+export async function loadBoards(env) {
+  if (!hasDB(env)) return { boards: SC_BOARDS, source: "module" };
+  try {
+    const { results } = await env.DB
+      .prepare("SELECT payload FROM sc_board ORDER BY id").all();
+    const rows = (results || [])
+      .map((r) => { try { return JSON.parse(r.payload); } catch (e) { return null; } })
+      .filter(Boolean);
+    /* An empty table is the un-imported state, not an empty bank. Serving no
+       board at all there would take the game down for a missing import; the
+       module is the honest answer, and `source` says so. */
+    if (rows.length) return { boards: rows, source: "d1" };
+  } catch (e) { /* table absent, or unreadable: fall through to the module */ }
+  return { boards: SC_BOARDS, source: "module" };
+}
+/* THE TOKEN. Scrambled XI's own prefix, parsed beside the rotation that
+   composes it — the entrant-key fault costs this project a release every time
+   a key is built in one file and read in another. Crossword XI uses `daily:`
+   and the word search uses `ws:`; a third game inventing a fourth spelling of
+   "which board" is how they end up disagreeing. */
+export const scKey = (n) => "sc:" + n;
+
+/* Which board is board number N. The bank is a ring: with a small bank the
+   rotation repeats, and it repeats visibly rather than pretending not to. */
+export function boardForNumber(n, boards) {
+  const ring = boards && boards.length ? boards : SC_BOARDS;
+  if (!Number.isInteger(n) || n < 1 || !ring.length) return null;
+  return ring[(n - 1) % ring.length];
+}
+
+/* Any board up to today, never one after it. The past is open — somebody
+   arriving in November must be able to catch up a missed day — and the future
+   is shut, because opening it gives away everything. The SERVER decides what
+   day it is; a number sent up from a browser is a number off a clock the
+   player controls. */
+export function playableTokenNo(token) {
+  const m = /^sc:(\d+)$/.exec(String(token || ""));
+  if (!m) return null;
+  const asked = Number(m[1]);
+  if (asked < 1) return false;
+  return asked <= dailyNumber() ? asked : false;
+}
+
+export function boardForToken(token, boards) {
+  const no = playableTokenNo(token);
+  return typeof no === "number" ? boardForNumber(no, boards) : null;
+}
+
+export function publicBoard(board, no) {
+  const slots = (board.slots || []).map((s) => ({
+    id: s.id,
+    band: s.band,          // which line of the formation this slot sits on
+    x: s.x,                // where along that line, 0..1
+    pos: s.pos,            // GK / RB / CM / ST — shown, and part of the puzzle
+    scramble: s.scramble,  // the letters, which are the point
+    len: s.len,            // word lengths, e.g. [3, 4] for VAN DIJK
+  }));
+
+  return {
+    no,
+    token: scKey(no),
+    title: board.title,
+    pool: board.pool,            // the visible statement of what the XI is
+    formation: board.formation,
+    bands: board.bands,          // band ids and their vertical placement
+    hintField: board.hintField,  // which hint this board sells; not the values
+    hintLabel: hintLabel(board),
+    slots,
+  };
+}
+
+/* THE HINT FIELD IS A PROPERTY OF THE BOARD, NOT OF THE GAME
+ *
+ * "Reveal club" was the priced hint until the draft's own suite pointed out
+ * that the launch board is Manchester United's 1999 side — where the pool
+ * statement already says Manchester United, so the hint returns something the
+ * player has been looking at since kick-off. Eleven purchases of nothing.
+ *
+ * A hint has to vary across the eleven or it is not information. Every board
+ * therefore names its own field, and the builder refuses a board whose chosen
+ * field reads the same for all eleven slots. A club XI hints nationality; a
+ * national XI or a Team of the Year hints club. */
+export function slotHint(board, slotId) {
+  const s = (board.slots || []).find((x) => String(x.id) === String(slotId));
+  if (!s) return null;
+  return board.hintField === "club" ? (s.club || null) : (s.nationality || null);
+}
+
+export function hintLabel(board) {
+  return board.hintField === "club" ? "Reveal club" : "Reveal nationality";
+}
+
+export function json(body, status = 200, extra = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      /* Boards are per-day and per-request; never let a shared cache hold one. */
+      "Cache-Control": "no-store",
+      ...extra,
+    },
+  });
+}
+
+export function bad(message, status = 400) {
+  return json({ error: message }, status);
+}

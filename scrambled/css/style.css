@@ -1,0 +1,350 @@
+/* Scrambled XI — style.css
+ *
+ * Every colour, font and radius comes from shared/xi-tokens.css. Nothing is
+ * restated here: a palette declared twice is the fault that made the word
+ * search and the crossword stop looking like the same suite, and it is the one
+ * this file is not allowed to repeat. There are no .xic- rules here either —
+ * the chrome is styled by shared/xi-chrome.css and a game styling the chrome
+ * is a second chrome starting.
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 14px 40px;
+}
+
+.screen[hidden] { display: none; }
+
+/* ---- Pre-match ---------------------------------------------------------- */
+
+.prematch { display: flex; justify-content: center; padding-top: 18px; }
+
+.pmCard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px 22px 28px;
+  width: 100%;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pmCard h1 {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1.05;
+  margin: 6px 0 2px;
+}
+
+.pmDate {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+
+.pmPool, .poolLine {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+
+.pmLede { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 20px; }
+
+.tiny { font-size: 12.5px; color: var(--ink-faint); margin: 14px 0 0; }
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.kick, .btn, .benchBtn {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--pitch-deep);
+  background: var(--pitch);
+  color: #fff;
+  cursor: pointer;
+}
+
+.kick:focus-visible, .btn:focus-visible, .benchBtn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn, .benchBtn {
+  font-size: 14px;
+  padding: 0 14px;
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.benchBtn.danger { color: var(--danger); }
+.benchBtn.quiet, .btn.quiet { color: var(--ink-soft); }
+.benchBtn .cost {
+  font-family: var(--body);
+  font-size: 12px;
+  margin-left: 7px;
+  color: var(--xi-ink);
+}
+
+/* ---- Match head --------------------------------------------------------- */
+
+.matchHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 6px 2px 10px;
+}
+
+.progress {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.clock { font-family: var(--disp); font-weight: 700; font-size: 26px; }
+.clock .prime { color: var(--ink-faint); }
+
+.poolLine { font-size: 13.5px; color: var(--ink-soft); margin: 0 2px 12px; }
+
+/* ---- The pitch ---------------------------------------------------------- */
+
+.pitchWrap { position: relative; }
+
+.pitch {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  background: var(--pitch-deep);
+  border: 1px solid var(--pitch-deep);
+  overflow: hidden;
+}
+
+/* Chalk. Halfway line, centre circle, the two boxes — drawn with borders
+   rather than an image so it themes with everything else. */
+.pitch::before,
+.pitch::after { content: ""; position: absolute; pointer-events: none; }
+.pitch::before {
+  left: 0; right: 0; top: 50%;
+  border-top: 1px solid rgba(255,255,255,.16);
+}
+.pitch::after {
+  left: 50%; top: 50%;
+  width: 34%; aspect-ratio: 1;
+  transform: translate(-50%,-50%);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 50%;
+}
+
+.box {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56%;
+  height: 13%;
+  border: 1px solid rgba(255,255,255,.16);
+  pointer-events: none;
+}
+.box.bottom { bottom: -1px; border-bottom: 0; }
+.box.top { top: -1px; border-top: 0; }
+
+.slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 27%;
+  min-height: var(--tap);
+  padding: 5px 4px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.28);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  font: inherit;
+}
+.slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.slot .pos {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.62);
+}
+
+.slot .letters {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: clamp(12px, 3.4vw, 17px);
+  letter-spacing: .06em;
+  line-height: 1.15;
+  word-break: break-all;
+}
+
+.slot .enum {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(255,255,255,.58);
+  margin-top: 2px;
+}
+
+.slot .hint {
+  display: block;
+  font-size: 10.5px;
+  color: var(--gold);
+  margin-top: 2px;
+}
+
+.slot.solved {
+  background: var(--pitch);
+  border-color: var(--gold);
+}
+.slot.solved .letters { letter-spacing: .02em; }
+.slot.given { background: rgba(0,0,0,.5); border-style: dashed; }
+.slot.given .letters { color: rgba(255,255,255,.72); }
+.slot.picked { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* ---- Entry -------------------------------------------------------------- */
+
+.feedback {
+  min-height: 20px;
+  margin: 10px 2px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.feedback.good { color: var(--ok); }
+.feedback.bad { color: var(--danger); }
+
+.entry { display: flex; gap: 8px; }
+
+.entry input {
+  flex: 1 1 auto;
+  min-height: var(--tap);
+  padding: 0 14px;
+  font-family: var(--disp);
+  font-size: 19px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.entry input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.benchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--tint);
+  border-radius: var(--radius);
+}
+.benchFor {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--ink-soft);
+  width: 100%;
+}
+
+/* ---- Score -------------------------------------------------------------- */
+
+.scoreCluster { display: flex; gap: 10px; margin-top: 14px; }
+
+.scoreBox, .worthBox {
+  flex: 1 1 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.scoreBox .label, .worthBox .label {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.scoreVal, .worthVal { font-family: var(--disp); font-weight: 700; font-size: 26px; }
+.worthVal { color: var(--xi-ink); }
+
+/* ---- Full time ---------------------------------------------------------- */
+
+#resultsBody { margin: 10px 0 16px; }
+
+.ftScore { font-family: var(--disp); font-weight: 700; font-size: 46px; line-height: 1; }
+.ftLine { font-size: 14.5px; color: var(--ink-soft); margin: 6px 0 0; }
+.ftUnverified { font-size: 12.5px; color: var(--ink-faint); margin: 10px 0 0; }
+
+.ftList { list-style: none; margin: 16px 0 0; padding: 0; }
+.ftList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.ftList .who { font-weight: 600; }
+.ftList .how { color: var(--ink-soft); font-size: 13px; }
+
+.share { display: flex; flex-direction: column; gap: 8px; }
+.share textarea {
+  width: 100%;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  resize: vertical;
+}
+
+@media (min-width: 620px) {
+  .pitch { aspect-ratio: 4 / 5; }
+  .slot { width: 21%; }
+}

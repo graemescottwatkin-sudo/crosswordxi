@@ -100,3 +100,40 @@
 /api/*
   Cache-Control: no-store
   X-Robots-Tag: noindex
+
+# Scrambled XI — the same three rules again, one pair per game. A game added
+# without them pairs new markup with a month-old stylesheet and the only sign
+# is a cache header quietly reverting to the Pages default.
+/scrambled/
+  Cache-Control: no-store
+
+/scrambled/index.html
+  Cache-Control: no-store
+
+/scrambled/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/scrambled/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# QuickFire XI — the same three rules again, one pair per game.
+/quickfire/
+  Cache-Control: no-store
+
+/quickfire/index.html
+  Cache-Control: no-store
+
+/quickfire/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/quickfire/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shared token layer. Immutable is safe because every reference carries a
+# ?v= tag and the wordsearch gate asserts the version marker in the file.
+/shared/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/api/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex

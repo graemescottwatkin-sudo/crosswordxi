@@ -1,0 +1,33 @@
+{
+  "id": 1,
+  "seed": 19990526,
+  "title": "Champions League final, 1999",
+  "pool": "Manchester United's starting XI at the Nou Camp, 26 May 1999. Keane and Scholes were suspended.",
+  "formation": "4-4-2",
+  "hintField": "nationality",
+  "source": "https://en.wikipedia.org/wiki/1999_UEFA_Champions_League_final",
+  "_notes": [
+    "Era-locked, so it is correct forever and never needs rebuilding at the end",
+    "of a season — which is half the point of leading with it.",
+    "",
+    "Keane and Scholes were suspended for the final. Worth saying in the pool",
+    "line: 'the treble XI' and 'the final XI' are different elevens, and a",
+    "player who knows the side will look for Keane and not find him.",
+    "",
+    "hintField is nationality because every one of these eleven played for",
+    "Manchester United and the pool line says so."
+  ],
+  "xi": [
+    { "name": "SCHMEICHEL", "aliases": ["PETER SCHMEICHEL"], "club": "Manchester United", "nationality": "Denmark" },
+    { "name": "IRWIN",      "aliases": ["DENIS IRWIN"],      "club": "Manchester United", "nationality": "Republic of Ireland" },
+    { "name": "JOHNSEN",    "aliases": ["RONNY JOHNSEN"],    "club": "Manchester United", "nationality": "Norway" },
+    { "name": "STAM",       "aliases": ["JAAP STAM"],        "club": "Manchester United", "nationality": "Netherlands" },
+    { "name": "NEVILLE",    "aliases": ["GARY NEVILLE"],     "club": "Manchester United", "nationality": "England" },
+    { "name": "BLOMQVIST",  "aliases": ["JESPER BLOMQVIST"], "club": "Manchester United", "nationality": "Sweden" },
+    { "name": "BUTT",       "aliases": ["NICKY BUTT"],       "club": "Manchester United", "nationality": "England" },
+    { "name": "BECKHAM",    "aliases": ["DAVID BECKHAM"],    "club": "Manchester United", "nationality": "England" },
+    { "name": "GIGGS",      "aliases": ["RYAN GIGGS"],       "club": "Manchester United", "nationality": "Wales" },
+    { "name": "COLE",       "aliases": ["ANDY COLE", "ANDREW COLE"], "club": "Manchester United", "nationality": "England" },
+    { "name": "YORKE",      "aliases": ["DWIGHT YORKE"],     "club": "Manchester United", "nationality": "Trinidad and Tobago" }
+  ]
+}

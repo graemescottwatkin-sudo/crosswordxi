@@ -102,6 +102,25 @@ jobs:
           # second one is the point: every check in that file is watched
           # failing before it is trusted.
           node quickfire/gate_test.mjs
+          # Scrambled XI. Not shipping yet: no gate, no live_check, no row in
+          # aligned_test — a game that has never shipped has no true
+          # LAST_SHIPPED to gate against.
+          node scrambled/names_test.mjs
+          node scrambled/board_test.mjs
+          node scrambled/scoring_test.mjs
+          # The boards come from D1, and the module is only the fallback. The
+          # stub holds a board that exists nowhere else, so a handler quietly
+          # still reading the module fails rather than passing on a match.
+          node scrambled/d1_test.mjs
+          node scrambled/journey_test.mjs
+          # The tester is generated, so it is built and then PLAYED. A
+          # generator can produce something that parses and does not run.
+          node tools/build_scrambled_tester.js
+          node scrambled/tester_test.mjs
+          # The generated board module must be the one the source files
+          # produce. --check gates and writes nothing, so a board edited by
+          # hand in functions/_lib/ shows up here rather than in production.
+          node tools/build_scrambled.js --check
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.

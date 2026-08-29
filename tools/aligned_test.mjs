@@ -54,7 +54,8 @@ for (const g of GAMES) {
     new RegExp(`node ${g.dir}/[a-z_]+_test\\.mjs`).test(workflow));
 
   console.log("The tag law is real, not a costume");
-  const gate = read(`${g.dir}/deploy_check.mjs`);
+  const gate = has(`${g.dir}/deploy_check.mjs`)
+    ? read(`${g.dir}/deploy_check.mjs`) : "";
   const shipped = (gate.match(/const LAST_SHIPPED = "([^"]+)"/) || [])[1];
   /* "v000" compared every build against nothing for as long as the word
      search existed. A sentinel constant is a check that cannot fail. */
