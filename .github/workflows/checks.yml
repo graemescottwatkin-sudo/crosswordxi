@@ -63,6 +63,10 @@ jobs:
           node crossword/blank_test.mjs
           node crossword/circulation_test.mjs
           node crossword/d1_test.mjs
+          # A saved practice board survives its pool being retired. Nothing has
+          # mode = practice_retired until the retirement runs, so the fix cannot
+          # be tested by the data — the suite stubs a retired row instead.
+          node crossword/retire_test.mjs
           node crossword/epoch_test.mjs
           node crossword/answers_test.mjs
           node crossword/outcome_test.mjs
