@@ -25,19 +25,26 @@
 # redirect would fight it when it arrives. Sign-in lives in the game.
 /account   /crossword/   302
 
-# WHAT PAGES SERVES THAT NOBODY MEANT IT TO.
+# WHAT PAGES SERVES THAT NOBODY MEANT IT TO — AND WHY THERE IS NO RULE HERE.
 #
-# Pages serves every path at the repo root that functions/ does not claim.
-# functions/ is bundled into the Worker and is not reachable — which is why
-# the generated board module was safe — but everything beside it is a static
-# file on the public site. /tools/scrambled/xi/005-*.json answered 200 with a
-# board the API itself refuses to show: ?no= for any day past today is a 403
-# because "the future is shut, because opening it gives away everything", and
-# the same board was one URL away in the tooling directory.
+# Pages serves every path at the repo root that functions/ does not claim, so
+# /tools/scrambled/xi/*.json was public: the Scrambled answer key and, worse,
+# the SCHEDULE, on a game whose API answers 403 for any day past today because
+# "the future is shut, because opening it gives away everything".
 #
-# The Scrambled bank has moved outside the repository. These rules are the
-# second layer: build tooling, migrations and generated SQL are not the site,
-# and a future stray file under them should 404 rather than wait to be noticed.
-# live_check asserts these, so the rules cannot rot silently.
-/tools/*   /404.html   404
-/data/*    /404.html   404
+# The fix is that the bank now lives outside the repository, like the
+# crossword's and the word search's. NOT a rule here: _redirects cannot 404 a
+# path that exists as a static asset. Tried it —
+#
+#   /tools/*  /404.html  404
+#
+# and /tools/build_scrambled.js still answered 200 on a cache-busted request.
+# Static assets are matched before redirects, so the rule was inert and the
+# live_check assertion written against it could never have passed. Recorded
+# here rather than deleted silently: the next person to reach for _redirects
+# to hide a file should know it does not do that.
+#
+# The only thing that stops a file being served is not shipping it. If the
+# remaining internals (tooling, migrations, suites) ever need hiding, the
+# mechanism is _routes.json forcing those paths through the Worker, which is a
+# routing change and wants its own release.

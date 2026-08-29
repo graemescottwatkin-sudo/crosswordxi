@@ -42,7 +42,7 @@ let pass = 0, fail = 0, warn = 0;
    The uncaughtException hook is load-bearing: a rejection out of top-level
    await terminates by a path that never runs 'exit' listeners, so a guard
    hung on 'exit' alone stays as silent as the bug it is meant to catch. */
-const MIN_ASSERTIONS = 39;
+const MIN_ASSERTIONS = 37;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;
@@ -264,18 +264,6 @@ for (const p of ["/api/daily", "/crossword/answers/"]) {
 }
 
 
-/* ---- what the site must NOT serve --------------------------------------- */
-/* Pages serves every repo path functions/ does not claim. That is how the
-   Scrambled board sources came to be public: /tools/scrambled/xi/005-*.json
-   answered 200 with a board this same API refuses to show, because ?no= past
-   today is a 403 on the grounds that opening the future gives everything away.
-   The bank has moved outside the repository and _redirects 404s these paths;
-   this asserts the second layer is actually in force, because a redirect rule
-   that silently stops matching looks exactly like one that was never needed. */
-for (const p of ["/tools/build_scrambled.js", "/data/migrations/024-reports-game.sql"]) {
-  const r = await fetch(HUB + p, { redirect: "manual" });
-  t(`the site does not serve ${p}`, r.status === 404, "HTTP " + r.status);
-}
 /* ---- caching ---- */
 const cc = home.res.headers.get("cache-control") || "";
 t("index.html is not stored, so nobody is pinned to an old build",
