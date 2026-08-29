@@ -1,0 +1,110 @@
+{
+  "id": 227,
+  "seed": 19880515,
+  "title": "FA Cup final, 1988",
+  "pool": "Liverpool's starting XI against Wimbledon at Wembley, 14 May 1988. League champions, and heavy favourites.",
+  "formation": "3-1-4-2",
+  "hintField": "nationality",
+  "source": "https://en.wikipedia.org/wiki/1988_FA_Cup_final",
+  "xi": [
+    {
+      "pos": "GK",
+      "name": "GROBBELAAR",
+      "aliases": [
+        "BRUCE GROBBELAAR"
+      ],
+      "club": "Liverpool",
+      "nationality": "Zimbabwe"
+    },
+    {
+      "pos": "CB",
+      "name": "HANSEN",
+      "aliases": [
+        "ALAN HANSEN"
+      ],
+      "club": "Liverpool",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "CB",
+      "name": "ABLETT",
+      "aliases": [
+        "GARY ABLETT"
+      ],
+      "club": "Liverpool",
+      "nationality": "England"
+    },
+    {
+      "pos": "CB",
+      "name": "GILLESPIE",
+      "aliases": [
+        "GARY GILLESPIE"
+      ],
+      "club": "Liverpool",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "DM",
+      "name": "SPACKMAN",
+      "aliases": [
+        "NIGEL SPACKMAN"
+      ],
+      "club": "Liverpool",
+      "nationality": "England"
+    },
+    {
+      "pos": "LM",
+      "name": "BARNES",
+      "aliases": [
+        "JOHN BARNES"
+      ],
+      "club": "Liverpool",
+      "nationality": "England"
+    },
+    {
+      "pos": "CM",
+      "name": "MCMAHON",
+      "aliases": [
+        "STEVE MCMAHON"
+      ],
+      "club": "Liverpool",
+      "nationality": "England"
+    },
+    {
+      "pos": "CM",
+      "name": "HOUGHTON",
+      "aliases": [
+        "RAY HOUGHTON"
+      ],
+      "club": "Liverpool",
+      "nationality": "Republic of Ireland"
+    },
+    {
+      "pos": "RM",
+      "name": "NICOL",
+      "aliases": [
+        "STEVE NICOL"
+      ],
+      "club": "Liverpool",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "CF",
+      "name": "ALDRIDGE",
+      "aliases": [
+        "JOHN ALDRIDGE"
+      ],
+      "club": "Liverpool",
+      "nationality": "Republic of Ireland"
+    },
+    {
+      "pos": "CF",
+      "name": "BEARDSLEY",
+      "aliases": [
+        "PETER BEARDSLEY"
+      ],
+      "club": "Liverpool",
+      "nationality": "England"
+    }
+  ]
+}

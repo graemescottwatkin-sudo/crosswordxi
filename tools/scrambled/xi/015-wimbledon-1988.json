@@ -1,0 +1,110 @@
+{
+  "id": 15,
+  "seed": 19880514,
+  "title": "FA Cup final, 1988",
+  "pool": "Wimbledon's starting XI against Liverpool at Wembley, 14 May 1988. The Crazy Gang beat the Culture Club.",
+  "formation": "4-3-3",
+  "hintField": "nationality",
+  "source": "https://en.wikipedia.org/wiki/1988_FA_Cup_final",
+  "xi": [
+    {
+      "pos": "GK",
+      "name": "BEASANT",
+      "aliases": [
+        "DAVE BEASANT"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "LB",
+      "name": "PHELAN",
+      "aliases": [
+        "TERRY PHELAN"
+      ],
+      "club": "Wimbledon",
+      "nationality": "Republic of Ireland"
+    },
+    {
+      "pos": "CB",
+      "name": "THORN",
+      "aliases": [
+        "ANDY THORN"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "CB",
+      "name": "YOUNG",
+      "aliases": [
+        "ERIC YOUNG"
+      ],
+      "club": "Wimbledon",
+      "nationality": "Wales"
+    },
+    {
+      "pos": "RB",
+      "name": "GOODYEAR",
+      "aliases": [
+        "CLIVE GOODYEAR"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "CM",
+      "name": "WISE",
+      "aliases": [
+        "DENNIS WISE"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "CM",
+      "name": "JONES",
+      "aliases": [
+        "VINNIE JONES"
+      ],
+      "club": "Wimbledon",
+      "nationality": "Wales"
+    },
+    {
+      "pos": "CM",
+      "name": "SANCHEZ",
+      "aliases": [
+        "LAWRIE SANCHEZ"
+      ],
+      "club": "Wimbledon",
+      "nationality": "Northern Ireland"
+    },
+    {
+      "pos": "LF",
+      "name": "GIBSON",
+      "aliases": [
+        "TERRY GIBSON"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "CF",
+      "name": "FASHANU",
+      "aliases": [
+        "JOHN FASHANU"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    },
+    {
+      "pos": "RF",
+      "name": "CORK",
+      "aliases": [
+        "ALAN CORK"
+      ],
+      "club": "Wimbledon",
+      "nationality": "England"
+    }
+  ]
+}

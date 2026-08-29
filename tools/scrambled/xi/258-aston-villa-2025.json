@@ -1,0 +1,136 @@
+{
+  "id": 258,
+  "seed": 20250415,
+  "title": "Aston Villa 3-2 Paris Saint-Germain, 2025",
+  "pool": "Aston Villa's starting XI against Paris Saint-Germain at Villa Park, 15 April 2025 — the Champions League quarter-final second leg. Villa won on the night and went out 5-4 on aggregate.",
+  "formation": "4-2-3-1",
+  "hintField": "nationality",
+  "source": "https://www.skysports.com/football/aston-villa-vs-paris-saint-germain/teams/528756",
+  "_notes": [
+    "CORRECTED. This board first had Kamara and Tielemans as the holding pair",
+    "with Onana wide right. That came from reading the source through a",
+    "summarising model, which grouped the lines wrongly. The page's own markup,",
+    "fetched raw, lists the XI in pitch order:",
+    "",
+    "  23 Martinez | 2 Cash, 4 Konsa, 14 Torres, 12 Digne | 44 Kamara, 24 Onana",
+    "  | 27 Rogers, 8 Tielemans, 7 McGinn | 9 Rashford",
+    "",
+    "So the holding pair is KAMARA and ONANA, and TIELEMANS plays in the three.",
+    "Sky lists each line right to left — Cash is the right-back and is named",
+    "first, Digne is the left-back and is named last — so the order here is that",
+    "listing reversed, which is what puts the tiles on the correct side.",
+    "",
+    "Left-to-right within the attacking three is the one thing the source does",
+    "not state outright; it follows from the same right-to-left convention the",
+    "back four proves. The band each player occupies, which is the part that",
+    "carries the clue, is read directly off the page.",
+    "",
+    "Nationalities are not on the match page and come from the club's season",
+    "page: https://en.wikipedia.org/wiki/2024-25_Aston_Villa_F.C._season",
+    "",
+    "This board cannot be checked by research/tools/verify_lineups.mjs — its",
+    "source is Sky rather than a Wikipedia match report, so it was read by hand."
+  ],
+  "xi": [
+    {
+      "pos": "GK",
+      "name": "MARTINEZ",
+      "aliases": [
+        "EMILIANO MARTINEZ",
+        "EMI MARTINEZ"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Argentina"
+    },
+    {
+      "pos": "LB",
+      "name": "DIGNE",
+      "aliases": [
+        "LUCAS DIGNE"
+      ],
+      "club": "Aston Villa",
+      "nationality": "France"
+    },
+    {
+      "pos": "CB",
+      "name": "TORRES",
+      "aliases": [
+        "PAU TORRES"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Spain"
+    },
+    {
+      "pos": "CB",
+      "name": "KONSA",
+      "aliases": [
+        "EZRI KONSA"
+      ],
+      "club": "Aston Villa",
+      "nationality": "England"
+    },
+    {
+      "pos": "RB",
+      "name": "CASH",
+      "aliases": [
+        "MATTY CASH"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Poland"
+    },
+    {
+      "pos": "DM",
+      "name": "ONANA",
+      "aliases": [
+        "AMADOU ONANA"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Belgium"
+    },
+    {
+      "pos": "DM",
+      "name": "KAMARA",
+      "aliases": [
+        "BOUBACAR KAMARA"
+      ],
+      "club": "Aston Villa",
+      "nationality": "France"
+    },
+    {
+      "pos": "LM",
+      "name": "MCGINN",
+      "aliases": [
+        "JOHN MCGINN"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "AM",
+      "name": "TIELEMANS",
+      "aliases": [
+        "YOURI TIELEMANS"
+      ],
+      "club": "Aston Villa",
+      "nationality": "Belgium"
+    },
+    {
+      "pos": "RM",
+      "name": "ROGERS",
+      "aliases": [
+        "MORGAN ROGERS"
+      ],
+      "club": "Aston Villa",
+      "nationality": "England"
+    },
+    {
+      "pos": "ST",
+      "name": "RASHFORD",
+      "aliases": [
+        "MARCUS RASHFORD"
+      ],
+      "club": "Aston Villa",
+      "nationality": "England"
+    }
+  ]
+}

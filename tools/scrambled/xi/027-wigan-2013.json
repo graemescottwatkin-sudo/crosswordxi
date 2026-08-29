@@ -1,0 +1,118 @@
+{
+  "id": 27,
+  "seed": 20130511,
+  "title": "FA Cup final, 2013",
+  "pool": "Wigan Athletic's starting XI against Manchester City at Wembley, 11 May 2013. Wigan won the cup and were relegated three days later.",
+  "formation": "4-3-3",
+  "hintField": "nationality",
+  "source": "https://en.wikipedia.org/wiki/2013_FA_Cup_final",
+  "_notes": [
+    "Nine nationalities including Barbados, Paraguay and Honduras — one of the",
+    "best hint fields in the bank.",
+    "",
+    "The source captions the shape 3-4-1-2 but its own position labels read four",
+    "defenders, three midfielders and three forwards. The labels are what place",
+    "the tiles, so the formation here follows them."
+  ],
+  "xi": [
+    {
+      "pos": "GK",
+      "name": "ROBLES",
+      "aliases": [
+        "JOEL ROBLES"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Spain"
+    },
+    {
+      "pos": "LB",
+      "name": "ESPINOZA",
+      "aliases": [
+        "ROGER ESPINOZA"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Honduras"
+    },
+    {
+      "pos": "CB",
+      "name": "ALCARAZ",
+      "aliases": [
+        "ANTOLIN ALCARAZ"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Paraguay"
+    },
+    {
+      "pos": "CB",
+      "name": "SCHARNER",
+      "aliases": [
+        "PAUL SCHARNER"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Austria"
+    },
+    {
+      "pos": "RB",
+      "name": "BOYCE",
+      "aliases": [
+        "EMMERSON BOYCE"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Barbados"
+    },
+    {
+      "pos": "LM",
+      "name": "GOMEZ",
+      "aliases": [
+        "JORDI GOMEZ"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Spain"
+    },
+    {
+      "pos": "CM",
+      "name": "MCARTHUR",
+      "aliases": [
+        "JAMES MCARTHUR"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "RM",
+      "name": "MCCARTHY",
+      "aliases": [
+        "JAMES MCCARTHY"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Republic of Ireland"
+    },
+    {
+      "pos": "LF",
+      "name": "MALONEY",
+      "aliases": [
+        "SHAUN MALONEY"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Scotland"
+    },
+    {
+      "pos": "CF",
+      "name": "KONE",
+      "aliases": [
+        "AROUNA KONE"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "Ivory Coast"
+    },
+    {
+      "pos": "RF",
+      "name": "MCMANAMAN",
+      "aliases": [
+        "CALLUM MCMANAMAN"
+      ],
+      "club": "Wigan Athletic",
+      "nationality": "England"
+    }
+  ]
+}
