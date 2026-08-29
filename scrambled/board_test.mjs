@@ -22,7 +22,10 @@ function t(name, ok, note) {
   else { fail++; console.log(`FAIL  ${name}${note ? "  — " + note : ""}`); }
 }
 
-const SRC = "tools/scrambled/xi";
+/* The sample sources, in-tree. The bank moved outside the repository, so a
+   suite reading it would pass on this machine and fail in CI and in a fresh
+   clone. These four are the ones the shipped module holds. */
+const SRC = "tools/scrambled/sample-xi";
 const good = JSON.parse(fs.readFileSync(`${SRC}/001-manchester-united-1999.json`, "utf8"));
 const clone = () => JSON.parse(JSON.stringify(good));
 const refuses = (src, fragment) => {

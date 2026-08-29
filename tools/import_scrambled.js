@@ -40,13 +40,44 @@ try {
   process.exit(1);
 }
 
-const { SC_BOARDS } = await import(
-  "file://" + path.join(ROOT, "functions", "_lib", "sc-boards.js").split(path.sep).join("/"));
+/* THE SOURCES, NOT THE MODULE. The module in functions/ is a four-board sample
+   so that the bank is not committed to a public repository; reading it here
+   would have quietly imported four boards over two hundred and sixty-one, and
+   the only symptom would have been a ring that repeated every four days.
+   Both this tool and the builder now read the same sources, so the module is
+   out of the import path entirely and cannot shrink what reaches D1. */
+const { gate, parseFormation, build } = await import(
+  "file://" + path.join(ROOT, "tools", "build_scrambled.js").split(path.sep).join("/"));
 
-if (!Array.isArray(SC_BOARDS) || !SC_BOARDS.length) {
-  console.error("REFUSED: the generated module holds no boards.");
+const SOURCE_ARG = (() => {
+  const i = process.argv.indexOf("--source");
+  return i > -1 ? process.argv[i + 1] : null;
+})();
+const SRC = path.join(SOURCE_ARG || path.join(ROOT, "..", "scrambledxi-source"), "xi");
+if (!fs.existsSync(SRC)) {
+  console.error(`REFUSED: no board sources at ${SRC}`);
+  console.error("The bank lives outside this repository. Pass --source <dir> if it is elsewhere.");
   process.exit(1);
 }
+const SC_BOARDS = fs.readdirSync(SRC)
+  .filter((f) => f.endsWith(".json") && !f.startsWith("_"))
+  .sort()
+  .map((f) => {
+    const src = JSON.parse(fs.readFileSync(path.join(SRC, f), "utf8"));
+    /* Gated again here rather than trusted: --check above proves the module
+       matches the sources, not that every source is fit to import. */
+    const problems = gate(src, parseFormation(src.formation)) || [];
+    if (problems.length) {
+      console.error(`REFUSED: ${f}\n  x ${problems[0]}`);
+      process.exit(1);
+    }
+    /* Built here with the builder's own build(), so the rows that reach D1
+       carry the derived scrambles, bands and enumerations rather than the raw
+       authoring shape. Two builders would eventually be two boards. */
+    const board = build(src, f);
+    if (!board) { console.error(`REFUSED: ${f} did not build.`); process.exit(1); }
+    return board;
+  });
 
 /* Every board must name its source. The builder already refuses one without,
    so this cannot fire — which is the point of asserting it anyway: the day the
