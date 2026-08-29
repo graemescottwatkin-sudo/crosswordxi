@@ -242,9 +242,10 @@ export async function onRequest({ request, env, params }) {
     const url = new URL(request.url);
     const all = url.searchParams.get("all") === "1";
     const rows = await env.DB.prepare(
-      `SELECT r.id, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
+      `SELECT r.id, r.game, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
               c.clue, c.answer, c.category, c.enumeration, c.era, c.difficulty
-         FROM clue_reports r LEFT JOIN clues c ON c.id = r.clue_id
+         FROM clue_reports r
+         LEFT JOIN clues c ON c.id = r.clue_id AND r.game = 'crossword'
         ${all ? "" : "WHERE r.status = 'open'"}
         ORDER BY r.created_at DESC LIMIT 500`).all();
     return json({ reports: rows.results || [] });
@@ -512,9 +513,10 @@ export async function onRequest({ request, env, params }) {
     const url = new URL(request.url);
     const all = url.searchParams.get("all") === "1";
     const rows = await env.DB.prepare(
-      `SELECT r.id, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
+      `SELECT r.id, r.game, r.clue_id, r.reason, r.puzzle, r.created_at, r.status,
               c.clue, c.answer, c.category, c.enumeration, c.era, c.difficulty
-         FROM clue_reports r LEFT JOIN clues c ON c.id = r.clue_id
+         FROM clue_reports r
+         LEFT JOIN clues c ON c.id = r.clue_id AND r.game = 'crossword'
         ${all ? "" : "WHERE r.status = 'open'"}
         ORDER BY r.created_at DESC LIMIT 2000`).all();
     /* Quote everything and double any quote inside. Clue text contains commas

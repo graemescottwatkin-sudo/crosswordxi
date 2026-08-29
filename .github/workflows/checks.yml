@@ -67,6 +67,10 @@ jobs:
           # mode = practice_retired until the retirement runs, so the fix cannot
           # be tested by the data — the suite stubs a retired row instead.
           node crossword/retire_test.mjs
+          # Reporting bad content, from every game that has any. The case the
+          # old schema could not express: a report from a game with no row in
+          # `clues` must still store, with the game recorded.
+          node crossword/report_test.mjs
           node crossword/epoch_test.mjs
           node crossword/answers_test.mjs
           node crossword/outcome_test.mjs

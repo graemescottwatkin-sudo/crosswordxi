@@ -28,6 +28,26 @@ export function validGame(v) {
   return GAMES.indexOf(g) === -1 ? null : g;
 }
 
+/* BUILT, which is a different question from RELEASED.
+   GAMES above is "whose rows the account system may write" — results, board
+   state, entry keys — and an unreleased game must not be on it, because a row
+   written for a game nobody can play is a row nobody will ever read.
+
+   Reporting bad content is not that. A game can be PLAYABLE in the repo before
+   it is launched — /scrambled/ and /quickfire/ both are — and the whole point
+   of reporting is to hear about wrong content BEFORE anyone else sees it. A
+   built game that cannot be reported is the one stage where reports are most
+   useful and least available.
+
+   Derived from GAMES rather than restated, so the released set is written
+   once. A game leaves this list only by being deleted. */
+export const BUILT = [...GAMES, "quickfire", "scrambled"];
+
+export function validReportGame(v) {
+  const g = String(v || DEFAULT_GAME).toLowerCase();
+  return BUILT.indexOf(g) === -1 ? null : g;
+}
+
 /* THE ONE KEY. What makes a result unique for a player, per game.
  *
  *   crossword    daily:2            the daily number, as it always was

@@ -33,8 +33,15 @@ function makeEnv({ admin: isAdmin = 0, signedIn = true } = {}) {
         if (sql.includes("FROM puzzles WHERE mode = 'daily'")) {
           return puzzles.find((p) => p.daily_no === b[0]) || null;
         }
-        if (sql.includes("FROM clue_reports WHERE clue_id")) {
-          return reports.find((r) => r.clue_id === b[0] && r.reported_by === b[1]) || null;
+        /* Migration 024 added `game`, so the dedupe is per game and the INSERT
+           carries one more column. Matched by NAME rather than bind position:
+           a positional stub silently reads the next value into the wrong field
+           the day a column is added, and then agrees with whatever the code
+           does. */
+        if (sql.includes("FROM clue_reports WHERE")) {
+          const cols = [...sql.matchAll(/([a-z_]+)\s*=\s*\?/g)].map((m) => m[1]);
+          if (!cols.length) throw new Error("stub could not read the WHERE clause");
+          return reports.find((r) => cols.every((c, i) => String(r[c]) === String(b[i]))) || null;
         }
         if (sql.includes("COUNT(*)")) return { n: 7 };
         return null;
@@ -42,7 +49,7 @@ function makeEnv({ admin: isAdmin = 0, signedIn = true } = {}) {
       async all() { return { results: reports }; },
       async run() {
         if (sql.includes("INSERT INTO clue_reports")) {
-          reports.push({ id: b[0], clue_id: b[1], reported_by: b[2], reason: b[3] });
+          reports.push({ id: b[0], game: b[1], clue_id: b[2], reported_by: b[3], reason: b[4], puzzle: b[5] });
         } else if (sql.includes("UPDATE clue_reports SET reason")) {
           const r = reports.find((x) => x.id === b[1]);
           if (r) r.reason = b[0];
