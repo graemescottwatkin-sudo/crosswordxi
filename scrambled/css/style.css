@@ -225,6 +225,19 @@ html, body {
   font-size: 10.5px;
   color: var(--gold);
   margin-top: 2px;
+  /* A career is not one word. "Reveal club" returned "Aston Villa"; "Reveal
+     career" can return six clubs and ninety-five characters, and an
+     absolutely-positioned tile with no bound on its hint pushes itself across
+     the pitch and over its neighbours.
+     Bounded in ch rather than px so it scales with the type, wrapping instead
+     of growing sideways, and with the separators given room to breathe so a
+     long history reads as a list rather than a paragraph. */
+  max-width: 22ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .slot.solved {

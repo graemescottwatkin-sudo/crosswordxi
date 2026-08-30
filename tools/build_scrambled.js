@@ -275,8 +275,27 @@ export function gate(src, shape) {
         `("${b.s}") — author the shorter one in full, as Rui Costa is beside Costacurta`);
     }
   }
-  if (!["club", "nationality"].includes(src.hintField)) {
-    problems.push(`hintField must be "club" or "nationality", not ${JSON.stringify(src.hintField)}`);
+  if (!["club", "nationality", "clubs"].includes(src.hintField)) {
+    problems.push(`hintField must be "club", "nationality" or "clubs", not ${JSON.stringify(src.hintField)}`);
+  } else if (src.hintField === "clubs") {
+    /* THE DAILY'S HINT, which is a career rather than a value.
+       The "must vary across the eleven" rule below exists because a hint every
+       player shares sells nothing — an all-English XI cannot sell nationality.
+       A career cannot fail that way: two players sharing an identical club
+       history is not a thing. So what is checked instead is that the hint
+       EXISTS, because an empty career is a hint the player pays three minutes
+       for and receives nothing from. */
+    const bare = xi.filter((p) => !Array.isArray(p.clubs) || !p.clubs.length)
+      .map((p) => p.name);
+    if (bare.length) {
+      problems.push(`no club history for: ${bare.join(", ")} — the hint they would ` +
+        `pay for is empty`);
+    }
+    const shapeless = xi.filter((p) => (p.clubs || []).some((c) => !c || !c.club))
+      .map((p) => p.name);
+    if (shapeless.length) {
+      problems.push(`a club entry with no club name for: ${shapeless.join(", ")}`);
+    }
   } else {
     const missing = xi.filter((p) => !p[src.hintField]).map((p) => p.name);
     if (missing.length) problems.push(`no ${src.hintField} for: ${missing.join(", ")}`);
@@ -332,6 +351,12 @@ export function build(src, file) {
       aliases: p.aliases || [],
       club: p.club || null,
       nationality: p.nationality || null,
+      /* The career rides on the slot, beside club-at-the-time rather than
+         instead of it — they are different facts and a board may want either.
+         Carried only when present, so a lineup board's slots do not gain an
+         empty field stating that it has no career history. */
+      ...(Array.isArray(p.clubs) && p.clubs.length ? { clubs: p.clubs } : {}),
+      ...(p.birthYear ? { birthYear: p.birthYear } : {}),
       scramble,
       fixed,
       len: enumerationOf(p.name),

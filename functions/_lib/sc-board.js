@@ -144,13 +144,38 @@ export function publicBoard(board, no) {
  * therefore names its own field, and the builder refuses a board whose chosen
  * field reads the same for all eleven slots. A club XI hints nationality; a
  * national XI or a Team of the Year hints club. */
+/* THE HINT, WHICH IS NOT ALWAYS ONE WORD.
+   A lineup board sells the club a player was at THAT DAY, or their nationality
+   — one value either way. A Daily board is a selection rather than a team, so
+   the club-on-the-day means nothing, and what it sells instead is the whole
+   career: Giggs reads "Manchester United", Beckham reads six clubs.
+
+   Those are different facts and the slot carries both. `club` is club-at-the-
+   time and belongs to lineup boards; `clubs` is the ordered career and belongs
+   to the Daily. Collapsing them would put Ball at Everton in the 1966 final,
+   which is the exact error that board's notes were written to prevent.
+
+   Loans are marked rather than dropped: a season away is part of a career, and
+   a history that silently omits it reads as wrong to anyone who remembers. */
 export function slotHint(board, slotId) {
   const s = (board.slots || []).find((x) => String(x.id) === String(slotId));
   if (!s) return null;
+  if (board.hintField === "clubs") {
+    const spells = s.clubs || [];
+    if (!spells.length) return null;
+    return spells
+      .map((c) => c.club + (c.loan ? " (loan)" : ""))
+      /* One club named once, however many spells: Bosnich returned to United
+         and "Manchester United, Aston Villa, Manchester United" reads as a
+         mistake rather than as a career. The order is kept, so a return still
+         sits where it happened. */
+      .filter((name, i, all) => all.indexOf(name) === i)
+      .join(" · ");
+  }
   return board.hintField === "club" ? (s.club || null) : (s.nationality || null);
 }
-
 export function hintLabel(board) {
+  if (board.hintField === "clubs") return "Reveal career";
   return board.hintField === "club" ? "Reveal club" : "Reveal nationality";
 }
 
