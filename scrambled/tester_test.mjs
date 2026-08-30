@@ -167,10 +167,24 @@ console.log("\n=== Opened with no board asked for, which is how it is opened ===
   const d = plain.window.document;
   const picked = Number(d.getElementById("tstBoard").value);
   const onScreen = d.getElementById("startTitle").textContent;
+  /* Titles read from the TESTER, not from the module. The module is a
+     four-board sample since the bank moved outside the repository; the tester
+     carries the whole bank. Indexing SC_BOARDS here was right when they were
+     the same set and became a latent bug when they stopped being — it kept
+     passing only while today's board number stayed inside the sample, and went
+     red the day the ring reached #5. A suite that breaks on a date is a suite
+     that was asserting against the wrong source. */
+  /* Titles read from the TESTER, not from the module. The module is a
+     four-board sample since the bank moved outside the repository; the tester
+     carries the whole bank. Indexing SC_BOARDS here was right when they were
+     the same set and became a latent bug when they stopped being — it kept
+     passing only while today's board number stayed inside the sample, and went
+     red the day the ring reached #5. A suite that breaks on a date was
+     asserting against the wrong source. */
+  const testerTitles = [...html.matchAll(/"title":"([^"]*)"/g)].map((m) => m[1]);
   t("the picker names the board the engine loaded",
-    SC_BOARDS[picked - 1] && SC_BOARDS[picked - 1].title === onScreen,
-    `picker says #${picked} (${SC_BOARDS[picked - 1] && SC_BOARDS[picked - 1].title}), ` +
-    `screen says "${onScreen}"`);
+    !!testerTitles[picked - 1] && testerTitles[picked - 1] === onScreen,
+    `picker says #${picked} (${testerTitles[picked - 1]}), screen says "${onScreen}"`);
   t("and it is today's board, derived from the same rotation the server uses",
     d.getElementById("startKicker").textContent === "Today's board",
     d.getElementById("startKicker").textContent);
