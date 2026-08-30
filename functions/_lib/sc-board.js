@@ -234,3 +234,11 @@ export function json(body, status = 200, extra = {}) {
 export function bad(message, status = 400) {
   return json({ error: message }, status);
 }
+
+/* THE NAME A PLAYER IS ALLOWED TO SEE, in one place because two endpoints
+   hand it over — a correct guess and a bought reveal — and a board that
+   read GARY LINEKER one way and LINEKER the other would be the same fact
+   told twice and drifting. The cypher is the puzzle; this is the answer. */
+export function revealName(slot) {
+  return String((slot && (slot.display || slot.name)) || "");
+}

@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import {
-  gate, parseFormation, minimumFixedPoints, scrambleName,
+  gate, parseFormation, minimumFixedPoints, scrambleName, nameFloor,
 } from "../tools/build_scrambled.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
 import { publicBoard, boardForNumber, playableTokenNo, slotHint } from "../functions/_lib/sc-board.js";
@@ -134,7 +134,7 @@ t("every shipped scramble hits its floor exactly", SC_BOARDS.every((b) =>
     const letters = normalise(sl.name);
     let fixed = 0;
     for (let i = 0; i < letters.length; i++) if (sl.scramble[i] === letters[i]) fixed++;
-    return fixed === minimumFixedPoints(letters);
+    return fixed === nameFloor(sl.name);
   })));
 t("every shipped scramble is a true anagram of its name", SC_BOARDS.every((b) =>
   b.slots.every((sl) => letterBag(sl.scramble) === letterBag(sl.name))));
@@ -181,6 +181,17 @@ const wire = JSON.stringify(payload);
    must not ride along is the spelling, the aliases and the priced hint. */
 t("no name is in the payload",
   board.slots.every((sl) => wire.indexOf(sl.name) === -1));
+/* The reveal is the fullest form of the answer — the whole name, not just
+   the letters on the tile. publicBoard is an allowlist, so this cannot leak
+   by construction; the check exists because the allowlist is one careless
+   line away from not being one. */
+t("no reveal is in the payload", (() => {
+  /* Both sides normalised, or the check is vacuous: the needle GYLFISIGURDSSON
+     never matches the payload GYLFI SIGURDSSON, and a leak walks straight
+     through. This check passed its own sabotage once for exactly that. */
+  const wire = normalise(JSON.stringify(publicBoard(SC_BOARDS[0], 1)));
+  return SC_BOARDS[0].slots.every((sl) => !wire.includes(normalise(sl.display)));
+})(), "the whole name never reaches the browser unsolved");
 t("no alias is in the payload",
   board.slots.every((sl) => (sl.aliases || []).every((a) => wire.indexOf(a) === -1)));
 t("no hint VALUE is in the payload", (() => {
@@ -228,6 +239,40 @@ t("the open archive is only allowed while the game is unlaunched",
     ? (launched ? "LAUNCHED WITH THE ARCHIVE OPEN — every future board is public"
                 : "open, and the game is unlaunched, which is the intended pairing")
     : "closed");
+
+
+console.log("\n=== The cypher is scrambled word by word ===");
+/* A blob makes the enumeration a lie. If DE JONG can shuffle into a single
+   six-letter run, the "(2,4)" under the tile tells the player about a word
+   break the letters never respected. So every word's letters stay in that
+   word, and the enumeration stays true. */
+t("no letter ever leaves its own word", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => {
+    const words = String(sl.name).trim().split(/\s+/).map(normalise).filter(Boolean);
+    let at = 0;
+    return words.every((w) => {
+      const part = sl.scramble.slice(at, at + w.length);
+      at += w.length;
+      return letterBag(part) === letterBag(w);
+    });
+  })));
+/* Named separately because the check above passes vacuously on a bank of
+   single-word cyphers, and most cyphers ARE single words. If this ever reads
+   zero the check above is proving nothing and should be read as silent. */
+t("and the bank actually contains a multi-word cypher to prove it on",
+  SC_BOARDS.some((b) => b.slots.some((sl) => sl.len.length > 1)));
+
+console.log("\n=== The cypher is scrambled, the reveal is shown ===");
+/* Two fields on purpose: the surname is the puzzle, the whole name is the
+   moment of recognition. A board that reveals LINEKER has answered a question
+   nobody was asking. */
+t("every slot carries a reveal", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => typeof sl.display === "string" && sl.display.length > 0)));
+t("and the reveal contains the cypher that was scrambled", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => normalise(sl.display).includes(normalise(sl.name)))));
+t("and only the cypher's letters are on the tile",
+  SC_BOARDS.every((b) => b.slots.every((sl) =>
+    letterBag(sl.scramble) === letterBag(sl.name))));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

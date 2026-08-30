@@ -45,6 +45,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "GK",
         "name": "BOSNICH",
+        "display": "MARK BOSNICH",
         "aliases": [
           "MARK BOSNICH"
         ],
@@ -115,6 +116,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LB",
         "name": "MONREAL",
+        "display": "NACHO MONREAL",
         "aliases": [
           "NACHO MONREAL"
         ],
@@ -171,6 +173,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CB",
         "name": "EHIOGU",
+        "display": "UGO EHIOGU",
         "aliases": [
           "UGO EHIOGU"
         ],
@@ -234,6 +237,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CB",
         "name": "ADAMS",
+        "display": "TONY ADAMS",
         "aliases": [
           "TONY ADAMS"
         ],
@@ -262,6 +266,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RB",
         "name": "ELMOHAMADY",
+        "display": "AHMED ELMOHAMADY",
         "aliases": [
           "AHMED ELMOHAMADY"
         ],
@@ -332,6 +337,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LW",
         "name": "MALBRANQUE",
+        "display": "STEED MALBRANQUE",
         "aliases": [
           "STEED MALBRANQUE"
         ],
@@ -423,6 +429,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CM",
         "name": "STEWART",
+        "display": "PAUL STEWART",
         "aliases": [
           "PAUL STEWART"
         ],
@@ -521,6 +528,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CM",
         "name": "SIGURDSSON",
+        "display": "GYLFI SIGURDSSON",
         "aliases": [
           "GYLFI SIGURDSSON"
         ],
@@ -619,6 +627,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RW",
         "name": "PHELAN",
+        "display": "MIKE PHELAN",
         "aliases": [
           "MIKE PHELAN"
         ],
@@ -668,6 +677,7 @@ export const SC_BOARDS = [
         "x": 0.3333,
         "pos": "ST",
         "name": "WALTERS",
+        "display": "JONATHAN WALTERS",
         "aliases": [
           "JONATHAN WALTERS"
         ],
@@ -766,6 +776,7 @@ export const SC_BOARDS = [
         "x": 0.6667,
         "pos": "ST",
         "name": "LINEKER",
+        "display": "GARY LINEKER",
         "aliases": [
           "GARY LINEKER"
         ],
@@ -850,6 +861,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "GK",
         "name": "POOM",
+        "display": "MART POOM",
         "aliases": [
           "MART POOM"
         ],
@@ -948,6 +960,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LB",
         "name": "ZINCHENKO",
+        "display": "OLEKSANDR ZINCHENKO",
         "aliases": [
           "OLEKSANDR ZINCHENKO"
         ],
@@ -1018,6 +1031,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CB",
         "name": "SENDEROS",
+        "display": "PHILIPPE SENDEROS",
         "aliases": [
           "PHILIPPE SENDEROS"
         ],
@@ -1116,6 +1130,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CB",
         "name": "MABBUTT",
+        "display": "GARY MABBUTT",
         "aliases": [
           "GARY MABBUTT"
         ],
@@ -1151,6 +1166,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RB",
         "name": "FERREIRA",
+        "display": "PAULO FERREIRA",
         "aliases": [
           "PAULO FERREIRA"
         ],
@@ -1200,6 +1216,7 @@ export const SC_BOARDS = [
         "x": 0.25,
         "pos": "CM",
         "name": "ESSIEN",
+        "display": "MICHAEL ESSIEN",
         "aliases": [
           "MICHAEL ESSIEN"
         ],
@@ -1277,6 +1294,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "CM",
         "name": "WHELAN",
+        "display": "RONNIE WHELAN",
         "aliases": [
           "RONNIE WHELAN"
         ],
@@ -1319,6 +1337,7 @@ export const SC_BOARDS = [
         "x": 0.75,
         "pos": "CM",
         "name": "DAVIDS",
+        "display": "EDGAR DAVIDS",
         "aliases": [
           "EDGAR DAVIDS"
         ],
@@ -1403,6 +1422,7 @@ export const SC_BOARDS = [
         "x": 0.25,
         "pos": "LW",
         "name": "JI-SUNG",
+        "display": "PARK JI-SUNG",
         "aliases": [
           "PARK JI-SUNG"
         ],
@@ -1459,6 +1479,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "ST",
         "name": "FLETCHER",
+        "display": "STEVEN FLETCHER",
         "aliases": [
           "STEVEN FLETCHER"
         ],
@@ -1543,6 +1564,7 @@ export const SC_BOARDS = [
         "x": 0.75,
         "pos": "RW",
         "name": "DYER",
+        "display": "NATHAN DYER",
         "aliases": [
           "NATHAN DYER"
         ],
@@ -1634,6 +1656,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "GK",
         "name": "SEALEY",
+        "display": "LES SEALEY",
         "aliases": [
           "LES SEALEY"
         ],
@@ -1739,6 +1762,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LB",
         "name": "SYLVINHO",
+        "display": "SYLVINHO",
         "aliases": [],
         "club": null,
         "nationality": "Brazil",
@@ -1793,6 +1817,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CB",
         "name": "BREVETT",
+        "display": "RUFUS BREVETT",
         "aliases": [
           "RUFUS BREVETT"
         ],
@@ -1863,6 +1888,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CB",
         "name": "VARANE",
+        "display": "RAPHAEL VARANE",
         "aliases": [
           "RAPHAEL VARANE"
         ],
@@ -1912,6 +1938,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RB",
         "name": "ANDERSON",
+        "display": "VIV ANDERSON",
         "aliases": [
           "VIV ANDERSON"
         ],
@@ -1975,6 +2002,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LW",
         "name": "SNODGRASS",
+        "display": "ROBERT SNODGRASS",
         "aliases": [
           "ROBERT SNODGRASS"
         ],
@@ -2066,6 +2094,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CM",
         "name": "DE JONG",
+        "display": "NIGEL DE JONG",
         "aliases": [
           "NIGEL DE JONG"
         ],
@@ -2138,7 +2167,7 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1984,
         "source": "https://en.wikipedia.org/wiki/Nigel_de_Jong",
-        "scramble": "NDGEJO",
+        "scramble": "EDNJGO",
         "fixed": 0,
         "len": [
           2,
@@ -2151,6 +2180,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CM",
         "name": "ALLEN",
+        "display": "PAUL ALLEN",
         "aliases": [
           "PAUL ALLEN"
         ],
@@ -2235,6 +2265,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RW",
         "name": "KALOU",
+        "display": "SALOMON KALOU",
         "aliases": [
           "SALOMON KALOU"
         ],
@@ -2305,6 +2336,7 @@ export const SC_BOARDS = [
         "x": 0.3333,
         "pos": "ST",
         "name": "GOATER",
+        "display": "SHAUN GOATER",
         "aliases": [
           "SHAUN GOATER"
         ],
@@ -2389,6 +2421,7 @@ export const SC_BOARDS = [
         "x": 0.6667,
         "pos": "ST",
         "name": "DEENEY",
+        "display": "TROY DEENEY",
         "aliases": [
           "TROY DEENEY"
         ],
@@ -2487,6 +2520,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "GK",
         "name": "TAYLOR",
+        "display": "MAIK TAYLOR",
         "aliases": [
           "MAIK TAYLOR"
         ],
@@ -2578,6 +2612,7 @@ export const SC_BOARDS = [
         "x": 0.2,
         "pos": "LB",
         "name": "SHOREY",
+        "display": "NICKY SHOREY",
         "aliases": [
           "NICKY SHOREY"
         ],
@@ -2683,6 +2718,7 @@ export const SC_BOARDS = [
         "x": 0.4,
         "pos": "CB",
         "name": "KOSCIELNY",
+        "display": "LAURENT KOSCIELNY",
         "aliases": [
           "LAURENT KOSCIELNY"
         ],
@@ -2739,6 +2775,7 @@ export const SC_BOARDS = [
         "x": 0.6,
         "pos": "CB",
         "name": "AKANJI",
+        "display": "MANUEL AKANJI",
         "aliases": [
           "MANUEL AKANJI"
         ],
@@ -2816,6 +2853,7 @@ export const SC_BOARDS = [
         "x": 0.8,
         "pos": "RB",
         "name": "BARRETT",
+        "display": "EARL BARRETT",
         "aliases": [
           "EARL BARRETT"
         ],
@@ -2886,6 +2924,7 @@ export const SC_BOARDS = [
         "x": 0.25,
         "pos": "CM",
         "name": "MILNER",
+        "display": "JAMES MILNER",
         "aliases": [
           "JAMES MILNER"
         ],
@@ -2963,6 +3002,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "CM",
         "name": "COWANS",
+        "display": "GORDON COWANS",
         "aliases": [
           "GORDON COWANS"
         ],
@@ -3061,6 +3101,7 @@ export const SC_BOARDS = [
         "x": 0.75,
         "pos": "CM",
         "name": "MODRIC",
+        "display": "LUKA MODRIC",
         "aliases": [
           "LUKA MODRIC"
         ],
@@ -3124,6 +3165,7 @@ export const SC_BOARDS = [
         "x": 0.25,
         "pos": "LW",
         "name": "MARTIAL",
+        "display": "ANTHONY MARTIAL",
         "aliases": [
           "ANTHONY MARTIAL"
         ],
@@ -3201,6 +3243,7 @@ export const SC_BOARDS = [
         "x": 0.5,
         "pos": "ST",
         "name": "IGHALO",
+        "display": "ODION IGHALO",
         "aliases": [
           "ODION IGHALO"
         ],
@@ -3327,6 +3370,7 @@ export const SC_BOARDS = [
         "x": 0.75,
         "pos": "RW",
         "name": "SALAH",
+        "display": "MOHAMED SALAH",
         "aliases": [
           "MOHAMED SALAH"
         ],

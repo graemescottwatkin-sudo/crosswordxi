@@ -30,6 +30,9 @@ import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
    nothing matched and it read .textContent off null. A fixture that names a
    player is a fixture that expires; the board already knows who is on it. */
 const ONE_NAME = SC_BOARDS[0].slots[7].name;
+/* The cypher is what gets scrambled; the reveal is what the solved tile
+   reads. They are different strings and the difference is the point. */
+const ONE_REVEAL = SC_BOARDS[0].slots[7].display;
 /* An alias belonging to a DIFFERENT slot, so typing it solves a second tile.
    Was "Andy Cole", true of the 1999 board only. */
 const ALIAS_SLOT = SC_BOARDS[0].slots.find((s) => s.name !== ONE_NAME && (s.aliases || []).length);
@@ -145,7 +148,11 @@ async function type(text) {
 await type(ONE_NAME.toLowerCase());
 t("a correct name in the wrong case still solves",
   doc.querySelectorAll(".slot.solved").length === 1);
-t("the tile now reads the name", doc.querySelector(".slot.solved .letters").textContent === ONE_NAME);
+t("the tile now reads the whole name, not the cypher",
+  doc.querySelector(".slot.solved .letters").textContent === ONE_REVEAL,
+  ONE_NAME + " -> " + ONE_REVEAL);
+t("and the reveal says more than the letters the player was given",
+  ONE_REVEAL !== ONE_NAME);
 t("the counter moved", $("solvedCount").textContent === "1");
 t("and the box is cleared for the next one", $("answer").value === "");
 

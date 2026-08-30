@@ -15,7 +15,7 @@
  * started_at the server wrote and a count of the reveals it served — the same
  * shape Crossword XI uses. Until that exists, "unverified" is the truth.
  */
-import { json, bad, boardForToken, boardForPreviewToken, slotHint, hintLabel, loadBoards } from "../../_lib/sc-board.js";
+import { json, bad, boardForToken, boardForPreviewToken, slotHint, hintLabel, loadBoards, revealName } from "../../_lib/sc-board.js";
 import { normalise } from "../../_lib/sc-names.js";
 
 export async function onRequestPost({ request, env }) {
@@ -51,7 +51,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (kind === "name") {
-    return json({ kind, slotId: slot.id, name: slot.name });
+    return json({ kind, slotId: slot.id, name: revealName(slot) });
   }
 
   return bad("Unknown reveal.");

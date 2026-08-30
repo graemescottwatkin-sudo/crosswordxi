@@ -129,6 +129,45 @@ export function scrambleName(letters, rand) {
   return best ? { scramble: best, fixed: bestFixed, floor } : null;
 }
 
+/*
+ * WORD BY WORD, NEVER ONE BLOB.
+ *
+ * Most cyphers are a bare surname and this changes nothing for them. But when
+ * a clash forces a full name in — or the surname is itself two words, VAN DIJK,
+ * LE TISSIER — the letters must stay inside their own word: ALAN SHEARER is
+ * NLAA HSAERRE, not a twelve-letter soup with the enumeration underneath
+ * pretending a split that the letters do not honour. A blob makes the
+ * enumeration a lie: it tells the player where the words break while the
+ * letters say they never did.
+ *
+ * The floor is the SUM of the per-word floors, not the whole name's. Letters
+ * can no longer migrate to cover a repeat, so the whole-name floor is no
+ * longer reachable and would fail every board it was checked against.
+ */
+
+/* THE FLOOR FOR A WHOLE CYPHER, in one place because two callers need it and
+   they must not disagree: the builder, to accept a scramble, and the board
+   test, to re-derive what the builder accepted. Summed per word, since
+   scrambleWords will not let a letter leave its word to cover a repeat. */
+export function nameFloor(name) {
+  return String(name).trim().split(/\s+/).map(normalise).filter(Boolean)
+    .reduce((n, w) => n + minimumFixedPoints(w), 0);
+}
+
+export function scrambleWords(name, rand) {
+  const words = String(name).trim().split(/\s+/).map(normalise).filter(Boolean);
+  if (!words.length) return null;
+
+  let scramble = "", fixed = 0;
+  for (const w of words) {
+    const r = scrambleName(w, rand);
+    if (!r) return null;
+    scramble += r.scramble;
+    fixed += r.fixed;
+  }
+  return { scramble, fixed, floor: nameFloor(name) };
+}
+
 /* ---- The formation, parsed ----------------------------------------------
  * "4-4-2" is ten outfielders in three lines, plus the goalkeeper: eleven.
  * The default position labels come from the line's index and its size, and an
@@ -329,7 +368,7 @@ export function build(src, file) {
 
   const slots = src.xi.map((p, i) => {
     const letters = normalise(p.name);
-    const r = scrambleName(letters, rand);
+    const r = scrambleWords(p.name, rand);
     if (!r) throw new Error(`${file}: "${p.name}" produced no scramble at all.`);
     const { scramble, fixed, floor } = r;
     if (fixed > floor) {
@@ -348,6 +387,14 @@ export function build(src, file) {
       x: Number(((place.i + 1) / (place.of + 1)).toFixed(4)),
       pos: p.pos || shape.labels[i],
       name: p.name,
+      /* TWO NAME FIELDS, DELIBERATELY.
+         `name` is the CYPHER — the surname, and the only thing scrambled. A
+         forename adds letters without adding a clue, and the player was always
+         identified by the surname anyway.
+         `display` is the REVEAL, shown once the slot is solved: the board should
+         read GARY LINEKER at the moment of recognition, not LINEKER. Falls back
+         to the cypher, so a board authored without one still works. */
+      display: p.display || p.name,
       aliases: p.aliases || [],
       club: p.club || null,
       nationality: p.nationality || null,

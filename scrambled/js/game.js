@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001f";
+var BUILD = "v001g";
 
 (function () {
   "use strict";
@@ -105,7 +105,10 @@ var BUILD = "v001f";
 
   function tileText(slot) {
     var got = state.solved[slot.id];
-    if (got) return got.name.toUpperCase();
+    /* The REVEAL, not the cypher: a solved tile reads GARY LINEKER, because
+       that is the moment of recognition. The cypher was only ever the letters
+       to unscramble. */
+    if (got) return String(got.name).toUpperCase();
     var known = state.letters[slot.id] || "";
     if (!known) return slot.scramble;
     /* Revealed letters sit in front, in order, and the rest of the bag follows

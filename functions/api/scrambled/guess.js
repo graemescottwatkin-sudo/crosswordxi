@@ -15,7 +15,7 @@
  * `solved` is the player's own claim about their progress and is not trusted
  * with anything. Lying about it can only re-solve a slot they already had.
  */
-import { json, bad, boardForToken, boardForPreviewToken, loadBoards } from "../../_lib/sc-board.js";
+import { json, bad, boardForToken, boardForPreviewToken, loadBoards, revealName } from "../../_lib/sc-board.js";
 import { matchesSlot } from "../../_lib/sc-names.js";
 
 export async function onRequestPost({ request, env }) {
@@ -41,5 +41,11 @@ export async function onRequestPost({ request, env }) {
     .filter((s) => !already.has(String(s.id)))
     .find((s) => matchesSlot(guess, s));
 
-  return json({ solvedId: hit ? hit.id : null, name: hit ? hit.name : null });
+  /* The reveal, not the cypher. The client never holds the names, so the one
+     name it is allowed to learn — the one it just guessed correctly — has to
+     arrive from here in the form the board should display. */
+  return json({
+    solvedId: hit ? hit.id : null,
+    name: hit ? revealName(hit) : null,
+  });
 }
