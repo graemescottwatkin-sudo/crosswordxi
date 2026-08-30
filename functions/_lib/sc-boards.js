@@ -15,11 +15,11 @@
 export const SC_BOARDS = [
   {
     "id": 1,
-    "title": "Champions League final, 1999",
-    "pool": "Manchester United's starting XI at the Nou Camp, 26 May 1999. Keane and Scholes were suspended.",
+    "title": "Daily XI, 4-4-2",
+    "pool": "Eleven Premier League players. Not a team — nobody here lined up together.",
     "formation": "4-4-2",
-    "hintField": "nationality",
-    "source": "https://en.wikipedia.org/wiki/1999_UEFA_Champions_League_final",
+    "hintField": "clubs",
+    "source": "generated from research/daily/daily-roster.json; every player sourced and verified individually",
     "bands": [
       {
         "id": "gk",
@@ -44,16 +44,68 @@ export const SC_BOARDS = [
         "band": "gk",
         "x": 0.5,
         "pos": "GK",
-        "name": "SCHMEICHEL",
+        "name": "BOSNICH",
         "aliases": [
-          "PETER SCHMEICHEL"
+          "MARK BOSNICH"
         ],
-        "club": "Manchester United",
-        "nationality": "Denmark",
-        "scramble": "IMSCHCHELE",
+        "club": null,
+        "nationality": "Australia",
+        "clubs": [
+          {
+            "club": "Manchester United",
+            "from": 1990,
+            "to": 1991,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Sydney United",
+            "from": 1991,
+            "to": 1992,
+            "apps": 5,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1992,
+            "to": 1999,
+            "apps": 179,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 1999,
+            "to": 2001,
+            "apps": 23,
+            "loan": false
+          },
+          {
+            "club": "Chelsea",
+            "from": 2001,
+            "to": 2003,
+            "apps": 5,
+            "loan": false
+          },
+          {
+            "club": "Central Coast Mariners",
+            "from": 2008,
+            "to": 2008,
+            "apps": 4,
+            "loan": false
+          },
+          {
+            "club": "Sydney Olympic",
+            "from": 2009,
+            "to": 2009,
+            "apps": 8,
+            "loan": false
+          }
+        ],
+        "birthYear": 1972,
+        "scramble": "OSNCHBI",
         "fixed": 0,
         "len": [
-          10
+          7
         ]
       },
       {
@@ -61,16 +113,54 @@ export const SC_BOARDS = [
         "band": "b1",
         "x": 0.2,
         "pos": "LB",
-        "name": "IRWIN",
+        "name": "MONREAL",
         "aliases": [
-          "DENIS IRWIN"
+          "NACHO MONREAL"
         ],
-        "club": "Manchester United",
-        "nationality": "Republic of Ireland",
-        "scramble": "NIRWI",
+        "club": null,
+        "nationality": "Spain",
+        "clubs": [
+          {
+            "club": "Osasuna B",
+            "from": 2005,
+            "to": 2006,
+            "apps": 36,
+            "loan": false
+          },
+          {
+            "club": "Osasuna",
+            "from": 2006,
+            "to": 2011,
+            "apps": 127,
+            "loan": false
+          },
+          {
+            "club": "Málaga",
+            "from": 2011,
+            "to": 2013,
+            "apps": 45,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 2013,
+            "to": 2019,
+            "apps": 187,
+            "loan": false
+          },
+          {
+            "club": "Real Sociedad",
+            "from": 2019,
+            "to": 2022,
+            "apps": 55,
+            "loan": false
+          }
+        ],
+        "birthYear": 1986,
+        "scramble": "OLEAMNR",
         "fixed": 0,
         "len": [
-          5
+          7
         ]
       },
       {
@@ -78,13 +168,1665 @@ export const SC_BOARDS = [
         "band": "b1",
         "x": 0.4,
         "pos": "CB",
-        "name": "JOHNSEN",
+        "name": "EHIOGU",
         "aliases": [
-          "RONNY JOHNSEN"
+          "UGO EHIOGU"
         ],
-        "club": "Manchester United",
-        "nationality": "Norway",
-        "scramble": "ENJHNOS",
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "West Bromwich Albion",
+            "from": 1989,
+            "to": 1991,
+            "apps": 2,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1991,
+            "to": 2000,
+            "apps": 237,
+            "loan": false
+          },
+          {
+            "club": "Middlesbrough",
+            "from": 2000,
+            "to": 2007,
+            "apps": 126,
+            "loan": false
+          },
+          {
+            "club": "Leeds United",
+            "from": 2006,
+            "to": 2007,
+            "apps": 6,
+            "loan": true
+          },
+          {
+            "club": "Rangers",
+            "from": 2007,
+            "to": 2008,
+            "apps": 9,
+            "loan": false
+          },
+          {
+            "club": "Sheffield United",
+            "from": 2008,
+            "to": 2009,
+            "apps": 26,
+            "loan": false
+          }
+        ],
+        "birthYear": 1972,
+        "scramble": "OIUHEG",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s4",
+        "band": "b1",
+        "x": 0.6,
+        "pos": "CB",
+        "name": "ADAMS",
+        "aliases": [
+          "TONY ADAMS"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Arsenal",
+            "from": 1983,
+            "to": 2002,
+            "apps": 504,
+            "loan": false
+          }
+        ],
+        "birthYear": 1966,
+        "scramble": "MASDA",
+        "fixed": 0,
+        "len": [
+          5
+        ]
+      },
+      {
+        "id": "s5",
+        "band": "b1",
+        "x": 0.8,
+        "pos": "RB",
+        "name": "ELMOHAMADY",
+        "aliases": [
+          "AHMED ELMOHAMADY"
+        ],
+        "club": null,
+        "nationality": "Egypt",
+        "clubs": [
+          {
+            "club": "Ghazl El Mahalla",
+            "from": 2004,
+            "to": 2006,
+            "apps": 17,
+            "loan": false
+          },
+          {
+            "club": "ENPPI",
+            "from": 2006,
+            "to": 2011,
+            "apps": 72,
+            "loan": false
+          },
+          {
+            "club": "Sunderland",
+            "from": 2010,
+            "to": 2011,
+            "apps": 36,
+            "loan": true
+          },
+          {
+            "club": "Sunderland",
+            "from": 2011,
+            "to": 2013,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Hull City",
+            "from": 2012,
+            "to": 2013,
+            "apps": 41,
+            "loan": true
+          },
+          {
+            "club": "Hull City",
+            "from": 2013,
+            "to": 2017,
+            "apps": 150,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2017,
+            "to": 2021,
+            "apps": 113,
+            "loan": false
+          }
+        ],
+        "birthYear": 1987,
+        "scramble": "AMOYLDAMEH",
+        "fixed": 0,
+        "len": [
+          10
+        ]
+      },
+      {
+        "id": "s6",
+        "band": "b2",
+        "x": 0.2,
+        "pos": "LW",
+        "name": "MALBRANQUE",
+        "aliases": [
+          "STEED MALBRANQUE"
+        ],
+        "club": null,
+        "nationality": "Belgium",
+        "clubs": [
+          {
+            "club": "Lyon",
+            "from": 1997,
+            "to": 2001,
+            "apps": 77,
+            "loan": false
+          },
+          {
+            "club": "Fulham",
+            "from": 2001,
+            "to": 2006,
+            "apps": 172,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 2006,
+            "to": 2008,
+            "apps": 62,
+            "loan": false
+          },
+          {
+            "club": "Sunderland",
+            "from": 2008,
+            "to": 2011,
+            "apps": 102,
+            "loan": false
+          },
+          {
+            "club": "Saint-Étienne",
+            "from": 2011,
+            "to": 2011,
+            "apps": 1,
+            "loan": false
+          },
+          {
+            "club": "Lyon",
+            "from": 2012,
+            "to": 2016,
+            "apps": 93,
+            "loan": false
+          },
+          {
+            "club": "Caen",
+            "from": 2016,
+            "to": 2017,
+            "apps": 13,
+            "loan": false
+          },
+          {
+            "club": "Caen II",
+            "from": 2016,
+            "to": 2017,
+            "apps": 2,
+            "loan": false
+          },
+          {
+            "club": "Chasselay MDA",
+            "from": 2017,
+            "to": 2019,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Limonest",
+            "from": 2020,
+            "to": 2022,
+            "apps": 2,
+            "loan": false
+          }
+        ],
+        "birthYear": 1980,
+        "scramble": "BUNQMERLAA",
+        "fixed": 0,
+        "len": [
+          10
+        ]
+      },
+      {
+        "id": "s7",
+        "band": "b2",
+        "x": 0.4,
+        "pos": "CM",
+        "name": "STEWART",
+        "aliases": [
+          "PAUL STEWART"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Blackpool",
+            "from": 1981,
+            "to": 1987,
+            "apps": 201,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 1987,
+            "to": 1988,
+            "apps": 51,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 1988,
+            "to": 1992,
+            "apps": 131,
+            "loan": false
+          },
+          {
+            "club": "Liverpool",
+            "from": 1992,
+            "to": 1996,
+            "apps": 32,
+            "loan": false
+          },
+          {
+            "club": "Crystal Palace",
+            "from": 1994,
+            "to": 1994,
+            "apps": 18,
+            "loan": true
+          },
+          {
+            "club": "Wolverhampton Wanderers",
+            "from": 1994,
+            "to": 1994,
+            "apps": 8,
+            "loan": true
+          },
+          {
+            "club": "Burnley",
+            "from": 1995,
+            "to": 1995,
+            "apps": 6,
+            "loan": true
+          },
+          {
+            "club": "Sunderland",
+            "from": 1995,
+            "to": 1995,
+            "apps": 2,
+            "loan": true
+          },
+          {
+            "club": "Sunderland",
+            "from": 1996,
+            "to": 1997,
+            "apps": 34,
+            "loan": false
+          },
+          {
+            "club": "Stoke City",
+            "from": 1997,
+            "to": 1998,
+            "apps": 22,
+            "loan": false
+          },
+          {
+            "club": "Workington",
+            "from": 1998,
+            "to": 2000,
+            "apps": 55,
+            "loan": false
+          }
+        ],
+        "birthYear": 1964,
+        "scramble": "TWTARES",
+        "fixed": 0,
+        "len": [
+          7
+        ]
+      },
+      {
+        "id": "s8",
+        "band": "b2",
+        "x": 0.6,
+        "pos": "CM",
+        "name": "SIGURDSSON",
+        "aliases": [
+          "GYLFI SIGURDSSON"
+        ],
+        "club": null,
+        "nationality": "Iceland",
+        "clubs": [
+          {
+            "club": "Reading",
+            "from": 2008,
+            "to": 2010,
+            "apps": 42,
+            "loan": false
+          },
+          {
+            "club": "Shrewsbury Town",
+            "from": 2008,
+            "to": 2008,
+            "apps": 5,
+            "loan": true
+          },
+          {
+            "club": "Crewe Alexandra",
+            "from": 2009,
+            "to": 2009,
+            "apps": 15,
+            "loan": true
+          },
+          {
+            "club": "TSG Hoffenheim",
+            "from": 2010,
+            "to": 2012,
+            "apps": 36,
+            "loan": false
+          },
+          {
+            "club": "Swansea City",
+            "from": 2012,
+            "to": 2012,
+            "apps": 18,
+            "loan": true
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 2012,
+            "to": 2014,
+            "apps": 58,
+            "loan": false
+          },
+          {
+            "club": "Swansea City",
+            "from": 2014,
+            "to": 2017,
+            "apps": 106,
+            "loan": false
+          },
+          {
+            "club": "Everton",
+            "from": 2017,
+            "to": 2022,
+            "apps": 136,
+            "loan": false
+          },
+          {
+            "club": "Lyngby",
+            "from": 2023,
+            "to": 2024,
+            "apps": 5,
+            "loan": false
+          },
+          {
+            "club": "Valur",
+            "from": 2024,
+            "to": 2024,
+            "apps": 16,
+            "loan": false
+          },
+          {
+            "club": "Víkingur Reykjavík",
+            "from": 2025,
+            "to": 2025,
+            "apps": 27,
+            "loan": false
+          }
+        ],
+        "birthYear": 1989,
+        "scramble": "NDOGSSURIS",
+        "fixed": 0,
+        "len": [
+          10
+        ]
+      },
+      {
+        "id": "s9",
+        "band": "b2",
+        "x": 0.8,
+        "pos": "RW",
+        "name": "PHELAN",
+        "aliases": [
+          "MIKE PHELAN"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Burnley",
+            "from": 1979,
+            "to": 1985,
+            "apps": 168,
+            "loan": false
+          },
+          {
+            "club": "Norwich City",
+            "from": 1985,
+            "to": 1989,
+            "apps": 156,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 1989,
+            "to": 1994,
+            "apps": 102,
+            "loan": false
+          },
+          {
+            "club": "West Bromwich Albion",
+            "from": 1994,
+            "to": 1995,
+            "apps": 21,
+            "loan": false
+          }
+        ],
+        "birthYear": 1962,
+        "scramble": "HELNPA",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s10",
+        "band": "b3",
+        "x": 0.3333,
+        "pos": "ST",
+        "name": "WALTERS",
+        "aliases": [
+          "JONATHAN WALTERS"
+        ],
+        "club": null,
+        "nationality": "Republic of Ireland",
+        "clubs": [
+          {
+            "club": "Bolton Wanderers",
+            "from": 2001,
+            "to": 2004,
+            "apps": 4,
+            "loan": false
+          },
+          {
+            "club": "Hull City",
+            "from": 2003,
+            "to": 2003,
+            "apps": 11,
+            "loan": true
+          },
+          {
+            "club": "Barnsley",
+            "from": 2003,
+            "to": 2004,
+            "apps": 8,
+            "loan": true
+          },
+          {
+            "club": "Hull City",
+            "from": 2004,
+            "to": 2005,
+            "apps": 37,
+            "loan": false
+          },
+          {
+            "club": "Scunthorpe United",
+            "from": 2005,
+            "to": 2005,
+            "apps": 3,
+            "loan": true
+          },
+          {
+            "club": "Wrexham",
+            "from": 2005,
+            "to": 2006,
+            "apps": 38,
+            "loan": false
+          },
+          {
+            "club": "Chester City",
+            "from": 2006,
+            "to": 2007,
+            "apps": 26,
+            "loan": false
+          },
+          {
+            "club": "Ipswich Town",
+            "from": 2007,
+            "to": 2010,
+            "apps": 136,
+            "loan": false
+          },
+          {
+            "club": "Stoke City",
+            "from": 2010,
+            "to": 2017,
+            "apps": 226,
+            "loan": false
+          },
+          {
+            "club": "Burnley",
+            "from": 2017,
+            "to": 2019,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Ipswich Town",
+            "from": 2018,
+            "to": 2018,
+            "apps": 3,
+            "loan": true
+          }
+        ],
+        "birthYear": 1983,
+        "scramble": "ETWRASL",
+        "fixed": 0,
+        "len": [
+          7
+        ]
+      },
+      {
+        "id": "s11",
+        "band": "b3",
+        "x": 0.6667,
+        "pos": "ST",
+        "name": "LINEKER",
+        "aliases": [
+          "GARY LINEKER"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Leicester City",
+            "from": 1978,
+            "to": 1985,
+            "apps": 194,
+            "loan": false
+          },
+          {
+            "club": "Everton",
+            "from": 1985,
+            "to": 1986,
+            "apps": 41,
+            "loan": false
+          },
+          {
+            "club": "Barcelona",
+            "from": 1986,
+            "to": 1989,
+            "apps": 103,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 1989,
+            "to": 1992,
+            "apps": 105,
+            "loan": false
+          },
+          {
+            "club": "Nagoya Grampus",
+            "from": 1992,
+            "to": 1994,
+            "apps": 18,
+            "loan": false
+          }
+        ],
+        "birthYear": 1960,
+        "scramble": "INEREKL",
+        "fixed": 0,
+        "len": [
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Daily XI, 4-3-3",
+    "pool": "Eleven Premier League players. Not a team — nobody here lined up together.",
+    "formation": "4-3-3",
+    "hintField": "clubs",
+    "source": "generated from research/daily/daily-roster.json; every player sourced and verified individually",
+    "bands": [
+      {
+        "id": "gk",
+        "y": 0.9
+      },
+      {
+        "id": "b1",
+        "y": 0.74
+      },
+      {
+        "id": "b2",
+        "y": 0.45
+      },
+      {
+        "id": "b3",
+        "y": 0.16
+      }
+    ],
+    "slots": [
+      {
+        "id": "s1",
+        "band": "gk",
+        "x": 0.5,
+        "pos": "GK",
+        "name": "POOM",
+        "aliases": [
+          "MART POOM"
+        ],
+        "club": null,
+        "nationality": "Estonia",
+        "clubs": [
+          {
+            "club": "Lõvid/Flora",
+            "from": 1988,
+            "to": 1988,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Sport Tallinn",
+            "from": 1989,
+            "to": 1990,
+            "apps": 59,
+            "loan": false
+          },
+          {
+            "club": "KuPS",
+            "from": 1992,
+            "to": 1992,
+            "apps": 9,
+            "loan": false
+          },
+          {
+            "club": "Flora",
+            "from": 1992,
+            "to": 1993,
+            "apps": 22,
+            "loan": false
+          },
+          {
+            "club": "Wil",
+            "from": 1993,
+            "to": 1994,
+            "apps": 13,
+            "loan": false
+          },
+          {
+            "club": "Portsmouth",
+            "from": 1994,
+            "to": 1997,
+            "apps": 4,
+            "loan": false
+          },
+          {
+            "club": "Flora",
+            "from": 1995,
+            "to": 1997,
+            "apps": 19,
+            "loan": true
+          },
+          {
+            "club": "Derby County",
+            "from": 1997,
+            "to": 2003,
+            "apps": 146,
+            "loan": false
+          },
+          {
+            "club": "Sunderland",
+            "from": 2003,
+            "to": 2006,
+            "apps": 58,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 2006,
+            "to": 2007,
+            "apps": 1,
+            "loan": false
+          },
+          {
+            "club": "Watford",
+            "from": 2007,
+            "to": 2009,
+            "apps": 19,
+            "loan": false
+          }
+        ],
+        "birthYear": 1972,
+        "scramble": "OPMO",
+        "fixed": 0,
+        "len": [
+          4
+        ]
+      },
+      {
+        "id": "s2",
+        "band": "b1",
+        "x": 0.2,
+        "pos": "LB",
+        "name": "ZINCHENKO",
+        "aliases": [
+          "OLEKSANDR ZINCHENKO"
+        ],
+        "club": null,
+        "nationality": "Ukraine",
+        "clubs": [
+          {
+            "club": "Ufa",
+            "from": 2015,
+            "to": 2016,
+            "apps": 31,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 2016,
+            "to": 2022,
+            "apps": 76,
+            "loan": false
+          },
+          {
+            "club": "PSV",
+            "from": 2016,
+            "to": 2017,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Jong PSV",
+            "from": 2017,
+            "to": 2017,
+            "apps": 7,
+            "loan": true
+          },
+          {
+            "club": "Arsenal",
+            "from": 2022,
+            "to": 2026,
+            "apps": 69,
+            "loan": false
+          },
+          {
+            "club": "Nottingham Forest",
+            "from": 2025,
+            "to": 2026,
+            "apps": 5,
+            "loan": true
+          },
+          {
+            "club": "Ajax",
+            "from": 2026,
+            "to": 2026,
+            "apps": 2,
+            "loan": false
+          }
+        ],
+        "birthYear": 1996,
+        "scramble": "OEHZNICNK",
+        "fixed": 0,
+        "len": [
+          9
+        ]
+      },
+      {
+        "id": "s3",
+        "band": "b1",
+        "x": 0.4,
+        "pos": "CB",
+        "name": "SENDEROS",
+        "aliases": [
+          "PHILIPPE SENDEROS"
+        ],
+        "club": null,
+        "nationality": "Switzerland",
+        "clubs": [
+          {
+            "club": "Servette",
+            "from": 2002,
+            "to": 2003,
+            "apps": 26,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 2003,
+            "to": 2010,
+            "apps": 64,
+            "loan": false
+          },
+          {
+            "club": "AC Milan",
+            "from": 2008,
+            "to": 2009,
+            "apps": 14,
+            "loan": true
+          },
+          {
+            "club": "Everton",
+            "from": 2010,
+            "to": 2010,
+            "apps": 2,
+            "loan": true
+          },
+          {
+            "club": "Fulham",
+            "from": 2010,
+            "to": 2014,
+            "apps": 57,
+            "loan": false
+          },
+          {
+            "club": "Valencia",
+            "from": 2014,
+            "to": 2014,
+            "apps": 8,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2014,
+            "to": 2016,
+            "apps": 8,
+            "loan": false
+          },
+          {
+            "club": "Grasshoppers",
+            "from": 2016,
+            "to": 2016,
+            "apps": 14,
+            "loan": false
+          },
+          {
+            "club": "Rangers",
+            "from": 2016,
+            "to": 2017,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Houston Dynamo",
+            "from": 2017,
+            "to": 2018,
+            "apps": 10,
+            "loan": false
+          },
+          {
+            "club": "Chiasso",
+            "from": 2019,
+            "to": 2019,
+            "apps": 3,
+            "loan": false
+          }
+        ],
+        "birthYear": 1985,
+        "scramble": "ENSEODSR",
+        "fixed": 0,
+        "len": [
+          8
+        ]
+      },
+      {
+        "id": "s4",
+        "band": "b1",
+        "x": 0.6,
+        "pos": "CB",
+        "name": "MABBUTT",
+        "aliases": [
+          "GARY MABBUTT"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Bristol Rovers",
+            "from": 1978,
+            "to": 1982,
+            "apps": 131,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 1982,
+            "to": 1998,
+            "apps": 477,
+            "loan": false
+          }
+        ],
+        "birthYear": 1961,
+        "scramble": "UMTTBBA",
+        "fixed": 0,
+        "len": [
+          7
+        ]
+      },
+      {
+        "id": "s5",
+        "band": "b1",
+        "x": 0.8,
+        "pos": "RB",
+        "name": "FERREIRA",
+        "aliases": [
+          "PAULO FERREIRA"
+        ],
+        "club": null,
+        "nationality": "Portugal",
+        "clubs": [
+          {
+            "club": "Estoril",
+            "from": 1997,
+            "to": 2000,
+            "apps": 36,
+            "loan": false
+          },
+          {
+            "club": "Vitória Setúbal",
+            "from": 2000,
+            "to": 2002,
+            "apps": 67,
+            "loan": false
+          },
+          {
+            "club": "Porto",
+            "from": 2002,
+            "to": 2004,
+            "apps": 62,
+            "loan": false
+          },
+          {
+            "club": "Chelsea",
+            "from": 2004,
+            "to": 2013,
+            "apps": 141,
+            "loan": false
+          }
+        ],
+        "birthYear": 1979,
+        "scramble": "EREFIRAR",
+        "fixed": 0,
+        "len": [
+          8
+        ]
+      },
+      {
+        "id": "s6",
+        "band": "b2",
+        "x": 0.25,
+        "pos": "CM",
+        "name": "ESSIEN",
+        "aliases": [
+          "MICHAEL ESSIEN"
+        ],
+        "club": null,
+        "nationality": "Ghana",
+        "clubs": [
+          {
+            "club": "Bastia",
+            "from": 2000,
+            "to": 2003,
+            "apps": 66,
+            "loan": false
+          },
+          {
+            "club": "Lyon",
+            "from": 2003,
+            "to": 2005,
+            "apps": 71,
+            "loan": false
+          },
+          {
+            "club": "Chelsea",
+            "from": 2005,
+            "to": 2014,
+            "apps": 168,
+            "loan": false
+          },
+          {
+            "club": "Real Madrid",
+            "from": 2012,
+            "to": 2013,
+            "apps": 21,
+            "loan": true
+          },
+          {
+            "club": "AC Milan",
+            "from": 2014,
+            "to": 2015,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Panathinaikos",
+            "from": 2015,
+            "to": 2016,
+            "apps": 16,
+            "loan": false
+          },
+          {
+            "club": "Persib Bandung",
+            "from": 2017,
+            "to": 2018,
+            "apps": 29,
+            "loan": false
+          },
+          {
+            "club": "Sabail",
+            "from": 2019,
+            "to": 2020,
+            "apps": 14,
+            "loan": false
+          }
+        ],
+        "birthYear": 1982,
+        "scramble": "SEIENS",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s7",
+        "band": "b2",
+        "x": 0.5,
+        "pos": "CM",
+        "name": "WHELAN",
+        "aliases": [
+          "RONNIE WHELAN"
+        ],
+        "club": null,
+        "nationality": "Republic of Ireland",
+        "clubs": [
+          {
+            "club": "Home Farm",
+            "from": 1977,
+            "to": 1979,
+            "apps": 45,
+            "loan": false
+          },
+          {
+            "club": "Liverpool",
+            "from": 1979,
+            "to": 1994,
+            "apps": 362,
+            "loan": false
+          },
+          {
+            "club": "Southend United",
+            "from": 1994,
+            "to": 1996,
+            "apps": 34,
+            "loan": false
+          }
+        ],
+        "birthYear": 1961,
+        "scramble": "HANWEL",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s8",
+        "band": "b2",
+        "x": 0.75,
+        "pos": "CM",
+        "name": "DAVIDS",
+        "aliases": [
+          "EDGAR DAVIDS"
+        ],
+        "club": null,
+        "nationality": "Netherlands",
+        "clubs": [
+          {
+            "club": "Ajax",
+            "from": 1991,
+            "to": 1996,
+            "apps": 106,
+            "loan": false
+          },
+          {
+            "club": "AC Milan",
+            "from": 1996,
+            "to": 1997,
+            "apps": 19,
+            "loan": false
+          },
+          {
+            "club": "Juventus",
+            "from": 1997,
+            "to": 2004,
+            "apps": 159,
+            "loan": false
+          },
+          {
+            "club": "Barcelona",
+            "from": 2004,
+            "to": 2004,
+            "apps": 18,
+            "loan": true
+          },
+          {
+            "club": "Inter Milan",
+            "from": 2004,
+            "to": 2005,
+            "apps": 14,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 2005,
+            "to": 2007,
+            "apps": 40,
+            "loan": false
+          },
+          {
+            "club": "Ajax",
+            "from": 2007,
+            "to": 2009,
+            "apps": 25,
+            "loan": false
+          },
+          {
+            "club": "Crystal Palace",
+            "from": 2010,
+            "to": 2010,
+            "apps": 6,
+            "loan": false
+          },
+          {
+            "club": "Barnet",
+            "from": 2012,
+            "to": 2014,
+            "apps": 36,
+            "loan": false
+          }
+        ],
+        "birthYear": 1973,
+        "scramble": "VDSAID",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s9",
+        "band": "b3",
+        "x": 0.25,
+        "pos": "LW",
+        "name": "JI-SUNG",
+        "aliases": [
+          "PARK JI-SUNG"
+        ],
+        "club": null,
+        "nationality": "South Korea",
+        "clubs": [
+          {
+            "club": "Kyoto Purple Sanga",
+            "from": 2000,
+            "to": 2003,
+            "apps": 76,
+            "loan": false
+          },
+          {
+            "club": "PSV Eindhoven",
+            "from": 2003,
+            "to": 2005,
+            "apps": 65,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 2005,
+            "to": 2012,
+            "apps": 134,
+            "loan": false
+          },
+          {
+            "club": "Queens Park Rangers",
+            "from": 2012,
+            "to": 2014,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "PSV Eindhoven",
+            "from": 2013,
+            "to": 2014,
+            "apps": 23,
+            "loan": true
+          }
+        ],
+        "birthYear": 1981,
+        "scramble": "SUGNJI",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s10",
+        "band": "b3",
+        "x": 0.5,
+        "pos": "ST",
+        "name": "FLETCHER",
+        "aliases": [
+          "STEVEN FLETCHER"
+        ],
+        "club": null,
+        "nationality": "Scotland",
+        "clubs": [
+          {
+            "club": "Hibernian",
+            "from": 2004,
+            "to": 2009,
+            "apps": 156,
+            "loan": false
+          },
+          {
+            "club": "Burnley",
+            "from": 2009,
+            "to": 2010,
+            "apps": 35,
+            "loan": false
+          },
+          {
+            "club": "Wolverhampton Wanderers",
+            "from": 2010,
+            "to": 2012,
+            "apps": 61,
+            "loan": false
+          },
+          {
+            "club": "Sunderland",
+            "from": 2012,
+            "to": 2016,
+            "apps": 94,
+            "loan": false
+          },
+          {
+            "club": "Marseille",
+            "from": 2016,
+            "to": 2016,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Sheffield Wednesday",
+            "from": 2016,
+            "to": 2020,
+            "apps": 124,
+            "loan": false
+          },
+          {
+            "club": "Stoke City",
+            "from": 2020,
+            "to": 2022,
+            "apps": 72,
+            "loan": false
+          },
+          {
+            "club": "Dundee United",
+            "from": 2022,
+            "to": 2023,
+            "apps": 33,
+            "loan": false
+          },
+          {
+            "club": "Wrexham",
+            "from": 2023,
+            "to": 2025,
+            "apps": 73,
+            "loan": false
+          }
+        ],
+        "birthYear": 1987,
+        "scramble": "LCHEEFRT",
+        "fixed": 0,
+        "len": [
+          8
+        ]
+      },
+      {
+        "id": "s11",
+        "band": "b3",
+        "x": 0.75,
+        "pos": "RW",
+        "name": "DYER",
+        "aliases": [
+          "NATHAN DYER"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Southampton",
+            "from": 2005,
+            "to": 2009,
+            "apps": 56,
+            "loan": false
+          },
+          {
+            "club": "Burnley",
+            "from": 2005,
+            "to": 2005,
+            "apps": 5,
+            "loan": true
+          },
+          {
+            "club": "Sheffield United",
+            "from": 2008,
+            "to": 2009,
+            "apps": 7,
+            "loan": true
+          },
+          {
+            "club": "Swansea City",
+            "from": 2009,
+            "to": 2009,
+            "apps": 17,
+            "loan": true
+          },
+          {
+            "club": "Swansea City",
+            "from": 2009,
+            "to": 2020,
+            "apps": 281,
+            "loan": false
+          },
+          {
+            "club": "Leicester City",
+            "from": 2015,
+            "to": 2016,
+            "apps": 12,
+            "loan": true
+          }
+        ],
+        "birthYear": 1987,
+        "scramble": "ERDY",
+        "fixed": 0,
+        "len": [
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Daily XI, 4-4-2",
+    "pool": "Eleven Premier League players. Not a team — nobody here lined up together.",
+    "formation": "4-4-2",
+    "hintField": "clubs",
+    "source": "generated from research/daily/daily-roster.json; every player sourced and verified individually",
+    "bands": [
+      {
+        "id": "gk",
+        "y": 0.9
+      },
+      {
+        "id": "b1",
+        "y": 0.74
+      },
+      {
+        "id": "b2",
+        "y": 0.45
+      },
+      {
+        "id": "b3",
+        "y": 0.16
+      }
+    ],
+    "slots": [
+      {
+        "id": "s1",
+        "band": "gk",
+        "x": 0.5,
+        "pos": "GK",
+        "name": "SEALEY",
+        "aliases": [
+          "LES SEALEY"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Coventry City",
+            "from": 1976,
+            "to": 1983,
+            "apps": 158,
+            "loan": false
+          },
+          {
+            "club": "Luton Town",
+            "from": 1983,
+            "to": 1990,
+            "apps": 207,
+            "loan": false
+          },
+          {
+            "club": "Plymouth Argyle",
+            "from": 1984,
+            "to": 1984,
+            "apps": 6,
+            "loan": true
+          },
+          {
+            "club": "Manchester United",
+            "from": 1990,
+            "to": 1990,
+            "apps": 2,
+            "loan": true
+          },
+          {
+            "club": "Manchester United",
+            "from": 1990,
+            "to": 1991,
+            "apps": 31,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1991,
+            "to": 1993,
+            "apps": 18,
+            "loan": false
+          },
+          {
+            "club": "Coventry City",
+            "from": 1992,
+            "to": 1992,
+            "apps": 2,
+            "loan": true
+          },
+          {
+            "club": "Birmingham City",
+            "from": 1992,
+            "to": 1992,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Blackpool",
+            "from": 1994,
+            "to": 1994,
+            "apps": 7,
+            "loan": false
+          },
+          {
+            "club": "West Ham United",
+            "from": 1994,
+            "to": 1996,
+            "apps": 2,
+            "loan": false
+          },
+          {
+            "club": "Leyton Orient",
+            "from": 1996,
+            "to": 1996,
+            "apps": 12,
+            "loan": false
+          },
+          {
+            "club": "West Ham United",
+            "from": 1996,
+            "to": 2001,
+            "apps": 2,
+            "loan": false
+          }
+        ],
+        "birthYear": 1957,
+        "scramble": "EYESAL",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s2",
+        "band": "b1",
+        "x": 0.2,
+        "pos": "LB",
+        "name": "SYLVINHO",
+        "aliases": [],
+        "club": null,
+        "nationality": "Brazil",
+        "clubs": [
+          {
+            "club": "Corinthians",
+            "from": 1994,
+            "to": 1999,
+            "apps": 177,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 1999,
+            "to": 2001,
+            "apps": 55,
+            "loan": false
+          },
+          {
+            "club": "Celta",
+            "from": 2001,
+            "to": 2004,
+            "apps": 84,
+            "loan": false
+          },
+          {
+            "club": "Barcelona",
+            "from": 2004,
+            "to": 2009,
+            "apps": 89,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 2009,
+            "to": 2010,
+            "apps": 10,
+            "loan": false
+          }
+        ],
+        "birthYear": 1974,
+        "scramble": "OLIYSHVN",
+        "fixed": 0,
+        "len": [
+          8
+        ]
+      },
+      {
+        "id": "s3",
+        "band": "b1",
+        "x": 0.4,
+        "pos": "CB",
+        "name": "BREVETT",
+        "aliases": [
+          "RUFUS BREVETT"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Doncaster Rovers",
+            "from": 1988,
+            "to": 1991,
+            "apps": 109,
+            "loan": false
+          },
+          {
+            "club": "Queens Park Rangers",
+            "from": 1991,
+            "to": 1998,
+            "apps": 153,
+            "loan": false
+          },
+          {
+            "club": "Fulham",
+            "from": 1998,
+            "to": 2003,
+            "apps": 175,
+            "loan": false
+          },
+          {
+            "club": "West Ham United",
+            "from": 2003,
+            "to": 2005,
+            "apps": 25,
+            "loan": false
+          },
+          {
+            "club": "Plymouth Argyle",
+            "from": 2005,
+            "to": 2006,
+            "apps": 13,
+            "loan": false
+          },
+          {
+            "club": "Leicester City",
+            "from": 2006,
+            "to": 2006,
+            "apps": 1,
+            "loan": true
+          },
+          {
+            "club": "Oxford United",
+            "from": 2006,
+            "to": 2007,
+            "apps": 21,
+            "loan": false
+          }
+        ],
+        "birthYear": 1969,
+        "scramble": "TERTVEB",
         "fixed": 0,
         "len": [
           7
@@ -95,16 +1837,47 @@ export const SC_BOARDS = [
         "band": "b1",
         "x": 0.6,
         "pos": "CB",
-        "name": "STAM",
+        "name": "VARANE",
         "aliases": [
-          "JAAP STAM"
+          "RAPHAEL VARANE"
         ],
-        "club": "Manchester United",
-        "nationality": "Netherlands",
-        "scramble": "MAST",
+        "club": null,
+        "nationality": "France",
+        "clubs": [
+          {
+            "club": "Lens II",
+            "from": 2010,
+            "to": 2010,
+            "apps": 9,
+            "loan": false
+          },
+          {
+            "club": "Lens",
+            "from": 2010,
+            "to": 2011,
+            "apps": 23,
+            "loan": false
+          },
+          {
+            "club": "Real Madrid",
+            "from": 2011,
+            "to": 2021,
+            "apps": 236,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 2021,
+            "to": 2024,
+            "apps": 68,
+            "loan": false
+          }
+        ],
+        "birthYear": 1993,
+        "scramble": "ARAEVN",
         "fixed": 0,
         "len": [
-          4
+          6
         ]
       },
       {
@@ -112,30 +1885,148 @@ export const SC_BOARDS = [
         "band": "b1",
         "x": 0.8,
         "pos": "RB",
-        "name": "NEVILLE",
+        "name": "ANDERSON",
         "aliases": [
-          "GARY NEVILLE"
+          "VIV ANDERSON"
         ],
-        "club": "Manchester United",
+        "club": null,
         "nationality": "England",
-        "scramble": "LNEVEIL",
+        "clubs": [
+          {
+            "club": "Nottingham Forest",
+            "from": 1974,
+            "to": 1984,
+            "apps": 328,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 1984,
+            "to": 1987,
+            "apps": 120,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 1987,
+            "to": 1991,
+            "apps": 54,
+            "loan": false
+          },
+          {
+            "club": "Sheffield Wednesday",
+            "from": 1991,
+            "to": 1993,
+            "apps": 70,
+            "loan": false
+          },
+          {
+            "club": "Barnsley",
+            "from": 1993,
+            "to": 1994,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Middlesbrough",
+            "from": 1994,
+            "to": 1995,
+            "apps": 2,
+            "loan": false
+          }
+        ],
+        "birthYear": 1956,
+        "scramble": "ESARNDNO",
         "fixed": 0,
         "len": [
-          7
+          8
         ]
       },
       {
         "id": "s6",
         "band": "b2",
         "x": 0.2,
-        "pos": "LM",
-        "name": "BLOMQVIST",
+        "pos": "LW",
+        "name": "SNODGRASS",
         "aliases": [
-          "JESPER BLOMQVIST"
+          "ROBERT SNODGRASS"
         ],
-        "club": "Manchester United",
-        "nationality": "Sweden",
-        "scramble": "TQBIVSLMO",
+        "club": null,
+        "nationality": "Scotland",
+        "clubs": [
+          {
+            "club": "Livingston",
+            "from": 2004,
+            "to": 2008,
+            "apps": 79,
+            "loan": false
+          },
+          {
+            "club": "Stirling Albion",
+            "from": 2007,
+            "to": 2007,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Leeds United",
+            "from": 2008,
+            "to": 2012,
+            "apps": 168,
+            "loan": false
+          },
+          {
+            "club": "Norwich City",
+            "from": 2012,
+            "to": 2014,
+            "apps": 67,
+            "loan": false
+          },
+          {
+            "club": "Hull City",
+            "from": 2014,
+            "to": 2017,
+            "apps": 45,
+            "loan": false
+          },
+          {
+            "club": "West Ham United",
+            "from": 2017,
+            "to": 2021,
+            "apps": 75,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2017,
+            "to": 2018,
+            "apps": 40,
+            "loan": true
+          },
+          {
+            "club": "West Bromwich Albion",
+            "from": 2021,
+            "to": 2022,
+            "apps": 14,
+            "loan": false
+          },
+          {
+            "club": "Luton Town",
+            "from": 2022,
+            "to": 2022,
+            "apps": 8,
+            "loan": false
+          },
+          {
+            "club": "Heart of Midlothian",
+            "from": 2022,
+            "to": 2023,
+            "apps": 23,
+            "loan": false
+          }
+        ],
+        "birthYear": 1987,
+        "scramble": "RSSSAONDG",
         "fixed": 0,
         "len": [
           9
@@ -146,610 +2037,79 @@ export const SC_BOARDS = [
         "band": "b2",
         "x": 0.4,
         "pos": "CM",
-        "name": "BUTT",
+        "name": "DE JONG",
         "aliases": [
-          "NICKY BUTT"
+          "NIGEL DE JONG"
         ],
-        "club": "Manchester United",
-        "nationality": "England",
-        "scramble": "TTUB",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s8",
-        "band": "b2",
-        "x": 0.6,
-        "pos": "CM",
-        "name": "BECKHAM",
-        "aliases": [
-          "DAVID BECKHAM"
+        "club": null,
+        "nationality": "Netherlands",
+        "clubs": [
+          {
+            "club": "Ajax",
+            "from": 2002,
+            "to": 2006,
+            "apps": 96,
+            "loan": false
+          },
+          {
+            "club": "Hamburger SV",
+            "from": 2006,
+            "to": 2009,
+            "apps": 66,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 2009,
+            "to": 2012,
+            "apps": 104,
+            "loan": false
+          },
+          {
+            "club": "AC Milan",
+            "from": 2012,
+            "to": 2016,
+            "apps": 79,
+            "loan": false
+          },
+          {
+            "club": "LA Galaxy",
+            "from": 2016,
+            "to": 2016,
+            "apps": 18,
+            "loan": false
+          },
+          {
+            "club": "Galatasaray",
+            "from": 2016,
+            "to": 2018,
+            "apps": 18,
+            "loan": false
+          },
+          {
+            "club": "Mainz 05",
+            "from": 2018,
+            "to": 2018,
+            "apps": 11,
+            "loan": false
+          },
+          {
+            "club": "Al Ahli",
+            "from": 2018,
+            "to": 2019,
+            "apps": 21,
+            "loan": false
+          },
+          {
+            "club": "Al-Shahania",
+            "from": 2019,
+            "to": 2021,
+            "apps": 36,
+            "loan": false
+          }
         ],
-        "club": "Manchester United",
-        "nationality": "England",
-        "scramble": "EKAHBMC",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      },
-      {
-        "id": "s9",
-        "band": "b2",
-        "x": 0.8,
-        "pos": "RM",
-        "name": "GIGGS",
-        "aliases": [
-          "RYAN GIGGS"
-        ],
-        "club": "Manchester United",
-        "nationality": "Wales",
-        "scramble": "IGSGG",
-        "fixed": 1,
-        "len": [
-          5
-        ]
-      },
-      {
-        "id": "s10",
-        "band": "b3",
-        "x": 0.3333,
-        "pos": "ST",
-        "name": "COLE",
-        "aliases": [
-          "ANDY COLE",
-          "ANDREW COLE"
-        ],
-        "club": "Manchester United",
-        "nationality": "England",
-        "scramble": "OECL",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s11",
-        "band": "b3",
-        "x": 0.6667,
-        "pos": "ST",
-        "name": "YORKE",
-        "aliases": [
-          "DWIGHT YORKE"
-        ],
-        "club": "Manchester United",
-        "nationality": "Trinidad and Tobago",
-        "scramble": "REOYK",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      }
-    ]
-  },
-  {
-    "id": 2,
-    "title": "World Cup final, 1966",
-    "pool": "England's starting XI against West Germany at Wembley, 30 July 1966. Clubs are the ones they were at on the day.",
-    "formation": "4-4-2",
-    "hintField": "club",
-    "source": "https://en.wikipedia.org/wiki/1966_FIFA_World_Cup_final",
-    "bands": [
-      {
-        "id": "gk",
-        "y": 0.9
-      },
-      {
-        "id": "b1",
-        "y": 0.74
-      },
-      {
-        "id": "b2",
-        "y": 0.45
-      },
-      {
-        "id": "b3",
-        "y": 0.16
-      }
-    ],
-    "slots": [
-      {
-        "id": "s1",
-        "band": "gk",
-        "x": 0.5,
-        "pos": "GK",
-        "name": "BANKS",
-        "aliases": [
-          "GORDON BANKS"
-        ],
-        "club": "Leicester City",
-        "nationality": "England",
-        "scramble": "KBSNA",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      },
-      {
-        "id": "s2",
-        "band": "b1",
-        "x": 0.2,
-        "pos": "LB",
-        "name": "WILSON",
-        "aliases": [
-          "RAY WILSON"
-        ],
-        "club": "Everton",
-        "nationality": "England",
-        "scramble": "SNWLIO",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s3",
-        "band": "b1",
-        "x": 0.4,
-        "pos": "CB",
-        "name": "MOORE",
-        "aliases": [
-          "BOBBY MOORE"
-        ],
-        "club": "West Ham United",
-        "nationality": "England",
-        "scramble": "RMEOO",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      },
-      {
-        "id": "s4",
-        "band": "b1",
-        "x": 0.6,
-        "pos": "CB",
-        "name": "JACK CHARLTON",
-        "aliases": [
-          "J CHARLTON"
-        ],
-        "club": "Leeds United",
-        "nationality": "England",
-        "scramble": "CONJACTLHAKR",
-        "fixed": 0,
-        "len": [
-          4,
-          8
-        ]
-      },
-      {
-        "id": "s5",
-        "band": "b1",
-        "x": 0.8,
-        "pos": "RB",
-        "name": "COHEN",
-        "aliases": [
-          "GEORGE COHEN"
-        ],
-        "club": "Fulham",
-        "nationality": "England",
-        "scramble": "NCEHO",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      },
-      {
-        "id": "s6",
-        "band": "b2",
-        "x": 0.2,
-        "pos": "LM",
-        "name": "PETERS",
-        "aliases": [
-          "MARTIN PETERS"
-        ],
-        "club": "West Ham United",
-        "nationality": "England",
-        "scramble": "EPESTR",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s7",
-        "band": "b2",
-        "x": 0.4,
-        "pos": "CM",
-        "name": "STILES",
-        "aliases": [
-          "NOBBY STILES"
-        ],
-        "club": "Manchester United",
-        "nationality": "England",
-        "scramble": "ESLSTI",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s8",
-        "band": "b2",
-        "x": 0.6,
-        "pos": "CM",
-        "name": "BOBBY CHARLTON",
-        "aliases": [
-          "B CHARLTON"
-        ],
-        "club": "Manchester United",
-        "nationality": "England",
-        "scramble": "HCOLTBRNBYABO",
-        "fixed": 0,
-        "len": [
-          5,
-          8
-        ]
-      },
-      {
-        "id": "s9",
-        "band": "b2",
-        "x": 0.8,
-        "pos": "RM",
-        "name": "BALL",
-        "aliases": [
-          "ALAN BALL"
-        ],
-        "club": "Blackpool",
-        "nationality": "England",
-        "scramble": "LLAB",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s10",
-        "band": "b3",
-        "x": 0.3333,
-        "pos": "ST",
-        "name": "HUNT",
-        "aliases": [
-          "ROGER HUNT"
-        ],
-        "club": "Liverpool",
-        "nationality": "England",
-        "scramble": "UHTN",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s11",
-        "band": "b3",
-        "x": 0.6667,
-        "pos": "ST",
-        "name": "HURST",
-        "aliases": [
-          "GEOFF HURST"
-        ],
-        "club": "West Ham United",
-        "nationality": "England",
-        "scramble": "RTSUH",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      }
-    ]
-  },
-  {
-    "id": 3,
-    "title": "FA Cup final, 1965",
-    "pool": "Leeds United's starting XI against Liverpool in the 1965 FA Cup final.",
-    "formation": "4-4-2",
-    "hintField": "nationality",
-    "source": "https://en.wikipedia.org/wiki/1965_FA_Cup_final",
-    "bands": [
-      {
-        "id": "gk",
-        "y": 0.9
-      },
-      {
-        "id": "b1",
-        "y": 0.74
-      },
-      {
-        "id": "b2",
-        "y": 0.45
-      },
-      {
-        "id": "b3",
-        "y": 0.16
-      }
-    ],
-    "slots": [
-      {
-        "id": "s1",
-        "band": "gk",
-        "x": 0.5,
-        "pos": "GK",
-        "name": "SPRAKE",
-        "aliases": [
-          "GARY SPRAKE"
-        ],
-        "club": "Leeds United",
-        "nationality": "Wales",
-        "scramble": "ERAKPS",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s2",
-        "band": "b1",
-        "x": 0.2,
-        "pos": "LB",
-        "name": "BELL",
-        "aliases": [
-          "WILLIE BELL"
-        ],
-        "club": "Leeds United",
-        "nationality": "Scotland",
-        "scramble": "LLEB",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s3",
-        "band": "b1",
-        "x": 0.4,
-        "pos": "CB",
-        "name": "HUNTER",
-        "aliases": [
-          "NORMAN HUNTER"
-        ],
-        "club": "Leeds United",
-        "nationality": "England",
-        "scramble": "NTUERH",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s4",
-        "band": "b1",
-        "x": 0.6,
-        "pos": "CB",
-        "name": "CHARLTON",
-        "aliases": [
-          "JACK CHARLTON"
-        ],
-        "club": "Leeds United",
-        "nationality": "England",
-        "scramble": "ANHCORTL",
-        "fixed": 0,
-        "len": [
-          8
-        ]
-      },
-      {
-        "id": "s5",
-        "band": "b1",
-        "x": 0.8,
-        "pos": "RB",
-        "name": "REANEY",
-        "aliases": [
-          "PAUL REANEY"
-        ],
-        "club": "Leeds United",
-        "nationality": "England",
-        "scramble": "ENRYAE",
-        "fixed": 0,
-        "len": [
-          6
-        ]
-      },
-      {
-        "id": "s6",
-        "band": "b2",
-        "x": 0.2,
-        "pos": "LM",
-        "name": "JOHANNESON",
-        "aliases": [
-          "ALBERT JOHANNESON"
-        ],
-        "club": "Leeds United",
-        "nationality": "?RSA",
-        "scramble": "NESNOHAJNO",
-        "fixed": 0,
-        "len": [
-          10
-        ]
-      },
-      {
-        "id": "s7",
-        "band": "b2",
-        "x": 0.4,
-        "pos": "CM",
-        "name": "COLLINS",
-        "aliases": [
-          "BOBBY COLLINS"
-        ],
-        "club": "Leeds United",
-        "nationality": "Scotland",
-        "scramble": "OSCILLN",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      },
-      {
-        "id": "s8",
-        "band": "b2",
-        "x": 0.6,
-        "pos": "CM",
-        "name": "BREMNER",
-        "aliases": [
-          "BILLY BREMNER"
-        ],
-        "club": "Leeds United",
-        "nationality": "Scotland",
-        "scramble": "ENRERBM",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      },
-      {
-        "id": "s9",
-        "band": "b2",
-        "x": 0.8,
-        "pos": "RM",
-        "name": "GILES",
-        "aliases": [
-          "JOHNNY GILES"
-        ],
-        "club": "Leeds United",
-        "nationality": "Republic of Ireland",
-        "scramble": "ILGSE",
-        "fixed": 0,
-        "len": [
-          5
-        ]
-      },
-      {
-        "id": "s10",
-        "band": "b3",
-        "x": 0.3333,
-        "pos": "ST",
-        "name": "PEACOCK",
-        "aliases": [
-          "ALAN PEACOCK"
-        ],
-        "club": "Leeds United",
-        "nationality": "England",
-        "scramble": "KCOPCEA",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      },
-      {
-        "id": "s11",
-        "band": "b3",
-        "x": 0.6667,
-        "pos": "SS",
-        "name": "STORRIE",
-        "aliases": [
-          "JIM STORRIE"
-        ],
-        "club": "Leeds United",
-        "nationality": "Scotland",
-        "scramble": "IORTERS",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      }
-    ]
-  },
-  {
-    "id": 4,
-    "title": "Champions League final, 1993",
-    "pool": "Marseille's starting XI against Milan in the 1993 Champions League final.",
-    "formation": "4-3-3",
-    "hintField": "nationality",
-    "source": "https://en.wikipedia.org/wiki/1993_UEFA_Champions_League_final",
-    "bands": [
-      {
-        "id": "gk",
-        "y": 0.9
-      },
-      {
-        "id": "b1",
-        "y": 0.74
-      },
-      {
-        "id": "b2",
-        "y": 0.45
-      },
-      {
-        "id": "b3",
-        "y": 0.16
-      }
-    ],
-    "slots": [
-      {
-        "id": "s1",
-        "band": "gk",
-        "x": 0.5,
-        "pos": "GK",
-        "name": "BARTHEZ",
-        "aliases": [
-          "FABIEN BARTHEZ"
-        ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "HTAEZBR",
-        "fixed": 0,
-        "len": [
-          7
-        ]
-      },
-      {
-        "id": "s2",
-        "band": "b1",
-        "x": 0.2,
-        "pos": "CB",
-        "name": "DESAILLY",
-        "aliases": [
-          "MARCEL DESAILLY"
-        ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "ASLEDIYL",
-        "fixed": 0,
-        "len": [
-          8
-        ]
-      },
-      {
-        "id": "s3",
-        "band": "b1",
-        "x": 0.4,
-        "pos": "SW",
-        "name": "BOLI",
-        "aliases": [
-          "BASILE BOLI"
-        ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "ILOB",
-        "fixed": 0,
-        "len": [
-          4
-        ]
-      },
-      {
-        "id": "s4",
-        "band": "b1",
-        "x": 0.6,
-        "pos": "LB",
-        "name": "DI MECO",
-        "aliases": [
-          "ERIC DI MECO"
-        ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "OCEMDI",
+        "birthYear": 1984,
+        "scramble": "NDGEJO",
         "fixed": 0,
         "len": [
           2,
@@ -757,17 +2117,726 @@ export const SC_BOARDS = [
         ]
       },
       {
+        "id": "s8",
+        "band": "b2",
+        "x": 0.6,
+        "pos": "CM",
+        "name": "ALLEN",
+        "aliases": [
+          "PAUL ALLEN"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "West Ham United",
+            "from": 1979,
+            "to": 1985,
+            "apps": 152,
+            "loan": false
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 1985,
+            "to": 1993,
+            "apps": 292,
+            "loan": false
+          },
+          {
+            "club": "Southampton",
+            "from": 1993,
+            "to": 1995,
+            "apps": 43,
+            "loan": false
+          },
+          {
+            "club": "Luton Town",
+            "from": 1994,
+            "to": 1994,
+            "apps": 4,
+            "loan": true
+          },
+          {
+            "club": "Stoke City",
+            "from": 1995,
+            "to": 1995,
+            "apps": 17,
+            "loan": true
+          },
+          {
+            "club": "Swindon Town",
+            "from": 1995,
+            "to": 1997,
+            "apps": 36,
+            "loan": false
+          },
+          {
+            "club": "Bristol City",
+            "from": 1997,
+            "to": 1997,
+            "apps": 15,
+            "loan": false
+          },
+          {
+            "club": "Millwall",
+            "from": 1997,
+            "to": 1998,
+            "apps": 28,
+            "loan": false
+          },
+          {
+            "club": "Purfleet",
+            "from": null,
+            "to": null,
+            "apps": null,
+            "loan": false
+          }
+        ],
+        "birthYear": 1962,
+        "scramble": "ENALL",
+        "fixed": 0,
+        "len": [
+          5
+        ]
+      },
+      {
+        "id": "s9",
+        "band": "b2",
+        "x": 0.8,
+        "pos": "RW",
+        "name": "KALOU",
+        "aliases": [
+          "SALOMON KALOU"
+        ],
+        "club": null,
+        "nationality": "Ivory Coast",
+        "clubs": [
+          {
+            "club": "Feyenoord",
+            "from": 2003,
+            "to": 2006,
+            "apps": 67,
+            "loan": false
+          },
+          {
+            "club": "Excelsior",
+            "from": 2004,
+            "to": 2004,
+            "apps": 11,
+            "loan": true
+          },
+          {
+            "club": "Chelsea",
+            "from": 2006,
+            "to": 2012,
+            "apps": 156,
+            "loan": false
+          },
+          {
+            "club": "Lille",
+            "from": 2012,
+            "to": 2014,
+            "apps": 67,
+            "loan": false
+          },
+          {
+            "club": "Hertha BSC",
+            "from": 2014,
+            "to": 2020,
+            "apps": 151,
+            "loan": false
+          },
+          {
+            "club": "Botafogo",
+            "from": 2020,
+            "to": 2021,
+            "apps": 25,
+            "loan": false
+          },
+          {
+            "club": "Arta/Solar7",
+            "from": 2022,
+            "to": 2024,
+            "apps": 3,
+            "loan": false
+          }
+        ],
+        "birthYear": 1985,
+        "scramble": "AOULK",
+        "fixed": 0,
+        "len": [
+          5
+        ]
+      },
+      {
+        "id": "s10",
+        "band": "b3",
+        "x": 0.3333,
+        "pos": "ST",
+        "name": "GOATER",
+        "aliases": [
+          "SHAUN GOATER"
+        ],
+        "club": null,
+        "nationality": "Bermuda",
+        "clubs": [
+          {
+            "club": "Rotherham United",
+            "from": 1989,
+            "to": 1996,
+            "apps": 209,
+            "loan": false
+          },
+          {
+            "club": "Notts County",
+            "from": 1993,
+            "to": 1993,
+            "apps": 1,
+            "loan": true
+          },
+          {
+            "club": "Bristol City",
+            "from": 1996,
+            "to": 1998,
+            "apps": 75,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 1998,
+            "to": 2003,
+            "apps": 184,
+            "loan": false
+          },
+          {
+            "club": "Reading",
+            "from": 2003,
+            "to": 2005,
+            "apps": 43,
+            "loan": false
+          },
+          {
+            "club": "Coventry City",
+            "from": 2005,
+            "to": 2005,
+            "apps": 6,
+            "loan": true
+          },
+          {
+            "club": "Southend United",
+            "from": 2005,
+            "to": 2006,
+            "apps": 34,
+            "loan": false
+          },
+          {
+            "club": "Bermuda Hogges",
+            "from": 2007,
+            "to": 2008,
+            "apps": 9,
+            "loan": false
+          },
+          {
+            "club": "North Village Rams",
+            "from": 2008,
+            "to": 2010,
+            "apps": 7,
+            "loan": false
+          }
+        ],
+        "birthYear": 1970,
+        "scramble": "RAOGTE",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s11",
+        "band": "b3",
+        "x": 0.6667,
+        "pos": "ST",
+        "name": "DEENEY",
+        "aliases": [
+          "TROY DEENEY"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Chelmsley Town reserves",
+            "from": 2004,
+            "to": 2005,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Chelmsley Town",
+            "from": 2004,
+            "to": 2006,
+            "apps": 56,
+            "loan": false
+          },
+          {
+            "club": "Walsall",
+            "from": 2006,
+            "to": 2010,
+            "apps": 123,
+            "loan": false
+          },
+          {
+            "club": "Halesowen Town",
+            "from": 2006,
+            "to": 2007,
+            "apps": 10,
+            "loan": true
+          },
+          {
+            "club": "Watford",
+            "from": 2010,
+            "to": 2021,
+            "apps": 389,
+            "loan": false
+          },
+          {
+            "club": "Birmingham City",
+            "from": 2021,
+            "to": 2023,
+            "apps": 54,
+            "loan": false
+          },
+          {
+            "club": "Forest Green Rovers",
+            "from": 2023,
+            "to": 2024,
+            "apps": 16,
+            "loan": false
+          }
+        ],
+        "birthYear": 1988,
+        "scramble": "EDYENE",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Daily XI, 4-3-3",
+    "pool": "Eleven Premier League players. Not a team — nobody here lined up together.",
+    "formation": "4-3-3",
+    "hintField": "clubs",
+    "source": "generated from research/daily/daily-roster.json; every player sourced and verified individually",
+    "bands": [
+      {
+        "id": "gk",
+        "y": 0.9
+      },
+      {
+        "id": "b1",
+        "y": 0.74
+      },
+      {
+        "id": "b2",
+        "y": 0.45
+      },
+      {
+        "id": "b3",
+        "y": 0.16
+      }
+    ],
+    "slots": [
+      {
+        "id": "s1",
+        "band": "gk",
+        "x": 0.5,
+        "pos": "GK",
+        "name": "TAYLOR",
+        "aliases": [
+          "MAIK TAYLOR"
+        ],
+        "club": null,
+        "nationality": "Northern Ireland",
+        "clubs": [
+          {
+            "club": "Petersfield Town",
+            "from": null,
+            "to": null,
+            "apps": null,
+            "loan": false
+          },
+          {
+            "club": "Basingstoke Town",
+            "from": null,
+            "to": null,
+            "apps": null,
+            "loan": false
+          },
+          {
+            "club": "Farnborough Town",
+            "from": 1992,
+            "to": 1995,
+            "apps": null,
+            "loan": false
+          },
+          {
+            "club": "Barnet",
+            "from": 1995,
+            "to": 1997,
+            "apps": 70,
+            "loan": false
+          },
+          {
+            "club": "Southampton",
+            "from": 1997,
+            "to": 1997,
+            "apps": 18,
+            "loan": false
+          },
+          {
+            "club": "Fulham",
+            "from": 1997,
+            "to": 2004,
+            "apps": 189,
+            "loan": false
+          },
+          {
+            "club": "Birmingham City",
+            "from": 2003,
+            "to": 2004,
+            "apps": 27,
+            "loan": true
+          },
+          {
+            "club": "Birmingham City",
+            "from": 2004,
+            "to": 2011,
+            "apps": 187,
+            "loan": false
+          },
+          {
+            "club": "Millwall",
+            "from": 2012,
+            "to": 2012,
+            "apps": 10,
+            "loan": true
+          },
+          {
+            "club": "Millwall",
+            "from": 2012,
+            "to": 2013,
+            "apps": 6,
+            "loan": false
+          }
+        ],
+        "birthYear": 1971,
+        "scramble": "LYAORT",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s2",
+        "band": "b1",
+        "x": 0.2,
+        "pos": "LB",
+        "name": "SHOREY",
+        "aliases": [
+          "NICKY SHOREY"
+        ],
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Leyton Orient",
+            "from": 1999,
+            "to": 2001,
+            "apps": 15,
+            "loan": false
+          },
+          {
+            "club": "Reading",
+            "from": 2001,
+            "to": 2008,
+            "apps": 267,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2008,
+            "to": 2010,
+            "apps": 24,
+            "loan": false
+          },
+          {
+            "club": "Nottingham Forest",
+            "from": 2009,
+            "to": 2010,
+            "apps": 9,
+            "loan": true
+          },
+          {
+            "club": "Fulham",
+            "from": 2010,
+            "to": 2010,
+            "apps": 9,
+            "loan": true
+          },
+          {
+            "club": "West Bromwich Albion",
+            "from": 2010,
+            "to": 2012,
+            "apps": 53,
+            "loan": false
+          },
+          {
+            "club": "Reading",
+            "from": 2012,
+            "to": 2013,
+            "apps": 17,
+            "loan": false
+          },
+          {
+            "club": "Bristol City",
+            "from": 2013,
+            "to": 2014,
+            "apps": 14,
+            "loan": false
+          },
+          {
+            "club": "Portsmouth",
+            "from": 2014,
+            "to": 2015,
+            "apps": 41,
+            "loan": false
+          },
+          {
+            "club": "Pune City",
+            "from": 2015,
+            "to": 2015,
+            "apps": 14,
+            "loan": false
+          },
+          {
+            "club": "Colchester United",
+            "from": 2016,
+            "to": 2016,
+            "apps": 15,
+            "loan": false
+          },
+          {
+            "club": "Hungerford Town",
+            "from": 2016,
+            "to": 2016,
+            "apps": 3,
+            "loan": false
+          }
+        ],
+        "birthYear": 1981,
+        "scramble": "EYHSRO",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
+        "id": "s3",
+        "band": "b1",
+        "x": 0.4,
+        "pos": "CB",
+        "name": "KOSCIELNY",
+        "aliases": [
+          "LAURENT KOSCIELNY"
+        ],
+        "club": null,
+        "nationality": "France",
+        "clubs": [
+          {
+            "club": "Guingamp",
+            "from": 2004,
+            "to": 2007,
+            "apps": 41,
+            "loan": false
+          },
+          {
+            "club": "Tours",
+            "from": 2007,
+            "to": 2009,
+            "apps": 67,
+            "loan": false
+          },
+          {
+            "club": "Lorient",
+            "from": 2009,
+            "to": 2010,
+            "apps": 35,
+            "loan": false
+          },
+          {
+            "club": "Arsenal",
+            "from": 2010,
+            "to": 2019,
+            "apps": 255,
+            "loan": false
+          },
+          {
+            "club": "Bordeaux",
+            "from": 2019,
+            "to": 2022,
+            "apps": 62,
+            "loan": false
+          }
+        ],
+        "birthYear": 1985,
+        "scramble": "NCEKYSOIL",
+        "fixed": 0,
+        "len": [
+          9
+        ]
+      },
+      {
+        "id": "s4",
+        "band": "b1",
+        "x": 0.6,
+        "pos": "CB",
+        "name": "AKANJI",
+        "aliases": [
+          "MANUEL AKANJI"
+        ],
+        "club": null,
+        "nationality": "Switzerland",
+        "clubs": [
+          {
+            "club": "FC Winterthur II",
+            "from": 2013,
+            "to": 2014,
+            "apps": 18,
+            "loan": false
+          },
+          {
+            "club": "FC Winterthur",
+            "from": 2014,
+            "to": 2015,
+            "apps": 35,
+            "loan": false
+          },
+          {
+            "club": "FC Basel II",
+            "from": 2015,
+            "to": 2016,
+            "apps": 4,
+            "loan": false
+          },
+          {
+            "club": "FC Basel",
+            "from": 2015,
+            "to": 2018,
+            "apps": 42,
+            "loan": false
+          },
+          {
+            "club": "Borussia Dortmund",
+            "from": 2018,
+            "to": 2022,
+            "apps": 119,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 2022,
+            "to": 2026,
+            "apps": 85,
+            "loan": false
+          },
+          {
+            "club": "Inter Milan",
+            "from": 2025,
+            "to": 2026,
+            "apps": 33,
+            "loan": true
+          },
+          {
+            "club": "Inter Milan",
+            "from": 2026,
+            "to": 2026,
+            "apps": 1,
+            "loan": false
+          }
+        ],
+        "birthYear": 1995,
+        "scramble": "JANIKA",
+        "fixed": 0,
+        "len": [
+          6
+        ]
+      },
+      {
         "id": "s5",
         "band": "b1",
         "x": 0.8,
         "pos": "RB",
-        "name": "ANGLOMA",
+        "name": "BARRETT",
         "aliases": [
-          "JOCELYN ANGLOMA"
+          "EARL BARRETT"
         ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "MGAALNO",
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Manchester City",
+            "from": 1985,
+            "to": 1987,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Chester City",
+            "from": 1986,
+            "to": 1986,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Oldham Athletic",
+            "from": 1987,
+            "to": 1992,
+            "apps": 183,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1992,
+            "to": 1995,
+            "apps": 116,
+            "loan": false
+          },
+          {
+            "club": "Everton",
+            "from": 1995,
+            "to": 1998,
+            "apps": 74,
+            "loan": false
+          },
+          {
+            "club": "Sheffield United",
+            "from": 1998,
+            "to": 1998,
+            "apps": 5,
+            "loan": true
+          },
+          {
+            "club": "Sheffield Wednesday",
+            "from": 1998,
+            "to": 2000,
+            "apps": 15,
+            "loan": false
+          }
+        ],
+        "birthYear": 1967,
+        "scramble": "TTBARRE",
         "fixed": 0,
         "len": [
           7
@@ -778,16 +2847,75 @@ export const SC_BOARDS = [
         "band": "b2",
         "x": 0.25,
         "pos": "CM",
-        "name": "DESCHAMPS",
+        "name": "MILNER",
         "aliases": [
-          "DIDIER DESCHAMPS"
+          "JAMES MILNER"
         ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "PSEMASCHD",
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Leeds United",
+            "from": 2002,
+            "to": 2004,
+            "apps": 48,
+            "loan": false
+          },
+          {
+            "club": "Swindon Town",
+            "from": 2003,
+            "to": 2003,
+            "apps": 6,
+            "loan": true
+          },
+          {
+            "club": "Newcastle United",
+            "from": 2004,
+            "to": 2008,
+            "apps": 94,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2005,
+            "to": 2006,
+            "apps": 27,
+            "loan": true
+          },
+          {
+            "club": "Aston Villa",
+            "from": 2008,
+            "to": 2010,
+            "apps": 73,
+            "loan": false
+          },
+          {
+            "club": "Manchester City",
+            "from": 2010,
+            "to": 2015,
+            "apps": 147,
+            "loan": false
+          },
+          {
+            "club": "Liverpool",
+            "from": 2015,
+            "to": 2023,
+            "apps": 230,
+            "loan": false
+          },
+          {
+            "club": "Brighton & Hove Albion",
+            "from": 2023,
+            "to": 2026,
+            "apps": 39,
+            "loan": false
+          }
+        ],
+        "birthYear": 1986,
+        "scramble": "NMELRI",
         "fixed": 0,
         "len": [
-          9
+          6
         ]
       },
       {
@@ -795,16 +2923,96 @@ export const SC_BOARDS = [
         "band": "b2",
         "x": 0.5,
         "pos": "CM",
-        "name": "EYDELIE",
+        "name": "COWANS",
         "aliases": [
-          "JEAN-JACQUES EYDELIE"
+          "GORDON COWANS"
         ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "IEEDEYL",
+        "club": null,
+        "nationality": "England",
+        "clubs": [
+          {
+            "club": "Aston Villa",
+            "from": 1976,
+            "to": 1985,
+            "apps": 286,
+            "loan": false
+          },
+          {
+            "club": "A.S. Bari",
+            "from": 1985,
+            "to": 1988,
+            "apps": 94,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1988,
+            "to": 1991,
+            "apps": 117,
+            "loan": false
+          },
+          {
+            "club": "Blackburn Rovers",
+            "from": 1991,
+            "to": 1993,
+            "apps": 50,
+            "loan": false
+          },
+          {
+            "club": "Aston Villa",
+            "from": 1993,
+            "to": 1994,
+            "apps": 11,
+            "loan": false
+          },
+          {
+            "club": "Derby County",
+            "from": 1994,
+            "to": 1994,
+            "apps": 36,
+            "loan": false
+          },
+          {
+            "club": "Wolverhampton Wanderers",
+            "from": 1994,
+            "to": 1995,
+            "apps": 37,
+            "loan": false
+          },
+          {
+            "club": "Sheffield United",
+            "from": 1995,
+            "to": 1996,
+            "apps": 21,
+            "loan": false
+          },
+          {
+            "club": "Bradford City",
+            "from": 1996,
+            "to": 1997,
+            "apps": 25,
+            "loan": false
+          },
+          {
+            "club": "Stockport County",
+            "from": 1997,
+            "to": 1997,
+            "apps": 7,
+            "loan": false
+          },
+          {
+            "club": "Burnley",
+            "from": 1997,
+            "to": 1997,
+            "apps": 6,
+            "loan": false
+          }
+        ],
+        "birthYear": 1958,
+        "scramble": "OSANWC",
         "fixed": 0,
         "len": [
-          7
+          6
         ]
       },
       {
@@ -812,13 +3020,58 @@ export const SC_BOARDS = [
         "band": "b2",
         "x": 0.75,
         "pos": "CM",
-        "name": "SAUZEE",
+        "name": "MODRIC",
         "aliases": [
-          "FRANCK SAUZEE"
+          "LUKA MODRIC"
         ],
-        "club": "Marseille",
-        "nationality": "France",
-        "scramble": "AEZESU",
+        "club": null,
+        "nationality": "Croatia",
+        "clubs": [
+          {
+            "club": "Dinamo Zagreb",
+            "from": 2003,
+            "to": 2008,
+            "apps": 94,
+            "loan": false
+          },
+          {
+            "club": "Zrinjski Mostar",
+            "from": 2003,
+            "to": 2004,
+            "apps": 25,
+            "loan": true
+          },
+          {
+            "club": "Inter Zaprešić",
+            "from": 2004,
+            "to": 2005,
+            "apps": 18,
+            "loan": true
+          },
+          {
+            "club": "Tottenham Hotspur",
+            "from": 2008,
+            "to": 2012,
+            "apps": 127,
+            "loan": false
+          },
+          {
+            "club": "Real Madrid",
+            "from": 2012,
+            "to": 2025,
+            "apps": 394,
+            "loan": false
+          },
+          {
+            "club": "AC Milan",
+            "from": 2025,
+            "to": 2025,
+            "apps": 36,
+            "loan": false
+          }
+        ],
+        "birthYear": 1985,
+        "scramble": "RICDMO",
         "fixed": 0,
         "len": [
           6
@@ -828,31 +3081,198 @@ export const SC_BOARDS = [
         "id": "s9",
         "band": "b3",
         "x": 0.25,
-        "pos": "RF",
-        "name": "PELE",
+        "pos": "LW",
+        "name": "MARTIAL",
         "aliases": [
-          "ABEDI PELE"
+          "ANTHONY MARTIAL"
         ],
-        "club": "Marseille",
-        "nationality": "Ghana",
-        "scramble": "EPEL",
+        "club": null,
+        "nationality": "France",
+        "clubs": [
+          {
+            "club": "Lyon B",
+            "from": 2012,
+            "to": 2013,
+            "apps": 11,
+            "loan": false
+          },
+          {
+            "club": "Lyon",
+            "from": 2013,
+            "to": 2013,
+            "apps": 3,
+            "loan": false
+          },
+          {
+            "club": "Monaco B",
+            "from": 2013,
+            "to": 2013,
+            "apps": 4,
+            "loan": false
+          },
+          {
+            "club": "Monaco",
+            "from": 2013,
+            "to": 2015,
+            "apps": 49,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 2015,
+            "to": 2024,
+            "apps": 209,
+            "loan": false
+          },
+          {
+            "club": "Sevilla",
+            "from": 2022,
+            "to": 2022,
+            "apps": 9,
+            "loan": true
+          },
+          {
+            "club": "AEK Athens",
+            "from": 2024,
+            "to": 2025,
+            "apps": 16,
+            "loan": false
+          },
+          {
+            "club": "Monterrey",
+            "from": 2025,
+            "to": 2026,
+            "apps": 17,
+            "loan": false
+          }
+        ],
+        "birthYear": 1995,
+        "scramble": "TRLIAMA",
         "fixed": 0,
         "len": [
-          4
+          7
         ]
       },
       {
         "id": "s10",
         "band": "b3",
         "x": 0.5,
-        "pos": "LF",
-        "name": "VOLLER",
+        "pos": "ST",
+        "name": "IGHALO",
         "aliases": [
-          "RUDI VOLLER"
+          "ODION IGHALO"
         ],
-        "club": "Marseille",
-        "nationality": "Germany",
-        "scramble": "LLVERO",
+        "club": null,
+        "nationality": "Nigeria",
+        "clubs": [
+          {
+            "club": "Prime",
+            "from": 2005,
+            "to": 2005,
+            "apps": 5,
+            "loan": false
+          },
+          {
+            "club": "Julius Berger",
+            "from": 2006,
+            "to": 2006,
+            "apps": 10,
+            "loan": false
+          },
+          {
+            "club": "Lyn",
+            "from": 2007,
+            "to": 2008,
+            "apps": 20,
+            "loan": false
+          },
+          {
+            "club": "Udinese",
+            "from": 2008,
+            "to": 2014,
+            "apps": 6,
+            "loan": false
+          },
+          {
+            "club": "Granada",
+            "from": 2009,
+            "to": 2010,
+            "apps": 26,
+            "loan": true
+          },
+          {
+            "club": "Cesena",
+            "from": 2010,
+            "to": 2011,
+            "apps": 3,
+            "loan": true
+          },
+          {
+            "club": "Granada",
+            "from": 2011,
+            "to": 2014,
+            "apps": 95,
+            "loan": true
+          },
+          {
+            "club": "Watford",
+            "from": 2014,
+            "to": 2014,
+            "apps": 8,
+            "loan": true
+          },
+          {
+            "club": "Watford",
+            "from": 2014,
+            "to": 2017,
+            "apps": 82,
+            "loan": false
+          },
+          {
+            "club": "Changchun Yatai",
+            "from": 2017,
+            "to": 2018,
+            "apps": 55,
+            "loan": false
+          },
+          {
+            "club": "Shanghai Shenhua",
+            "from": 2019,
+            "to": 2021,
+            "apps": 17,
+            "loan": false
+          },
+          {
+            "club": "Manchester United",
+            "from": 2020,
+            "to": 2021,
+            "apps": 12,
+            "loan": true
+          },
+          {
+            "club": "Al-Shabab",
+            "from": 2021,
+            "to": 2022,
+            "apps": 31,
+            "loan": false
+          },
+          {
+            "club": "Al-Hilal",
+            "from": 2022,
+            "to": 2023,
+            "apps": 40,
+            "loan": false
+          },
+          {
+            "club": "Al-Wehda",
+            "from": 2023,
+            "to": 2025,
+            "apps": 63,
+            "loan": false
+          }
+        ],
+        "birthYear": 1989,
+        "scramble": "HAIGOL",
         "fixed": 0,
         "len": [
           6
@@ -862,17 +3282,76 @@ export const SC_BOARDS = [
         "id": "s11",
         "band": "b3",
         "x": 0.75,
-        "pos": "CF",
-        "name": "BOKSIC",
+        "pos": "RW",
+        "name": "SALAH",
         "aliases": [
-          "ALEN BOKSIC"
+          "MOHAMED SALAH"
         ],
-        "club": "Marseille",
-        "nationality": "Croatia",
-        "scramble": "ISBKCO",
+        "club": null,
+        "nationality": "Egypt",
+        "clubs": [
+          {
+            "club": "Al-Mokawloon",
+            "from": 2010,
+            "to": 2012,
+            "apps": 40,
+            "loan": false
+          },
+          {
+            "club": "Basel",
+            "from": 2012,
+            "to": 2014,
+            "apps": 47,
+            "loan": false
+          },
+          {
+            "club": "Chelsea",
+            "from": 2014,
+            "to": 2016,
+            "apps": 13,
+            "loan": false
+          },
+          {
+            "club": "Fiorentina",
+            "from": 2015,
+            "to": 2015,
+            "apps": 16,
+            "loan": true
+          },
+          {
+            "club": "Roma",
+            "from": 2015,
+            "to": 2016,
+            "apps": 34,
+            "loan": true
+          },
+          {
+            "club": "Roma",
+            "from": 2016,
+            "to": 2017,
+            "apps": 31,
+            "loan": false
+          },
+          {
+            "club": "Liverpool",
+            "from": 2017,
+            "to": 2026,
+            "apps": 315,
+            "loan": false
+          },
+          {
+            "club": "Trabzonspor",
+            "from": 2026,
+            "to": 2026,
+            "apps": 2,
+            "loan": false
+          }
+        ],
+        "birthYear": 1992,
+        "scramble": "AHSLA",
         "fixed": 0,
         "len": [
-          6
+          5
         ]
       }
     ]
