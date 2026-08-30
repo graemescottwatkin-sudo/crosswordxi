@@ -23,6 +23,7 @@ import { onRequestGet as dailyGet } from "../functions/api/scrambled/daily.js";
 import { onRequestPost as guessPost } from "../functions/api/scrambled/guess.js";
 import { onRequestPost as revealPost } from "../functions/api/scrambled/reveal.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
+import { slotHint } from "../functions/_lib/sc-board.js";
 
 /* The name this suite solves with, taken from board one rather than written
    down. It was "beckham", true of the 1999 final and false the day the bank
@@ -188,11 +189,34 @@ t("the bench names what this board sells",
 const before = Number($("worthNow").textContent);
 $("buyHint").dispatchEvent(new window.Event("click"));
 await settle(12);
-t("a hint appears on the tile", doc.querySelectorAll(".slot .hint").length === 1);
+/* ONE PURCHASE, THE WHOLE BOARD. Counted against what the board can actually
+   answer for rather than against eleven: a slot whose player has no career on
+   file never gets one, and asserting eleven would fail on honest data. */
+const solvedNow = new Set([...doc.querySelectorAll(".slot.solved")].map((el) => el.dataset.slot));
+const owed = board.slots.filter((sl) => !solvedNow.has(sl.id) && slotHint(board, sl.id)).length;
+t("the whole XI is revealed, not the one tile",
+  doc.querySelectorAll(".slot .hint").length === owed,
+  doc.querySelectorAll(".slot .hint").length + " tiles carry a career, " + owed + " owed");
+t("and it is more than the tile that was picked, or this proves nothing",
+  owed > 1, owed + " unsolved tiles have a career");
+t("exactly one of them is the one in front",
+  doc.querySelectorAll(".slot .hint.focus").length === 1);
+t("and it is the tile the player picked",
+  tile().querySelector(".hint").classList.contains("focus"));
+t("the bench repeats that one where it can be read",
+  !$("benchHint").hidden && $("benchHint").textContent === slotHint(board, pickedSlot.id));
 t("and it cost points", Number($("helpSpent").textContent) === 3);
 t("which came off what the board is worth", Number($("worthNow").textContent) === before - 3);
 
-t("buying the same hint twice is refused", $("buyHint").disabled);
+t("and the board cannot be bought a second time", $("buyHint").disabled);
+/* The disabled attribute is a courtesy to the player, not the guard. A
+   dispatched click reaches a disabled button here exactly as a scripted one
+   would in a real browser, so the refusal has to live in the code and this is
+   what proves it does. */
+$("buyHint").dispatchEvent(new window.Event("click"));
+await settle(12);
+t("and a second click charges nothing", Number($("helpSpent").textContent) === 3,
+  "spent " + $("helpSpent").textContent);
 $("buyLetter").dispatchEvent(new window.Event("click"));
 await settle(12);
 t("and cost two", Number($("helpSpent").textContent) === 5);

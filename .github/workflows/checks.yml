@@ -121,6 +121,11 @@ jobs:
           # still reading the module fails rather than passing on a match.
           node scrambled/d1_test.mjs
           node scrambled/journey_test.mjs
+          # Half time: free hints, fired by the clock and not by a click, so no
+          # journey through the game ever reaches it. It was the only untested
+          # path in Scrambled, and a player who never receives their hints has
+          # nothing to see and nothing to report.
+          node scrambled/teamtalk_test.mjs
           # The tester is generated, so it is built and then PLAYED. A
           # generator can produce something that parses and does not run.
           node tools/build_scrambled_tester.js

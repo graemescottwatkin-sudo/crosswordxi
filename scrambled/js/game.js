@@ -40,6 +40,12 @@ var BUILD = "v001g";
     elapsed: 0,
     picked: null,
     teamTalkDone: false,
+    /* WHETHER THE CAREERS HAVE BEEN REVEALED, as one fact rather than as
+       eleven. Derived from state.hints it would be wrong: a slot whose player
+       has no career on file never gets an entry, so "every slot has a hint"
+       is false on a board that has already given up everything it has — and
+       the player would be charged a second time for nothing. */
+    hintsRevealed: false,
     over: false
   };
 
@@ -53,6 +59,7 @@ var BUILD = "v001g";
     try {
       localStorage.setItem(storeKey(), JSON.stringify({
         solved: state.solved, hints: state.hints, letters: state.letters,
+        hintsRevealed: state.hintsRevealed,
         help: state.help, elapsed: state.elapsed, over: state.over
       }));
     } catch (e) { /* a full or blocked store must not end the game */ }
@@ -224,7 +231,7 @@ var BUILD = "v001g";
 
       if (state.hints[slot.id] && !got) {
         var h = document.createElement("span");
-        h.className = "hint";
+        h.className = "hint" + (slot.id === state.picked ? " focus" : "");
         h.textContent = state.hints[slot.id];
         el.appendChild(h);
       }
@@ -274,7 +281,15 @@ var BUILD = "v001g";
     $("hintCost").textContent = "\u2212" + CFG.REVEAL_HINT_COST;
     $("letterCost").textContent = "\u2212" + CFG.REVEAL_LETTER_COST;
     $("nameCost").textContent = "\u2212" + CFG.REVEAL_NAME_COST;
-    $("buyHint").disabled = !!state.hints[id];
+    $("buyHint").disabled = state.hintsRevealed;
+    /* PROMINENTLY FOR THE ONE SELECTED. Every tile carries its career once the
+       board is revealed, but eleven careers at tile size is a wall of text and
+       none of it is answering the question the player is actually asking. The
+       bench is where they are looking, so the picked slot's career is repeated
+       there at a size that can be read. */
+    var mine = state.hints[id];
+    $("benchHint").textContent = mine || "";
+    $("benchHint").hidden = !mine;
     /* The last letter is never for sale: a letter reveal that completes the
        name is a name reveal at the cheaper price. The server refuses it; the
        button has to say so rather than take the click and return nothing. */
@@ -305,9 +320,14 @@ var BUILD = "v001g";
     }).then(function (r) {
       if (r.error) return say(r.error, "bad");
       if (kind === "hint") {
-        if (state.hints[id]) return;
-        state.hints[id] = r.value;
+        /* Charged on the transition, not on the click: the board is revealed
+           once and the button goes dead, so a second click cannot bill for a
+           thing the player already owns. */
+        if (state.hintsRevealed) return;
+        adoptHints(r.hints);
         state.help += CFG.REVEAL_HINT_COST;
+        say(hintNoun() + " shown for the whole XI — " +
+          slotOf(id).pos + " in front.", "good");
       } else if (kind === "letter") {
         if (r.index === null) return say("Nothing left to give away there.", "");
         state.letters[id] = (state.letters[id] || "") + r.letter;
@@ -327,6 +347,24 @@ var BUILD = "v001g";
     });
   }
 
+  /* THE ONE PLACE HINTS ARRIVE, bought or given. Both routes now ask the same
+     question and get the same board-wide answer, so neither can drift into
+     showing something the other would not. */
+  /* WHAT THIS BOARD SELLS, AS A NOUN. hintField is a data key — "clubs" —
+     and reading it out to the player produced "every clubs, free". The label
+     is the sentence the board already states about itself, so the noun comes
+     off the front of that and there is no second list to keep in step. */
+  function hintNoun(b) {
+    var src = b || state.board || {};
+    return String(src.hintLabel || "").replace(/^Reveal /, "") || "hint";
+  }
+
+  function adoptHints(map) {
+    if (!map) return;
+    Object.keys(map).forEach(function (k) { state.hints[k] = map[k]; });
+    state.hintsRevealed = true;
+  }
+
   /* THE TEAM TALK. Free, automatic, once, at half time: every hint is given.
      Eleven anagrams have no intersections, so nothing gets easier as you
      solve — what is left at the end is by definition what you had no route
@@ -334,18 +372,17 @@ var BUILD = "v001g";
      into progress. */
   function teamTalk() {
     state.teamTalkDone = true;
-    var unsolved = state.board.slots.filter(function (s) {
-      return !state.solved[s.id] && !state.hints[s.id];
-    });
-    if (!unsolved.length) return;
-    Promise.all(unsolved.map(function (s) {
-      return post("reveal", { token: state.board.token, slotId: s.id, kind: "hint" });
-    })).then(function (rs) {
-      rs.forEach(function (r) { if (r && r.value) state.hints[r.slotId] = r.value; });
+    if (state.hintsRevealed) return;
+    /* One request, where this used to fire eleven in parallel — the board
+       answers for every slot now, so eleven round trips bought nothing but
+       eleven chances for one of them to fail alone. */
+    post("reveal", { token: state.board.token, kind: "hint" }).then(function (r) {
+      if (!r || r.error) return;
+      adoptHints(r.hints);
       save();
       drawPitch();
       say("Half time. The manager has given you every " +
-        state.board.hintField + ", free.", "good");
+        hintNoun() + ", free.", "good");
     });
   }
 
@@ -521,12 +558,13 @@ var BUILD = "v001g";
         $("startClock").textContent = "Ninety match minutes take " +
           Math.round(CFG.MATCH_CLOCK_REAL_SECONDS / 60) + " minutes of real time. " +
           (CFG.HALF_TIME_MINUTE === null ? "" :
-            "At half time the manager gives you every " + board.hintField + ", free.");
+            "At half time the manager gives you every " + hintNoun(board) + ", free.");
 
         var saved = load();
         if (saved) {
           state.solved = saved.solved || {};
           state.hints = saved.hints || {};
+          state.hintsRevealed = !!saved.hintsRevealed;
           state.letters = saved.letters || {};
           state.help = saved.help || 0;
           state.elapsed = saved.elapsed || 0;

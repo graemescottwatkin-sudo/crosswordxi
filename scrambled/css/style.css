@@ -400,3 +400,26 @@ html, body {
    tile with a line through it. */
 .slot.could .lifted { border-bottom: 2px solid var(--gold); padding-bottom: 2px; }
 .slot.could .letters { opacity: .55; }
+
+/* THE CAREER OF THE TILE IN HAND.
+   One purchase reveals all eleven careers, which is a lot of gold text on a
+   pitch. The one the player actually picked is repeated here at a readable
+   size, so the board-wide reveal does not bury the answer to the question
+   they asked. Full width on its own line: a career runs to six clubs. */
+.benchHint {
+  flex: 1 0 100%;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--gold);
+  word-break: break-word;
+}
+
+/* And on the pitch, the picked tile's career is the one lit; the other ten
+   stay legible but recede, so the eye is not asked to read all eleven. */
+.slot .hint { opacity: 0.62; }
+.slot .hint.focus {
+  opacity: 1;
+  font-weight: 600;
+}
+

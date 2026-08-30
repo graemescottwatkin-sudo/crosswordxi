@@ -1,6 +1,7 @@
 /* POST /api/scrambled/reveal  { token, slotId, kind }
  *
- *   kind "hint"    the board's own hint field — club or nationality
+ *   kind "hint"    the board's own hint field — club, nationality or career.
+ *                  Answers for EVERY slot: it is one purchase, not eleven.
  *   kind "letter"  the next letter of the name, in position
  *   kind "name"    the name, which ends that slot
  *
@@ -35,11 +36,28 @@ export async function onRequestPost({ request, env }) {
   if (!board) return bad("That board is not playable.", 403);
 
   const slot = (board.slots || []).find((s) => String(s.id) === String(slotId));
-  if (!slot) return bad("Unknown slot.", 404);
 
   if (kind === "hint") {
-    return json({ kind, slotId: slot.id, label: hintLabel(board), value: slotHint(board, slot.id) });
+    /* ONE PURCHASE, THE WHOLE BOARD. A career is not a clue to one tile in the
+       way a letter is: knowing that somebody went United, PSG, Milan, Galaxy
+       tells you as much about who ISN'T on the rest of the board as about who
+       this one is. Selling it eleven times over would be charging eleven times
+       for a thing the player can only really use all at once.
+
+       So the board answers with every career it has, and the client decides
+       which one to put in front of the player. slotId is not required and is
+       not a permission — it only says which tile was being looked at, and the
+       team talk asks with no tile selected at all. */
+    const hints = {};
+    for (const s of board.slots || []) {
+      const v = slotHint(board, s.id);
+      if (v) hints[s.id] = v;
+    }
+    return json({ kind, slotId: slot ? slot.id : null, label: hintLabel(board), hints });
   }
+
+  /* Below here a slot is the subject of the purchase, not a label on it. */
+  if (!slot) return bad("Unknown slot.", 404);
 
   if (kind === "letter") {
     const letters = normalise(slot.name);
