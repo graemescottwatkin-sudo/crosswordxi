@@ -15,7 +15,7 @@
  * started_at the server wrote and a count of the reveals it served — the same
  * shape Crossword XI uses. Until that exists, "unverified" is the truth.
  */
-import { json, bad, boardForToken, slotHint, hintLabel, loadBoards } from "../../_lib/sc-board.js";
+import { json, bad, boardForToken, boardForPreviewToken, slotHint, hintLabel, loadBoards } from "../../_lib/sc-board.js";
 import { normalise } from "../../_lib/sc-names.js";
 
 export async function onRequestPost({ request, env }) {
@@ -24,7 +24,14 @@ export async function onRequestPost({ request, env }) {
   const { token, slotId, kind } = body || {};
 
   const { boards } = await loadBoards(env);
-  const board = boardForToken(token, boards);
+  /* An owner previewing a board plays it like any other, so the play endpoints
+     accept the preview token — but only after re-reading the admin flag from
+     the database on THIS request. A token is not authority. */
+  let board = boardForToken(token, boards);
+  if (!board && /^sc:preview:/.test(String(token || ""))) {
+    const { isAdmin } = await import("../../_lib/auth.js");
+    if (await isAdmin(request, env)) board = boardForPreviewToken(token, boards);
+  }
   if (!board) return bad("That board is not playable.", 403);
 
   const slot = (board.slots || []).find((s) => String(s.id) === String(slotId));

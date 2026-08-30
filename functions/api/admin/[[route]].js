@@ -129,11 +129,13 @@ export async function onRequest({ request, env, params }) {
     }
     const id = parseInt(url.searchParams.get("id") || "", 10);
     if (!Number.isInteger(id) || id < 1) return bad("Give a board id.");
-    const { loadBoards, publicBoard, scKey } = await import("../../_lib/sc-board.js");
+    const { loadBoards, publicBoard, previewKey } = await import("../../_lib/sc-board.js");
     const { boards, source } = await loadBoards(env);
     const board = (boards || []).find((b) => Number(b.id) === id);
     if (!board) return bad(`No board with id ${id}.`, 404);
-    return json({ ...publicBoard(board, scKey(id)), id, source, preview: true });
+    /* previewKey, not scKey: the play endpoints must be able to tell a
+       preview from a daily, and resolve it by id rather than ring position. */
+    return json({ ...publicBoard(board, previewKey(id)), id, source, preview: true });
   }
   /* ---- Forget one day, so it can be played again ----
      Separate from clearing the record: this removes a single day's result so

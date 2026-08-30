@@ -110,6 +110,28 @@ export function boardForToken(token, boards) {
   return typeof no === "number" ? boardForNumber(no, boards) : null;
 }
 
+/* THE OWNER'S PREVIEW TOKEN, which is a different thing from a play token.
+   A play token names a position in the daily ring and is refused past today —
+   "the future is shut". The preview names a BOARD BY ID, because ring position
+   moves whenever a board is marked out of rotation.
+
+   It had to be a separate spelling. The preview first issued sc:1001 and the
+   board loaded but would not accept a guess, because playableTokenNo saw 1001
+   against today's 5 and refused it — and had it not, boardForNumber would have
+   read 1001 as a ring position and wrapped to an entirely different board. One
+   token shape cannot mean both things.
+
+   Carries no authority of its own: every endpoint that accepts it re-checks
+   the admin flag against the database on that request. */
+export const previewKey = (id) => "sc:preview:" + id;
+
+export function boardForPreviewToken(token, boards) {
+  const m = /^sc:preview:(\d+)$/.exec(String(token || ""));
+  if (!m) return null;
+  const id = Number(m[1]);
+  return (boards || []).find((b) => Number(b.id) === id) || null;
+}
+
 export function publicBoard(board, no) {
   const slots = (board.slots || []).map((s) => ({
     id: s.id,
