@@ -27,6 +27,10 @@ import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
    became the Daily boards, and the suite then CRASHED rather than failed,
    reading .textContent off a tile that was never solved. */
 const ONE_NAME = SC_BOARDS[0].slots[7].name;
+/* The cypher is scrambled; the reveal is what a solved tile reads. The
+   tester inlines the same boards, so it must carry the reveal too — if it
+   were dropped in the inlining this is where that shows up. */
+const ONE_REVEAL = SC_BOARDS[0].slots[7].display;
 
 let pass = 0, fail = 0;
 function t(name, ok, note) {
@@ -106,8 +110,10 @@ $("submit").dispatchEvent(new window.Event("click"));
 await settle(12);
 t("a guess is marked by the inlined handler, not by the page",
   doc.querySelectorAll(".slot.solved").length === 1);
-t("and the tile reads the name",
-  doc.querySelector(".slot.solved .letters").textContent === ONE_NAME);
+t("and the tile reads the whole name, not the cypher",
+  doc.querySelector(".slot.solved .letters").textContent === ONE_REVEAL,
+  ONE_NAME + " -> " + doc.querySelector(".slot.solved .letters").textContent);
+t("which the inlining carried through", ONE_REVEAL !== ONE_NAME);
 
 console.log("\n=== The tester's own controls ===");
 $("tstKey").dispatchEvent(new window.Event("click"));

@@ -84,7 +84,17 @@ if (fs.existsSync(bankDir)) {
   bankJs = "var SC_BOARDS = " + JSON.stringify(built) + ";";
   console.log("  bank: " + built.length + " boards");
 } else {
-  console.log("  bank not found — using the four-board sample");
+  /* ONE SERIALISATION, BOTH PATHS. This branch used to inline the module's
+     own source text while the branch above emitted JSON — the same boards in
+     two shapes, and anything reading the generated file had to know which
+     path had produced it. tester_test counted board titles as JSON and read
+     zero on every machine without the bank, which is every CI runner: the
+     suite went red for the shape of the file rather than for anything wrong
+     with the tester. */
+  const mod = await import(
+    "file://" + path.join(ROOT, "functions", "_lib", "sc-boards.js").split(path.sep).join("/"));
+  bankJs = "var SC_BOARDS = " + JSON.stringify(mod.SC_BOARDS) + ";";
+  console.log("  bank not found — using the " + mod.SC_BOARDS.length + "-board sample");
 }
 
 const libs = [
@@ -94,7 +104,8 @@ const libs = [
 ].map((f) => `/* ===== ${f} ===== */\n${plain(read(f))}`).join("\n\n");
 
 /* Bank first: sc-board.js reads SC_BOARDS. */
-const libsAll = (bankJs ? "/* ===== the board bank ===== */" + String.fromCharCode(10) + bankJs + String.fromCharCode(10,10) : plain(read("functions/_lib/sc-boards.js")) + String.fromCharCode(10,10)) + libs;
+const libsAll = "/* ===== the board bank ===== */" + String.fromCharCode(10) +
+  bankJs + String.fromCharCode(10, 10) + libs;
 
 const handlers = [
   handler("functions/api/scrambled/daily.js", { as: "API_DAILY", exports: ["onRequestGet"] }),
