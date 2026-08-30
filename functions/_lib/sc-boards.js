@@ -102,6 +102,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1972,
+        "source": "https://en.wikipedia.org/wiki/Mark_Bosnich",
         "scramble": "OSNCHBI",
         "fixed": 0,
         "len": [
@@ -157,6 +158,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1986,
+        "source": "https://en.wikipedia.org/wiki/Nacho_Monreal",
         "scramble": "OLEAMNR",
         "fixed": 0,
         "len": [
@@ -219,6 +221,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1972,
+        "source": "https://en.wikipedia.org/wiki/Ugo_Ehiogu",
         "scramble": "OIUHEG",
         "fixed": 0,
         "len": [
@@ -246,6 +249,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1966,
+        "source": "https://en.wikipedia.org/wiki/Tony_Adams",
         "scramble": "MASDA",
         "fixed": 0,
         "len": [
@@ -315,6 +319,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1987,
+        "source": "https://en.wikipedia.org/wiki/Ahmed_Elmohamady",
         "scramble": "AMOYLDAMEH",
         "fixed": 0,
         "len": [
@@ -405,6 +410,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1980,
+        "source": "https://en.wikipedia.org/wiki/Steed_Malbranque",
         "scramble": "BUNQMERLAA",
         "fixed": 0,
         "len": [
@@ -502,6 +508,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1964,
+        "source": "https://en.wikipedia.org/wiki/Paul_Stewart_(footballer_born_1964)",
         "scramble": "TWTARES",
         "fixed": 0,
         "len": [
@@ -599,6 +606,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1989,
+        "source": "https://en.wikipedia.org/wiki/Gylfi_Sigurðsson",
         "scramble": "NDOGSSURIS",
         "fixed": 0,
         "len": [
@@ -647,6 +655,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1962,
+        "source": "https://en.wikipedia.org/wiki/Mike_Phelan",
         "scramble": "HELNPA",
         "fixed": 0,
         "len": [
@@ -744,6 +753,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1983,
+        "source": "https://en.wikipedia.org/wiki/Jonathan_Walters",
         "scramble": "ETWRASL",
         "fixed": 0,
         "len": [
@@ -799,6 +809,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1960,
+        "source": "https://en.wikipedia.org/wiki/Gary_Lineker",
         "scramble": "INEREKL",
         "fixed": 0,
         "len": [
@@ -924,6 +935,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1972,
+        "source": "https://en.wikipedia.org/wiki/Mart_Poom",
         "scramble": "OPMO",
         "fixed": 0,
         "len": [
@@ -993,6 +1005,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1996,
+        "source": "https://en.wikipedia.org/wiki/Oleksandr_Zinchenko_(footballer)",
         "scramble": "OEHZNICNK",
         "fixed": 0,
         "len": [
@@ -1090,6 +1103,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1985,
+        "source": "https://en.wikipedia.org/wiki/Philippe_Senderos",
         "scramble": "ENSEODSR",
         "fixed": 0,
         "len": [
@@ -1124,6 +1138,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1961,
+        "source": "https://en.wikipedia.org/wiki/Gary_Mabbutt",
         "scramble": "UMTTBBA",
         "fixed": 0,
         "len": [
@@ -1172,6 +1187,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1979,
+        "source": "https://en.wikipedia.org/wiki/Paulo_Ferreira",
         "scramble": "EREFIRAR",
         "fixed": 0,
         "len": [
@@ -1248,6 +1264,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1982,
+        "source": "https://en.wikipedia.org/wiki/Michael_Essien",
         "scramble": "SEIENS",
         "fixed": 0,
         "len": [
@@ -1289,6 +1306,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1961,
+        "source": "https://en.wikipedia.org/wiki/Ronnie_Whelan",
         "scramble": "HANWEL",
         "fixed": 0,
         "len": [
@@ -1372,6 +1390,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1973,
+        "source": "https://en.wikipedia.org/wiki/Edgar_Davids",
         "scramble": "VDSAID",
         "fixed": 0,
         "len": [
@@ -1427,6 +1446,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1981,
+        "source": "https://en.wikipedia.org/wiki/Park_Ji-sung",
         "scramble": "SUGNJI",
         "fixed": 0,
         "len": [
@@ -1510,6 +1530,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1987,
+        "source": "https://en.wikipedia.org/wiki/Steven_Fletcher_(footballer)",
         "scramble": "LCHEEFRT",
         "fixed": 0,
         "len": [
@@ -1572,6 +1593,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1987,
+        "source": "https://en.wikipedia.org/wiki/Nathan_Dyer",
         "scramble": "ERDY",
         "fixed": 0,
         "len": [
@@ -1704,6 +1726,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1957,
+        "source": "https://en.wikipedia.org/wiki/Les_Sealey",
         "scramble": "EYESAL",
         "fixed": 0,
         "len": [
@@ -1757,6 +1780,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1974,
+        "source": "https://en.wikipedia.org/wiki/Sylvinho",
         "scramble": "OLIYSHVN",
         "fixed": 0,
         "len": [
@@ -1826,6 +1850,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1969,
+        "source": "https://en.wikipedia.org/wiki/Rufus_Brevett",
         "scramble": "TERTVEB",
         "fixed": 0,
         "len": [
@@ -1874,6 +1899,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1993,
+        "source": "https://en.wikipedia.org/wiki/Raphaël_Varane",
         "scramble": "ARAEVN",
         "fixed": 0,
         "len": [
@@ -1936,6 +1962,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1956,
+        "source": "https://en.wikipedia.org/wiki/Viv_Anderson",
         "scramble": "ESARNDNO",
         "fixed": 0,
         "len": [
@@ -2026,6 +2053,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1987,
+        "source": "https://en.wikipedia.org/wiki/Robert_Snodgrass",
         "scramble": "RSSSAONDG",
         "fixed": 0,
         "len": [
@@ -2109,6 +2137,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1984,
+        "source": "https://en.wikipedia.org/wiki/Nigel_de_Jong",
         "scramble": "NDGEJO",
         "fixed": 0,
         "len": [
@@ -2193,6 +2222,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1962,
+        "source": "https://en.wikipedia.org/wiki/Paul_Allen_(footballer)",
         "scramble": "ENALL",
         "fixed": 0,
         "len": [
@@ -2262,6 +2292,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1985,
+        "source": "https://en.wikipedia.org/wiki/Salomon_Kalou",
         "scramble": "AOULK",
         "fixed": 0,
         "len": [
@@ -2345,6 +2376,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1970,
+        "source": "https://en.wikipedia.org/wiki/Shaun_Goater",
         "scramble": "RAOGTE",
         "fixed": 0,
         "len": [
@@ -2414,6 +2446,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1988,
+        "source": "https://en.wikipedia.org/wiki/Troy_Deeney",
         "scramble": "EDYENE",
         "fixed": 0,
         "len": [
@@ -2532,6 +2565,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1971,
+        "source": "https://en.wikipedia.org/wiki/Maik_Taylor",
         "scramble": "LYAORT",
         "fixed": 0,
         "len": [
@@ -2636,6 +2670,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1981,
+        "source": "https://en.wikipedia.org/wiki/Nicky_Shorey",
         "scramble": "EYHSRO",
         "fixed": 0,
         "len": [
@@ -2691,6 +2726,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1985,
+        "source": "https://en.wikipedia.org/wiki/Laurent_Koscielny",
         "scramble": "NCEKYSOIL",
         "fixed": 0,
         "len": [
@@ -2767,6 +2803,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1995,
+        "source": "https://en.wikipedia.org/wiki/Manuel_Akanji",
         "scramble": "JANIKA",
         "fixed": 0,
         "len": [
@@ -2836,6 +2873,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1967,
+        "source": "https://en.wikipedia.org/wiki/Earl_Barrett",
         "scramble": "TTBARRE",
         "fixed": 0,
         "len": [
@@ -2912,6 +2950,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1986,
+        "source": "https://en.wikipedia.org/wiki/James_Milner",
         "scramble": "NMELRI",
         "fixed": 0,
         "len": [
@@ -3009,6 +3048,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1958,
+        "source": "https://en.wikipedia.org/wiki/Gordon_Cowans",
         "scramble": "OSANWC",
         "fixed": 0,
         "len": [
@@ -3071,6 +3111,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1985,
+        "source": "https://en.wikipedia.org/wiki/Luka_Modrić",
         "scramble": "RICDMO",
         "fixed": 0,
         "len": [
@@ -3147,6 +3188,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1995,
+        "source": "https://en.wikipedia.org/wiki/Anthony_Martial",
         "scramble": "TRLIAMA",
         "fixed": 0,
         "len": [
@@ -3272,6 +3314,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1989,
+        "source": "https://en.wikipedia.org/wiki/Odion_Ighalo",
         "scramble": "HAIGOL",
         "fixed": 0,
         "len": [
@@ -3348,6 +3391,7 @@ export const SC_BOARDS = [
           }
         ],
         "birthYear": 1992,
+        "source": "https://en.wikipedia.org/wiki/Mohamed_Salah",
         "scramble": "AHSLA",
         "fixed": 0,
         "len": [

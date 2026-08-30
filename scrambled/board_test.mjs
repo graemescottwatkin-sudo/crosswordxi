@@ -154,7 +154,19 @@ t("every slot sits on a band the board declares", SC_BOARDS.every((b) =>
   b.slots.every((sl) => b.bands.some((x) => x.id === sl.band))));
 t("every name is still English form after the build", SC_BOARDS.every((b) =>
   b.slots.every((sl) => isEnglishForm(sl.name))));
-t("every board carries its source", SC_BOARDS.every((b) => /^https?:\/\//.test(b.source || "")));
+/* A LINEUP board's source is the article that proves who played, so it must be
+   a URL. A DAILY board is a selection rather than a claim about a match — its
+   source is the provenance of the generation, and every PLAYER carries their
+   own article instead. Requiring a URL of both asserted that every board is a
+   lineup, which stopped being true the day the Daily arrived. */
+t("every board carries a source", SC_BOARDS.every((b) => !!(b.source || "").trim()));
+t("and a lineup board's source is the article that proves it",
+  SC_BOARDS.filter((b) => b.hintField !== "clubs")
+    .every((b) => /^https?:\/\//.test(b.source || "")));
+t("while every player on a Daily board carries their own",
+  SC_BOARDS.filter((b) => b.hintField === "clubs")
+    .every((b) => b.slots.every((sl) => /^https?:\/\//.test(sl.source || ""))),
+  "the claim moves from the board to the player");
 
 console.log("\n=== What leaves the server ===");
 const board = boardForNumber(1);

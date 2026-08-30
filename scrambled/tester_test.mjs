@@ -22,6 +22,12 @@ import { JSDOM } from "jsdom";
    window. The tester's own controls reach it through script scope. */
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
 
+/* The name this suite solves with, read from board one rather than written
+   down. It was "beckham" — true of the 1999 final, false the day the bank
+   became the Daily boards, and the suite then CRASHED rather than failed,
+   reading .textContent off a tile that was never solved. */
+const ONE_NAME = SC_BOARDS[0].slots[7].name;
+
 let pass = 0, fail = 0;
 function t(name, ok, note) {
   if (ok) { pass++; console.log(`  ok  ${name}${note ? "  — " + note : ""}`); }
@@ -95,13 +101,13 @@ $("kickOff").dispatchEvent(new window.Event("click"));
 await settle();
 t("eleven tiles are drawn", doc.querySelectorAll(".slot").length === 11);
 
-$("answer").value = "beckham";
+$("answer").value = ONE_NAME.toLowerCase();
 $("submit").dispatchEvent(new window.Event("click"));
 await settle(12);
 t("a guess is marked by the inlined handler, not by the page",
   doc.querySelectorAll(".slot.solved").length === 1);
 t("and the tile reads the name",
-  doc.querySelector(".slot.solved .letters").textContent === "BECKHAM");
+  doc.querySelector(".slot.solved .letters").textContent === ONE_NAME);
 
 console.log("\n=== The tester's own controls ===");
 $("tstKey").dispatchEvent(new window.Event("click"));

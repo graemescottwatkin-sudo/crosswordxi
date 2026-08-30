@@ -24,6 +24,24 @@ import { onRequestPost as guessPost } from "../functions/api/scrambled/guess.js"
 import { onRequestPost as revealPost } from "../functions/api/scrambled/reveal.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
 
+/* The name this suite solves with, taken from board one rather than written
+   down. It was "beckham", true of the 1999 final and false the day the bank
+   became the Daily boards — the suite then crashed rather than failed, because
+   nothing matched and it read .textContent off null. A fixture that names a
+   player is a fixture that expires; the board already knows who is on it. */
+const ONE_NAME = SC_BOARDS[0].slots[7].name;
+/* An alias belonging to a DIFFERENT slot, so typing it solves a second tile.
+   Was "Andy Cole", true of the 1999 board only. */
+const ALIAS_SLOT = SC_BOARDS[0].slots.find((s) => s.name !== ONE_NAME && (s.aliases || []).length);
+const ONE_ALIAS = ALIAS_SLOT.aliases[0];
+/* A real footballer this board does not field. Checked against the board
+   rather than assumed, so it cannot quietly become one of the eleven. */
+const NOT_HERE = ["ROY KEANE", "PELE", "MARADONA", "ZIDANE"]
+  .find((n) => !SC_BOARDS[0].slots.some((s) => s.name === n || (s.aliases || []).includes(n)));
+/* What this board sells, from the board. */
+const SELLS = SC_BOARDS[0].hintField === "clubs" ? "Reveal career"
+  : SC_BOARDS[0].hintField === "club" ? "Reveal club" : "Reveal nationality";
+
 let pass = 0, fail = 0;
 function t(name, ok, note) {
   if (ok) { pass++; console.log(`  ok  ${name}${note ? "  — " + note : ""}`); }
@@ -124,22 +142,22 @@ async function type(text) {
   await settle(12);
 }
 
-await type("beckham");
+await type(ONE_NAME.toLowerCase());
 t("a correct name in the wrong case still solves",
   doc.querySelectorAll(".slot.solved").length === 1);
-t("the tile now reads the name", doc.querySelector(".slot.solved .letters").textContent === "BECKHAM");
+t("the tile now reads the name", doc.querySelector(".slot.solved .letters").textContent === ONE_NAME);
 t("the counter moved", $("solvedCount").textContent === "1");
 t("and the box is cleared for the next one", $("answer").value === "");
 
-await type("Andy Cole");
+await type(ONE_ALIAS);
 t("an alias solves too", doc.querySelectorAll(".slot.solved").length === 2);
 
-await type("Roy Keane");
+await type(NOT_HERE);
 t("a real footballer who is not on this board does not solve",
-  doc.querySelectorAll(".slot.solved").length === 2, "Keane was suspended for the final");
+  doc.querySelectorAll(".slot.solved").length === 2, NOT_HERE + " is not on this board");
 t("and the player is told so", /not on this board/i.test($("feedback").textContent));
 
-await type("beckham");
+await type(ONE_NAME.toLowerCase());
 t("solving the same name twice does not solve a second tile",
   doc.querySelectorAll(".slot.solved").length === 2);
 
@@ -157,8 +175,8 @@ tile().dispatchEvent(new window.Event("click"));
 await settle();
 t("picking a tile opens the bench", !$("benchRow").hidden);
 t("the bench names what this board sells",
-  $("hintLabel").textContent === "Reveal nationality",
-  "the 1999 board is eleven United players, so club would sell nothing");
+  $("hintLabel").textContent === SELLS,
+  "read from the board, not written down: the Daily sells a career");
 
 const before = Number($("worthNow").textContent);
 $("buyHint").dispatchEvent(new window.Event("click"));

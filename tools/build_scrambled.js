@@ -357,6 +357,12 @@ export function build(src, file) {
          empty field stating that it has no career history. */
       ...(Array.isArray(p.clubs) && p.clubs.length ? { clubs: p.clubs } : {}),
       ...(p.birthYear ? { birthYear: p.birthYear } : {}),
+      /* THE PLAYER'S OWN SOURCE. On a lineup board the claim is the board's —
+         one article proving who played. On a Daily board there is no such
+         article, and the claim moves to the player: each one carries the page
+         their career was read from. Dropping it at the build left a Daily board
+         resting on nothing inspectable, which board_test now refuses. */
+      ...(p.source ? { source: p.source } : {}),
       scramble,
       fixed,
       len: enumerationOf(p.name),
