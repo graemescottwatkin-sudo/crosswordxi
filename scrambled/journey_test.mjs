@@ -248,15 +248,25 @@ t("the daily payload holds no name",
   board.slots.every((s) => wire.indexOf(s.name) === -1));
 t("no alias", board.slots.every((s) => (s.aliases || []).every((a) => wire.indexOf(a) === -1)));
 t("and no hint value", board.slots.every((s) => wire.indexOf(s.nationality) === -1));
-/* The future is shut, and it is shut by the SERVER's clock, not the browser's.
-   A number sent up is a number off a clock the player controls. */
+/* THE FUTURE, under whichever contract is in force — the same pairing
+   board_test asserts. Closed is the live rule and shut by the SERVER's clock,
+   because a number sent up is a number off a clock the player controls. Open
+   is test mode while the game is unlaunched.
+   Read from the source rather than assumed, so this suite states the contract
+   the code actually runs instead of insisting on one it does not. */
+const OPEN = /const OPEN_ARCHIVE = true/.test(
+  fs.readFileSync("functions/_lib/sc-board.js", "utf8"));
 const future = await routedFetch("/api/scrambled/daily?no=99999");
-t("a board in the future is refused with a 403", future.status === 403);
+t(OPEN ? "a far board is served while the archive is open"
+       : "a board in the future is refused with a 403",
+  future.status === (OPEN ? 200 : 403), "HTTP " + future.status);
 const stolen = await routedFetch("/api/scrambled/guess", {
   method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ token: "sc:99999", guess: "BECKHAM", solved: [] }),
+  body: JSON.stringify({ token: "sc:99999", guess: ONE_NAME, solved: [] }),
 });
-t("and cannot be marked against either", stolen.status === 403);
+t(OPEN ? "and a guess against it is marked rather than refused"
+       : "and cannot be marked against either",
+  stolen.status === (OPEN ? 200 : 403), "HTTP " + stolen.status);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

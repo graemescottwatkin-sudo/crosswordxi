@@ -99,6 +99,89 @@
     if (first) first.focus();
   }
 
+  /* ---- The account, in the chrome so it is the same in every game ---------
+     The session cookie has been scoped Domain=.thexigames.com since accounts
+     existed, so signing in on one game already signs you in on all of them.
+     What was per-game was the CONTROL: the crossword had one and nothing else
+     did, so on the word search or Scrambled there was no way in and no way to
+     tell whether you were signed in at all.
+
+     The endpoints were already the family's — /api/auth/session, /api/auth/
+     google and /api/auth/signout sit at the repository root and every game
+     reaches them. Only the button was missing.
+
+     THIS IS THE UNIVERSAL MINIMUM, not a replacement for the crossword's
+     account panel: that one also edits a display name and picks a club, and it
+     keeps doing so. Worth knowing there are now two sign-in paths on the
+     crossword; consolidating them is follow-up work, not something to do
+     inside a shared file that every game loads. */
+  var acct = null;
+
+  function accountRow() {
+    var row = el("div", "xic-acct");
+    row.innerHTML = '<span class="xic-acct-state">…</span>';
+    return row;
+  }
+
+  function paintAccount(row) {
+    if (!row) return;
+    var state = row.querySelector(".xic-acct-state");
+    if (!state) return;
+    if (acct && acct.user) {
+      state.textContent = "Signed in as " + (acct.user.displayName || "you");
+      var out = el("button", "xic-acct-btn", "Sign out");
+      out.type = "button";
+      out.addEventListener("click", function () {
+        fetch("/api/auth/signout", {
+          method: "POST",
+          headers: { "X-XI-Games": "1" },
+          credentials: "same-origin",
+        }).then(function () { location.reload(); })
+          .catch(function () { state.textContent = "Could not sign out."; });
+      });
+      row.appendChild(out);
+      return;
+    }
+    if (!acct || !acct.googleClientId) {
+      /* Not configured, or the session call failed. Say nothing rather than
+         offering a button that cannot work. */
+      row.hidden = true;
+      return;
+    }
+    state.textContent = "Not signed in";
+    var mount = el("div", "xic-gsi");
+    row.appendChild(mount);
+    loadGoogle(acct.googleClientId, mount);
+  }
+
+  function loadGoogle(clientId, mount) {
+    function render() {
+      if (!window.google || !window.google.accounts) return;
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: function (resp) {
+          fetch("/api/auth/google", {
+            method: "POST",
+            headers: { "X-XI-Games": "1", "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ credential: resp.credential }),
+          }).then(function () { location.reload(); })
+            .catch(function () { /* stay signed out; the page still works */ });
+        },
+      });
+      window.google.accounts.id.renderButton(mount, { type: "standard", size: "medium" });
+    }
+    if (window.google && window.google.accounts) return render();
+    var sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true; sc.defer = true;
+    sc.onload = render;
+    /* A blocked or unreachable sign-in service must not take the drawer with
+       it. The row simply goes away. */
+    sc.onerror = function () { mount.parentNode.hidden = true; };
+    document.head.appendChild(sc);
+  }
+
   function buildDrawer() {
     scrim = el("div", "xic-scrim");
     scrim.addEventListener("click", close);
@@ -126,7 +209,23 @@
       a.href = p.href;
       foot.appendChild(a);
     });
+    /* THE DRAWER MUST BUILD WHERE THERE IS NO FETCH. The squad list, the
+       wordmark and the pages are the drawer's job; the account is an extra. An
+       environment without fetch — an old browser, a suite driving the chrome in
+       jsdom — must get a working drawer and no account row, not an exception
+       thrown halfway through building it. The same rule the game already keeps
+       about blocked localStorage. */
+    var acctRow = accountRow();
+    drawer.appendChild(acctRow);
     drawer.appendChild(foot);
+    if (typeof fetch !== "function") {
+      acctRow.hidden = true;
+    } else {
+      fetch("/api/auth/session", { headers: { "X-XI-Games": "1" }, credentials: "same-origin" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { acct = d; paintAccount(acctRow); })
+        .catch(function () { acctRow.hidden = true; });
+    }
 
     document.body.appendChild(scrim);
     document.body.appendChild(drawer);

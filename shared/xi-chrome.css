@@ -262,3 +262,13 @@ a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; 
   padding-top: 16px;
   line-height: 1.6;
 }
+
+/* The account, in the drawer so every game has it. Quiet by default: it is a
+   utility row, not a call to action, and it must not compete with the squad. */
+.xic-acct { display: flex; flex-direction: column; gap: .5rem;
+  padding: .75rem 1rem; border-top: 1px solid var(--line); font-size: 14px; }
+.xic-acct-state { opacity: .8; }
+.xic-acct-btn { align-self: flex-start; font: inherit; cursor: pointer;
+  background: none; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: .3rem .7rem; color: inherit; }
+.xic-gsi { min-height: 40px; }

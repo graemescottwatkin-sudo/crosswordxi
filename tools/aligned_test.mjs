@@ -188,8 +188,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v1";
-const SHARED_HASH = "55ff5bc7f79e2d83";
+const SHARED_TAG = "v2";
+const SHARED_HASH = "bc001022521a3eaa";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {

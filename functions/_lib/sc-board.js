@@ -92,6 +92,20 @@ export function boardForNumber(n, boards) {
   return ring[(n - 1) % ring.length];
 }
 
+/* TEST MODE — THE WHOLE BANK IS PLAYABLE, AND THIS MUST BE FLIPPED BEFORE
+   LAUNCH.
+   The rule below is the right one for a live game: the past is open so somebody
+   arriving in November can catch up a missed day, and the future is shut
+   because opening it gives away everything. Scrambled is not live — it is
+   unlaunched, unlinked, and being played by its owner against a thirty-board
+   test bank where "the future" is simply the boards nobody has reached yet.
+   Enforcing the daily rule there makes twenty-five of thirty boards unplayable
+   for no benefit: there is no schedule to protect and no player to protect it
+   from.
+   Named rather than hidden in a condition, so it is greppable, and asserted by
+   board_test so it cannot be left true by accident the day this game ships. */
+const OPEN_ARCHIVE = true;
+
 /* Any board up to today, never one after it. The past is open — somebody
    arriving in November must be able to catch up a missed day — and the future
    is shut, because opening it gives away everything. The SERVER decides what
@@ -102,6 +116,10 @@ export function playableTokenNo(token) {
   if (!m) return null;
   const asked = Number(m[1]);
   if (asked < 1) return false;
+  /* The ring wraps, as it always has, so any positive number resolves to a
+     board. No bound is invented here: this function is given a token, not the
+     bank, and a limit it cannot check is a limit that lies. */
+  if (OPEN_ARCHIVE) return asked;
   return asked <= dailyNumber() ? asked : false;
 }
 

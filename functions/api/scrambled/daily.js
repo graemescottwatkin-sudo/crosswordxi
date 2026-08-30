@@ -7,7 +7,7 @@
    caught up, the future is shut because opening it gives away everything.
 */
 import {
-  publicBoard, boardForNumber, scKey, json, bad, loadBoards,
+  publicBoard, boardForNumber, scKey, json, bad, loadBoards, playableTokenNo,
 } from "../../_lib/sc-board.js";
 import { dailyNumber } from "../../_lib/daily.js";
 
@@ -18,7 +18,15 @@ export async function onRequestGet({ request, env }) {
   const no = asked === null ? today : Number(asked);
 
   if (!Number.isInteger(no) || no < 1) return bad("Not a board number.");
-  if (no > today) return bad("That board is not out yet.", 403);
+  /* ONE RULE, ONE PLACE. This read `no > today` and returned 403 — the same
+     rule playableTokenNo already implements for the guess and reveal routes,
+     written a second time. They agreed until the archive was opened for
+     testing, and then this endpoint refused board twelve while the guess route
+     happily marked a name against it. Two statements of one fact, exactly the
+     fault this codebase keeps paying for.
+     Asked through the shared predicate now, so the mode governs every route or
+     none of them. */
+  if (playableTokenNo(scKey(no)) === false) return bad("That board is not out yet.", 403);
 
   /* D1 when bound, the generated module when not. `source` rides in the
      payload so a live_check can refuse a run that quietly fell back. */

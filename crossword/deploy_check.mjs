@@ -193,6 +193,25 @@ const ownTag = (html.match(/js\/game\.js\?v=([^"]+)"/) || [])[1];
 t("the build tag matches the one the script reports",
   !!ownTag && read("js/game.js").includes('var BUILD = "' + ownTag + '"'),
   ownTag);
+/* AND THE FOOTER AGREES WITH THEM.
+   The check above compares the ASSETS against the script's BUILD. Neither of
+   them is what a person reads: the footer is. A half-finished bump that moved
+   the footer to v001v and left the assets and BUILD on v001u passed this gate
+   cleanly — the two things it compares still agreed with each other, and the
+   one thing anybody looks at said something else.
+   live_check catches it, but only after shipping, which is the wrong side of
+   the deploy for a version number. */
+t("and the footer says the same version as the assets", (() => {
+  const foot = (html.match(/<span id="buildTag">([^<]*)</) || [])[1];
+  if (foot === undefined) return true;          // filled by the chrome at runtime
+  if (!foot) return true;                       // deliberately empty, same case
+  const asset = (html.match(/(?:css|js)\/[a-z_]+\.(?:css|js)\?v=(v[0-9a-z]+)"/) || [])[1];
+  return !!asset && foot === asset;
+})(), (() => {
+  const foot = (html.match(/<span id="buildTag">([^<]*)</) || [])[1];
+  const asset = (html.match(/(?:css|js)\/[a-z_]+\.(?:css|js)\?v=(v[0-9a-z]+)"/) || [])[1];
+  return "footer " + (foot || "(runtime)") + ", assets " + asset;
+})());
 /* A comment that lost its opening marker renders as page content. It happened:
    moving a block cut the "<!--" and left the "-->" behind, and three lines of
    explanation about board width appeared on the live site above the puzzle.
