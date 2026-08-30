@@ -31,7 +31,14 @@ const launched = /GAMES = \[[^\]]*"scrambled"/.test(gamesLib);
    suite reading it would pass on this machine and fail in CI and in a fresh
    clone. These four are the ones the shipped module holds. */
 const SRC = "tools/scrambled/sample-xi";
-const good = JSON.parse(fs.readFileSync(`${SRC}/001-manchester-united-1999.json`, "utf8"));
+/* The first sample board, whichever it is. Naming the file here made this
+   suite crash with ENOENT the day the samples changed — the same lesson the
+   fixtures above already carry: a test that names a board is a test that
+   expires, and it fails by crashing rather than by failing. */
+const SAMPLES = fs.readdirSync(SRC)
+  .filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort();
+if (!SAMPLES.length) throw new Error("no sample boards in " + SRC);
+const good = JSON.parse(fs.readFileSync(`${SRC}/${SAMPLES[0]}`, "utf8"));
 const clone = () => JSON.parse(JSON.stringify(good));
 const refuses = (src, fragment) => {
   const problems = gate(src, parseFormation(src.formation));
@@ -85,13 +92,18 @@ t("SABOTAGE: a two-letter name is refused", refuses(s, "too short to scramble"))
 /* THE ONE THE DRAFT DID NOT HAVE. Two slots whose letters agree are the same
    tile: the player cannot know which goes where and neither can the marker.
    This is what forces JACK CHARLTON and BOBBY CHARLTON to carry forenames. */
-s = clone(); s.xi[10].name = "ELOC"; s.xi[10].aliases = [];
+/* An anagram of another slot on THIS board, rather than "ELOC" — which was
+   an anagram of COLE and collided only while Andy Cole was on the sample. */
+s = clone();
+s.xi[10].name = [...normalise(s.xi[0].name)].reverse().join("");
+s.xi[10].aliases = [];
 t("SABOTAGE: two slots with the same letters are refused",
   refuses(s, "two identical tiles cannot be told apart"));
 
 /* AND ITS SIBLING. An alias that matches two slots is a wrong answer accepted
    — exactly as broken as two identical names, and quieter. */
-s = clone(); s.xi[2].aliases = ["JAAP STAM"];
+/* A spelling that is already another slot's name, taken from the board. */
+s = clone(); s.xi[2].aliases = [s.xi[0].name];
 t("SABOTAGE: one spelling claimed by two slots is refused",
   refuses(s, "one spelling, two slots"));
 
@@ -108,8 +120,15 @@ t("SABOTAGE: and the club board is refused for the same reason",
 s = clone(); s.hintField = "boots";
 t("SABOTAGE: an invented hint field is refused", refuses(s, "hintField must be"));
 
-s = clone(); delete s.xi[5].nationality;
-t("SABOTAGE: a missing hint value is refused", refuses(s, "no nationality for"));
+/* Whatever this board sells, withheld for one player. Written down as
+   "nationality" it tested a field the Daily boards do not even use. */
+s = clone(); delete s.xi[5][good.hintField];
+/* A career is refused in its own words — "no club history for" — because an
+   empty career is a hint paid for and not received, not a missing field. */
+t("SABOTAGE: a missing hint value is refused",
+  refuses(s, good.hintField === "clubs"
+    ? "no club history for" : "no " + good.hintField + " for"),
+  "this board sells " + good.hintField);
 
 s = clone(); delete s.source;
 t("SABOTAGE: a board with no source is refused", refuses(s, "no source"),
