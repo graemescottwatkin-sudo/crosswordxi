@@ -15,7 +15,7 @@
  * `solved` is the player's own claim about their progress and is not trusted
  * with anything. Lying about it can only re-solve a slot they already had.
  */
-import { json, bad, boardForToken, boardForPreviewToken, loadBoards, revealName } from "../../_lib/sc-board.js";
+import { json, bad, boardForToken, boardForPreviewToken, loadBoards, revealName, topClubs } from "../../_lib/sc-board.js";
 import { matchesSlot } from "../../_lib/sc-names.js";
 
 export async function onRequestPost({ request, env }) {
@@ -47,5 +47,9 @@ export async function onRequestPost({ request, env }) {
   return json({
     solvedId: hit ? hit.id : null,
     name: hit ? revealName(hit) : null,
+    /* The clubs ride down with the solve rather than being fetched after it:
+       the browser holds no names, so the two facts it is allowed to learn
+       about this player arrive together or the tile paints twice. */
+    clubs: hit ? topClubs(hit) : null,
   });
 }

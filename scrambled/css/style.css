@@ -423,3 +423,17 @@ html, body {
   font-weight: 600;
 }
 
+/* The two clubs under a solved name. Quieter than the name it belongs to —
+   the name is the answer, this is the recognition that follows it — and
+   bounded like the career hint so a long club name wraps instead of pushing
+   an absolutely-positioned tile across its neighbours. */
+.slot .clubs {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  max-width: 22ch;
+  overflow-wrap: break-word;
+}
+

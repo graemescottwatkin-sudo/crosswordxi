@@ -23,7 +23,7 @@ import { onRequestGet as dailyGet } from "../functions/api/scrambled/daily.js";
 import { onRequestPost as guessPost } from "../functions/api/scrambled/guess.js";
 import { onRequestPost as revealPost } from "../functions/api/scrambled/reveal.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
-import { slotHint } from "../functions/_lib/sc-board.js";
+import { slotHint, topClubs } from "../functions/_lib/sc-board.js";
 
 /* The name this suite solves with, taken from board one rather than written
    down. It was "beckham", true of the 1999 final and false the day the bank
@@ -154,6 +154,22 @@ t("the tile now reads the whole name, not the cypher",
   ONE_NAME + " -> " + ONE_REVEAL);
 t("and the reveal says more than the letters the player was given",
   ONE_REVEAL !== ONE_NAME);
+
+/* THE CLUBS ARRIVE WITH THE SOLVE, not after it. The browser holds no names,
+   so if they did not ride down with the answer the tile would paint twice. */
+const SOLVED_TILE = doc.querySelector(".slot.solved");
+const EXPECT = topClubs(board.slots[7]);
+t("a solved tile names the clubs underneath",
+  !!SOLVED_TILE.querySelector(".clubs"),
+  SOLVED_TILE.querySelector(".clubs")
+    ? SOLVED_TILE.querySelector(".clubs").textContent : "(no clubs element)");
+t("two at most, most-appeared first", EXPECT.length <= 2 && EXPECT.length > 0,
+  EXPECT.map((c) => c.club + " " + c.apps).join(" | "));
+t("and it is those clubs, with their appearances",
+  SOLVED_TILE.querySelector(".clubs").textContent ===
+    EXPECT.map((c) => (c.apps ? c.club + " " + c.apps : c.club)).join(" · "));
+t("an unsolved tile names none of them",
+  [...doc.querySelectorAll(".slot:not(.solved)")].every((el) => !el.querySelector(".clubs")));
 t("the counter moved", $("solvedCount").textContent === "1");
 t("and the box is cleared for the next one", $("answer").value === "");
 

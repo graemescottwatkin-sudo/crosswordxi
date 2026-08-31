@@ -242,3 +242,29 @@ export function bad(message, status = 400) {
 export function revealName(slot) {
   return String((slot && (slot.display || slot.name)) || "");
 }
+
+/* THE CLUBS A SOLVED PLAYER IS KNOWN FOR, most-appeared first.
+
+   SPELLS ARE SUMMED PER CLUB, NOT LISTED. Bosnich went United, Villa, then
+   United again — 3 apps and 23. Counted as two entries, each spell loses to
+   any single bigger one and the player's actual second club is pushed off a
+   two-line summary by a club he played three games for. A hundred and
+   twenty-one of the three hundred and thirty players in the bank have a
+   repeat club, so this is the common case, not the corner.
+
+   A total of zero means nobody recorded the appearances, not that the player
+   never played: twenty-four spells in the bank carry no count. The number is
+   left off those rather than printed as 0, which would be a claim the data
+   does not make. Ordering is stable, so clubs level on appearances stay in
+   career order. */
+export function topClubs(slot, max) {
+  const cap = typeof max === "number" ? max : 2;
+  const byClub = new Map();
+  for (const spell of (slot && slot.clubs) || []) {
+    if (!spell || !spell.club) continue;
+    const at = byClub.get(spell.club) || { club: spell.club, apps: 0 };
+    if (typeof spell.apps === "number" && spell.apps > 0) at.apps += spell.apps;
+    byClub.set(spell.club, at);
+  }
+  return [...byClub.values()].sort((a, b) => b.apps - a.apps).slice(0, cap);
+}

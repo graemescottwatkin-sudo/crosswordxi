@@ -13,7 +13,7 @@ import {
   gate, parseFormation, minimumFixedPoints, scrambleName, nameFloor,
 } from "../tools/build_scrambled.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
-import { publicBoard, boardForNumber, playableTokenNo, slotHint } from "../functions/_lib/sc-board.js";
+import { publicBoard, boardForNumber, playableTokenNo, slotHint, topClubs } from "../functions/_lib/sc-board.js";
 import { normalise, letterBag, isEnglishForm } from "../functions/_lib/sc-names.js";
 
 let pass = 0, fail = 0;
@@ -292,6 +292,50 @@ t("and the reveal contains the cypher that was scrambled", SC_BOARDS.every((b) =
 t("and only the cypher's letters are on the tile",
   SC_BOARDS.every((b) => b.slots.every((sl) =>
     letterBag(sl.scramble) === letterBag(sl.name))));
+
+
+console.log("\n=== What a solved player is known for ===");
+/* Two clubs, most-appeared first, spells at the same club summed. Every
+   number below is read off the board rather than written here: a fixture that
+   names a club is a fixture that expires the day the bank changes. */
+t("never more than two clubs", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => topClubs(sl).length <= 2)));
+t("and every player on the board has at least one", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => topClubs(sl).length >= 1)));
+t("ordered by appearances, most first", SC_BOARDS.every((b) =>
+  b.slots.every((sl) => {
+    const got = topClubs(sl);
+    return got.every((c, i) => i === 0 || got[i - 1].apps >= c.apps);
+  })));
+
+/* THE CASE THAT MOTIVATED THE SUMMING. A player with two spells at one club
+   must have them counted together — otherwise his real second club loses to
+   a three-game cameo. Found on the board rather than assumed, and the suite
+   says so if the board stops containing one. */
+const REPEATER = SC_BOARDS.flatMap((b) => b.slots).find((sl) => {
+  const names = (sl.clubs || []).map((c) => c.club);
+  return new Set(names).size < names.length;
+});
+t("the bank contains a player with two spells at one club", !!REPEATER,
+  REPEATER ? REPEATER.display : "none — the summing rule is untested");
+t("whose spells are summed, not listed twice", (() => {
+  if (!REPEATER) return false;
+  const got = topClubs(REPEATER, 99);
+  const names = got.map((c) => c.club);
+  if (new Set(names).size !== names.length) return false;
+  /* and the total is the sum of every spell at that club */
+  return got.every((c) => c.apps === (REPEATER.clubs || [])
+    .filter((sp) => sp.club === c.club)
+    .reduce((n, sp) => n + (typeof sp.apps === "number" && sp.apps > 0 ? sp.apps : 0), 0));
+})());
+
+/* The reveal is the answer; the clubs come with it. Neither may ride down in
+   the board payload, which is served before anything is solved. */
+t("no club appears in the unsolved payload", (() => {
+  const wire = JSON.stringify(publicBoard(SC_BOARDS[0], 1));
+  return SC_BOARDS[0].slots.every((sl) =>
+    topClubs(sl).every((c) => !wire.includes(c.club)));
+})());
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

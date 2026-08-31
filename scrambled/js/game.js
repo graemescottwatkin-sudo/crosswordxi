@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001g";
+var BUILD = "v001h";
 
 (function () {
   "use strict";
@@ -236,9 +236,29 @@ var BUILD = "v001g";
         el.appendChild(h);
       }
 
+      /* WHAT THE PLAYER IS KNOWN FOR, under the name, once the tile is solved.
+         Two clubs at most: the point is recognition, not a career listing —
+         the full history is what the career hint sells, and repeating all of
+         it here would give away for free what the bench charges for. */
+      if (got && got.clubs && got.clubs.length) {
+        var cl = document.createElement("span");
+        cl.className = "clubs";
+        cl.textContent = got.clubs.map(function (c) {
+          /* No number where the bank has no count. Printing 0 would claim he
+             never played for them, which is not what missing data means. */
+          return c.apps ? c.club + " " + c.apps : c.club;
+        }).join(" · ");
+        el.appendChild(cl);
+      }
+
       el.setAttribute("aria-label",
-        slot.pos + ", " + (got ? got.name : "scrambled, " +
-          slot.len.join(" and ") + " letters"));
+        slot.pos + ", " + (got
+          ? got.name + (got.clubs && got.clubs.length
+              ? ", " + got.clubs.map(function (c) {
+                  return c.apps ? c.club + ", " + c.apps + " appearances" : c.club;
+                }).join("; ")
+              : "")
+          : "scrambled, " + slot.len.join(" and ") + " letters"));
       el.addEventListener("click", function () { pick(slot.id); });
       pitch.appendChild(el);
     });
@@ -333,7 +353,7 @@ var BUILD = "v001g";
         state.letters[id] = (state.letters[id] || "") + r.letter;
         state.help += CFG.REVEAL_LETTER_COST;
       } else if (kind === "name") {
-        state.solved[id] = { name: r.name, how: "revealed" };
+        state.solved[id] = { name: r.name, clubs: r.clubs, how: "revealed" };
         state.help += CFG.REVEAL_NAME_COST;
         state.picked = null;
         hideBench();
@@ -405,7 +425,7 @@ var BUILD = "v001g";
     }).then(function (r) {
       if (r.error) return say(r.error, "bad");
       if (r.solvedId) {
-        state.solved[r.solvedId] = { name: r.name, how: "solved" };
+        state.solved[r.solvedId] = { name: r.name, clubs: r.clubs, how: "solved" };
         $("answer").value = "";
         state.picked = null;
         hideBench();
