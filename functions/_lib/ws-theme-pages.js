@@ -129,8 +129,25 @@ export async function treeRoute({ params, env }) {
 export function splitTheme(theme) {
   const s = String(theme == null ? "" : theme);
   const i = s.indexOf(" — ");
-  if (i < 0) return { series: s.trim(), edition: "" };
-  return { series: s.slice(0, i).trim(), edition: s.slice(i + 3).trim() };
+  if (i >= 0) return { series: s.slice(0, i).trim(), edition: s.slice(i + 3).trim() };
+  /* The icons sets number themselves instead: "England Icons #1", "#2".
+     The number is the edition, so the three England sets are one row. */
+  const n = s.match(/^(.*\S)\s+(#\d+)$/);
+  if (n) return { series: n[1], edition: n[2] };
+  return { series: s.trim(), edition: "" };
+}
+
+/* What a chip says. A season "1993/94" is "93/94" and a decade "1990s" is
+   "90s" — thirty-three seasons in a row are read by their last digits, and
+   the century is the row's, not the chip's. A year stays whole: "80" is not
+   a Euros. The chip's aria-label carries the full theme regardless. */
+export function shortEdition(edition) {
+  const e = String(edition == null ? "" : edition);
+  const season = e.match(/^\d{2}(\d{2}\/\d{2})$/);
+  if (season) return season[1];
+  const decade = e.match(/^\d{2}(\d{2}s)$/);
+  if (decade) return decade[1];
+  return e;
 }
 
 /* Boards of a group as rows: series in order of first appearance, each with
@@ -142,7 +159,9 @@ export function seriesRows(group) {
   group.boards.forEach((b, i) => {
     const { series, edition } = splitTheme(b.theme);
     if (!byName.has(series)) { byName.set(series, { series, chips: [] }); rows.push(byName.get(series)); }
-    byName.get(series).chips.push({ no: i + 1, label: edition || `#${i + 1}`, theme: b.theme });
+    byName.get(series).chips.push({
+      no: i + 1, label: edition ? shortEdition(edition) : `#${i + 1}`, theme: b.theme,
+    });
   });
   return rows;
 }

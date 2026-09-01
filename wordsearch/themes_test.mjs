@@ -10,7 +10,7 @@
  * rather than the data: an unreleased board is one this stub simply does not
  * return, the same way the real query does not return it.
  */
-import { indexPage, treeRoute, categorySlug, groups, splitTheme } from "../functions/_lib/ws-theme-pages.js";
+import { indexPage, treeRoute, categorySlug, groups, splitTheme, shortEdition } from "../functions/_lib/ws-theme-pages.js";
 import { utcDayKey } from "../functions/_lib/wsdata.js";
 
 let pass = 0, fail = 0;
@@ -29,6 +29,8 @@ const ROWS = [
   { id: "XIWS-0001", theme: "Premier League Icons — 1990s", category: "PL Era Icons", first: "2026-08-18" },
   { id: "XIWS-0003", theme: "Icons of the Premier League", category: "PL Era Icons", first: "2026-08-22" },
   { id: "XIWS-0057", theme: "Brazil — 2002 World Cup", category: "Tournament XI", first: "2026-08-25" },
+  { id: "XIWS-0101", theme: "England Icons #1", category: "National Icons", first: "2026-08-25" },
+  { id: "XIWS-0102", theme: "England Icons #2", category: "National Icons", first: "2026-08-25" },
   { ...SEALED, first: "2999-01-01" },
 ];
 
@@ -64,9 +66,9 @@ t("nothing slugs to nothing", categorySlug("") === "" && categorySlug(null) === 
 console.log("\n=== Grouping ===");
 const gs = await groups(env);
 t("released boards group by category, sorted by name",
-  gs.map((g) => g.slug).join(",") === "pl-era-icons,tournament-xi", gs.map((g) => g.slug).join(","));
+  gs.map((g) => g.slug).join(",") === "national-icons,pl-era-icons,tournament-xi", gs.map((g) => g.slug).join(","));
 t("boards within a group are in id order, so their numbers hold",
-  gs[0].boards.map((b) => b.id).join(",") === "XIWS-0001,XIWS-0002,XIWS-0003");
+  gs.find((g) => g.slug === "pl-era-icons").boards.map((b) => b.id).join(",") === "XIWS-0001,XIWS-0002,XIWS-0003");
 t("the sealed board's category is absent, because its only board is",
   !gs.some((g) => g.name === SEALED.category));
 
@@ -93,6 +95,15 @@ t("a theme without a dash is a series of one",
   JSON.stringify(splitTheme("Icons of the Premier League")) ===
   JSON.stringify({ series: "Icons of the Premier League", edition: "" }));
 t("a hyphen is not the dash", splitTheme("Runner-Up — 1984").series === "Runner-Up");
+t("a numbered set splits on its number, so England Icons #1, #2, #3 are one row",
+  JSON.stringify(splitTheme("England Icons #2")) ===
+  JSON.stringify({ series: "England Icons", edition: "#2" }));
+t("a season chip is its last digits: 1993/94 is 93/94, 1999/00 is 99/00",
+  shortEdition("1993/94") === "93/94" && shortEdition("1999/00") === "99/00");
+t("a decade chip too: 1990s is 90s", shortEdition("1990s") === "90s");
+t("a year stays whole, and words stay words",
+  shortEdition("1980") === "1980" && shortEdition("Euro 1996") === "Euro 1996" &&
+  shortEdition("2002 World Cup") === "2002 World Cup" && shortEdition("#2") === "#2");
 
 console.log("\n=== A category page ===");
 const page = await treeRoute(ctx(["pl-era-icons"]));
@@ -113,8 +124,17 @@ const rows = pageHtml.split('<li class="set">').slice(1).map((chunk) => {
 if (!rows.length) throw new Error("no series rows parsed — the checks below would be vacuous");
 t("boards sharing a series share a row, with the editions as the chips",
   rows.length === 2 && rows[0].name === "Premier League Icons" &&
-  rows[0].chips.map((c) => c.label).join(",") === "1990s,2000s",
+  rows[0].chips.map((c) => c.label).join(",") === "90s,00s",
   rows.map((r) => r.name + " [" + r.chips.map((c) => c.label).join(" ") + "]").join(" | "));
+{
+  const nat = await text(await treeRoute(ctx(["national-icons"])));
+  const natRows = nat.split('<li class="set">').slice(1);
+  t("numbered icon sets share a row, with their numbers as the chips",
+    natRows.length === 1 && nat.includes('<span class="name">England Icons</span>') &&
+    nat.includes('aria-label="England Icons #1">#1</a>') &&
+    nat.includes('aria-label="England Icons #2">#2</a>'),
+    natRows.length + " rows");
+}
 t("a board without an edition is a series of one, numbered",
   rows[1].name === "Icons of the Premier League" && rows[1].chips.length === 1 &&
   rows[1].chips[0].label === "#3");
@@ -123,7 +143,7 @@ t("each chip is its board's own door, numbered by place in the category",
   rows[0].chips[1].href === "/wordsearch/theme/pl-era-icons/2" &&
   rows[1].chips[0].href === "/wordsearch/theme/pl-era-icons/3");
 t("a chip names its whole board for a screen reader",
-  pageHtml.includes('aria-label="Premier League Icons — 1990s">1990s</a>'));
+  pageHtml.includes('aria-label="Premier League Icons — 1990s">90s</a>'));
 t("it does not offer another category's boards", !pageHtml.includes("Brazil"));
 t("it links back to the index", pageHtml.includes('href="/wordsearch/themes/"'));
 t("it is indexable", !/noindex/.test(pageHtml));
