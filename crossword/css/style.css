@@ -2691,10 +2691,10 @@ body.home-showing .tbar{visibility:hidden}
    version, and it scales with the card instead of tiling at a fixed size.
    Kept under 10% opacity — it is a texture, not a diagram, and the white
    heading over it has to stay the thing being read. */
-:root{--hero-rule:rgba(255,255,255,.085)}
-:root[data-theme="dark"]{--hero-rule:rgba(0,0,0,.075)}
+
+
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){--hero-rule:rgba(0,0,0,.075)}
+
 }
 
 /* The device code. Two controls: one gives the code out, one takes one in. */
@@ -2784,7 +2784,3 @@ body.home-showing .tbar{visibility:hidden}
    the brand. clip-path with a 1px box is the form that survives; display:none
    and visibility:hidden are both ignored by assistive tech, which would defeat
    the point. */
-.sr-only{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
-}

@@ -60,9 +60,15 @@ const w = dom.window, d = w.document;
 await new Promise((r) => w.addEventListener("load", r));
 await new Promise((r) => setTimeout(r, 500)); // let both fetches land
 
-t("the page loads with the sample bank behind the API",
-  /released boards/.test(d.getElementById("bankLine").textContent),
-  d.getElementById("bankLine").textContent);
+/* THE COUNT MOVED ONTO THE CARD IT DESCRIBES. #bankLine sat under a Kick off
+   button on the card this landing replaced; the board count is on the boards
+   card now, next to the thing it counts. Read defensively so a missing element
+   fails this check rather than killing the run — the suite died on a null
+   here, which reports nothing about the eleven checks after it. */
+t("the page loads with the sample bank behind the API", (() => {
+  const el = d.getElementById("homePreviousCount");
+  return !!el && /board/i.test(el.textContent);
+})(), (d.getElementById("homePreviousCount") || {}).textContent);
 t("the build tag is on the page", d.getElementById("buildTag").textContent === w.WORDSEARCHXI_BUILD);
 t("no schedule and no bank in the served page",
   !/DAILY_SCHEDULE|const PUZZLES/.test(d.documentElement.outerHTML));
@@ -70,7 +76,10 @@ t("one H1, and it is the game's name, not the board's",
   d.querySelectorAll("h1").length === 1 && /Wordsearch XI/.test(d.querySelector("h1").textContent));
 
 /* ---- kick off the daily ----------------------------------------------- */
-d.getElementById("kickBtn").click();
+/* The hero, not the old Kick off button. #kickBtn belonged to a card with two
+   mode tiles above it, where the button did different things depending on a
+   selection made earlier; today is its own control now. */
+d.getElementById("homeDaily").click();
 await new Promise((r) => setTimeout(r, 250));
 t("kick off opens the daily board", !d.getElementById("gameApp").classList.contains("hidden"));
 t("the grid has 168 cells", d.querySelectorAll("#grid .cell").length === 14 * 12);
@@ -187,7 +196,7 @@ t("the daily state carries saved_at for the away-time charge",
   w2.localStorage.setItem("xiws.daily." + day, stash);
   w2.localStorage.setItem("xiws.results", "[]");
   await new Promise((r) => setTimeout(r, 500));
-  d2.getElementById("kickBtn").click();
+  d2.getElementById("homeDaily").click();
   await new Promise((r) => setTimeout(r, 300));
   const clock = d2.getElementById("clock").textContent;
   /* 60s + capped 3600s = 3660s of 600s/90' => past full time => the board

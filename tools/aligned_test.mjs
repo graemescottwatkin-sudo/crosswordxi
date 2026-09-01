@@ -327,7 +327,21 @@ t("the shared chrome cannot change without its ?v= moving", (() => {
   }
   const now = h.digest("hex").slice(0, 16);
   const tagged = GAMES.every((g) =>
-    read(`${g.dir}/index.html`).indexOf(`shared/xi-chrome.js?v=${SHARED_TAG}`) > -1);
+    /* EVERY shared asset a page links, not just the script. xi-tokens.css sat
+       on v2 while the chrome went to v5, so a token added to it would have
+       reached nobody who had visited before — the browser was right to reuse
+       what it had. Checking one file of four is checking the one that happened
+       to be remembered. */
+    /* Split, not matched: written as a pattern the backslashes were eaten on
+       the way into this file and it became a regex that could not compile. */
+    (() => {
+      const page = read(`${g.dir}/index.html`);
+      const refs = page.split("shared/xi-").slice(1)
+        .map((chunk) => chunk.split(String.fromCharCode(34))[0])
+        .filter((ref) => ref.indexOf("?v=") > -1);
+      return refs.length > 0 &&
+        refs.every((ref) => ref.split("?v=")[1] === SHARED_TAG);
+    })());
   if (now === SHARED_HASH) return tagged;
   console.log(`        shared/ CHANGED — bump SHARED_TAG past ${SHARED_TAG} in every ` +
     `page, then set SHARED_HASH to ${now}`);

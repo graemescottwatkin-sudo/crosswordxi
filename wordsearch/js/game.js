@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001q";
+  var BUILD = "v001r";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -781,6 +781,119 @@
     startTimer(); updateClock();
   }
 
+  /* Said on the hero, where the player is already looking. Guarded because
+     two of its callers are the failure paths for the board list, and an error
+     path that throws on a missing element reports nothing at all. */
+  function setDailyState(text) {
+    var el = $("homeDailyState");
+    if (el) el.textContent = text || "";
+  }
+
+  /* ---- the landing --------------------------------------------------- */
+
+  var featuredId = null;
+
+  /* THE BOARD OF THE WEEK, picked by the week rather than chosen by anyone.
+     Derived from the ISO week number so every player sees the same board and
+     it changes on Monday without anything being scheduled or stored. The list
+     is stable and sorted, so the same week always lands on the same board. */
+  function weekIndex() {
+    var d = new Date();
+    var utc = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return Math.floor(utc / 604800000);
+  }
+  function pickFeatured() {
+    if (!catalogBoards.length) return null;
+    var ordered = catalogBoards.slice().sort(function (x, y) {
+      return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+    });
+    return ordered[weekIndex() % ordered.length];
+  }
+  function selectBoard(id) {
+    if (!id) return;
+    var b = catalogBoards.find(function (x) { return x.id === id; });
+    if (!b) return;
+    $("catSelect").value = b.category;
+    $("catSelect").dispatchEvent(new Event("change"));
+    $("boardSelect").value = b.id;
+  }
+
+  /* FORM, drawn by the shared chrome so a win looks the same in every game.
+     This game owns what a RESULT is — a dated day rather than a numbered one
+     — and hands over only the scores. */
+  function renderForm() {
+    var el = $("homeRun"), title = $("homeRunTitle");
+    if (!el || !window.XIChrome) return;
+    var done = readResults()
+      .filter(function (r) { return r && r.status === "complete" && r.day; })
+      .sort(function (x, y) { return x.day < y.day ? -1 : 1; });
+    if (!done.length) {
+      title.textContent = "No run yet";
+      el.innerHTML = window.XIChrome.formChips([]) +
+        '<span class="run-none">Play today to start one.</span>';
+      return;
+    }
+    /* A run is consecutive DAYS ending today or yesterday. Ending earlier it
+       is a run that was, and saying otherwise would be the streak lying. */
+    var days = done.map(function (r) { return r.day; });
+    var last = days[days.length - 1];
+    var today = dayKey();
+    var yest = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    var run = 0;
+    if (last === today || last === yest) {
+      run = 1;
+      for (var i = days.length - 1; i > 0; i--) {
+        var prev = new Date(Date.parse(days[i]) - 86400000).toISOString().slice(0, 10);
+        if (days[i - 1] === prev) run++; else break;
+      }
+    }
+    var best = 1, walk = 1;
+    for (var k = 1; k < days.length; k++) {
+      var back = new Date(Date.parse(days[k]) - 86400000).toISOString().slice(0, 10);
+      walk = days[k - 1] === back ? walk + 1 : 1;
+      if (walk > best) best = walk;
+    }
+    title.textContent = run + (run === 1 ? " day run" : " day run");
+    el.innerHTML = window.XIChrome.formChips(
+      done.map(function (r) { return r.final_score; })) +
+      '<span class="run-best">best ' + best + "</span>";
+  }
+
+  /* PLAY AS, from the family's club list rather than a copy of it. */
+  function fillClubs() {
+    var sel = $("homeClubSelect");
+    if (!sel || !window.XI_CLUBS) return;
+    var chosen = "";
+    try { chosen = localStorage.getItem("xi.club") || ""; } catch (e) {}
+    sel.innerHTML = '<option value="">Random club</option>';
+    window.XI_CLUBS.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    });
+    sel.value = chosen;
+    sel.onchange = function () {
+      /* xi. because the club is the player, not the game: chosen here it is
+         chosen in all of them. */
+      try { localStorage.setItem("xi.club", sel.value); } catch (e) {}
+    };
+  }
+
+  function renderLanding() {
+    var f = pickFeatured();
+    featuredId = f ? f.id : null;
+    if (f) {
+      $("homeFeaturedName").textContent = f.theme;
+      $("homeFeaturedState").textContent = f.category;
+    }
+    $("homeThemedState").textContent = catalogBoards.length
+      ? catalogBoards.length + " boards available" : "";
+    $("homePreviousCount").textContent = catalogBoards.length
+      ? catalogBoards.length + " released boards" : "Every day so far";
+    renderForm();
+    fillClubs();
+  }
+
   /* ---- pre-match ------------------------------------------------------- */
   function fillBrowser() {
     var cats = {};
@@ -800,13 +913,15 @@
     }
     catSel.onchange = fillBoards; fillBoards();
   }
+  /* THE MODE IS CHOSEN BY WHICH CARD YOU PRESS, not by a tile that stays lit.
+     Two tiles above a single Kick off meant the button did different things
+     depending on a selection made earlier and shown small; the landing puts
+     today under its own button and the other boards under theirs. */
   function setPrematchMode(next) {
     mode = next;
-    document.querySelectorAll(".mode").forEach(function (x) {
-      x.classList.toggle("active", x.dataset.mode === next);
-    });
-    $("freeBrowser").classList.toggle("hidden", next !== "free");
-    $("kickBtn").textContent = next === "free" ? "Play selected board" : "Kick off";
+    var browser = $("freeBrowser");
+    if (browser) browser.classList.toggle("hidden", next !== "free");
+    if (next === "free" && browser) browser.scrollIntoView({ block: "nearest" });
   }
   function goToMenu() {
     if (mode === "daily" && startedAt && found.size < 11) saveDailyProgress();
@@ -865,19 +980,30 @@
     grid.addEventListener("pointerup", onPointerEnd);
     grid.addEventListener("pointercancel", onPointerEnd);
 
-    document.querySelectorAll(".mode").forEach(function (b) {
-      b.onclick = function () { setPrematchMode(b.dataset.mode); };
-    });
+    /* Today, from the hero. */
+    $("homeDaily").onclick = function () {
+      if (!window.__daily) { toast("No Daily today — try the themes"); setPrematchMode("free"); return; }
+      setPrematchMode("daily");
+      startDaily(window.__daily);
+    };
+    /* The other boards. Both open the same browser; the featured card pre-picks
+       the board of the week rather than being a second way to browse. */
+    var openBrowser = function (pick) {
+      setPrematchMode("free");
+      if (pick) selectBoard(pick);
+    };
+    $("homeThemed").onclick = function () { openBrowser(null); };
+    /* The section nav drives the controls that already do these jobs rather
+       than reimplementing them — Today is where you already are. */
+    var navThemes = $("navThemes");
+    if (navThemes) navThemes.onclick = function () { openBrowser(null); };
+    $("homePrevious").onclick = function () { openBrowser(null); };
+    $("homeFeatured").onclick = function () { openBrowser(featuredId); };
     $("kickBtn").onclick = function () {
-      if (mode === "daily") {
-        if (!window.__daily) { toast("No Daily today — try Free play"); setPrematchMode("free"); return; }
-        startDaily(window.__daily);
-      } else {
-        var id = $("boardSelect").value;
-        if (!id) { toast("Pick a board"); return; }
-        api("puzzle?id=" + encodeURIComponent(id)).then(function (r) { startFree(r.puzzle); },
-          function () { toast("Board unavailable"); });
-      }
+      var id = $("boardSelect").value;
+      if (!id) { toast("Pick a board"); return; }
+      api("puzzle?id=" + encodeURIComponent(id)).then(function (r) { startFree(r.puzzle); },
+        function () { toast("Board unavailable"); });
     };
     $("gameBtn").onclick = function () { toggleMenu("gameMenu", "gameBtn"); };
     $("helpBtn").onclick = function () { toggleMenu("helpMenu", "helpBtn"); };
@@ -925,17 +1051,18 @@
        the browser. Neither response contains a schedule. */
     api("daily").then(function (r) {
       serverDay = r.day; window.__daily = r.puzzle;
-      var sub = $("dailyModeSub");
-      if (sub) sub.textContent = r.puzzle
-        ? "One fixed board for everyone today."
-        : "No Daily scheduled today — Free play is open.";
+      /* The hero says whether there is one, where the mode tile used to. */
+      setDailyState(r.puzzle ? "" : "No Daily scheduled today — the themes are open.");
     }, function () {
-      $("bankLine").textContent = "Could not reach the server — check your connection.";
+      setDailyState("Could not reach the server — check your connection.");
     });
     api("catalog").then(function (r) {
       catalogBoards = r.boards || [];
-      $("bankLine").textContent = catalogBoards.length + " released boards · a new Daily every day";
+      /* #bankLine belonged to the card this landing replaced. The counts it
+         carried are on the board cards now, where they describe the thing they
+         are next to rather than sitting under a Kick off button. */
       fillBrowser();
+      renderLanding();
       /* #p= is a Free Play invitation and nothing more: the endpoint refuses
          unreleased ids, so the link cannot be a door to a future daily. */
       var m = location.hash.match(/p=(XIWS-\d{4})/);
@@ -944,7 +1071,7 @@
           function () { toast("That board is not available"); });
       }
     }, function () {
-      $("bankLine").textContent = "Could not load the board list.";
+      setDailyState("Could not load the board list.");
     });
   }
 

@@ -19,6 +19,11 @@
   --tint:rgba(24,34,25,.06); --tint-strong:rgba(24,34,25,.12);
   /* form results — win, draw, loss. Separated by lightness as well as hue so
      the letter and the weight carry it for a colour-blind player. */
+  /* The line on the hero's grid. It inverts, because the hero does: deep
+     green in light and pale green in dark, so a white line that reads as
+     depth on one is a wash on the other that eats the Kick off button's
+     contrast. */
+  --hero-rule:rgba(255,255,255,.085);
   --form-w:#C0DD97; --form-w-ink:#173404;
   --form-d:#FAC775; --form-d-ink:#412402;
   --form-l:#F7C1C1; --form-l-ink:#501313;
@@ -34,6 +39,7 @@
   --gold:#F2C94C; --gold-ink:#3A2D00; --xi-ink:#F2C94C;
   --line:#2C352A; --danger:#D9758C; --ok:#61DDA1;
   --tint:rgba(234,240,232,.07); --tint-strong:rgba(234,240,232,.14);
+  --hero-rule:rgba(0,0,0,.075);
   /* form results — win, draw, loss. Separated by lightness as well as hue so
      the letter and the weight carry it for a colour-blind player. */
   --form-w:#C0DD97; --form-w-ink:#173404;
