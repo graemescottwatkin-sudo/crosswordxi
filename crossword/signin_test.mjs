@@ -14,6 +14,14 @@
  *
  * Nothing is written to your database. Clearing your existing record, if you
  * want a clean count, is one command printed at the start.
+ 
+ * RUN BY A PERSON, NOT BY CI. This needs a real database, a configured
+ * GOOGLE_CLIENT_ID and somebody to click the Google popup — which is the whole
+ * point of it, because automating that popup would test a stub rather than the
+ * origin allow-list, the token verification and the cookie, which are what
+ * break. Against production:
+ *
+ *   BASE=https://www.thexigames.com/crossword/ HEADED=1 node crossword/signin_test.mjs
  */
 import { chromium } from "playwright";
 
@@ -51,7 +59,15 @@ async function waitFor(page, what, predicate, seconds = 180) {
   return null;
 }
 
-const browser = await chromium.launch({ headless: false, slowMo: 60 });
+/* HEADED WHEN A PERSON IS DRIVING IT, HEADLESS OTHERWISE.
+
+   This was pinned open with a 60ms slowMo because the sign-in it exercises is
+   a real Google popup somebody has to click. That is still true, and it is why
+   the assertions below stop at the boundary rather than automating the popup —
+   but a job with no display cannot open a window, so the suite could never
+   have run anywhere but a desktop. HEADED=1 to watch it. */
+const headed = process.env.HEADED === "1";
+const browser = await chromium.launch({ headless: !headed, slowMo: headed ? 60 : 0 });
 const ctx = await browser.newContext({ viewport: { width: 1180, height: 900 } });
 const page = await ctx.newPage();
 
@@ -60,6 +76,11 @@ console.log("If you want a clean account count, run this first and restart:");
 console.log('  npx wrangler d1 execute crosswordxi --remote --command "DELETE FROM results"\n');
 
 await page.goto(BASE, { waitUntil: "domcontentloaded" });
+/* The game opens on a landing screen and loads nothing until a mode is
+   chosen. Waiting for the kick off card without choosing one waits forever —
+   which is what this did, in a job nobody had ever run. */
+await page.waitForSelector("#homeDaily", { timeout: 20000 });
+await page.click("#homeDaily", { timeout: 10000 });
 await page.waitForSelector("#kickOffBtn", { timeout: 20000 });
 
 /* ---------- Baseline ---------- */

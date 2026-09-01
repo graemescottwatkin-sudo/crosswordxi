@@ -485,17 +485,22 @@ t("every test suite is named in the workflow", (() => {
       if (/_test\.mjs$/.test(f)) suites.push(dir + "/" + f);
     }
   }
-  /* Suites that need a live URL or a real browser cannot run in the offline
-     job. Named here so the exemption is a decision on the record rather than
-     something that quietly grew:
-       render_test   Playwright, sixteen viewports, needs BASE
-       journey_test  Playwright
-       signin_test   Playwright, needs BASE
+  /* Suites that run in NO job, named here so the exemption is a decision on
+     the record rather than something that quietly grew.
+
+     render_test and journey_test have LEFT this list. They run in the browser
+     job now, so exempting them would mean the gate could not notice if they
+     were taken out again — which is exactly how they came to run nowhere for
+     the releases before this one.
+
+       signin_test   needs a real database, a client id and a PERSON to click
+                     the Google popup. Automating the popup would test a stub
+                     rather than the origin allow-list, the token verification
+                     and the cookie. It is an operator tool and says so.
        preview_test  needs a built preview, and exits 0 without one — which is
                      the "test that cannot fail" fault; it should be fixed or
-                     deleted rather than added here permanently. */
-  const needsLive = ["crossword/render_test.mjs", "crossword/journey_test.mjs",
-                     "crossword/signin_test.mjs", "crossword/preview_test.mjs"];
+                     deleted rather than left here permanently. */
+  const needsLive = ["crossword/signin_test.mjs", "crossword/preview_test.mjs"];
   const missing = suites.filter((f) => needsLive.indexOf(f) === -1 && !yml.includes(f));
   /* The reverse direction: every suite the workflow names must exist. The old
      regex was /node (\w+_test\.mjs)/ — no slash in the class — and every

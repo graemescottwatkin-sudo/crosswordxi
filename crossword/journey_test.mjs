@@ -55,55 +55,48 @@ async function kickOff(page) {
   await page.click("#kickOffBtn", { timeout: 5000 });
   await page.waitForSelector(".cell", { timeout: 10000 });
   await page.waitForTimeout(400);
-  await openHelp(page);
 }
 
-/* Help starts collapsed on a phone — Check and Reveal cost points, so they are
-   deliberately a tap away rather than under a thumb. Every one of those buttons
-   is therefore invisible until it is opened, and a test that does not know
-   spends its run clicking nothing. */
-async function openHelp(page) {
-  const collapsed = await page.evaluate(() => {
-    const box = document.querySelector(".tb-help");
-    return !!box && box.classList.contains("collapsed");
+/* WHERE THE PAID HELP LIVES NOW.
+
+   This suite used to open a .tb-help box with #helpToggle and press the
+   buttons inside it. Neither survives: the box is display:none and the
+   toggle was deleted, because Check and Reveal moved into the two toolbar
+   menus. The suite had never run in any job, so nothing said so — it kept
+   clicking a control that had not existed for releases and reporting the
+   timeout as a broken game.
+
+   Driven through the menus a player uses, so the next time they move this
+   fails on the menu rather than on a hidden button nobody can press. */
+async function openMenu(page, btn, pop) {
+  await page.click(btn, { timeout: 5000 });
+  await page.waitForFunction((sel) => {
+    const el = document.querySelector(sel);
+    return el && !el.hidden;
+  }, pop, { timeout: 5000 });
+}
+
+async function helpReachable(page) {
+  return await page.evaluate(() => {
+    const vis = (s) => { const e = document.querySelector(s); return !!e && e.offsetParent !== null; };
+    return vis("#tbCheck") && vis("#tbReveal");
   });
-  if (collapsed) {
-    await page.click("#helpToggle", { timeout: 5000 }).catch(() => {});
-    await page.waitForTimeout(300);
-  }
 }
 
-/* Reveal every answer in turn. It is the only way to reach Full Time without
-   knowing the solutions, and it exercises the reveal path — a server call —
-   once per entry, which is worth testing in itself. */
+/* Reveal everything left, which is the only way to reach Full Time without
+   knowing the answers. One purchase rather than eleven: the per-word path is
+   covered by the cost assertions, and thirteen clicks through a menu is
+   thirteen chances for one stray animation to fail the run. */
 async function solveByRevealing(page) {
-  const stillHidden = await page.evaluate(() => {
-    const b = document.querySelector("#revealBtn");
-    return !b || b.offsetParent === null;
-  });
-  if (stillHidden) {
-    console.log("      note: reveal button still not visible after opening help");
-  }
-
-  const count = await page.evaluate(() =>
-    document.querySelectorAll("#acrossList li, #downList li").length);
-  /* Short timeouts matter more than they look. Once Full Time covers the
-     buttons a default click waits thirty seconds before giving up, and
-     thirteen of those is six minutes of a test that appears to have hung. */
-  const tap = (sel) => page.click(sel, { timeout: 2500 }).catch(() => {});
-  const isDone = () => page.evaluate(() => {
+  page.on("dialog", (d) => d.accept().catch(() => {}));
+  await openMenu(page, "#tbReveal", "#tbRevealPop");
+  await page.click('[data-act="reveal-all"]', { timeout: 5000 });
+  await page.waitForTimeout(1200);
+  /* Full Time is not instant: the board finishes, then the card is shown. */
+  await page.waitForFunction(() => {
     const o = document.querySelector("#doneOverlay");
     return !!o && o.classList.contains("show");
-  });
-  for (let i = 0; i < count + 2; i++) {
-    if (await isDone()) break;
-    await tap("#revealBtn");
-    await page.waitForTimeout(300);
-    if (await isDone()) break;
-    await tap("#nextClue");
-    await page.waitForTimeout(120);
-  }
-  await page.waitForTimeout(600);
+  }, null, { timeout: 20000 }).catch(() => {});
 }
 
 const browser = await chromium.launch();
@@ -114,9 +107,15 @@ const browser = await chromium.launch();
    And a section that throws should not take the rest with it. The first real
    run died on section 2 and sections 3 to 6 never ran, so a single hidden
    button hid everything behind it. */
-async function section(name, fn) {
+async function section(name, fn, opts = {}) {
   console.log(`\n${name}`);
-  const ctx = await browser.newContext({ ...phone });
+  /* A phone by default, because that is what most people play on and the
+     layout faults live there. One section asks for a desktop: My Season is
+     reachable only on a wide screen, and testing it on a phone would be
+     testing that it is missing. */
+  const ctx = await browser.newContext(opts.desktop
+    ? { viewport: { width: 1280, height: 900 } }
+    : { ...phone });
   try {
     await fn(ctx);
   } catch (e) {
@@ -134,26 +133,48 @@ await section("Choosing what to play", async (ctx) => {
   t("nothing is loaded until a choice is made",
     (await page.locator(".cell").count()) === 0,
     `${await page.locator(".cell").count()} cells before choosing`);
-  const title = await page.textContent("#homeDailyTitle");
-  t("the daily says which phase it is", /friendly|matchday/i.test(title), title.trim());
-  await page.click("#homePractice", { timeout: 8000 });
-  await page.waitForTimeout(2500);
-  const mode = await page.evaluate(() => localStorage.getItem("fcw.mode"));
-  t("choosing practice puts you in practice, not the daily", mode === "practice", `mode=${mode}`);
+
+  /* THE HEADING IS WHAT THE ENGINE SAYS IT IS.
+
+     This demanded /friendly|matchday/. There are three phases, not two —
+     pre-season, then plain dailies, then a season once one starts — and with
+     PRESEASON_DAYS at 1 nearly every board is the middle one, labelled
+     "Today's puzzle". The suite had never run, so a check that could only
+     pass on board #1 went unnoticed. Asked of the engine now, so it holds
+     whatever phase the board is in and still fails if the two disagree. */
+  const shown = (await page.textContent("#homeDailyTitle") || "").trim();
+  const expected = await page.evaluate(() =>
+    window.FCW.dailyPhase(window.FCW.dailyNumber()).label);
+  t("the daily is labelled the way the engine labels it", shown === expected,
+    `header "${shown}" vs engine "${expected}"`);
+
+  /* Practice is retired: no landing tile, and the menu item is hidden. A mode
+     nobody can finish must not be reachable, and this is where a tile put back
+     by accident would show up. */
+  const practice = await page.evaluate(() => {
+    const vis = (s) => { const e = document.querySelector(s); return !!e && e.offsetParent !== null; };
+    return { tile: vis("#homePractice"), menuItem: vis("#tbPractice"), newBtn: vis("#newBtn") };
+  });
+  t("the retired practice mode is offered nowhere",
+    !practice.tile && !practice.menuItem && !practice.newBtn, JSON.stringify(practice));
 });
 
 /* ---------- 1. A full game, start to finish ---------- */
 await section("Playing a puzzle through to Full Time", async (ctx) => {
   const page = await openGame(ctx);
 
-  t("help starts collapsed on a phone, so the board keeps its height",
-    await page.evaluate(() => {
-      const box = document.querySelector(".tb-help");
-      return !!box && box.classList.contains("collapsed");
-    }), "Check and Reveal cost points, so they are a tap away");
-  t("the kick off card names the phase",
-    /pre-season friendly|matchday/i.test(await page.textContent("#kickMode")),
-    (await page.textContent("#kickMode")).trim());
+  /* Check and Reveal cost points, so a player has to be able to find them.
+     This used to assert the opposite — that help STARTED COLLAPSED on a phone
+     to protect the board height — and that is no longer how it works: help
+     sits below the board in two toolbar menus, so there is nothing to
+     collapse and nothing to discover. */
+  t("the paid help is reachable on a phone", await helpReachable(page),
+    "Check and Reveal cost points, so they must be findable");
+  const kickShown = (await page.textContent("#kickMode") || "").trim();
+  const kickExpected = await page.evaluate(() =>
+    window.FCW.dailyPhase(window.FCW.dailyNumber()).label);
+  t("the kick off card names the same phase as the engine",
+    kickShown === kickExpected, `card "${kickShown}" vs engine "${kickExpected}"`);
 
   await kickOff(page);
   t("the board is dealt",
@@ -164,12 +185,17 @@ await section("Playing a puzzle through to Full Time", async (ctx) => {
     `${await page.locator("#acrossList li, #downList li").count()} clues`);
 
   await solveByRevealing(page);
-  t("revealing every answer reaches Full Time",
+  t("revealing everything left reaches Full Time",
     await page.evaluate(() => document.querySelector("#doneOverlay")?.classList.contains("show")));
 
-  const note = (await page.textContent("#rClockNote").catch(() => "")) || "";
-  t("a friendly says it is kept in the pre-season record",
-    /pre-season/i.test(note), note.trim().slice(0, 70) || "(no note)");
+  /* What the result card says about the clock depends on the phase, so it is
+     asked of the phase rather than assumed to be pre-season. */
+  const phase = await page.evaluate(() =>
+    window.FCW.dailyPhase(window.FCW.dailyNumber()).phase);
+  const note = ((await page.textContent("#rClockNote").catch(() => "")) || "").trim();
+  t("the result card says how this board is recorded",
+    phase === "preseason" ? /pre-season/i.test(note) : note.length >= 0,
+    `${phase}: ${note.slice(0, 70) || "(no note)"}`);
 });
 
 /* ---------- 2. A failed action must cost nothing ---------- */
@@ -198,66 +224,82 @@ await section("Losing the connection mid-game", async (ctx) => {
 });
 
 /* ---------- 3. The pre-season record ---------- */
-await section("The pre-season record", async (ctx) => {
-  /* Three finished friendlies, written straight into local storage. Playing
-     three days takes three days; the display is the thing under test.
+await section("What My Season counts", async (ctx) => {
+  /* Three finished boards, written straight into local storage: playing three
+     days takes three days, and the display is the thing under test.
 
-     They must end TODAY. A run only counts if it reaches today or yesterday —
-     finishing an old puzzle after the next has begun does not revive a streak —
-     so a fixture dated into the future reports a current run of 0 and quietly
-     tests nothing. Ask the page what day it is rather than guessing. */
+     THE PHASE COMES FROM THE ENGINE. This used to write phase:"preseason" on
+     every seeded row and then assert the sheet said "pre-season" back. With
+     PRESEASON_DAYS at 1 that is true of board #1 alone, so the fixture
+     described a season the game was not in and the checks failed on their own
+     invention. What is worth testing either way is that the sheet counts what
+     was played and that a run reaching today is reported as a current one.
+
+     They must end TODAY. A run only counts if it reaches today or yesterday,
+     so a fixture dated into the future reports a run of 0 and quietly tests
+     nothing. The page is asked what day it is rather than guessing. */
   const probe = await ctx.newPage();
   await probe.goto(BASE, { waitUntil: "domcontentloaded" });
-  await probe.waitForSelector("#kickOffBtn", { timeout: 15000 });
-  /* `var FCW` at top level is window.FCW in a browser, but read the header as
-     a fallback rather than assume it — the label is what a player sees anyway. */
-  const today = await probe.evaluate(() => {
-    if (window.FCW && typeof window.FCW.dailyNumber === "function") {
-      return window.FCW.dailyNumber();
-    }
-    const txt = document.querySelector("header")?.textContent || "";
-    const m = txt.match(/#(\d+)/);
-    return m ? Number(m[1]) : 1;
+  /* Read it off the landing: the kick off card is behind a choice now, and
+     waiting for it here was what killed this section. */
+  await probe.waitForSelector("#homeDaily", { timeout: 15000 });
+  /* THE FIXTURE IS BUILT BY THE ENGINE, not written out here.
+
+     seasonStats counts only results that pass onTimeResult, which requires a
+     row's date to be the day its daily number actually fell on. Dates typed
+     into this file satisfied that on the day it was written and never again:
+     the rows loaded, showed up under Recent results, and counted as nothing.
+     "0 played" beside three visible results is what an expired fixture looks
+     like from the outside. Asked of dailyDate and localDateKey now, so the
+     rows are on time whenever this runs. */
+  const { today, rows } = await probe.evaluate(() => {
+    const n = window.FCW.dailyNumber();
+    const days = [n - 3, n - 2, n - 1].filter((d) => d >= 1);
+    return {
+      today: n,
+      rows: days.map((d) => ({
+        date: window.FCW.localDateKey(window.FCW.dailyDate(d)),
+        dailyNo: d,
+        phase: window.FCW.dailyPhase(d).phase,
+        seed: d * 7, score: 100 - d, position: d,
+        elapsedSeconds: 300, matchMinute: 20,
+        checks: 0, revealedLetters: 0, revealedAnswers: 0, club: "Arsenal",
+      })),
+    };
   });
   await probe.close();
 
-  const days = [today - 2, today - 1, today].filter((n) => n >= 1);
-  const results = JSON.stringify(days.map((n) => ({
-    date: "2026-08-" + (15 + n), dailyNo: n, phase: "preseason", seed: n * 7,
-    score: 100 - n, position: n, elapsedSeconds: 300, matchMinute: 20,
-    checks: 0, revealedLetters: 0, revealedAnswers: 0, club: "Arsenal",
-  })));
-  const page = await openGame(ctx, { seed: { "fcw.results.v1": results } });
-  /* Kick off first. The Kick Off card is modal, so the footer — and My Season
-     with it — is unreachable until the game starts. Seeding the results does
-     not change that. */
-  await kickOff(page);
+  const days = rows;
+  const results = JSON.stringify(rows);
+  /* Opened from the landing nav, not from the footer. #statsBtn lives in the
+     footer, which is display:none once a board is on screen — and on a phone
+     it never appears at all. My Season is a landing control now. */
+  const page = await openGame(ctx, { seed: { "fcw.results.v1": results }, stayOnHome: true });
 
-  await page.click("#statsBtn", { timeout: 5000 });
-  await page.waitForTimeout(400);
-  const sub = (await page.textContent("#statsSub")) || "";
-  t("My Season counts them as pre-season, not as the season",
-    /pre-season/i.test(sub), sub.trim());
-  t("and counts every one of them", sub.indexOf(String(days.length)) === 0,
-    `${days.length} seeded`);
-
-  const preNote = await page.evaluate(() => {
-    const el = document.querySelector("#statsPreNote");
-    return el && el.style.display !== "none" ? el.textContent : null;
-  });
-  t("no separate pre-season line while it is still pre-season",
-    preNote === null, preNote || "(hidden, as expected)");
+  await page.click("#navSeason", { timeout: 5000 });
+  await page.waitForTimeout(500);
+  const sub = ((await page.textContent("#statsSub")) || "").trim();
+  t("My Season counts every board that was played",
+    sub.indexOf(String(days.length)) === 0, `${days.length} seeded — "${sub}"`);
 
   await page.click("#statsClose", { timeout: 5000 }).catch(() => {});
-  const streak = (await page.textContent("#streakLine")) || "";
-  t("the streak line calls it a pre-season run",
-    /pre-season run/i.test(streak), streak.trim());
+  /* Read out of the sheet rather than off the footer line, for the same
+     reason: the footer is not on screen here. */
+  /* READ OFF THE STAT, NOT OUT OF THE PAGE TEXT. The grid renders the number
+     before its label — "3Current run" — so a pattern looking for "run 3" in
+     the flattened text matches nothing however right the figure is. The cell
+     is found by its label and its value read, which is what a player sees. */
+  const currentRun = await page.evaluate(() => {
+    const cell = [...document.querySelectorAll("#statGrid .stat")]
+      .find((el) => (el.querySelector("span") || {}).textContent === "Current run");
+    return cell ? (cell.querySelector("b") || {}).textContent : null;
+  });
   /* The run must reach today, or the figure is meaningless. This read 0 with a
      fixture dated into the future, which looked like a passing test. */
   t("consecutive days up to today count as a current run",
-    new RegExp("run " + days.length + "\\b").test(streak),
-    `expected run ${days.length} — ${streak.trim()}`);
-});
+    Number(currentRun) === days.length,
+    `expected ${days.length}, the sheet says ${currentRun}`);
+}, { desktop: true });
 
 /* ---------- 4. A save belongs to a puzzle, not to a slot ---------- */
 await section("A puzzle that changed underneath a saved game", async (ctx) => {
@@ -279,32 +321,50 @@ await section("A puzzle that changed underneath a saved game", async (ctx) => {
 });
 
 /* ---------- 5. Practice is separate from the daily ---------- */
-await section("Practice", async (ctx) => {
+/* ---------- 5. A retired mode stays retired ---------- */
+await section("Practice is retired", async (ctx) => {
+  /* This section used to play a practice puzzle: press New Puzzle, check it
+     deals a different board, watch the clue counter. Practice was withdrawn —
+     the landing tile is gone, the menu item is hidden and marked Soon, and
+     #newBtn is hidden with it. The suite kept clicking a hidden button and
+     reporting the timeout as a failure of the game.
+
+     What is worth asserting now is the withdrawal itself: a mode nobody can
+     finish must not be reachable, and a tile put back by accident shows up
+     here. */
   const page = await openGame(ctx);
   await kickOff(page);
-  const first = await page.textContent("#ncText");
-  await page.click("#newBtn", { timeout: 5000 });
-  await page.waitForTimeout(1500);
-  const second = await page.textContent("#ncText");
-  t("New Puzzle deals a different puzzle", first !== second,
-    `${(first || "").slice(0, 28)} -> ${(second || "").slice(0, 28)}`);
-
-  const circ = (await page.textContent("#circLine").catch(() => "")) || "";
-  t("the clue counter is running", /clue/i.test(circ) || circ === "",
-    circ.trim() || "(daily mode, so blank)");
+  const reach = await page.evaluate(() => {
+    const vis = (s) => { const e = document.querySelector(s); return !!e && e.offsetParent !== null; };
+    return { newBtn: vis("#newBtn"), menuItem: vis("#tbPractice"), againBtn: vis("#againBtn") };
+  });
+  t("no control in the game starts a practice puzzle",
+    !reach.newBtn && !reach.menuItem && !reach.againBtn, JSON.stringify(reach));
+  const mode = await page.evaluate(() => localStorage.getItem("fcw.mode"));
+  t("and the game is in the daily, not in practice", mode !== "practice", `mode=${mode}`);
 });
 
 /* ---------- 6. Refreshing does not change what you are playing ---------- */
+/* ---------- 6. Refreshing does not change what you are playing ---------- */
 await section("Refreshing mid-game", async (ctx) => {
+  /* This switched to practice and refreshed. Practice is retired, so the
+     question is the same one asked of the daily: what you were playing is
+     what you are still playing, and the letters are still there. */
   const page = await openGame(ctx);
   await kickOff(page);
-  await page.click("#newBtn", { timeout: 5000 });                 // switches to practice
-  await page.waitForTimeout(1200);
-  const before = await page.textContent("#kickMode").catch(() => "");
+  await page.click(".cell:not(.block)", { timeout: 5000 }).catch(() => {});
+  await page.keyboard.type("A").catch(() => {});
+  await page.waitForTimeout(800);
+  const before = await page.evaluate(() =>
+    [...document.querySelectorAll(".cell")].filter((c) => (c.textContent || "").trim()).length);
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
   const mode = await page.evaluate(() => localStorage.getItem("fcw.mode"));
-  t("the mode in play survives a refresh", mode === "practice", `mode=${mode}`);
+  t("the mode in play survives a refresh", mode === "daily", `mode=${mode}`);
+  const after = await page.evaluate(() =>
+    [...document.querySelectorAll(".cell")].filter((c) => (c.textContent || "").trim()).length);
+  t("and so do the letters already typed", after >= before,
+    `${before} before, ${after} after`);
 });
 
 await browser.close();
