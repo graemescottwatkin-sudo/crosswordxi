@@ -54,6 +54,11 @@ jobs:
           node crossword/save_test.mjs
           node crossword/tabs_test.mjs
           node crossword/themes_ui_test.mjs
+          # The club and theme pages are server-rendered and meant to be read
+          # by a search engine, so what they SAY is the contract: a released
+          # board linked, an unreleased one nowhere in the bytes, no clue and
+          # no answer on an indexable page.
+          node crossword/clubs_test.mjs
 
       - name: API
         run: |

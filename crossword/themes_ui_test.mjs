@@ -154,9 +154,22 @@ server.listen(0, "127.0.0.1", async () => {
   t("and says how many are out", /3 boards available/.test($("homeThemedState").textContent),
     $("homeThemedState").textContent);
 
+  /* CLUBS AND THEMES IS A PAGE NOW. The tile used to open the sheet in place;
+     it navigates to /crossword/clubs/ instead, so a club can be linked to and
+     found. Proven by what stops happening, because jsdom will not navigate:
+     the sheet must NOT open from the tile any more. */
   $("homeThemed").click();
   await wait(1200);
-  t("the section opens", $("themeSheet").className.includes("show"));
+  t("the tile no longer opens the sheet in place",
+    !$("themeSheet").className.includes("show"));
+
+  /* And the sheet is still reachable, because it still owns the request form.
+     The index links here with ?themes=1 rather than growing a second copy. */
+  w.close();
+  dom = await open("?themes=1");
+  w = dom.window; $ = (id) => w.document.getElementById(id);
+  t("the section opens from the clubs index link",
+    $("themeSheet").className.includes("show"));
 
   const avail = $("themeAvailable").textContent;
   t("released boards are listed, grouped by theme",
@@ -191,9 +204,8 @@ server.listen(0, "127.0.0.1", async () => {
   const emptyOptions = THEMES_FIXTURE.options;
   THEMES_FIXTURE.themes = [];
   THEMES_FIXTURE.options = [];
-  dom = await open();
+  dom = await open("?themes=1");
   w = dom.window; $ = (id) => w.document.getElementById(id);
-  $("homeThemed").click();
   await wait(1200);
   t("the section says so plainly", /No themed boards yet/.test($("themeAvailable").textContent));
   t("and the request list is still filled, so a club can be asked for",
@@ -207,9 +219,8 @@ server.listen(0, "127.0.0.1", async () => {
   THEMES_FIXTURE.options = emptyOptions;      // restored too, or later checks
                                               // see a server with no labels
   w.close();
-  dom = await open();
+  dom = await open("?themes=1");
   w = dom.window; $ = (id) => w.document.getElementById(id);
-  $("homeThemed").click();
   await wait(1200);
 
   /* Several themes each, each of them once. The schema says so — UNIQUE

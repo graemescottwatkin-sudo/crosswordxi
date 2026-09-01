@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001v";
+  var BUILD = "v001w";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6150,18 +6150,23 @@
     if (!featuredBoard) return;
     openThemed(featuredBoard.themeId, featuredBoard.no, featuredBoard.boardId);
   });
-  on("homeThemed", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  /* WHERE CLUBS AND THEMES LIVES, said once. Four controls lead there — the
+     home tile, the header nav, the hidden button and the menu item — and four
+     copies of a path is three chances to move the page and leave one behind. */
+  function openClubsIndex() { location.href = "/crossword/clubs/"; }
+
+  on("homeThemed", "click", function () { openClubsIndex(); });
   /* The header nav drives the controls that already do these jobs rather than
      reimplementing them. Today is where you already are. */
   on("navClubs", "click", function () {
     /* Drives homeThemed, the control directly above. An earlier version called
        click("homeThemes"), a helper that does not exist in this scope — the
        nav button threw instead of opening anything. */
-    renderThemes(); $("themeSheet").classList.add("show");
+    openClubsIndex();
   });
   on("navSeason", "click", function () { renderStats(); $("statsSheet").classList.add("show"); });
 
-  on("homeThemes", "click", function () { renderThemes(); $("themeSheet").classList.add("show"); });
+  on("homeThemes", "click", function () { openClubsIndex(); });
   /* Scores on one board, for the owner. Reached from the themed list: every
      chip carries its theme and number already, so there is nothing to type.
 
@@ -6768,7 +6773,11 @@
       var a = b.getAttribute("data-act");
       if (a === "daily") { if (!DAILY_OPEN) return; click("dailyBtn"); }
       else if (a === "practice") return;      // suspended; the item is disabled
-      else if (a === "themes") { renderThemes(); $("themeSheet").classList.add("show"); }
+      /* CLUBS AND THEMES IS A PLACE NOW, NOT A SHEET. It has its own pages —
+         /crossword/clubs/, and one per club — so a club can be linked to, and
+         found. The sheet stays exactly where it was and still opens: the
+         index links back to it for requests, with ?themes=1. */
+      else if (a === "themes") { openClubsIndex(); }
       else if (a === "new") click("newBtn");
 
     });
@@ -7410,6 +7419,13 @@
     if (chLink) {
       openChallenge(chLink[1]);
       return;
+    }
+    /* Sent here by the clubs index, which has no account and no form of its
+       own: requesting a board needs both, and both already exist in the
+       sheet. Opening it is cheaper and truer than a second copy of it. */
+    if (/[?&]themes=1(&|$)/.test(location.search || "")) {
+      renderThemes();
+      $("themeSheet").classList.add("show");
     }
     var themed = /[?&]t=([a-z0-9-]+)-(\d+)/.exec(location.search || "");
     if (themed) {

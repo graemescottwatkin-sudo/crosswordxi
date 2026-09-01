@@ -15,6 +15,7 @@
  */
 import { json } from "../_lib/puzzle.js";
 import { hasDB, serverToday } from "../_lib/db.js";
+import { listThemes } from "../_lib/theme-catalog.js";
 import { currentUser } from "../_lib/auth.js";
 
 /* How far ahead the schedule is published. Four weeks is a promise the build
@@ -44,40 +45,11 @@ async function serve(request, env) {
   const horizon = new Date(Date.now() + WEEKS_AHEAD * 7 * 86400000)
     .toISOString().slice(0, 10);
 
-  /* Two conditions, deliberately separate.
-     
-     release_on <= today asks whether a board has come out. listed asks whether
-     it is still on the shelf. Collapsing them — retiring a board by pushing its
-     release date forward — would look identical here and break everything else:
-     getThemeBoard() treats a future release_on as "does not exist", and every
-     token path runs through it, so a retired board would stop serving
-     check-answer, reveal and finish to the live challenges pointing at it. */
-  const out = await env.DB.prepare(
-    `SELECT t.id, t.name, t.kind, t.club_id, t.family,
-            b.board_no, b.id AS board_id, b.release_on
-       FROM themes t JOIN theme_boards b ON b.theme_id = t.id
-      WHERE b.release_on <= ? AND b.listed = 1
-      ORDER BY t.kind, t.name, b.board_no`).bind(today).all();
-
-  const themes = [];
-  const byId = {};
-  for (const r of out.results || []) {
-    if (!byId[r.id]) {
-      byId[r.id] = {
-        id: r.id, name: r.name, kind: r.kind,
-        /* Sent as stored rather than derived from the id. The club page groups
-           on club, and splitting "arsenal-in-the-cups" on a hyphen to find the
-           club is the same fact computed in a second place — it holds until a
-           club id contains one. */
-        club: r.club_id || null,
-        family: r.family || null,
-        boards: [],
-      };
-      themes.push(byId[r.id]);
-    }
-    byId[r.id].boards.push({ no: r.board_no, boardId: r.board_id, releasedOn: r.release_on });
-  }
-
+  /* The catalogue comes from theme-catalog.js, which the club and theme
+     pages render from too. It used to be spelled out here, and a second copy
+     of "released and still listed" is a second place for that rule to change
+     alone. One derivation, two destinations. */
+  const themes = await listThemes(env, today);
   const next = await env.DB.prepare(
     `SELECT t.name, b.board_no, b.release_on
        FROM theme_boards b JOIN themes t ON t.id = b.theme_id
