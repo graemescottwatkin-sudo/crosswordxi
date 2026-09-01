@@ -175,7 +175,7 @@ function setRow(theme) {
   const chips = theme.boards.map((b) =>
     `<a class="no" href="${esc(pathOf(theme))}${b.no}"` +
     ` aria-label="${esc(theme.name)}, board ${b.no}">#${b.no}</a>`).join("");
-  return `<li class="set"><span class="name">${esc(setLabel(theme))}</span>${chips}</li>`;
+  return `<li class="set"><span class="name">${esc(setLabel(theme))}</span><span class="chips">${chips}</span></li>`;
 }
 
 function clubPage(clubId, sets) {

@@ -170,7 +170,7 @@ function seriesRow(group, row) {
   const chips = row.chips.map((c) =>
     `<a class="no" href="${esc(groupPath(group.slug))}${c.no}"` +
     ` aria-label="${esc(c.theme)}">${esc(c.label)}</a>`).join("");
-  return `<li class="set"><span class="name">${esc(row.series)}</span>${chips}</li>`;
+  return `<li class="set"><span class="name">${esc(row.series)}</span><span class="chips">${chips}</span></li>`;
 }
 
 function groupPage(group) {
