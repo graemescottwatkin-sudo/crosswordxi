@@ -25,7 +25,10 @@ const t = (n, ok, d) => {
 };
 const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`); };
 
-const MIN_ASSERTIONS = 18;
+/* Eighteen assertions run with --expect; without it the tag is reported and
+   not judged, so seventeen is the honest floor. Set to the exact count it
+   would flap the first time somebody ran this without --expect. */
+const MIN_ASSERTIONS = 17;
 let finished = false;
 const done = () => {
   if (!finished) {
@@ -81,8 +84,13 @@ const wire = JSON.stringify(board);
 t("no answer rides down with the board",
   !/"name"|"display"|"aliases"/.test(wire),
   "the browser holds scrambles, positions and enumerations only");
+/* A PROPERTY named clubs, not the word. The board legitimately publishes
+   hintField:"clubs" — it says what it sells, which is the point of the bench
+   — and matching the bare word failed a payload that was doing exactly what
+   it should. What must never appear is a clubs LIST hanging off a slot. */
 t("and no career values either",
-  !/"clubs"/.test(wire), "the hint is named; its answers are not");
+  wire.indexOf(String.fromCharCode(34) + "clubs" + String.fromCharCode(34) + ":") === -1,
+  "the hint is named; its answers are not");
 
 console.log("\nThe archive is shut");
 /* The point of closing it. A board that has not been released must not be
