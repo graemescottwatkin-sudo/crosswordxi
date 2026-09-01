@@ -76,6 +76,7 @@ function selectorsOf(css) {
 const GAMES = [
   { dir: "crossword",  name: "Crossword XI",  prefix: "fcw"  },
   { dir: "wordsearch", name: "Wordsearch XI", prefix: "xiws" },
+  { dir: "scrambled",  name: "Scrambled XI",  prefix: "xisc" },
 ];
 
 const workflow = read(".github/workflows/checks.yml");
@@ -172,19 +173,104 @@ for (const g of GAMES) {
 
   console.log("Its own keys, and only its own");
   t(`every localStorage key it writes is under "${g.prefix}." or the family's "xi."`, (() => {
-    const writes = [...js.matchAll(/localStorage\.setItem\(\s*(?:"([^"]+)"|([A-Z_]+))/g)];
-    /* Constants are resolved to their literal, so a key hidden behind a
-       variable is still checked rather than skipped. "xi." is the family
-       namespace — a preference every game shares (the theme) lives there,
-       because a family-wide fact under one game's prefix is exactly how the
-       word search ended up writing fcw.theme, which this check caught on its
-       first run. */
-    const value = (m) => m[1] || ((js.match(
-      new RegExp(`var ${m[2]} = "([^"]+)"`)) || [])[1] || "");
-    return writes.length > 0 && writes.every((m) => {
-      const k = value(m);
-      return k.indexOf(g.prefix + ".") === 0 || k.indexOf("xi.") === 0;
-    });
+    /* THREE WAYS A KEY REACHES setItem, and the check has to see all three or
+       it is measuring whichever ones it happens to understand.
+
+         setItem("xi.theme", …)   a literal
+         setItem(RESULTS_KEY, …)  a constant, resolved to its literal
+         setItem(storeKey(), …)   a builder, resolved to what it returns
+
+       Only the first two were read. Scrambled XI builds its key — one save
+       per board, so the key carries the board number — and the check saw no
+       writes at all, then failed the game for having none. A game doing the
+       right thing failed a check that could not look at it. */
+    /* THREE WAYS A KEY REACHES setItem, and the check has to see all three or
+       it is measuring whichever ones it happens to understand.
+
+         setItem("xi.theme", ...)  a literal
+         setItem(RESULTS_KEY, ...) a constant, resolved to its literal
+         setItem(storeKey(), ...)  a builder, resolved to what it returns
+
+       Only the first two were read. Scrambled XI builds its key — one save
+       per board, so the key carries the board number — so the check saw no
+       writes at all and then failed the game for having none. A game doing
+       the right thing failed a check that could not look at it.
+
+       Scanned by splitting rather than by pattern: several checks written
+       into this repo lost a backslash on the way to the file and became
+       patterns that matched nothing while still reporting ok. */
+    const QUOTE = String.fromCharCode(34);
+    /* The first argument of every setItem call, with bracket depth honoured:
+       boardSlot({ kind: "daily", no: n }) is ONE argument, and cutting at the
+       first comma turned it into a fragment that resolved to nothing. */
+    const firstArgs = (src, call) => {
+      const out = [];
+      let at = 0;
+      for (;;) {
+        const i = src.indexOf(call, at);
+        if (i < 0) break;
+        at = i + call.length;
+        let depth = 0, arg = "";
+        for (let k = at; k < src.length && k < at + 400; k++) {
+          const c = src[k];
+          if (c === "(" || c === "{" || c === "[") depth++;
+          else if (c === ")" || c === "}" || c === "]") { if (depth === 0) break; depth--; }
+          else if (c === "," && depth === 0) break;
+          arg += c;
+        }
+        out.push(arg.trim());
+      }
+      return out;
+    };
+    const literalOf = (name) => {
+      const head = "var " + name + " = " + QUOTE;
+      const at = js.indexOf(head);
+      if (at < 0) return null;
+      return js.slice(at + head.length, js.indexOf(QUOTE, at + head.length));
+    };
+    /* A builder is judged by EVERY key it can return, not by the first one.
+       slotKey() returns one key for practice and another for a board; a check
+       that read only the first would pass a function whose other branch wrote
+       anywhere it liked. */
+    const returnsOf = (fnName) => {
+      const at = js.indexOf("function " + fnName);
+      if (at < 0) return null;
+      let end = js.indexOf(String.fromCharCode(10) + "  function ", at + 1);
+      if (end < 0) end = at + 1500;
+      const body = js.slice(at, end);
+      const outs = [];
+      let k = 0;
+      for (;;) {
+        const r = body.indexOf("return ", k);
+        if (r < 0) break;
+        k = r + 7;
+        outs.push(body.slice(k, body.indexOf(";", k)).split("+")[0].trim());
+      }
+      return outs;
+    };
+    /* RESOLVED RECURSIVELY, because a builder may hand off to another one:
+       slotKey() returns a literal on one branch and boardSlot(board) on the
+       other, and stopping at the call left that branch reading as an empty
+       key — a real key the check could not see, reported as a violation.
+       `seen` stops a pair of mutually-recursive builders spinning. */
+    const keysOf = (tok, seen) => {
+      seen = seen || new Set();
+      if (tok.indexOf(QUOTE) === 0) return [tok.slice(1, tok.indexOf(QUOTE, 1))];
+      const paren = tok.indexOf("(");
+      if (paren < 0) { const v = literalOf(tok); return v === null ? [] : [v]; }
+      const name = tok.slice(0, paren);
+      if (seen.has(name)) return [];
+      seen.add(name);
+      const outs = returnsOf(name);
+      if (!outs) return [];
+      return outs.flatMap((o) => keysOf(o, seen));
+    };
+    const writes = firstArgs(js, "localStorage.setItem(");
+    /* Wrapped, not passed bare: flatMap hands the index as the second
+       argument, which arrived where `seen` was expected. */
+    const keys = writes.flatMap((tok) => keysOf(tok));
+    return writes.length > 0 && keys.length > 0 && keys.every((k) =>
+      k.indexOf(g.prefix + ".") === 0 || k.indexOf("xi.") === 0);
   })());
   const others = GAMES.filter((o) => o !== g);
   t("and it never WRITES another game's keys", others.every((o) => {
@@ -232,8 +318,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v4";
-const SHARED_HASH = "b7cfd6d166598179";
+const SHARED_TAG = "v5";
+const SHARED_HASH = "798399372eae0f6c";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {

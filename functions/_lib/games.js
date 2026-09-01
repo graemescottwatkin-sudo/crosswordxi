@@ -17,7 +17,7 @@
    already keep about naming unbuilt games. */
 import { dailyKey } from "./daily.js";
 
-export const GAMES = ["crossword", "wordsearch"];
+export const GAMES = ["crossword", "wordsearch", "scrambled"];
 
 export const DEFAULT_GAME = "crossword";
 

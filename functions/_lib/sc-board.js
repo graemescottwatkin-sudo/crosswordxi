@@ -104,7 +104,7 @@ export function boardForNumber(n, boards) {
    from.
    Named rather than hidden in a condition, so it is greppable, and asserted by
    board_test so it cannot be left true by accident the day this game ships. */
-const OPEN_ARCHIVE = true;
+const OPEN_ARCHIVE = false;
 
 /* Any board up to today, never one after it. The past is open — somebody
    arriving in November must be able to catch up a missed day — and the future

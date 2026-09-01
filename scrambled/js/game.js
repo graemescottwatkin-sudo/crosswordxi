@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001j";
+var BUILD = "v001k";
 
 (function () {
   "use strict";

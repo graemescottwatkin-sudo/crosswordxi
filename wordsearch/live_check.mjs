@@ -119,7 +119,7 @@ t("the shared chrome is referenced, not copied",
    not on the squad list, not in the sitemap, and not in the server game list,
    so it must still never be NAMED in served markup. Career Path is now
    Transfer XI. */
-const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Transfer XI",
+const UNRELEASED = ["QuickFire", "Missing XI", "Transfer XI",
                     "Player Chain", "Link XI", "Odd One Out"];
 function namesNone(label, markup) {
   const clean = markup.replace(/<!--[\s\S]*?-->/g, "");

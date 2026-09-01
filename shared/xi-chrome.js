@@ -24,7 +24,7 @@
   var SQUAD = [
     { n: 1,  name: "Crossword XI",   href: "/crossword/" },
     { n: 2,  name: "Wordsearch XI",  href: "/wordsearch/" },
-    { n: 3,  status: "Nearly ready" },
+    { n: 3,  name: "Scrambled XI",   href: "/scrambled/" },
     { n: 4,  status: "In build" },
     { n: 5,  status: "In build" },
     { n: 6,  status: "In build" },

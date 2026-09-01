@@ -115,9 +115,9 @@ jobs:
           # second one is the point: every check in that file is watched
           # failing before it is trusted.
           node quickfire/gate_test.mjs
-          # Scrambled XI. Not shipping yet: no gate, no live_check, no row in
-          # aligned_test — a game that has never shipped has no true
-          # LAST_SHIPPED to gate against.
+          # Scrambled XI, shirt 3, released. It has its own gate, its own
+          # live_check and a row in aligned_test now, so it is held to the
+          # same law as the other two.
           node scrambled/names_test.mjs
           node scrambled/board_test.mjs
           node scrambled/scoring_test.mjs
@@ -147,6 +147,7 @@ jobs:
           rm -rf node_modules package-lock.json package.json
           node crossword/deploy_check.mjs
           node wordsearch/deploy_check.mjs
+          node scrambled/deploy_check.mjs
           node quickfire/deploy_check.mjs
 
   render:

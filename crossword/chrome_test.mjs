@@ -76,7 +76,7 @@ console.log("\nAn unreleased game is never named");
 /* The standing rule, and live_check enforces it on the hub only — which is how
    the crossword's landing footer named QuickFire XI and Scrambled XI, and
    privacy.html named five, on live indexed pages. */
-const UNRELEASED = ["QuickFire", "Scrambled", "Missing XI", "Transfer XI",
+const UNRELEASED = ["QuickFire", "Missing XI", "Transfer XI",
                     "Player Chain", "Link XI", "Odd One Out"];
 for (const [label, file] of [
   ["the crossword page", "crossword/index.html"],
