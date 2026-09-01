@@ -48,12 +48,3 @@ export async function listThemes(env, today) {
   }
   return themes;
 }
-
-/* Every theme belonging to the same club, the one asked for first.
-   Arsenal has Midfielders, Strikers and the Wenger Era beside it; a club page
-   that showed only the club's own boards would hide most of what there is to
-   play. */
-export function siblingsOf(themes, theme) {
-  if (!theme.club) return [];
-  return themes.filter((t) => t.club === theme.club && t.id !== theme.id);
-}

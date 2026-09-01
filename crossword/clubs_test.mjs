@@ -29,8 +29,14 @@ const ROWS = [
     board_no: 1, board_id: 240, release_on: "2026-08-18" },
   { id: "arsenal", name: "Arsenal", kind: "club", club_id: "arsenal", family: "general",
     board_no: 2, board_id: 241, release_on: "2026-08-18" },
+  { id: "arsenal-midfielders", name: "Arsenal — Midfielders", kind: "club", club_id: "arsenal",
+    family: "core", board_no: 1, board_id: 248, release_on: "2026-08-25" },
+  { id: "arsenal-strikers", name: "Arsenal — Strikers", kind: "club", club_id: "arsenal",
+    family: "core", board_no: 1, board_id: 249, release_on: "2026-08-25" },
   { id: "arsenal-wenger-era", name: "Arsenal — Wenger Era", kind: "club", club_id: "arsenal",
     family: "special", board_no: 1, board_id: 250, release_on: "2026-08-25" },
+  { id: "arsenal-wenger-era", name: "Arsenal — Wenger Era", kind: "club", club_id: "arsenal",
+    family: "special", board_no: 2, board_id: 251, release_on: "2026-08-25" },
   { id: "man-united", name: "Manchester United", kind: "club", club_id: "man-united",
     family: "general", board_no: 1, board_id: 260, release_on: "2026-08-18" },
   { id: "grounds", name: "Grounds", kind: "topic", club_id: null, family: null,
@@ -79,7 +85,41 @@ const clubHtml = await text(club);
 t("the club page renders", club.status === 200);
 t("it lists both released boards",
   clubHtml.includes("/crossword/club/arsenal/1") && clubHtml.includes("/crossword/club/arsenal/2"));
-t("it offers the club's other sets", clubHtml.includes("/crossword/club/arsenal-wenger-era/"));
+/* THE LAYOUT THE OWNER ASKED FOR, checked as a shape rather than as a string:
+   every set of the club on its own row, named without repeating the club, and
+   each board a separate target. */
+/* Parsed by splitting rather than by regex. Three separate checks in this
+   session were written with a backslash that a shell ate on the way to the
+   file, leaving a pattern that matched nothing and a check that passed. */
+const rows = clubHtml.split('<li class="set">').slice(1).map((chunk) => {
+  const cell = chunk.split("</li>")[0];
+  const label = cell.split('<span class="name">')[1].split("</span>")[0];
+  const nos = cell.split(">#").slice(1).map((x) => Number(x.split("<")[0]));
+  return { label, nos };
+});
+if (!rows.length) throw new Error("no set rows parsed — the checks below would be vacuous");
+t("every set of the club is a row", rows.length === 4,
+  rows.map((r) => r.label + " " + r.nos.map((n) => "#" + n).join(" ")).join(" | "));
+t("the club's own boards come first, and are called General",
+  rows[0].label === "General" && rows[0].nos.join(",") === "1,2");
+t("a set is named without repeating the club",
+  rows.some((r) => r.label === "Midfielders") &&
+  rows.some((r) => r.label === "Strikers") &&
+  rows.some((r) => r.label === "Wenger Era"),
+  rows.map((r) => r.label).join(", "));
+/* Looked up defensively: when a sabotage removed the other sets this threw on
+   undefined and the suite died mid-run instead of reporting a failure. A test
+   that crashes tells you less than one that fails. */
+const wenger = rows.find((r) => r.label === "Wenger Era");
+t("a set with two boards offers both",
+  !!wenger && wenger.nos.join(",") === "1,2",
+  wenger ? wenger.nos.join(",") : "no Wenger Era row");
+t("and every number is its own target, not a label",
+  rows.every((r) => r.nos.every((n) =>
+    clubHtml.includes('class="no" href="/crossword/club/'))) &&
+  clubHtml.includes('/crossword/club/arsenal-wenger-era/2"'));
+t("each set's numbers point at that set, not at the club",
+  clubHtml.includes('href="/crossword/club/arsenal-midfielders/1"'));
 t("it does not offer another club's", !clubHtml.includes("man-united"));
 t("it is indexable", !/noindex/.test(clubHtml));
 t("it carries a canonical url",
@@ -107,6 +147,21 @@ const sealed = await treeRoute(ctx(["arsenal", "9"]), "club");
 t("a board that has not been released is not found", sealed.status === 404);
 t("and is not indexed", sealed.headers.get("X-Robots-Tag") === "noindex");
 t("nor cached", sealed.headers.get("Cache-Control") === "no-store");
+/* ONE PAGE PER CLUB. A set reached by its own id is the club page under
+   another name, and four thin pages saying nearly the same thing is the shape
+   a search engine discards. So it is a permanent redirect, not a duplicate. */
+const setUrl = await treeRoute(ctx(["arsenal-wenger-era"]), "club");
+t("a set reached by its own id redirects to the club", setUrl.status === 301,
+  setUrl.headers.get("Location"));
+t("to the club page, not to itself",
+  setUrl.headers.get("Location") === "https://www.thexigames.com/crossword/club/arsenal/");
+/* but its boards keep their own addresses */
+const setBoard = await treeRoute(ctx(["arsenal-wenger-era", "2"]), "club");
+t("while that set's boards still open directly",
+  setBoard.status === 302 &&
+  setBoard.headers.get("Location").endsWith("?t=arsenal-wenger-era-2"),
+  setBoard.headers.get("Location"));
+
 const wrongTree = await treeRoute(ctx(["grounds"]), "club");
 t("a theme is not found under /club/", wrongTree.status === 404);
 const rightTree = await treeRoute(ctx(["grounds"]), "topic");

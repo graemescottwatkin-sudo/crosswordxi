@@ -19,7 +19,7 @@
  * fault the landing screen was built to remove.
  */
 import { hasDB, serverToday } from "./db.js";
-import { listThemes, siblingsOf, isSlug } from "./theme-catalog.js";
+import { listThemes, isSlug } from "./theme-catalog.js";
 import { sitePage, htmlResponse, esc } from "./site-page.js";
 
 const SITE = "https://www.thexigames.com";
@@ -32,6 +32,25 @@ const TREES = {
 
 export function pathOf(theme) {
   return `/crossword/${TREES[theme.kind] ? TREES[theme.kind].path : "theme"}/${theme.id}/`;
+}
+
+/* A CLUB HAS ONE PAGE, and it is addressed by the club rather than by any one
+   of its sets. Arsenal, Midfielders, Strikers and the Wenger Era are four ways
+   into Arsenal, not four clubs — and four thin pages saying nearly the same
+   thing is the shape search engines discard. The sets keep their own board
+   URLs; only the page is shared. */
+export function clubPath(clubId) {
+  return `/crossword/club/${clubId}/`;
+}
+
+/* What to call a set on its club's page. The club's name is already the
+   heading, so repeating it on every row says nothing: "Arsenal — Midfielders"
+   under a heading reading Arsenal is just Midfielders. The base set has no
+   suffix to strip and is what family already calls it. */
+export function setLabel(theme) {
+  if (theme.family === "general") return "General";
+  const parts = String(theme.name).split("—");
+  return parts.length > 1 ? parts[parts.length - 1].trim() : theme.name;
 }
 
 function notFound(what) {
@@ -54,11 +73,6 @@ function notFound(what) {
   });
 }
 
-function boardList(theme) {
-  return theme.boards.map((b) =>
-    `<li><a href="${esc(pathOf(theme))}${b.no}">${esc(theme.name)} #${b.no}</a>` +
-    `<span class="meta">Released ${esc(b.releasedOn)}</span></li>`).join("");
-}
 
 /* ---- /crossword/clubs/ — the index both trees are reached from ---- */
 export async function indexPage({ env }) {
@@ -78,11 +92,10 @@ export async function indexPage({ env }) {
     byClub.get(key).push(t);
   }
 
-  const clubBlocks = [...byClub.values()].map((group) => {
+  const clubBlocks = [...byClub.entries()].map(([clubId, group]) => {
     const boards = group.reduce((n, t) => n + t.boards.length, 0);
-    const head = group[0];
-    return `<li><a href="${esc(pathOf(head))}">${esc(head.club ? clubName(group) : head.name)}</a>` +
-      `<span class="meta">${group.length} ${group.length === 1 ? "board set" : "board sets"}, ` +
+    return `<li><a href="${esc(clubPath(clubId))}">${esc(clubName(group))}</a>` +
+      `<span class="meta">${group.length} ${group.length === 1 ? "set" : "sets"}, ` +
       `${boards} ${boards === 1 ? "puzzle" : "puzzles"}</span></li>`;
   }).join("");
 
@@ -115,7 +128,7 @@ function clubName(group) {
   return group.map((t) => t.name).reduce((a, b) => (b.length < a.length ? b : a));
 }
 
-/* ---- /crossword/club/<id>/ and /crossword/club/<id>/<no> ---- */
+/* ---- /crossword/club/<club>/ , /crossword/theme/<topic>/ , and /<no> ---- */
 export async function treeRoute({ params, env }, kind) {
   const parts = (params && params.path) || [];
   const list = Array.isArray(parts) ? parts.filter(Boolean) : [parts].filter(Boolean);
@@ -132,21 +145,70 @@ export async function treeRoute({ params, env }, kind) {
 
   /* Kind is enforced by the path: a topic at /club/ is not found rather than
      served under the wrong noun, so each page has exactly one address. */
-  const theme = themes.find((t) => t.id === id && t.kind === kind);
+  const here = themes.filter((t) => t.kind === kind);
+  const theme = here.find((t) => t.id === id);
+
+  /* A board is addressed by its own set, whichever page lists it. */
+  if (list.length === 2) {
+    if (!theme) return notFound("board");
+    return boardDoor(theme, list[1]);
+  }
+
+  if (kind === "club") {
+    const sets = here.filter((t) => (t.club || t.id) === id);
+    if (sets.length) return clubPage(id, sets);
+    /* A set reached by its own id — /club/arsenal-midfielders/ — is the club's
+       page under another name. One canonical address per club, so the sets do
+       not compete with the page that lists them. */
+    if (theme && theme.club) return Response.redirect(SITE + clubPath(theme.club), 301);
+    return notFound(TREES[kind].one);
+  }
+
   if (!theme) return notFound(TREES[kind].one);
+  return topicPage(theme);
+}
 
-  if (list.length === 2) return boardDoor(theme, list[1]);
+/* The numbers are the controls. A set is a row: what it is, then every board
+   in it as its own target — so choosing Wenger Era #2 is one press from the
+   club, rather than a page about a set that then lists its boards. */
+function setRow(theme) {
+  const chips = theme.boards.map((b) =>
+    `<a class="no" href="${esc(pathOf(theme))}${b.no}"` +
+    ` aria-label="${esc(theme.name)}, board ${b.no}">#${b.no}</a>`).join("");
+  return `<li class="set"><span class="name">${esc(setLabel(theme))}</span>${chips}</li>`;
+}
 
-  const siblings = siblingsOf(themes, theme).filter((t) => t.kind === kind);
+function clubPage(clubId, sets) {
+  /* The general set first, then the rest as the catalogue ordered them: the
+     club's own boards are what somebody arriving at the club came for. */
+  const ordered = sets.slice().sort((a, b) =>
+    (a.family === "general" ? 0 : 1) - (b.family === "general" ? 0 : 1));
+  const name = ordered.map((t) => t.name).reduce((a, b) => (b.length < a.length ? b : a));
+  const total = ordered.reduce((n, t) => n + t.boards.length, 0);
+
+  const body = `<p class="crumb"><a href="/crossword/clubs/">Clubs and themes</a></p>
+<h1>${esc(name)}</h1>
+<p class="sub">${total} ${total === 1 ? "crossword" : "crosswords"} across
+${ordered.length} ${ordered.length === 1 ? "set" : "sets"}. Pick a number — it opens ready to start,
+and the clock waits for you to kick off.</p>
+<ul>${ordered.map(setRow).join("")}</ul>
+<a class="cta" href="/crossword/">Play today's board</a>`;
+
+  return htmlResponse(sitePage({
+    title: `${name} crossword — Crossword XI`,
+    description: `${total} ${name} football crosswords across ${ordered.length} sets. ` +
+      `Free to play, no answers given away.`,
+    canonical: SITE + clubPath(clubId),
+    body,
+  }));
+}
+
+function topicPage(theme) {
   const body = `<p class="crumb"><a href="/crossword/clubs/">Clubs and themes</a></p>
 <h1>${esc(theme.name)}</h1>
 <p class="sub">${theme.boards.length} ${theme.boards.length === 1 ? "crossword" : "crosswords"}.
-Pick one and it opens ready to start — the clock waits for you to kick off.</p>
-<ul>${boardList(theme)}</ul>
-${siblings.length ? `<h2>More from this club</h2><ul>${siblings.map((t) =>
-  `<li><a href="${esc(pathOf(t))}">${esc(t.name)}</a>` +
-  `<span class="meta">${t.boards.length} ${t.boards.length === 1 ? "puzzle" : "puzzles"}</span></li>`
-).join("")}</ul>` : ""}
+Pick a number — it opens ready to start, and the clock waits for you to kick off.</p>
+<ul>${setRow(theme)}</ul>
 <a class="cta" href="/crossword/">Play today's board</a>`;
 
   return htmlResponse(sitePage({
@@ -157,7 +219,6 @@ ${siblings.length ? `<h2>More from this club</h2><ul>${siblings.map((t) =>
     body,
   }));
 }
-
 /* The board itself: hand off to the game with the board named. A redirect
    rather than a copy of the game served under a second path — the game is one
    page, and two of it is two things to keep in step. */
