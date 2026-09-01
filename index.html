@@ -240,7 +240,7 @@ footer a:hover{text-decoration:underline}
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
 
-    <p class="played" id="playedLine">Nine still to sign</p>
+    <p class="played" id="playedLine"><span id="toSign">Nine</span> still to sign</p>
   </div>
 </section>
 
@@ -265,7 +265,7 @@ footer a:hover{text-decoration:underline}
        reveal, and the same board goes to everyone, every day. Yesterday&rsquo;s
        counts if you finish it before midnight; the rest of the archive is
        always there for a friendly.</p>
-    <p>The other ten shirts are being filled. Each new game joins the same
+    <p>The other <span id="toSignProse">ten</span> shirts are being filled. Each new game joins the same
        season, the same account, and the same team sheet above.</p>
   </section>
 
@@ -392,6 +392,25 @@ footer a:hover{text-decoration:underline}
     document.getElementById("sheetDate").textContent =
       d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   } catch (e) {}
+  /* HOW MANY SHIRTS ARE STILL EMPTY, counted from the strip rather than
+     written down. It was the word "nine" in three places — the roll-call, the
+     line under it and the prose below — and releasing the third game left all
+     three saying nine when the answer had become eight. The strip is the only
+     thing that knows, so it is the thing asked. */
+  var WORDS = ["none", "one", "two", "three", "four", "five", "six",
+               "seven", "eight", "nine", "ten", "eleven"];
+  function stillToSign() {
+    var left = document.querySelectorAll(".xi-strip .shirt.soon").length;
+    return WORDS[left] || String(left);
+  }
+  (function () {
+    var n = stillToSign();
+    var a = document.getElementById("toSign");
+    var b = document.getElementById("toSignProse");
+    if (a) a.textContent = n.charAt(0).toUpperCase() + n.slice(1);
+    if (b) b.textContent = n;
+  })();
+
   /* Two live shirts now, each judged by its own game's record against its
      own server's idea of today — the crossword by dailyNo, the word search
      by day string. The roll-call line is composed from whichever answered,
@@ -402,7 +421,7 @@ footer a:hover{text-decoration:underline}
       if (!played.length) return;
       played.sort();
       document.getElementById("playedLine").innerHTML =
-        "<b>" + played.join("</b> and <b>") + "</b> played today \u00B7 nine still to sign";
+        "<b>" + played.join("</b> and <b>") + "</b> played today " + String.fromCharCode(183) + " " + stillToSign() + " still to sign";
     };
     var markDone = function (id, title) {
       var el = document.getElementById(id);
