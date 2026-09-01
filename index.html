@@ -307,6 +307,26 @@ footer a:hover{text-decoration:underline}
         </div>
       </article>
 
+      <article class="game">
+        <div class="cap on-light" style="background:var(--kit-03)">
+          <span class="num">3</span>
+          <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
+            <rect x="2" y="2" width="44" height="44" rx="3" stroke="currentColor" stroke-width="2.5"/>
+            <rect x="8" y="10" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/>
+            <rect x="21" y="7" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="2" transform="rotate(12 25.5 11.5)"/>
+            <rect x="33" y="13" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="2" transform="rotate(-9 37.5 17.5)"/>
+            <rect x="12" y="28" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="2" transform="rotate(-14 16.5 32.5)"/>
+            <rect x="26" y="27" width="9" height="9" rx="1.5" fill="currentColor" opacity=".35" stroke="none"/>
+            <rect x="26" y="27" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <h3>Scrambled XI</h3>
+        </div>
+        <div class="body">
+          <p>A daily football anagram. Eleven scrambled names in their real positions, on a ninety-minute clock.</p>
+          <a class="btn primary" href="/scrambled/">Play today</a>
+        </div>
+      </article>
+
     </div>
   </section>
 
@@ -324,10 +344,6 @@ footer a:hover{text-decoration:underline}
          familiar before the name ever appears. The status line is the only
          thing that moves. -->
     <div class="soon-grid">
-      <div class="soon-card">
-        <span class="sq" style="background:var(--kit-03)">3</span>
-        <span class="nm">Number three<span>Nearly ready</span></span>
-      </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-04)">4</span>
         <span class="nm">Number four<span>In build</span></span>
@@ -411,17 +427,23 @@ footer a:hover{text-decoration:underline}
     if (b) b.textContent = n;
   })();
 
-  /* Two live shirts now, each judged by its own game's record against its
+  /* Three live shirts now, each judged by its own game's record against its
      own server's idea of today — the crossword by dailyNo, the word search
-     by day string. The roll-call line is composed from whichever answered,
-     so one API being down never blanks the other's result. */
+     by day string, the scramble by board number. The roll-call line is
+     composed from whichever answered, so one API being down never blanks
+     the others' results. */
   try {
     var played = [];
     var settle = function () {
       if (!played.length) return;
       played.sort();
+      /* "1, 2 and 3", not "1 and 2 and 3": the last pair takes the "and",
+         everything before it takes a comma. */
+      var bold = played.map(function (n) { return "<b>" + n + "</b>"; });
+      var names = bold.length < 2 ? bold.join("")
+        : bold.slice(0, -1).join(", ") + " and " + bold[bold.length - 1];
       document.getElementById("playedLine").innerHTML =
-        "<b>" + played.join("</b> and <b>") + "</b> played today " + String.fromCharCode(183) + " " + stillToSign() + " still to sign";
+        names + " played today " + String.fromCharCode(183) + " " + stillToSign() + " still to sign";
     };
     var markDone = function (id, title) {
       var el = document.getElementById(id);
@@ -444,6 +466,15 @@ footer a:hover{text-decoration:underline}
         var list = JSON.parse(localStorage.getItem("xiws.results") || "[]");
         if (list.some(function (r) { return r && r.day === day.day; })) {
           markDone("shirt2", "Wordsearch XI"); played.push(2); settle();
+        }
+      }).catch(function () {});
+    fetch("/api/scrambled/daily", { headers: { accept: "application/json", "X-XI-Games": "1" } })
+      .then(function (r) { return r.json(); })
+      .then(function (day) {
+        if (!day || !day.today) return;
+        var list = JSON.parse(localStorage.getItem("xisc.results") || "[]");
+        if (list.some(function (r) { return r && r.no === day.today; })) {
+          markDone("shirt3", "Scrambled XI"); played.push(3); settle();
         }
       }).catch(function () {});
   } catch (e) {}
