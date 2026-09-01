@@ -260,7 +260,15 @@ export function revealName(slot) {
 export function topClubs(slot, max) {
   const cap = typeof max === "number" ? max : 2;
   const byClub = new Map();
-  for (const spell of (slot && slot.clubs) || []) {
+  /* THE REVEAL READS premClubs, NOT THE CAREER. They are different facts and
+     the board author sends both: clubs is the whole career and it is what the
+     bench SELLS as a hint; premClubs is the Premier League only and it is what
+     a solved tile SAYS. Whelan bought as a hint reads Home Farm, Liverpool,
+     Southend; Whelan solved reads Liverpool.
+
+     Falls back to the career where a board carries no premClubs, so a board
+     authored before the split still names something rather than nothing. */
+  for (const spell of (slot && (slot.premClubs || slot.clubs)) || []) {
     if (!spell || !spell.club) continue;
     const at = byClub.get(spell.club) || { club: spell.club, apps: 0 };
     if (typeof spell.apps === "number" && spell.apps > 0) at.apps += spell.apps;

@@ -337,6 +337,27 @@ t("no club appears in the unsolved payload", (() => {
     topClubs(sl).every((c) => !wire.includes(c.club)));
 })());
 
+console.log("\n=== The hint and the reveal are different careers ===");
+/* clubs is the WHOLE career and the bench sells it before the answer is
+   known. premClubs is the Premier League only and it is what a solved tile
+   says. Whelan bought reads Home Farm, Liverpool, Southend; Whelan solved
+   reads Liverpool. Swap them and the game either hands over the answer as a
+   hint or prints a reveal about clubs it is not about. */
+const SPLIT = SC_BOARDS.flatMap((b) => b.slots).filter((sl) =>
+  (sl.premClubs || []).length && (sl.clubs || []).length);
+t("the bank carries both careers", SPLIT.length > 0,
+  SPLIT.length + " slots carry premClubs and clubs");
+t("the reveal is drawn from the Premier League career", SPLIT.every((sl) => {
+  const names = new Set((sl.premClubs || []).map((c) => c.club));
+  return topClubs(sl).every((c) => names.has(c.club));
+}));
+/* The two must not have quietly become the same list, or nothing above is
+   being tested: at least one player played somewhere outside the league. */
+const NARROWER = SPLIT.find((sl) => sl.premClubs.length < sl.clubs.length);
+t("and it is NARROWER than the career the hint sells", !!NARROWER,
+  NARROWER ? NARROWER.display + ": " + NARROWER.clubs.length + " clubs, " +
+    NARROWER.premClubs.length + " in the league" : "every career is all-league");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
 

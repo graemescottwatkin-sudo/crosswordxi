@@ -65,6 +65,12 @@ const SRC = fs.existsSync(BANK) ? BANK : SAMPLE_SRC;
    crossword's sample-puzzles.js. It exists so an unbound D1 binding degrades
    to something playable rather than to nothing, and it is deliberately small
    enough that committing the bank by accident is visible in a diff. */
+/* FOUR BOARDS, AND ONE OF THEM CARRIES A MULTI-WORD TILE. The sample is the
+   fallback the game degrades to, and it is also what the suites read, so it
+   has to cover the SHAPES the rules care about and not merely be the first
+   four boards. Board 14 is here for VAN DIJK: without a multi-word cypher the
+   word-by-word check passes by having nothing to check, which board_test
+   refuses to call a pass. */
 const SAMPLE_COUNT = 4;
 const DEST = path.join(ROOT, "functions", "_lib", "sc-boards.js");
 const CHECK_ONLY = process.argv.includes("--check");
@@ -403,6 +409,17 @@ export function build(src, file) {
          Carried only when present, so a lineup board's slots do not gain an
          empty field stating that it has no career history. */
       ...(Array.isArray(p.clubs) && p.clubs.length ? { clubs: p.clubs } : {}),
+      /* TWO CAREERS, DELIBERATELY, AND NOT INTERCHANGEABLE.
+
+         clubs is the whole career and it is the HINT — bought from the bench
+         before the answer is known.
+
+         premClubs is the Premier League only, and it is the REVEAL: the line
+         under the name once the tile is solved. Whelan's career reads Home
+         Farm, Liverpool, Southend; his Premier League reads Liverpool. Using
+         one for the other would either hand over the answer as a hint or
+         print a reveal about clubs this game is not about. */
+      ...(Array.isArray(p.premClubs) && p.premClubs.length ? { premClubs: p.premClubs } : {}),
       ...(p.birthYear ? { birthYear: p.birthYear } : {}),
       /* THE PLAYER'S OWN SOURCE. On a lineup board the claim is the board's —
          one article proving who played. On a Daily board there is no such
