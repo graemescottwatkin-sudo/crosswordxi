@@ -43,7 +43,13 @@
     { name: "Privacy",     href: "/crossword/privacy" }
   ];
 
-  var WORDMARK = 'The <span class="xi">XI</span> Games';
+  /* xic-xi, not xi. The chrome owns its markup and every class in it lives in
+     the xic- namespace, because a bare .xi is a class any game may already
+     have — and Crossword XI does: a dark green badge for its own branding.
+     It landed on the shared wordmark, which sets its own colour, and the two
+     together produced dark letters on a dark box. Invisible on one game and
+     right on the other, from one unnamespaced class. */
+  var WORDMARK = 'The <span class="xic-xi">XI</span> Games';
 
   function el(tag, cls, html) {
     var e = document.createElement(tag);

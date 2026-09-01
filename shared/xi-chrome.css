@@ -74,7 +74,7 @@
   white-space: nowrap;
 }
 .xic-home:hover { text-decoration: underline; text-underline-offset: 3px; }
-.xic-home .xi { color: var(--xi-ink); }
+.xic-home .xic-xi { color: var(--xi-ink); }
 
 .xic-right {
   margin-left: auto;

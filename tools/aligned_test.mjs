@@ -26,6 +26,50 @@ function t(name, ok, note) {
 const read = (p) => fs.readFileSync(p, "utf8");
 const has = (p) => fs.existsSync(p);
 
+/* Every stylesheet a game ships, wherever it keeps them. */
+function listCss(dir) {
+  const out = [];
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const f = d + "/" + e.name;
+      if (e.isDirectory()) walk(f);
+      else if (e.name.endsWith(".css")) out.push(f);
+    }
+  };
+  try { walk(dir); } catch (e) { /* a game with no stylesheets of its own */ }
+  return out;
+}
+
+/* The selectors of a stylesheet, by splitting on braces. Enough for the
+   question asked of it — what does this rule land on — and it cannot lose a
+   backslash the way a pattern can. @media heads are skipped rather than
+   parsed: their contents come round again as ordinary rules. */
+function selectorsOf(css) {
+  /* Comments first. This project comments heavily inside its stylesheets, and
+     prose read as selectors turns a real finding into a coincidence: the first
+     run of the collision check reported a clash on "so white", which is not a
+     selector at all. It happened to fire on the right file for the wrong
+     reason, which is worse than not firing. */
+  let out2 = "";
+  for (let k = 0; k < css.length; k++) {
+    if (css[k] === "/" && css[k + 1] === "*") {
+      const end = css.indexOf("*/", k + 2);
+      if (end < 0) break;
+      k = end + 1;
+      continue;
+    }
+    out2 += css[k];
+  }
+  css = out2;
+  const out = [];
+  for (const chunk of css.split("}")) {
+    const head = chunk.split("{")[0];
+    if (!head || head.includes("@")) continue;
+    for (const sel of head.split(",")) if (sel.trim()) out.push(sel);
+  }
+  return out;
+}
+
 /* THE FAMILY. dir is the path under the root and the URL; prefix is the
    game's localStorage namespace — distinct per game, or two games sharing a
    browser overwrite each other's saves. */
@@ -188,8 +232,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v2";
-const SHARED_HASH = "bc001022521a3eaa";
+const SHARED_TAG = "v3";
+const SHARED_HASH = "cb9340e3ccb71324";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {
@@ -208,6 +252,65 @@ t("every game references the shared layer at the same version", (() => {
     (read(`${g.dir}/index.html`).match(/shared\/xi-chrome\.js\?v=([a-z0-9]+)/) || [])[1]);
   return tags.length > 0 && new Set(tags).size === 1;
 })(), "one game on an older shared build is two chromes again");
+
+
+/* ---- no game may style a class the chrome puts on the page ---- */
+/* THE BUG THIS EXISTS FOR. The wordmark was emitted as a span classed "xi",
+   and Crossword XI already had a .xi of its own — a dark green badge for its
+   branding. The badge met the the chrome's own colour rule and the XI went dark
+   on dark: invisible on one game, correct on the other, from one shared class
+   name. The games are already forbidden from writing .xic- rules; this is the
+   other half of that fence, and the half that was missing.
+
+   The test is a COLLISION, not a naming convention: the chrome uses a few
+   unnamespaced state classes that no game touches, and renaming those buys
+   nothing. What must never happen is a game owning a selector that lands on
+   the the chrome's own markup.
+
+   Scanned by splitting, not by regex: four checks written this session lost a
+   backslash on the way into the file and became patterns matching nothing
+   while still reporting ok. */
+console.log("\nNo game styles a class the chrome writes");
+{
+  const Q = String.fromCharCode(34);
+  const js = read("shared/xi-chrome.js");
+
+  /* Classes the chrome puts on the page: every class="..." it writes, and the
+     second argument of its own el(tag, classes, ...) helper. */
+  const written = new Set();
+  for (const chunk of js.split("class=" + Q).slice(1)) {
+    for (const c of chunk.split(Q)[0].split(" ")) if (c.trim()) written.add(c.trim());
+  }
+  for (const chunk of js.split("el(").slice(1)) {
+    const q = chunk.split(Q);
+    /* q[1] is the tag, q[3] the class list — but only when nothing but a comma
+       separates them, or this is reading some later string entirely. */
+    if (q.length > 3 && q[2].trim() === "," ) {
+      for (const c of q[3].split(" ")) if (c.trim()) written.add(c.trim());
+    }
+  }
+  t("the chrome writes classes this test can see", written.size > 3,
+    written.size + " classes");
+
+  /* A game collides when a rule of its own ENDS in exactly that class: .xi{}
+     lands on the the chrome's span, while .cal-key .k.open needs two classes on
+     one element and cannot. */
+  const clashes = [];
+  for (const g of GAMES) {
+    let css = "";
+    for (const f of listCss(g.dir)) css += read(f) + "\n";
+    for (const sel of selectorsOf(css)) {
+      const last = sel.trim().split(" ").pop().split(">").pop().trim();
+      if (!last.startsWith(".")) continue;
+      const name = last.slice(1);
+      if (name.includes(".") || name.includes(":")) continue;   // compound: scoped
+      if (written.has(name)) clashes.push(g.dir + ": " + sel.trim());
+    }
+  }
+  t("no game owns a selector that lands on the chrome", clashes.length === 0,
+    clashes.length ? clashes.join(" | ") : "checked " + GAMES.length + " games");
+}
+
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
