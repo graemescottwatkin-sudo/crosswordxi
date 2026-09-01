@@ -411,5 +411,40 @@ console.log("\nNo game styles a class the chrome writes");
 }
 
 
+
+/* ---- the landing shell belongs to one file ---- */
+/* The landing was Crossword XI's alone and the word search opened on the
+   generation before it — same family, two different sites. The rules moved to
+   shared/xi-landing.css unchanged, and all three games load them.
+
+   WHY THIS CHECK AND NOT A PREFIX. The chrome uses xic- to mean "no game may
+   restyle this". A landing is a layout games FILL, and renaming eighty rules
+   in live markup would have bought a prefix and risked a front page. Single
+   ownership is enforced here instead of spelled in the names: a game that
+   redefines a selector the shell owns is exactly the drift the prefix would
+   have prevented, and this refuses it by name. */
+console.log("\nThe landing shell is defined once");
+{
+  const shellSelectors = new Set();
+  for (const sel of selectorsOf(read("shared/xi-landing.css"))) {
+    shellSelectors.add(sel.trim());
+  }
+  t("the shared landing defines the shell", shellSelectors.size > 40,
+    shellSelectors.size + " selectors");
+
+  const redefined = [];
+  for (const g of GAMES) {
+    for (const f of listCss(g.dir)) {
+      for (const sel of selectorsOf(read(f))) {
+        if (shellSelectors.has(sel.trim())) redefined.push(g.dir + ": " + sel.trim());
+      }
+    }
+  }
+  t("and no game redefines any part of it", redefined.length === 0,
+    redefined.length ? redefined.slice(0, 4).join(" | ") : "checked " + GAMES.length + " games");
+
+  t("every game loads it", GAMES.every((g) =>
+    read(`${g.dir}/index.html`).indexOf("shared/xi-landing.css") > -1));
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

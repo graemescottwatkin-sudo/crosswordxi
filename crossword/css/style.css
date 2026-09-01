@@ -1910,51 +1910,6 @@ body.rotate-needed .rotate-prompt{
 .theme-ask select{flex:1 1 auto;min-width:0;min-height:44px}
 .theme-ask .btn{flex:none}
 
-
-/* ============ THE LANDING SCREEN ============
-   Three choices, each one a target rather than a line of text, so none can be
-   pressed by accident when another was meant. */
-.home-card{max-width:430px}
-.home-choice{
-  display:block;width:100%;text-align:left;cursor:pointer;
-  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pitch);
-  border-radius:8px;padding:14px 16px;margin-bottom:10px;min-height:44px;
-}
-.home-choice:hover{border-color:var(--pitch);background:var(--sel-word)}
-.hc-title{
-  display:block;font-family:var(--disp);font-weight:700;font-size:17px;
-  letter-spacing:.02em;color:var(--ink);
-}
-.hc-note{display:block;font-size:13px;color:var(--ink-soft);margin-top:3px;line-height:1.4}
-.hc-state{
-  display:block;font-family:var(--disp);font-weight:600;font-size:11px;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--pitch);margin-top:6px;
-}
-.hc-state:empty{display:none}
-.home-links{margin-top:14px;font-size:13px;color:var(--ink-faint)}
-.home-links button{
-  background:none;border:none;color:var(--ink-faint);text-decoration:underline;
-  cursor:pointer;font-size:13px;min-height:44px;padding:0 4px;
-}
-.home-links button:hover{color:var(--pitch)}
-
-
-/* Play as, on the landing screen. Quieter than the two choices — it is a
-   setting, not the decision. */
-.home-club{
-  display:flex;align-items:center;gap:10px;justify-content:center;
-  margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
-}
-.home-club label{
-  font-family:var(--disp);font-weight:600;font-size:11px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink-faint);
-}
-.home-club select{
-  flex:1 1 auto;min-width:0;min-height:44px;font-family:var(--body);
-  font-size:15px;color:var(--ink);background:var(--card);
-  border:1px solid var(--line);border-radius:7px;padding:0 8px;
-}
-
 /* Clubs and themes: Core / Special / General bands. A club shows every Core
    category, greyed where no board exists yet — hiding an empty one tells a
    supporter their club has nothing, greying it says the category exists and
@@ -2040,15 +1995,6 @@ body.rotate-needed .rotate-prompt{
   opacity:1;border-color:var(--pitch);color:var(--pitch)
 }
 
-/* Board of the day. Marked out from the three tracks below it without becoming
-   a fourth one: it is a way in to Clubs and themes, not a mode of its own. */
-.home-choice.featured{border-color:var(--pitch);position:relative}
-.home-choice.featured[hidden]{display:none}
-.hc-kicker{
-  display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--pitch);margin-bottom:2px
-}
-
 /* Board of the day picker in owner tools. */
 .admin-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
 .admin-row select{flex:1 1 200px;min-width:0}
@@ -2056,22 +2002,6 @@ body.rotate-needed .rotate-prompt{
 
 /* Where today's field put you, on the board of the day. */
 .res-rank{color:var(--pitch);font-weight:600}
-
-/* A suspended track. Dimmed but legible, and still clickable — somebody
-   part-way through a practice puzzle can finish it. */
-.home-choice.soon{opacity:.62}
-.home-choice.soon:hover{opacity:.78}
-.hc-soon{
-  font-size:10px;text-transform:uppercase;letter-spacing:.08em;
-  padding:2px 6px;margin-left:6px;border-radius:999px;
-  border:1px solid var(--line);opacity:.85;vertical-align:middle
-}
-
-/* Route to the privacy policy from the landing screen. Quiet, but present at
-   the point somebody is deciding whether to sign in. */
-.home-privacy{text-align:center;margin:-4px 0 10px}
-.home-privacy a{font-size:12px;color:var(--ink-faint);text-decoration:none}
-.home-privacy a:hover{color:var(--pitch);text-decoration:underline}
 
 /* ============ PHONE: FULL WIDTH ============
    Every block below the masthead was capped to --board-w, the board's own
@@ -2705,41 +2635,12 @@ body.flex-layout .live-score.dropped{animation:scoreDrop .45s ease}
 /* The total is already on the summary, so repeating it inside is the third
    time the same number appears on this screen. */
 .breakdown-wrap .res-final{display:none}
-
-/* ============ THE LANDING, AS A VIEW ============
-   Was .overlay — a card on a dimmed backdrop over a board rendered underneath.
-   Now it is the page until something is chosen.
-
-   Keeps the fixed-height column: this fills the same space the board will,
-   scrolls internally if the choices outgrow the screen, and never lets the
-   document scroll. The flex layout stays intact. */
-.home-view{
-  display:none;position:fixed;inset:0;z-index:40;
-  background:var(--paper);
-  overflow-y:auto;overscroll-behavior:contain;
-  padding:16px 16px calc(24px + env(safe-area-inset-bottom));
-  -webkit-overflow-scrolling:touch;
-}
-.home-view.show{display:block}
-/* No card-on-backdrop framing: it is the page now, so it takes the page's
-   background and drops the shadow that made it read as a layer. */
-.home-view .kick-card{
-  box-shadow:none;border:0;background:none;
-  max-width:520px;margin:0 auto;padding:0;
-}
 /* The board and its chrome are not behind this any more — they are simply not
    shown until something is chosen. Hidden rather than covered, so a stray tap
    cannot reach a puzzle nobody has started. */
 body.home-showing .stage,
 body.home-showing .osk,
 body.home-showing .tbar{visibility:hidden}
-
-.home-run{
-  margin:14px 0 4px;font-size:13px;color:var(--ink-soft);
-  text-align:center;min-height:18px;
-}
-.home-run b{color:var(--pitch);font-weight:700}
-.home-settings{width:100%;margin-top:10px}
 
 /* The settings menu, opened from the landing rather than the toolbar. Same
    markup, different anchor: in the toolbar it hangs under a button in a strip,
@@ -2754,91 +2655,7 @@ body.home-showing .tbar{visibility:hidden}
 .tbar-home{
   font-size:17px;line-height:1;letter-spacing:0;padding:6px 11px;min-width:44px;
 }
-
-/* ============ THE LANDING AS A SITE ============
-   Header, columns, a browsable clubs row and a footer. What makes something
-   read as a website rather than an app screen is furniture: navigation you can
-   see, content that uses the width, and a footer admitting a wider world.
-
-   The game view is untouched — this is all inside .home-view, which is only up
-   when nothing is being played. */
-.home-view{padding:0}
-/* THE GREEN IS GONE FROM THE FURNITURE.
-   --pitch is the colour that means a correct answer. Spending it on a masthead
-   is why a correct answer had to shout to be heard, and it is the reason the
-   two games looked nothing alike: one wore green chrome, the other paper. The
-   bar above this strip is shared/xi-chrome.css; this strip is now just the
-   game's own navigation, on paper, and green appears when you get something
-   right. */
-.site-head{background:var(--paper);border-bottom:1px solid var(--line)}
-.site-bar{
-  max-width:1080px;margin:0 auto;padding:12px 20px;
-  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
-}
-/* An h1 now, not a div — so the browser's default heading margin has to go or
-   it pushes the header bar apart. */
-.site-mast{font-family:var(--disp);font-size:20px;font-weight:700;color:var(--ink);
-  letter-spacing:-.01em;margin:0;line-height:1.2}
-.site-xi{background:var(--tint);color:var(--xi-ink);
-  padding:1px 7px;border-radius:5px;font-size:17px;line-height:.72;display:inline-block}
-.site-nav{display:flex;gap:6px}
-.site-nav button{
-  background:none;border:0;color:var(--ink-soft);font-size:14.5px;
-  padding:8px 10px;min-height:var(--tap);border-radius:6px;
-}
-/* The current tab is the one place green still earns its keep in furniture:
-   it marks where you are, which is a fact about state, not decoration. */
-.site-nav button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--pitch)}
-.site-right{margin-left:auto;display:flex;gap:8px}
-.site-ghost{
-  background:none;border:1px solid var(--line);color:var(--ink);
-  border-radius:8px;padding:8px 14px;font-size:13.5px;min-height:var(--tap);
-}
-.site-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-
-.site-wrap{max-width:1080px;margin:0 auto;padding:24px 20px 8px}
-.site-lede{font-size:15px;color:var(--ink-soft);margin:0 0 20px}
-.site-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}
-.site-main{display:flex;flex-direction:column;gap:10px}
-.site-side{display:flex;flex-direction:column;gap:12px}
-
-/* The hero. One strong block so the page has an obvious answer, rather than
-   four tiles of equal weight where nothing is. */
-.home-choice.hero{
-  background:var(--pitch);border:0;border-radius:16px;padding:26px 26px 22px;
-  text-align:left;display:block;
-}
-.home-choice.hero .hc-kicker{
-  display:block;font-size:11.5px;letter-spacing:.11em;color:#9FE1CB;margin-bottom:8px;
-}
-.home-choice.hero .hc-title{
-  display:block;font-family:var(--disp);font-size:34px;line-height:1.08;
-  font-weight:700;color:#fff;letter-spacing:-.02em;
-}
-.home-choice.hero .hc-note{display:block;font-size:14px;color:#9FE1CB;margin:9px 0 0;max-width:44ch}
-.home-choice.hero .hc-state{display:block;font-size:13px;color:#9FE1CB;margin-top:6px}
-.home-choice.hero .hc-cta{
-  display:inline-block;background:#E1F5EE;color:var(--pitch-deep,#04342C);
-  border-radius:10px;padding:12px 28px;margin-top:18px;
-  font-size:15.5px;font-weight:700;
-}
-.home-choice.hero.soon{opacity:.62}
-.home-choice.hero.soon .hc-cta{display:none}
-
-.side-card{
-  background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:15px 17px;text-align:left;display:block;width:100%;
-}
-.side-card.as-btn{cursor:pointer}
-.sc-kicker{display:block;font-size:11.5px;letter-spacing:.11em;color:var(--pitch);margin-bottom:4px}
-.sc-title{display:block;font-family:var(--disp);font-size:18px;font-weight:700;color:var(--ink)}
 .sc-note{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:3px}
-.side-card .home-club{margin:0}
-.side-card .home-club label{display:none}
-.side-card select{width:100%}
-
-.site-sec{font-size:12px;letter-spacing:.11em;color:var(--ink-faint);margin:30px 0 12px;font-weight:700}
-.home-choice.wide{width:100%;text-align:left}
 
 .site-foot{border-top:1px solid var(--line);margin-top:36px;background:#EDEFEC}
 .site-fw{max-width:1080px;margin:0 auto;padding:22px 20px 28px}
@@ -2859,25 +2676,10 @@ body.home-showing .tbar{visibility:hidden}
 .foot-end{margin-left:auto;color:var(--ink-faint)}
 
 @media (max-width:860px){
-  .site-grid{grid-template-columns:1fr}
-  .site-nav{display:none}
-  .home-choice.hero{padding:22px}
-  .home-choice.hero .hc-title{font-size:27px}
   .fg-row{grid-template-columns:1fr}
   .foot-end{margin-left:0;width:100%}
 }
 
-/* Form chips. Green, amber, red at the same thresholds the season table uses. */
-.home-run{display:flex;align-items:center;gap:7px;margin-top:9px}
-
-
-
-
-
-.run-best{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
-/* The chips themselves are the shared chrome's, so a win looks the same in
-   both games. Only the line they sit on belongs to this page. */
-.run-none{font-size:13px;color:var(--ink-soft);margin-left:auto;align-self:center}
 
 /* Three across, below the fixture. Equal weight because they are alternatives
    to each other, not to today — today is the block above with all the colour. */
@@ -2893,63 +2695,6 @@ body.home-showing .tbar{visibility:hidden}
 :root[data-theme="dark"]{--hero-rule:rgba(0,0,0,.075)}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){--hero-rule:rgba(0,0,0,.075)}
-}
-.home-choice.hero{position:relative;overflow:hidden}
-.home-choice.hero::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  /* The line colour is a token because the hero inverts: it is deep green in
-     light mode and pale green in dark, so a fixed white line is depth on one
-     and a wash that eats the contrast of the Kick off button on the other. */
-  background:
-    repeating-linear-gradient(to right,var(--hero-rule) 0 1px,transparent 1px 44px),
-    repeating-linear-gradient(to bottom,var(--hero-rule) 0 1px,transparent 1px 44px);
-  /* Fading out to the left keeps it off the words and lets it read as depth
-     rather than as a pattern laid over the type. */
-  -webkit-mask-image:linear-gradient(105deg,transparent 0%,transparent 34%,#000 78%);
-  mask-image:linear-gradient(105deg,transparent 0%,transparent 34%,#000 78%);
-}
-/* The card content sits above it. */
-.home-choice.hero > *{position:relative;z-index:1}
-
-.site-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch}
-/* One line icon per card, bottom-right, out of the way of the words.
-
-   The three cards carry a kicker, a title and a note each, and at a glance
-   that is three identical blocks of text — the eye has to read to tell them
-   apart. A shape per card is something to recognise before reading. Inline
-   SVG rather than a sprite or a font: no request, nothing to version, and it
-   takes currentColor so it follows the theme without a second rule. */
-.hc-icon{
-  position:absolute;right:14px;bottom:12px;width:34px;height:34px;
-  color:var(--pitch-deep);opacity:.28;pointer-events:none;
-}
-:root[data-theme="dark"] .hc-icon{opacity:.34}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .hc-icon{opacity:.34}
-}
-/* The note must not run under the icon. */
-.home-choice.col .hc-note{padding-right:40px}
-
-.home-choice.col{
-  width:100%;text-align:left;display:flex;flex-direction:column;
-  padding:16px 17px;min-height:132px;
-  /* The icon is positioned against this card, not against whatever ancestor
-     happens to be positioned further up. */
-  position:relative;
-}
-.home-choice.col .hc-kicker{
-  display:block;font-size:11px;letter-spacing:.11em;color:var(--pitch);margin-bottom:5px;
-}
-.home-choice.col .hc-title{display:block;font-size:17px;line-height:1.25}
-.home-choice.col .hc-note{display:block;font-size:12.5px;margin-top:4px}
-/* Pushed to the bottom so the three cards' state lines sit on one line
-   whatever length the titles are. */
-.home-choice.col .hc-state{display:block;margin-top:auto;padding-top:8px;font-size:12.5px}
-.home-choice.col.soon .hc-kicker{color:var(--ink-faint)}
-
-@media (max-width:860px){
-  .site-row{grid-template-columns:1fr}
-  .home-choice.col{min-height:0}
 }
 
 /* The device code. Two controls: one gives the code out, one takes one in. */
@@ -2972,13 +2717,6 @@ body.home-showing .tbar{visibility:hidden}
 }
 .code-row .btn{flex:none;min-height:44px}
 .code-note{font-size:12.5px;color:var(--ink-soft);margin-top:6px;line-height:1.45}
-
-/* How to play is a real page, so it is a link rather than a button. Styled to
-   match its neighbours in the bar. */
-.site-navlink{
-  color:var(--ink-soft);font-size:14.5px;padding:8px 10px;border-radius:6px;
-  text-decoration:none;display:flex;align-items:center;min-height:var(--tap);
-}
 
 /* ============ PREVIOUS PUZZLES CALENDAR ============
    A board's only identity is its date, so a date is how you choose one. Three
