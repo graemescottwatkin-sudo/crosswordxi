@@ -753,6 +753,14 @@ body.no-pitch .cell.block{background:var(--grid-block);border-color:var(--grid-b
   background:var(--wrong);
 }
 /* Reveal Letter — locked gold cell (persists after completion) */
+/* A SOLVED WORD. Painted the instant the server says it is right — the same
+   instant the counter moves — and locked from then on. Declared after .active
+   and .wrong so it wins their fills, and before .gold so a revealed square
+   still says it was revealed: correct is what you did, gold is what you were
+   told. The ring on the active square is a box-shadow, so it still shows if
+   you tap a locked square, as it does on gold. */
+.cell.correct{background:var(--correct);color:var(--correct-ink)}
+.cell.correct .num{color:var(--correct-ink)}
 .cell.gold{background:var(--gold);color:var(--gold-ink)}
 .cell.gold .num{color:var(--gold-ink)}
 .cell.gold::before{
@@ -769,7 +777,9 @@ body.no-pitch .cell.block{background:var(--grid-block);border-color:var(--grid-b
 .cell.gold.active,.cell.gold-ans.active{box-shadow:inset 0 0 0 2px var(--pitch-deep)}
 /* softened multi-word separators (max 2px) */
 .cell.just-solved{animation:solved var(--t-slow) var(--ease)}
-@keyframes solved{0%{background:var(--sel)}100%{background:var(--grid-cell)}}
+/* The flash lands on the colour the word now keeps, rather than fading back
+   to white under a square that then snaps green. */
+@keyframes solved{0%{background:var(--sel)}100%{background:var(--correct)}}
 /* 3px, and in the pitch green rather than a grey. A word break is structure,
    not decoration — it should read as firmly as the grid edge does. */
 .cell.brk-r{border-right:3px solid var(--wordbreak)}

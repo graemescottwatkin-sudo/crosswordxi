@@ -41,11 +41,21 @@ function t(name, ok, note) {
 /* The bytes this game ships, hashed together. Its own assets only: shared/
    carries its own plain vN lifecycle and must not move with the game tag. */
 function ownAssetHash() {
-  const files = ["scrambled/index.html", "scrambled/css/style.css",
-                 "scrambled/js/game.js", "scrambled/js/config.js",
-                 "scrambled/js/scoring.js"];
+  /* THE SAME HASH THE OTHER GATES AND post_deploy COMPUTE, or the bump can
+     never match. Discovered from the page, never a hardcoded list — an asset
+     added to index.html is covered the day it is added — and hashed as
+     name, NUL, bytes in a stable order. The first version of this gate
+     hashed a fixed list of bytes only, so the value post_deploy recorded
+     could not be reproduced here and the gate went red on the next run for
+     a change nobody had made. One hash, three gates, one shape. */
+  const paths = [...html.matchAll(/(?:src|href)="((?:css|js)\/[^"?]+)\?v=[^"]*"/g)]
+    .map((m) => m[1]).sort();
+  if (!paths.length) return null;
   const h = crypto.createHash("sha256");
-  for (const f of files) h.update(has(f) ? read(f) : "");
+  for (const p of paths) {
+    h.update(p); h.update("\0");
+    h.update(fs.readFileSync(path.join(ROOT, "scrambled", p)));
+  }
   return h.digest("hex").slice(0, 16);
 }
 

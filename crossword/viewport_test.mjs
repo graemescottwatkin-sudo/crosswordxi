@@ -156,8 +156,10 @@ t("the dark set lightens the playable cells", darkBlocks === 1, darkBlocks + " b
 t("cells are painted from their own token, not the card colour",
   /\.cell\{[^}]*background:var\(--grid-cell\)/.test(css.replace(/\s*\n\s*/g, "")) &&
   /:root\{[^}]*--grid-cell:#FFFFFF/.test(tokens.replace(/\s*\n\s*/g, "")));
-t("the solved animation settles back to the cell colour, not the card",
-  /@keyframes solved\{.*?background:var\(--grid-cell\)/.test(css.replace(/\s*\n\s*/g, "")));
+/* The flash lands on --correct now: a solved word keeps that colour and is
+   locked, so fading back to white would be a square that then snaps green. */
+t("the solved animation settles on the colour the word now keeps",
+  /@keyframes solved\{.*?background:var\(--correct\)/.test(css.replace(/\s*\n\s*/g, "")));
 
 /* Phone reorder: clock/solved/pause/new on one row, help on one row, and the
    league table moved below the board. */

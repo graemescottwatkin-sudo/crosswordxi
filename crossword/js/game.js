@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002a";
+  var BUILD = "v002b";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -402,7 +402,10 @@
     });
     if (!jobs.length) { updateProgress(); return Promise.resolve(); }
     return Promise.all(jobs).then(function () {
-      updateProgress(); flashSolved(); checkComplete();
+      /* Repaint BEFORE the flash: the server's verdict is what turns a word
+         green and locks it, and nothing else on this path touched the classes,
+         so a solved word stayed white until the next keystroke repainted it. */
+      refreshLetters(); updateProgress(); flashSolved(); checkComplete();
       // "How many letters are wrong" is free and always has been, but the
       // browser can no longer count it: ask once the grid is full.
       if (gridFull() && !complete) {
@@ -493,7 +496,22 @@
     var pref = localStorage.getItem("fcw.clubPref");
     if (pref && CLUBS.indexOf(pref) !== -1) { clubMode = "chosen"; club = pref; }
   } catch (e) {}
-  function locked(k) { return !!(revealedCells[k] || revealAnswerCells[k] || subbedCells[k]); }
+  /* A SOLVED WORD IS LOCKED. The free background verify marks a word solved
+     the moment it is right, and the counter says so — 0/11 becomes 1/11 with
+     no button pressed. Until now the word stayed editable, so a stray key on
+     it took the counter back down: the game had said the word was done and
+     then let it be undone. A square in any verified word now counts as locked,
+     exactly as a revealed square does, and paints in --correct. Server-judged,
+     never inferred here: verified[] is only ever set from /api/verify. */
+  function solvedAt(k) {
+    var c = puzzle && puzzle.cells[k];
+    if (!c) return false;
+    return (c.across !== null && verified[c.across] === true) ||
+           (c.down !== null && verified[c.down] === true);
+  }
+  function locked(k) {
+    return !!(revealedCells[k] || revealAnswerCells[k] || subbedCells[k]) || solvedAt(k);
+  }
   function revealedLetterCount() { return Object.keys(revealedCells).length; }
   function revealedAnswerCount() { return Object.keys(revealedEntries).length; }
   function liveScore() {
@@ -2107,6 +2125,7 @@
       var el = cellEls[k];
       el.querySelector(".ltr").textContent = letters[k] || "";
       el.classList.toggle("wrong", !!wrong[k]);
+      el.classList.toggle("correct", solvedAt(k));
       el.classList.toggle("gold", !!(revealedCells[k] || subbedCells[k]));
       el.classList.toggle("gold-ans", !revealedCells[k] && !!revealAnswerCells[k]);
       el.setAttribute("aria-label", cellAria(k));
@@ -2118,7 +2137,8 @@
   function cellAria(k) {
     var xy = k.split(",");
     var s = "Row " + (+xy[1] + 1) + " column " + (+xy[0] + 1) + ", " + (letters[k] || "blank");
-    if (locked(k)) s += ", revealed";
+    if (revealedCells[k] || revealAnswerCells[k] || subbedCells[k]) s += ", revealed";
+    else if (solvedAt(k)) s += ", solved";
     if (wrong[k]) s += ", marked wrong";
     return s;
   }

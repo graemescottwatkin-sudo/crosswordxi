@@ -277,6 +277,30 @@ server.listen(0, "127.0.0.1", async () => {
   t("the solved count came back from the server",
     /^[1-9]/.test($("progressChip").textContent), $("progressChip").textContent);
 
+  /* A SOLVED WORD IS PAINTED AND LOCKED, the instant the counter moves. The
+     server has just judged entry 0 correct; every square in it must now carry
+     .correct, and a stray key on one of them must change nothing — not the
+     letter, not the counter. Before this, a solved word stayed editable and a
+     wrong key took 1/11 back to 0/11. Proven by typing, not by reading CSS. */
+  const solvedCells = e0.cells.map((c) => d.querySelector(`#grid .cell[data-x="${c.x}"][data-y="${c.y}"]`));
+  t("the solved word is painted correct", solvedCells.every((el) => el && el.classList.contains("correct")),
+    solvedCells.filter((el) => el && el.classList.contains("correct")).length + " of " + solvedCells.length);
+  t("and the screen reader hears it as solved, not revealed",
+    /solved/.test(solvedCells[0].getAttribute("aria-label") || "") &&
+    !/revealed/.test(solvedCells[0].getAttribute("aria-label") || ""),
+    solvedCells[0].getAttribute("aria-label"));
+  const chipBefore = $("progressChip").textContent;
+  const letterBefore = solvedCells[0].querySelector(".ltr").textContent;
+  const stray = letterBefore === "Z" ? "Q" : "Z";
+  solvedCells[0].dispatchEvent(new w.Event("pointerdown", { bubbles: true }));
+  d.dispatchEvent(new w.KeyboardEvent("keydown", { key: stray, bubbles: true }));
+  d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+  await wait(600);
+  t("a solved word cannot be typed over", solvedCells[0].querySelector(".ltr").textContent === letterBefore,
+    letterBefore + " -> " + solvedCells[0].querySelector(".ltr").textContent);
+  t("nor backspaced, so the counter holds", $("progressChip").textContent === chipBefore,
+    chipBefore + " -> " + $("progressChip").textContent);
+
   console.log("\nScoring and season still work client-side");
   // Landmarks from the decay curve in headless_test.js, which is authoritative.
   // (The deleted dev panel asserted "0:59 clean = 114"; the curve gives 111 at
