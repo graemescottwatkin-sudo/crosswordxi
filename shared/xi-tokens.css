@@ -24,7 +24,7 @@
      depth on one is a wash on the other that eats the Kick off button's
      contrast. */
   --hero-rule:rgba(255,255,255,.085);
-  --form-w:#C0DD97; --form-w-ink:#173404;
+  --form-w:var(--correct); --form-w-ink:var(--correct-ink);
   --form-d:#FAC775; --form-d-ink:#412402;
   --form-l:#F7C1C1; --form-l-ink:#501313;
   --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
@@ -42,8 +42,87 @@
   --hero-rule:rgba(0,0,0,.075);
   /* form results — win, draw, loss. Separated by lightness as well as hue so
      the letter and the weight carry it for a colour-blind player. */
-  --form-w:#C0DD97; --form-w-ink:#173404;
+  --form-w:var(--correct); --form-w-ink:var(--correct-ink);
   --form-d:#FAC775; --form-d-ink:#412402;
   --form-l:#F7C1C1; --form-l-ink:#501313;
 }
 .xi-mark{font-family:var(--disp);font-weight:700;color:var(--xi-ink)}
+
+/* ======================================================================
+ * THE DESIGN SYSTEM — everything below was added in shared v6.
+ *
+ * Nothing above changed value. What follows gives the family a vocabulary
+ * for the things it was spelling out ad hoc: sizes, spaces, corners,
+ * shadows, motion, and the colours that mean a STATE rather than a surface.
+ * The rules for using these are in shared/DESIGN.md.
+ * ====================================================================== */
+:root{
+  /* ---- type scale. --disp is the display face (mastheads, tiles, kickers);
+     --body is everything you read. Sizes are the only sizes; a game that
+     needs 15.5px has a different problem. */
+  --fs-xs:12px; --fs-sm:13.5px; --fs-md:15px; --fs-lg:17px;
+  --fs-xl:21px; --fs-2xl:26px; --fs-3xl:32px; --fs-mast:40px;
+  --lh-tight:1.1; --lh-snug:1.3; --lh-body:1.5;
+  --track-caps:.08em;        /* letter-spacing for uppercase kickers */
+
+  /* ---- spacing, on a 4px grid. */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+  --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px;
+
+  /* ---- corners. Four, not twelve. --radius above is the legacy name for
+     --r-lg and stays so nothing that reads it breaks. */
+  --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:var(--radius); --r-pill:999px;
+
+  /* ---- elevation. Cards rest, sheets float, and a focus ring is a shadow
+     because a shadow survives any background the control sits on. The ring
+     is two-tone — paper then pitch — so it reads on a green button as well
+     as on a white cell. */
+  --shadow-1:0 1px 2px rgba(24,34,25,.06),0 2px 8px rgba(24,34,25,.06);
+  --shadow-2:0 8px 24px rgba(0,0,0,.16);
+  --ring:0 0 0 3px var(--paper),0 0 0 5px var(--pitch);
+
+  /* ---- motion. Four durations and two curves, and every transition in the
+     family uses one of each. Feedback is fast; movement you are meant to
+     follow (a table row changing place) is slow enough to be seen. */
+  --t-fast:120ms; --t-base:180ms; --t-slow:320ms; --t-move:420ms;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --ease-in:cubic-bezier(.4,0,1,1);
+
+  /* ---- state. Accent is reserved for what a thing MEANS, never for
+     decoration: the cell you are on, the word it belongs to, a letter that is
+     right, one that is wrong, one the game gave you. Gold is the reveal and
+     nothing else, so a gold cell always means "you were told". */
+  /* ---- green as INK and green as a SURFACE are different tokens. --pitch-deep
+     is a surface: in dark mode it is near-black, and a clue number set in it
+     disappears — which is how the crossword came to carry an inverted dark
+     palette of its own. --pitch-ink is green you read; --on-pitch is text that
+     sits ON green (white in both modes); --pitch-hover is where a green
+     control goes under the pointer, darker in light and lighter in dark. */
+  --pitch-ink:#1E6B45; --on-pitch:#FFFFFF; --pitch-hover:#123B27;
+  --sel:#7FC29C; --sel-word:#C6E2D0;
+  --correct:#C0DD97; --correct-ink:#173404;
+  --wrong:#C0392B; --wrong-ink:#8A2419; --wrong-bg:#FBE3E0;
+  --revealed:#7A8FA6; --revealed-bg:#F8E9B8;
+
+  /* ---- the grid. White cells and near-black blocks are the game; the field
+     they sit on is a step off paper and no more. It was a saturated green,
+     which is why the grid read as a pitch with letters cut out of it. */
+  --grid-cell:#FFFFFF; --grid-line:#DFE3DD; --grid-block:#1B211C;
+  --grid-field:#E7EBE5; --grid-field-line:rgba(24,34,25,.10);
+}
+:root[data-theme="dark"]{
+  --shadow-1:0 1px 2px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.3);
+  --shadow-2:0 8px 24px rgba(0,0,0,.5);
+  --pitch-ink:#8FD9AE; --on-pitch:#FFFFFF; --pitch-hover:#3CA070;
+  --sel:#6E8564; --sel-word:#47513F;
+  --correct:#C0DD97; --correct-ink:#173404;
+  --wrong:#E3695A; --wrong-ink:#FFD9D3; --wrong-bg:#4A231D;
+  --revealed:#8AA0B6; --revealed-bg:#5C4E1E;
+  --grid-cell:#5A6356; --grid-line:#8D9788; --grid-block:#070907;
+  --grid-field:#182019; --grid-field-line:rgba(255,255,255,.08);
+}
+/* Motion collapses to nothing in ONE place. A game that uses the tokens gets
+   reduced motion for free; one that hardcodes 200ms has to remember. */
+@media (prefers-reduced-motion:reduce){
+  :root{ --t-fast:0ms; --t-base:0ms; --t-slow:0ms; --t-move:0ms; }
+}

@@ -318,11 +318,19 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v5";
-const SHARED_HASH = "798399372eae0f6c";
+const SHARED_TAG = "v6";
+const SHARED_HASH = "3c419edcb52110c5";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
-  for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {
+  /* EVERY served asset in shared/, not the two that existed when this was
+     written. The hash covered xi-chrome.js and xi-chrome.css only, so a token
+     added to xi-tokens.css moved no hash and asked for no tag — which is how
+     the tokens sat on v2 while the chrome went to v5. Documentation is not
+     hashed: a wording change in DESIGN.md is not a release. */
+  const sharedFiles = fs.readdirSync("shared")
+    .filter((f) => f.endsWith(".css") || f.endsWith(".js"))
+    .sort().map((f) => "shared/" + f);
+  for (const f of sharedFiles) {
     h.update(f); h.update("\0"); h.update(read(f));
   }
   const now = h.digest("hex").slice(0, 16);
