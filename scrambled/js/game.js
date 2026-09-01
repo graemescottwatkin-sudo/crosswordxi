@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001m";
+var BUILD = "v001n";
 
 (function () {
   "use strict";
@@ -474,11 +474,18 @@ var BUILD = "v001m";
     var lettersKnown = (state.letters[id] || "").length;
     var nameLength = slot.len.reduce(function (a, b) { return a + b; }, 0);
     $("benchFor").textContent = "Bench \u2014 " + slot.pos + ", (" + slot.len.join(",") + ")";
-    $("hintLabel").textContent = state.board.hintLabel;
+    /* A BOARD THAT SELLS NOTHING OFFERS NOTHING. hintLabel is null when the
+       bench has no hint to sell \u2014 a board declaring "none", or a last-two
+       board whose hint is the fixture on its start card \u2014 and a button that
+       charged for an empty answer would be the purchase of nothing the hint
+       rule exists to prevent. Letters and names stay on sale. */
+    var sells = !!state.board.hintLabel;
+    $("hintLabel").textContent = state.board.hintLabel || "";
+    $("buyHint").hidden = !sells;
     $("hintCost").textContent = "\u2212" + CFG.REVEAL_HINT_COST;
     $("letterCost").textContent = "\u2212" + CFG.REVEAL_LETTER_COST;
     $("nameCost").textContent = "\u2212" + CFG.REVEAL_NAME_COST;
-    $("buyHint").disabled = state.hintsRevealed;
+    $("buyHint").disabled = !sells || state.hintsRevealed;
     /* PROMINENTLY FOR THE ONE SELECTED. Every tile carries its career once the
        board is revealed, but eleven careers at tile size is a wall of text and
        none of it is answering the question the player is actually asking. The
@@ -570,6 +577,9 @@ var BUILD = "v001m";
   function teamTalk() {
     state.teamTalkDone = true;
     if (state.hintsRevealed) return;
+    /* Nothing to give on a board that sells nothing: the manager has no
+       careers to hand out, and saying he had would be a half time of nothing. */
+    if (!state.board.hintLabel) return;
     /* One request, where this used to fire eleven in parallel — the board
        answers for every slot now, so eleven round trips bought nothing but
        eleven chances for one of them to fail alone. */

@@ -11,9 +11,12 @@
 import fs from "node:fs";
 import {
   gate, parseFormation, minimumFixedPoints, scrambleName, nameFloor,
+  build, seedOf, poolOf, LAST2_POS,
 } from "../tools/build_scrambled.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
-import { publicBoard, boardForNumber, playableTokenNo, slotHint, topClubs } from "../functions/_lib/sc-board.js";
+import {
+  publicBoard, boardForNumber, playableTokenNo, slotHint, topClubs, sellsHint, hintLabel,
+} from "../functions/_lib/sc-board.js";
 import { normalise, letterBag, isEnglishForm } from "../functions/_lib/sc-names.js";
 
 let pass = 0, fail = 0;
@@ -119,6 +122,83 @@ t("SABOTAGE: and the club board is refused for the same reason",
 
 s = clone(); s.hintField = "boots";
 t("SABOTAGE: an invented hint field is refused", refuses(s, "hintField must be"));
+
+/* A BOARD THAT SELLS NOTHING SAYS SO. Forty-four iconic boards declare
+   "none" because neither club nor nationality varies enough to be worth a
+   purchase; the builder used to refuse the word, and the game used to charge
+   for an empty answer on any board like it. */
+s = clone(); s.hintField = "none";
+t("a board declaring no hint is accepted", gate(s, parseFormation(s.formation)).length === 0);
+{
+  const b = build(s, "none.json");
+  t("and the bench has nothing to sell on it", !!b && !sellsHint(b) && hintLabel(b) === null);
+  t("so no hint reaches the wire and no label is offered",
+    !!b && publicBoard(b, 1).hintLabel === null && b.slots.every((sl) => slotHint(b, sl.id) === null));
+}
+
+console.log("\n=== A last-two board: the league's record of one night ===");
+/* Built from the sample rather than from a bank file: the set goes stale
+   every round, so a fixture in the repo would be a lie within a month. */
+const last2 = () => {
+  const x = clone();
+  x.type = "prem-last2"; x.club = "Sampleton"; x.gameweek = 2;
+  x.title = "Sampleton 2–1 Elsewhere"; x.kickoff = "Sat 29 Aug 2026, 15:00 BST";
+  x.kickoffMillis = 1788012000000; x.venue = "home"; x.hintField = "clubs";
+  delete x.seed; delete x.pool; delete x.daily;
+  x.xi.forEach((p, i) => { delete p.clubs; delete p.premClubs; p.shirt = i + 1; p.captain = i === 3; });
+  return x;
+};
+t("a last-two board with no careers, no seed and no pool line is accepted",
+  gate(last2(), parseFormation(last2().formation)).length === 0,
+  gate(last2(), parseFormation(last2().formation)).join(" | "));
+t("but a Daily with an empty career is still refused",
+  (() => { const x = clone(); x.hintField = "clubs"; x.xi.forEach((p) => { p.clubs = [{ club: "A" }]; });
+    delete x.xi[2].clubs; return refuses(x, "no club history for"); })(),
+  "the guard is the type, not the absence of careers");
+for (const [label, spoil, fragment] of [
+  ["no club", (x) => { delete x.club; }, "names no club"],
+  ["a gameweek that is not a number", (x) => { x.gameweek = "two"; }, "gameweek must be"],
+  ["no kickoff", (x) => { delete x.kickoff; }, "no kickoff"],
+  ["no kickoff millis", (x) => { delete x.kickoffMillis; }, "kickoffMillis must be"],
+  ["a neutral venue", (x) => { x.venue = "neutral"; }, "venue must be"],
+  ["two players in one shirt", (x) => { x.xi[5].shirt = x.xi[4].shirt; }, "two players, one shirt"],
+  ["a shirt of 0", (x) => { x.xi[5].shirt = 0; }, "shirt must be"],
+  ["two captains", (x) => { x.xi[7].captain = true; }, "2 captains"],
+  ["no captain", (x) => { x.xi[3].captain = false; }, "0 captains"],
+  ["a position the record never uses", (x) => { x.xi[6].pos = "CDM"; }, "not one the league"],
+  ["a board type this builder has never met", (x) => { x.type = "friendly"; }, "unknown board type"],
+]) {
+  const x = last2(); spoil(x);
+  t(`SABOTAGE: ${label} is refused`, refuses(x, fragment));
+}
+{
+  const src = last2();
+  const b = build(src, "last2.json");
+  t("it builds with the fixture on the board and never in the daily ring",
+    !!b && b.type === "prem-last2" && b.club === "Sampleton" && b.gameweek === 2 &&
+    b.venue === "home" && b.kickoffMillis === src.kickoffMillis && b.daily === false);
+  t("its pool line is the fixture, derived once",
+    !!b && b.pool === poolOf(src) && /Sampleton 2–1 Elsewhere/.test(b.pool) && /at home/.test(b.pool) &&
+    /gameweek 2/.test(b.pool), b && b.pool);
+  t("its seed is the kickoff, so the scramble is reproducible from the fixture",
+    seedOf(src) === seedOf(last2()) && Number.isInteger(seedOf(src)) &&
+    build(last2(), "again.json").slots[0].scramble === b.slots[0].scramble);
+  t("a different round is a different seed",
+    (() => { const y = last2(); y.gameweek = 3; return seedOf(y) !== seedOf(src); })());
+  t("the slots carry the shirt and the armband",
+    !!b && b.slots.every((sl, i) => sl.shirt === i + 1) && b.slots.filter((sl) => sl.captain).length === 1 &&
+    b.slots.filter((sl) => "captain" in sl).length === 1);
+  const pub = publicBoard(b, 1);
+  const wire = JSON.stringify(pub);
+  t("the public board names the fixture — club, round, kickoff, venue",
+    pub.type === "prem-last2" && pub.club === "Sampleton" && pub.gameweek === 2 &&
+    pub.venue === "home" && !!pub.kickoff);
+  t("and offers no hint, because the fixture is the hint", pub.hintLabel === null && !sellsHint(b));
+  t("no shirt and no armband leave the server unsolved",
+    !/"shirt"/.test(wire) && !/"captain"/.test(wire) && b.slots.every((sl) => wire.indexOf(sl.name) === -1));
+  t("the positions are the record's wider set, and LAST2_POS names all fourteen",
+    LAST2_POS.length === 14 && ["LWB", "RWB", "DM", "AM", "LM", "RM", "LW", "RW"].every((p) => LAST2_POS.includes(p)));
+}
 
 /* Whatever this board sells, withheld for one player. Written down as
    "nationality" it tested a field the Daily boards do not even use. */

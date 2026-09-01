@@ -229,11 +229,18 @@ export function gate(src, shape) {
   if (!src.source) {
     problems.push("no source — a board is a claim about who played and must carry the URL that backs it");
   }
-  if (!Number.isInteger(src.seed)) {
-    problems.push("no integer seed — without one the scramble is not reproducible from this file");
-  }
-  if (!src.pool) {
-    problems.push("no pool line — a player who does not know the frame is guessing at the whole of football");
+  /* A LAST-TWO BOARD DERIVES BOTH. Its seed is the kickoff and its pool line
+     is the fixture — facts the file already states, so asking the author to
+     write them again would be a second copy of each. Every other board must
+     carry its own: a lineup's seed is the only thing that makes its scramble
+     reproducible, and its pool line is a sentence nobody can derive. */
+  if (src.type !== "prem-last2") {
+    if (!Number.isInteger(src.seed)) {
+      problems.push("no integer seed — without one the scramble is not reproducible from this file");
+    }
+    if (!src.pool) {
+      problems.push("no pool line — a player who does not know the frame is guessing at the whole of football");
+    }
   }
 
   const bags = new Map();
@@ -320,8 +327,31 @@ export function gate(src, shape) {
         `("${b.s}") — author the shorter one in full, as Rui Costa is beside Costacurta`);
     }
   }
-  if (!["club", "nationality", "clubs"].includes(src.hintField)) {
-    problems.push(`hintField must be "club", "nationality" or "clubs", not ${JSON.stringify(src.hintField)}`);
+  /* THE BOARD TYPE. Absent on a lineup board and on a Daily, which are told
+     apart by what they carry; "prem-last2" is the one type that has to say so,
+     because its hint rule and its shape are its own. Anything else written in
+     the field is a board this builder has never met. */
+  if (src.type !== undefined && src.type !== "prem-last2") {
+    problems.push(`unknown board type ${JSON.stringify(src.type)} — this builder knows "prem-last2", or no type at all`);
+  }
+  const last2 = src.type === "prem-last2";
+
+  if (!["club", "nationality", "clubs", "none"].includes(src.hintField)) {
+    problems.push(`hintField must be "club", "nationality", "clubs" or "none", not ${JSON.stringify(src.hintField)}`);
+  } else if (src.hintField === "none") {
+    /* NOTHING TO SELL, AND SAID SO. Forty-four of the iconic boards are
+       elevens where neither club nor nationality varies enough to be worth a
+       purchase, and rather than sell nothing they declare it. The bench keeps
+       letters and names; the hint button is not offered. Checked nowhere
+       else: a board that sells nothing has nothing to get wrong. */
+  } else if (last2) {
+    /* A LAST-TWO BOARD IS ITS OWN HINT. The author writes hintField "clubs"
+       on these by convention, but no player carries a career: the club and
+       the fixture are on the start card, and that IS the hint. So the career
+       rule below is not applied — and because no slot has a career, the board
+       sells nothing from the bench, which publicBoard reports as it would for
+       "none". Guarded on the type, not on the absence of careers, so a Daily
+       with an empty career is still refused as the empty purchase it is. */
   } else if (src.hintField === "clubs") {
     /* THE DAILY'S HINT, which is a career rather than a value.
        The "must vary across the eleven" rule below exists because a hint every
@@ -352,12 +382,73 @@ export function gate(src, shape) {
     }
   }
 
+  /* ---- prem-last2: the shape the league's record gives us ---------------
+     Each current club's last two league games, the real XI in the published
+     formation. The fixture is the board's identity, so the board must name
+     it; the shirt and the armband are the league's facts about that night,
+     so they are checked as facts — one shirt per player, one captain per
+     eleven — and the position is one the formation record actually uses. */
+  if (last2) {
+    if (!src.club) problems.push("a last-two board names no club");
+    if (!Number.isInteger(src.gameweek) || src.gameweek < 1) {
+      problems.push(`gameweek must be a positive integer, not ${JSON.stringify(src.gameweek)}`);
+    }
+    if (!src.kickoff) problems.push("no kickoff — the fixture is the board's identity");
+    if (!Number.isInteger(src.kickoffMillis) || src.kickoffMillis <= 0) {
+      problems.push("kickoffMillis must be a positive integer — it is how a stale set is told from a fresh one");
+    }
+    if (!["home", "away"].includes(src.venue)) {
+      problems.push(`venue must be "home" or "away", not ${JSON.stringify(src.venue)}`);
+    }
+    const shirts = new Map();
+    let captains = 0;
+    xi.forEach((p, i) => {
+      const where = `player ${i + 1} ("${p.name}")`;
+      if (!Number.isInteger(p.shirt) || p.shirt < 1 || p.shirt > 99) {
+        problems.push(`${where}: shirt must be a number from 1 to 99, not ${JSON.stringify(p.shirt)}`);
+      } else if (shirts.has(p.shirt)) {
+        problems.push(`${where}: shirt ${p.shirt} is also player ${shirts.get(p.shirt) + 1}'s — two players, one shirt`);
+      } else shirts.set(p.shirt, i);
+      if (p.captain === true) captains++;
+      else if (p.captain !== false && p.captain !== undefined) {
+        problems.push(`${where}: captain must be true or false, not ${JSON.stringify(p.captain)}`);
+      }
+      if (p.pos && !LAST2_POS.includes(p.pos)) {
+        problems.push(`${where}: position ${JSON.stringify(p.pos)} is not one the league's formation ` +
+          `record uses (${LAST2_POS.join(" ")})`);
+      }
+    });
+    if (captains !== 1) {
+      problems.push(`${captains} captains — a starting XI has exactly one, and the league's record names him`);
+    }
+  }
+
   return problems;
 }
+
+/* Where a player stood THAT NIGHT, from the league's formation record — a
+   wider set than the Daily's usual roles, and only ever these. */
+export const LAST2_POS = ["GK", "LB", "CB", "RB", "LWB", "RWB", "CM", "DM", "AM", "LM", "RM", "LW", "RW", "ST"];
 
 /* ---- Build ---------------------------------------------------------------- */
 /* Exported so tools/import_scrambled.js produces the SAME built shape from the
    same sources. Two builders would be two boards. */
+/* A last-two board's seed is its kickoff, so the scramble is reproducible
+   from the fixture and two clubs kicking off at the same minute still differ
+   by their gameweek and id. Every other board carries its own seed. */
+export function seedOf(src) {
+  if (src.type !== "prem-last2" || Number.isInteger(src.seed)) return src.seed;
+  return (Math.floor(src.kickoffMillis / 60000) + src.gameweek * 7919 + (Number(src.id) || 0) * 104729) >>> 0;
+}
+
+/* And its pool line is the fixture, stated once on the start card: the club,
+   the scoreline the title carries, home or away, and when. */
+export function poolOf(src) {
+  if (src.type !== "prem-last2") return src.pool;
+  return `${src.club}'s starting XI — ${src.title}, ${src.venue === "home" ? "at home" : "away"}, ` +
+    `gameweek ${src.gameweek}, ${src.kickoff}`;
+}
+
 export function build(src, file) {
   const shape = parseFormation(src.formation);
   const problems = gate(src, shape);
@@ -367,7 +458,7 @@ export function build(src, file) {
     return null;
   }
 
-  const rand = rng(src.seed);
+  const rand = rng(seedOf(src));
   const bands = shape.bands;
   const slotBand = [];
   bands.forEach((b) => { for (let j = 0; j < b.size; j++) slotBand.push({ band: b.id, i: j, of: b.size }); });
@@ -421,6 +512,11 @@ export function build(src, file) {
          print a reveal about clubs this game is not about. */
       ...(Array.isArray(p.premClubs) && p.premClubs.length ? { premClubs: p.premClubs } : {}),
       ...(p.birthYear ? { birthYear: p.birthYear } : {}),
+      /* THE LEAGUE'S FACTS ABOUT THAT NIGHT, on a last-two board only: the
+         shirt he wore and whether he wore the armband. Carried when present
+         so a lineup or Daily slot does not gain fields saying it has neither. */
+      ...(Number.isInteger(p.shirt) ? { shirt: p.shirt } : {}),
+      ...(p.captain === true ? { captain: true } : {}),
       /* THE PLAYER'S OWN SOURCE. On a lineup board the claim is the board's —
          one article proving who played. On a Daily board there is no such
          article, and the claim moves to the player: each one carries the page
@@ -436,13 +532,27 @@ export function build(src, file) {
   return {
     id: src.id,
     title: src.title,
-    pool: src.pool,
+    pool: src.pool || poolOf(src),
     formation: src.formation,
     hintField: src.hintField,
     /* Carried through only when it is false. A board with no opinion has no
        key, so the built shape does not gain a field stating the default — and
        `daily !== false` in the ring reads the same either way. */
     ...(src.daily === false ? { daily: false } : {}),
+    /* A LAST-TWO BOARD, WHOLE. The fixture is its identity, so the club, the
+       gameweek, the kickoff and the venue ride with it, and it is never a
+       daily — derived from the type rather than asked of the author, because
+       "the last two games" is a set that goes stale every round, and a stale
+       board in the daily ring would be a Tuesday nobody scheduled. */
+    ...(src.type === "prem-last2" ? {
+      type: "prem-last2",
+      club: src.club,
+      gameweek: src.gameweek,
+      kickoff: src.kickoff,
+      kickoffMillis: src.kickoffMillis,
+      venue: src.venue,
+      daily: false,
+    } : {}),
     source: src.source,
     bands: bands.map((b) => ({ id: b.id, y: b.y })),
     slots,

@@ -55,6 +55,24 @@ export async function loadBoards(env) {
   } catch (e) { /* table absent, or unreadable: fall through to the module */ }
   return { boards: SC_BOARDS, source: "module" };
 }
+
+/* THE LAST-TWO BOARDS, WHICH ARE NOT THE BANK. Each current club's last two
+   league games — a set that goes stale every round and is replaced whole, so
+   it lives in its own table rather than among boards that never change, and
+   it has no module to fall back to: a stale fallback would be worse than an
+   empty list. Nothing here ever reaches the daily ring. */
+export async function loadLast2(env) {
+  if (!hasDB(env)) return { boards: [], source: "none" };
+  try {
+    const { results } = await env.DB
+      .prepare("SELECT payload FROM sc_last2 ORDER BY club, gameweek").all();
+    const rows = (results || [])
+      .map((r) => { try { return JSON.parse(r.payload); } catch (e) { return null; } })
+      .filter((b) => b && b.type === "prem-last2");
+    return { boards: rows, source: "d1" };
+  } catch (e) { /* table absent, or unreadable: an empty set, said so */ }
+  return { boards: [], source: "none" };
+}
 /* THE TOKEN. Scrambled XI's own prefix, parsed beside the rotation that
    composes it — the entrant-key fault costs this project a release every time
    a key is built in one file and read in another. Crossword XI uses `daily:`
@@ -168,7 +186,15 @@ export function publicBoard(board, no) {
     formation: board.formation,
     bands: board.bands,          // band ids and their vertical placement
     hintField: board.hintField,  // which hint this board sells; not the values
-    hintLabel: hintLabel(board),
+    hintLabel: hintLabel(board),  // null when the bench has nothing to sell
+    /* A last-two board's identity is its fixture, and the fixture is the hint,
+       so it rides in the open: the club, the round, when and where. Nothing
+       per player — shirts and armbands are facts about a name and come out
+       with the name. Absent on every other board rather than null. */
+    ...(board.type === "prem-last2" ? {
+      type: board.type, club: board.club, gameweek: board.gameweek,
+      kickoff: board.kickoff, venue: board.venue,
+    } : {}),
     slots,
   };
 }
@@ -200,6 +226,7 @@ export function publicBoard(board, no) {
 export function slotHint(board, slotId) {
   const s = (board.slots || []).find((x) => String(x.id) === String(slotId));
   if (!s) return null;
+  if (board.hintField === "none") return null;
   if (board.hintField === "clubs") {
     const spells = s.clubs || [];
     if (!spells.length) return null;
@@ -214,7 +241,18 @@ export function slotHint(board, slotId) {
   }
   return board.hintField === "club" ? (s.club || null) : (s.nationality || null);
 }
+/* WHETHER THE BENCH HAS A HINT TO SELL. Read off the slots, not off the
+   declaration: a board declaring "none" sells nothing, and so does a
+   last-two board that declares "clubs" while no player carries a career —
+   the club and the fixture are on its start card, and that is its hint. A
+   label on a button that returns nothing is a purchase of nothing, which is
+   the fault the hint rule was written against in the first place. */
+export function sellsHint(board) {
+  if (!board || board.hintField === "none") return false;
+  return (board.slots || []).some((s) => slotHint(board, s.id));
+}
 export function hintLabel(board) {
+  if (!sellsHint(board)) return null;
   if (board.hintField === "clubs") return "Reveal career";
   return board.hintField === "club" ? "Reveal club" : "Reveal nationality";
 }

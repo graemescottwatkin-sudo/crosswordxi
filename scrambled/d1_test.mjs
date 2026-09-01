@@ -61,5 +61,52 @@ t("no name from the board is in the D1-served payload",
   names.length > 0 && !names.some((n) => JSON.stringify(bound).toUpperCase().includes(String(n).toUpperCase())),
   `${names.length} names checked`);
 
+console.log("\nThe last-two boards are their own table, never the bank");
+/* A set that goes stale every round lives apart from boards that never
+   change, has no module to fall back to, and never reaches the daily ring.
+   The stub answers every query with whatever rows it holds, so the filter on
+   type is what keeps a bank row out of the last-two list and vice versa. */
+const { loadLast2 } = await import("../functions/_lib/sc-board.js");
+const fixture = JSON.parse(JSON.stringify(SC_BOARDS[0]));
+fixture.type = "prem-last2"; fixture.club = "Sampleton"; fixture.gameweek = 2; fixture.daily = false;
+const l2 = await loadLast2(stub([{ payload: JSON.stringify(fixture) }, { payload: JSON.stringify(only) }]));
+t("a bound database serves the last-two set, and only boards of that type",
+  l2.source === "d1" && l2.boards.length === 1 && l2.boards[0].club === "Sampleton",
+  `${l2.boards.length} board(s), source ${l2.source}`);
+const l2none = await loadLast2({});
+t("with no binding there is no fallback — an empty set, said so",
+  l2none.source === "none" && l2none.boards.length === 0);
+const l2broken = await loadLast2(broken);
+t("a missing table is an empty set rather than a throw",
+  l2broken.source === "none" && l2broken.boards.length === 0);
+const ringWithFixture = await ask(stub([{ payload: JSON.stringify(fixture) }, { payload: JSON.stringify(only) }]));
+t("and a last-two board in the bank's own table would still be kept out of the daily ring",
+  ringWithFixture.title === "ONLY-IN-D1", ringWithFixture.title);
+
+console.log("\nA board that sells nothing refuses the purchase");
+/* The bench hides the button; this is the rule holding when something asks
+   anyway. An empty answer at 200 would be billed by the client as a hint. */
+const { onRequestPost: revealPost } = await import("../functions/api/scrambled/reveal.js");
+const silent = JSON.parse(JSON.stringify(SC_BOARDS[0]));
+silent.hintField = "none";
+const askReveal = async (env, body) => {
+  const r = await revealPost({
+    request: new Request("https://x.test/api/scrambled/reveal", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    }), env,
+  });
+  return { status: r.status, body: await r.json() };
+};
+const refusedHint = await askReveal(stub([{ payload: JSON.stringify(silent) }]), { token: "sc:1", kind: "hint" });
+t("a hint on a board declaring none is refused, not sold empty",
+  refusedHint.status === 409 && !refusedHint.body.hints, `HTTP ${refusedHint.status}`);
+const soldHint = await askReveal(stub([{ payload: JSON.stringify(only) }]), { token: "sc:1", kind: "hint" });
+t("while a board that sells one still answers",
+  soldHint.status === 200 && !!soldHint.body.hints && !!soldHint.body.label, `HTTP ${soldHint.status}`);
+const letterStill = await askReveal(stub([{ payload: JSON.stringify(silent) }]),
+  { token: "sc:1", kind: "letter", slotId: silent.slots[0].id, known: 0 });
+t("and a letter is still for sale on the silent board", letterStill.status === 200 && !!letterStill.body.letter,
+  `HTTP ${letterStill.status}`);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

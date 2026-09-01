@@ -48,6 +48,12 @@ export async function onRequestPost({ request, env }) {
        which one to put in front of the player. slotId is not required and is
        not a permission — it only says which tile was being looked at, and the
        team talk asks with no tile selected at all. */
+    /* NOTHING TO SELL IS A REFUSAL, NOT AN EMPTY ANSWER. A board declaring
+       "none", or a last-two board whose hint is the fixture on its card, has
+       no careers to hand over — and an empty object at 200 would be billed
+       by the client as a hint bought. The bench hides the button; this is the
+       rule holding when something asks anyway. */
+    if (!hintLabel(board)) return bad("This board sells no hint — the letters and the names are on the bench.", 409);
     const hints = {};
     for (const s of board.slots || []) {
       const v = slotHint(board, s.id);
