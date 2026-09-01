@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001k";
+var BUILD = "v001l";
 
 (function () {
   "use strict";
@@ -48,6 +48,183 @@ var BUILD = "v001k";
     hintsRevealed: false,
     over: false
   };
+
+  /* ---- the landing ---------------------------------------------------- */
+
+  /* FORM, drawn by the shared chrome so a win looks the same in every game.
+     This game owns what a RESULT is — a numbered board, like the crossword —
+     and hands over only the scores. A run is consecutive BOARD NUMBERS ending
+     at today's or yesterday's: finishing an old board today does not revive a
+     streak, which is the rule the other two already keep. */
+  function renderForm() {
+    var el = $("homeRun"), title = $("homeRunTitle");
+    if (!el || !window.XIChrome) return;
+    var done = readResults().filter(function (r) { return r && typeof r.no === "number"; })
+      .sort(function (a, b) { return a.no - b.no; });
+    if (!done.length) {
+      title.textContent = "No run yet";
+      el.innerHTML = window.XIChrome.formChips([]) +
+        '<span class="run-none">Play today to start one.</span>';
+      return;
+    }
+    var nos = done.map(function (r) { return r.no; });
+    var today = state.todayNo || nos[nos.length - 1];
+    var run = 0;
+    if (nos[nos.length - 1] >= today - 1) {
+      run = 1;
+      for (var i = nos.length - 1; i > 0; i--) {
+        if (nos[i - 1] === nos[i] - 1) run++; else break;
+      }
+    }
+    var best = 1, walk = 1;
+    for (var k = 1; k < nos.length; k++) {
+      walk = nos[k - 1] === nos[k] - 1 ? walk + 1 : 1;
+      if (walk > best) best = walk;
+    }
+    title.textContent = run + " day run";
+    el.innerHTML = window.XIChrome.formChips(
+      done.map(function (r) { return r.score; })) +
+      '<span class="run-best">best ' + best + "</span>";
+  }
+
+  /* PLAY AS, from the family's club list rather than a copy of it. Stored
+     under xi. because the club is the player, not the game. */
+  function fillClubs() {
+    var sel = $("homeClubSelect");
+    if (!sel || !window.XI_CLUBS) return;
+    var chosen = "";
+    try { chosen = localStorage.getItem("xi.club") || ""; } catch (e) {}
+    sel.innerHTML = '<option value="">Random club</option>';
+    window.XI_CLUBS.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    });
+    sel.value = chosen;
+    sel.onchange = function () {
+      try { localStorage.setItem("xi.club", sel.value); } catch (e) {}
+    };
+  }
+
+  /* THE BOARD OF THE WEEK, picked by the week rather than chosen by anyone:
+     derived from the ISO week so everyone sees the same one and it turns over
+     on Monday with nothing scheduled and nothing stored. Drawn only from
+     boards already released, so it can never name a future XI. */
+  function renderLanding() {
+    var today = state.todayNo || 0;
+    if (today > 0) {
+      var utc = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+      var pick = (Math.floor(utc / 604800000) % today) + 1;
+      $("homeFeaturedName").textContent = "Board #" + pick;
+      $("homeFeaturedState").textContent = "One of " + today + " released";
+      $("homeFeatured").onclick = function () { location.search = "?no=" + pick; };
+      $("homePreviousCount").textContent = today + " boards so far";
+      $("homePrevious").onclick = function () {
+        location.search = "?no=" + Math.max(1, today - 1);
+      };
+    }
+    renderForm();
+    fillClubs();
+  }
+
+  /* ---- the durable record ---------------------------------------------
+
+     TWO STORES WITH TWO JOBS, the same split the other two games use.
+     xisc.board.v1.<no> is the board in progress and is pruned; xisc.results
+     is the record of what was finished, which is what a run is counted from
+     and what the account carries between devices.
+
+     A row is unique by BOARD NUMBER, not by date: this game's boards are
+     numbered and a player can finish yesterday's today. The crossword keys on
+     dailyNo for the same reason. */
+  var RESULTS_KEY = PREFIX + "results";
+  var account = null;
+
+  function readResults() {
+    try {
+      var r = JSON.parse(localStorage.getItem(RESULTS_KEY) || "[]");
+      return Array.isArray(r) ? r : [];
+    } catch (e) { return []; }
+  }
+
+  function recordResult(rec) {
+    try {
+      /* FIRST RESULT BANKED WINS, which is the family's merge rule. Replaying
+         a board you have already finished does not overwrite the run you set
+         on it. */
+      var all = readResults();
+      if (all.some(function (r) { return r && r.no === rec.no; })) return;
+      all.push(rec);
+      localStorage.setItem(RESULTS_KEY, JSON.stringify(all.slice(-800)));
+    } catch (e) {}
+    /* The device keeps the record whatever happens next. Pushing it to the
+       account is a best effort on top: a failed push leaves the row where it
+       is and the next sync carries it. */
+    pushResults();
+  }
+
+  /* The session cookie is scoped to the family, so a player signed in on
+     another game is already signed in here. */
+  function apiAuth(path, body) {
+    var opts = {
+      method: body ? "POST" : "GET",
+      headers: { "X-XI-Games": "1" },     // the CSRF check on the server
+      credentials: "same-origin",
+    };
+    if (body) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    return fetch(path, opts).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    });
+  }
+
+  /* Failures here are logged and swallowed. A sync that cannot reach the
+     server is not a signed-out player, and telling them so mid-game would be
+     a lie they cannot act on. */
+  function accountNote(what, e) {
+    try { console.info("scrambled account " + what + ": " + (e && e.message)); } catch (x) {}
+  }
+
+  function pushResults() {
+    if (!account) return Promise.resolve(null);
+    return apiAuth("/api/account/migrate", { game: "scrambled", results: readResults() })
+      .catch(function (e) { accountNote("push", e); return null; });
+  }
+
+  function pullResults() {
+    if (!account) return Promise.resolve(null);
+    return apiAuth("/api/account/results?game=scrambled").then(function (r) {
+      var remote = (r && r.results) || [];
+      if (!remote.length) return null;
+      /* THE ACCOUNT'S ROW WINS OUTRIGHT on pull, and unpushed local rows
+         survive — the family's rule, so a device that has been offline does
+         not lose what it banked while it was. */
+      var byNo = {};
+      readResults().forEach(function (r2) { if (r2 && r2.no != null) byNo[r2.no] = r2; });
+      remote.forEach(function (r2) { if (r2 && r2.no != null) byNo[r2.no] = r2; });
+      var merged = Object.keys(byNo).map(function (k) { return byNo[k]; })
+        .sort(function (a, b) { return a.no - b.no; });
+      try { localStorage.setItem(RESULTS_KEY, JSON.stringify(merged.slice(-800))); } catch (e) {}
+      renderForm();
+      return merged;
+    }).catch(function (e) { accountNote("pull", e); return null; });
+  }
+
+  function syncAccount() {
+    return apiAuth("/api/auth/session").then(function (r) {
+      account = (r && r.user) || null;
+      if (!account) return null;
+      return pushResults().then(pullResults);
+    }).catch(function (e) {
+      /* A transient failure is NOT a sign-out. Nulling the account here would
+         make one dropped request look like being logged out. */
+      accountNote("session", e);
+      return null;
+    });
+  }
 
   /* ---- storage ---------------------------------------------------------- */
 
@@ -445,7 +622,26 @@ var BUILD = "v001k";
     state.over = true;
     stopClock();
     save();
+    bankResult();
     showResults();
+  }
+
+  /* WHAT A FINISHED BOARD LEAVES BEHIND. Written before the card is drawn, so
+     a player who closes the tab on the Full Time screen still keeps it. */
+  function bankResult() {
+    if (!state.board) return;
+    var res = SCORING.computeScore(state.elapsed, state.help);
+    recordResult({
+      no: state.board.no,
+      title: state.board.title,
+      score: res.score,
+      elapsedSeconds: Math.round(state.elapsed),
+      help: state.help,
+      revealed: Object.keys(state.solved).filter(function (k) {
+        return state.solved[k] && state.solved[k].how === "revealed";
+      }).length,
+      at: Date.now(),
+    });
   }
 
   function showResults() {
@@ -481,13 +677,14 @@ var BUILD = "v001k";
     });
     body.appendChild(list);
 
-    /* The honest note. There is no play row, so this number was assembled in
-       this browser and the server has not agreed to it. Saying so is cheaper
-       than a leaderboard built on numbers nobody checked. */
+    /* The honest note, and it has changed: the result IS recorded now, on the
+       device and on the account. What is still true is that the SCORE was
+       assembled in this browser — there is no play row the server timed — so
+       it is banked as a result and not offered as a verified one. */
     var note = document.createElement("p");
     note.className = "ftUnverified";
-    note.textContent = "Score not verified by the server \u2014 there is no account " +
-      "or leaderboard in this build, so nothing has been recorded.";
+    note.textContent = "Kept in your record. The score is worked out in your " +
+      "browser, so it is not a verified time.";
     body.appendChild(note);
 
     var solvedCount = state.board.slots.filter(function (s) {
@@ -571,14 +768,20 @@ var BUILD = "v001k";
       .then(function (board) {
         if (board.error) { say(board.error, "bad"); return; }
         state.board = board;
+        /* What day it is according to the SERVER, kept so the landing can
+           count the archive and judge whether a run reaches today. Never
+           computed here: the server decides what day it is. */
+        state.todayNo = board.today || board.no;
         $("startTitle").textContent = board.title;
         $("startPool").textContent = board.pool;
         $("startKicker").textContent = board.no === board.today
-          ? "Today's board" : "Board #" + board.no;
-        $("startClock").textContent = "Ninety match minutes take " +
-          Math.round(CFG.MATCH_CLOCK_REAL_SECONDS / 60) + " minutes of real time. " +
-          (CFG.HALF_TIME_MINUTE === null ? "" :
-            "At half time the manager gives you every " + hintNoun(board) + ", free.");
+          ? "TODAY" : "BOARD #" + board.no;
+        /* SHORT, because hc-state is a status line and not a paragraph. The
+           full explanation of the clock and the team talk belongs on How to
+           play; here it was three lines of small caps across the hero. */
+        $("startClock").textContent = "Ninety minutes in " +
+          Math.round(CFG.MATCH_CLOCK_REAL_SECONDS / 60) + " of real time" +
+          (CFG.HALF_TIME_MINUTE === null ? "" : " · half time is free");
 
         var saved = load();
         if (saved) {
@@ -590,6 +793,8 @@ var BUILD = "v001k";
           state.elapsed = saved.elapsed || 0;
           state.over = !!saved.over;
         }
+        renderLanding();
+        syncAccount();
         show(state.over ? "screenResults" : "screenStart");
         if (state.over) { drawPitch(); showResults(); }
       })
@@ -599,7 +804,9 @@ var BUILD = "v001k";
       });
   }
 
-  $("kickOff").addEventListener("click", function () {
+  /* The hero IS the kick off now: one control that says what it opens,
+     rather than a card with a button under it. */
+  $("homeDaily").addEventListener("click", function () {
     $("poolLine").textContent = state.board.pool;
     show("screenGame");
     drawPitch();

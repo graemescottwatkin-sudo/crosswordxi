@@ -101,7 +101,7 @@ t("and the pinned board is the one on screen",
 t("the clock override is offered", $("tstClock").options.length === 3);
 
 console.log("\n=== It plays ===");
-$("kickOff").dispatchEvent(new window.Event("click"));
+$("homeDaily").dispatchEvent(new window.Event("click"));
 await settle();
 t("eleven tiles are drawn", doc.querySelectorAll(".slot").length === 11);
 
@@ -198,7 +198,10 @@ console.log("\n=== Opened with no board asked for, which is how it is opened ===
     !!testerTitles[picked - 1] && testerTitles[picked - 1] === onScreen,
     `picker says #${picked} (${testerTitles[picked - 1]}), screen says "${onScreen}"`);
   t("and it is today's board, derived from the same rotation the server uses",
-    d.getElementById("startKicker").textContent === "Today's board",
+    /* Compared case-insensitively: the landing sets the kicker in caps the
+       way the other two games do, and what is asserted is WHICH board is
+       named rather than how the shell shouts it. */
+    d.getElementById("startKicker").textContent.toUpperCase() === "TODAY",
     d.getElementById("startKicker").textContent);
   plain.window.close();
 }

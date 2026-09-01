@@ -65,7 +65,7 @@ const board = SC_BOARDS[0];
 const CFG = window.SCX_CONFIG;
 
 await settle(20);
-$("kickOff").dispatchEvent(new window.Event("click"));
+$("homeDaily").dispatchEvent(new window.Event("click"));
 await settle(20);
 
 console.log("\n=== Before half time ===");

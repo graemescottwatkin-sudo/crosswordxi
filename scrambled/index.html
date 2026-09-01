@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v5">
 <link rel="stylesheet" href="../shared/xi-landing.css?v=v5">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v5">
-<link rel="stylesheet" href="css/style.css?v=v001k">
+<link rel="stylesheet" href="css/style.css?v=v001l">
 </head>
 <body>
 
@@ -60,22 +60,104 @@
      the crossword's owner tools: the control is revealed by /api/admin/whoami
      and every board it loads is re-checked server-side, because a hidden
      control is not a lock. -->
+  <!-- One H1, first in the body, saying what the game is. The landing shows
+       the name in the masthead, which is furniture; this is the heading a
+       screen reader and a search engine read. -->
+  <h1 class="sr-only">Scrambled XI &mdash; the daily football anagram</h1>
+
+  <header class="site-head">
+    <div class="site-bar">
+      <div class="site-mast">Scrambled <span class="site-xi">XI</span></div>
+      <nav class="site-nav">
+        <button class="on" id="navToday">Today</button>
+        <button id="navClubs">Matches</button>
+        <a class="site-navlink" href="/scrambled/how-to-play">How to play</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="screen prematch" id="screenStart" hidden>
+    <!-- THE LANDING, THE FAMILY'S. Layout, type and spacing are
+         shared/xi-landing.css — the same file the other two open on — so this
+         is the same page with this game's content in it. -->
+    <div class="site-wrap">
+      <p class="site-lede">Eleven names, scrambled, in the positions they
+         played. Solve in any order, on a ninety minute clock.</p>
+
+      <div class="site-grid">
+        <div class="site-main">
+          <button class="home-choice hero" id="homeDaily">
+            <span class="hc-kicker" id="startKicker">TODAY</span>
+            <span class="hc-title" id="startTitle">Today&rsquo;s XI</span>
+            <span class="hc-note" id="startPool"></span>
+            <span class="hc-state" id="startClock"></span>
+            <span class="hc-cta">Kick off</span>
+          </button>
+        </div>
+
+        <aside class="site-side">
+          <div class="side-card">
+            <div class="sc-kicker">YOUR FORM</div>
+            <div class="sc-title" id="homeRunTitle">No run yet</div>
+            <div class="home-run" id="homeRun"></div>
+          </div>
+
+          <div class="side-card">
+            <div class="sc-kicker">PLAY AS</div>
+            <div class="home-club">
+              <select id="homeClubSelect" title="Choose your club (optional)"></select>
+            </div>
+          </div>
+        </aside>
+      </div>
+
 <div class="owner-bar" id="ownerBar" hidden>
   <label for="ownerBoard">Board</label>
   <select id="ownerBoard"></select>
   <span class="owner-note" id="ownerNote"></span>
 </div>
-  <section class="screen prematch" id="screenStart" hidden>
-    <div class="pmCard">
-      <div class="eyebrow" id="startKicker">Today's board</div>
-      <h1>Scrambled XI</h1>
-      <h2 class="pmDate" id="startTitle">—</h2>
-      <p class="pmPool" id="startPool"></p>
-      <p class="pmLede">Eleven names, scrambled, in the positions they played.
-        One answer box, solve in any order. A hundred and fourteen points on a
-        ninety minute clock.</p>
-      <button class="kick" id="kickOff">Kick off</button>
-      <p class="tiny" id="startClock"></p>
+
+      <div class="site-sec">OTHER BOARDS</div>
+      <div class="site-row">
+        <button class="home-choice col" id="homeFeatured">
+          <span class="hc-kicker">BOARD OF THE WEEK</span>
+          <span class="hc-title" id="homeFeaturedName">&mdash;</span>
+          <span class="hc-note">One XI from the archive, changed every Monday.</span>
+          <span class="hc-state" id="homeFeaturedState"></span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/>
+            <path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M12 13v4"/><path d="M9 20h6"/>
+            <path d="M10 17h4l1 3H9l1-3Z"/>
+          </svg>
+        </button>
+
+        <!-- Iconic matches are built and not yet imported, so this says so
+             rather than opening onto nothing. The family already has a word
+             for that state and this is it. -->
+        <button class="home-choice col soon" id="homeThemed" disabled>
+          <span class="hc-kicker">ICONIC MATCHES</span>
+          <span class="hc-title">Famous XIs <span class="hc-soon">Soon</span></span>
+          <span class="hc-note">The sides that won the finals, as they lined up.</span>
+          <span class="hc-state" id="homeThemedState"></span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+            <rect x="9" y="9" width="6" height="6" fill="currentColor" opacity=".25" stroke="none"/>
+          </svg>
+        </button>
+
+        <button class="home-choice col" id="homePrevious">
+          <span class="hc-kicker">PREVIOUS BOARDS</span>
+          <span class="hc-title" id="homePreviousCount">Every day so far</span>
+          <span class="hc-note">One more every day. Replay any of them &mdash;
+            only today&rsquo;s keeps a run going.</span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5v4h4"/><path d="M3.5 9A9 9 0 1 1 4 15"/><path d="M12 8v4l3 2"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -139,8 +221,8 @@
 
 <script src="../shared/xi-clubs.js?v=v5"></script>
 <script src="../shared/xi-chrome.js?v=v5"></script>
-<script src="js/config.js?v=v001k"></script>
-<script src="js/scoring.js?v=v001k"></script>
-<script src="js/game.js?v=v001k"></script>
+<script src="js/config.js?v=v001l"></script>
+<script src="js/scoring.js?v=v001l"></script>
+<script src="js/game.js?v=v001l"></script>
 </body>
 </html>

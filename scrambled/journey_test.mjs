@@ -115,7 +115,10 @@ t("it names the board", $("startTitle").textContent === board.title);
    the assertion that would have caught the date dependency straight away. */
 t("and it is the board that was asked for",
   calls[0] === "/api/scrambled/daily" &&
-  $("startKicker").textContent === "Board #1",
+  /* The kicker is set in caps by the landing, the way the other two games
+     set theirs. Compared case-insensitively so this asserts WHICH board is
+     named rather than how the shell chooses to shout it. */
+  $("startKicker").textContent.toUpperCase() === "BOARD #1",
   $("startKicker").textContent);
 t("and states the pool, so nobody is guessing at the whole of football",
   $("startPool").textContent === board.pool);
@@ -124,7 +127,7 @@ t("and states the pool, so nobody is guessing at the whole of football",
    searched outside it, and three names were unreachable by construction. */
 t("the pool line is not empty", $("startPool").textContent.length > 20);
 
-$("kickOff").dispatchEvent(new window.Event("click"));
+$("homeDaily").dispatchEvent(new window.Event("click"));
 await settle();
 
 t("the pitch is up", shown("screenGame"));
@@ -272,11 +275,23 @@ t("and separates unravelled from given", (() => {
   return hows.filter((h) => h === "given").length === 1 &&
          hows.filter((h) => h === "unravelled").length === 10;
 })());
-/* The honest note. There is no play row, so this number was assembled in the
-   browser. Saying so costs nothing; a leaderboard built on numbers nobody
-   checked costs a lot. */
-t("the card says the score is not verified",
-  /not verified/i.test(doc.querySelector(".ftUnverified").textContent));
+/* THE NOTE CHANGED WITH THE GAME. It used to say nothing was recorded, which
+   was true when there was no result store; the game banks a result now, on
+   the device and on the account. What is still true is that the SCORE was
+   worked out in the browser with no play row behind it, so the card says that
+   and does not claim a verified time.
+
+   Both halves are asserted, because a note that dropped either would be
+   wrong in a different direction: silent about the record, or overclaiming
+   the score. */
+t("the card says the result is kept", (() => {
+  const note = doc.querySelector(".ftUnverified");
+  return !!note && /record/i.test(note.textContent);
+})());
+t("and does not claim the score is verified", (() => {
+  const note = doc.querySelector(".ftUnverified");
+  return !!note && /not a verified/i.test(note.textContent);
+})(), (doc.querySelector(".ftUnverified") || {}).textContent);
 t("the share text does not leak the names", (() => {
   const share = $("shareText").value;
   return board.slots.every((s) => share.indexOf(s.name) === -1);
