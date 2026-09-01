@@ -40,7 +40,7 @@ const hasRoot = (f) => fs.existsSync(path.join(ROOT, f));
    as the crossword's: LAST_SHIPPED after a deploy, beside the hash of the
    bytes it names. aligned_test asserts neither game's constant is a sentinel
    and that LAST_PRESENTED is gone rather than frozen. */
-const LAST_SHIPPED = "v001m";     // <- what is LIVE; bump after each deploy
+const LAST_SHIPPED = "v001n";     // <- what is LIVE; bump after each deploy
 
 t("the game has its own index.html", has("index.html"));
 t("functions are shared at the repository root", hasRoot("functions/api/wordsearch/daily.js"));
@@ -86,7 +86,7 @@ t("the build tag has moved past the version now live",
    On failure this prints the value to paste, because a constant that is
    laborious to update is a constant that goes stale — which is how
    LAST_SHIPPED itself ended two releases behind. */
-const LAST_SHIPPED_ASSETS = "6fd3d5ce3b7d6ffa";
+const LAST_SHIPPED_ASSETS = "a8f971a766338fa8";
 function ownAssetHash() {
   /* Discovered from the page, never a hardcoded list: an asset added to
      index.html is covered the day it is added, so this check cannot quietly
