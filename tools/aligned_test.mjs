@@ -232,8 +232,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v3";
-const SHARED_HASH = "cb9340e3ccb71324";
+const SHARED_TAG = "v4";
+const SHARED_HASH = "b7cfd6d166598179";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   for (const f of ["shared/xi-chrome.js", "shared/xi-chrome.css"]) {
@@ -279,7 +279,20 @@ console.log("\nNo game styles a class the chrome writes");
      second argument of its own el(tag, classes, ...) helper. */
   const written = new Set();
   for (const chunk of js.split("class=" + Q).slice(1)) {
-    for (const c of chunk.split(Q)[0].split(" ")) if (c.trim()) written.add(c.trim());
+    /* Stop at the first sign of code. A class attribute built by
+       concatenation is literal only up to the quote, and reading past it
+       collected "k" out of xic-rc xic-" + k + " as though it were a class —
+       which then collided with a game's .cal-key .k and reported a clash that
+       did not exist. A check that cries wolf gets switched off. */
+    let lit = chunk.split(Q)[0];
+    for (const stop of ["+", "'", "$", "{"]) {
+      const at = lit.indexOf(stop);
+      if (at > -1) lit = lit.slice(0, at);
+    }
+    for (const c of lit.split(" ")) {
+      const name = c.trim();
+      if (name && name !== "xic-") written.add(name);
+    }
   }
   for (const chunk of js.split("el(").slice(1)) {
     const q = chunk.split(Q);

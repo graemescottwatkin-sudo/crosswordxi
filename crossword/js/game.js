@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001y";
+  var BUILD = "v001z";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6561,9 +6561,7 @@
            sentence. They are the same chips the run draws, unfilled — and the
            count comes from FORM_LENGTH, so it cannot drift from the number of
            results the run actually keeps. */
-        var slots = "";
-        for (var fi = 0; fi < FCW.SCORING.FORM_LENGTH; fi++) slots += '<span class="rc none"></span>';
-        el.innerHTML = '<span class="run-chips">' + slots + "</span>" +
+        el.innerHTML = window.XIChrome.formChips([]) +
           '<span class="run-none">Play today to start one.</span>';
         return;
       }
@@ -6571,14 +6569,14 @@
         title.textContent = st.currentStreak +
           (st.currentStreak === 1 ? " day run" : " day run");
       }
-      var chips = recent.map(function (r) {
-        /* The same mapping the season table uses, so the chips and the table
-           can never disagree about what a result was. */
-        var v = r && r.score != null ? r.score : 0;
-        var k = v >= 76 ? "w" : v >= 38 ? "d" : "l";
-        return '<span class="rc ' + k + '">' + k.toUpperCase() + "</span>";
-      }).join("");
-      el.innerHTML = '<span class="run-chips">' + chips + "</span>" +
+      /* The chips, the bands and the empty slots come from the shared chrome:
+         a 76 must not be a win here and a draw on the word search. This game
+         still owns what a result IS — the season table reads the same list —
+         and hands over only the scores. */
+      var chips = window.XIChrome.formChips(recent.map(function (r) {
+        return r && r.score != null ? r.score : 0;
+      }));
+      el.innerHTML = chips +
         '<span class="run-best">best ' + st.longestStreak + "</span>";
     } catch (e) { el.textContent = ""; }
   }

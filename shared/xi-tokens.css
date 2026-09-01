@@ -17,6 +17,11 @@
   --gold:#F2C94C; --gold-ink:#3A2D00; --xi-ink:#8A5A00;
   --line:#D9DDD6; --danger:#8E2F45; --ok:#1E6B45;
   --tint:rgba(24,34,25,.06); --tint-strong:rgba(24,34,25,.12);
+  /* form results — win, draw, loss. Separated by lightness as well as hue so
+     the letter and the weight carry it for a colour-blind player. */
+  --form-w:#C0DD97; --form-w-ink:#173404;
+  --form-d:#FAC775; --form-d-ink:#412402;
+  --form-l:#F7C1C1; --form-l-ink:#501313;
   --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
   --body:"Public Sans",-apple-system,"Segoe UI",Arial,sans-serif;
   --radius:12px;
@@ -29,5 +34,10 @@
   --gold:#F2C94C; --gold-ink:#3A2D00; --xi-ink:#F2C94C;
   --line:#2C352A; --danger:#D9758C; --ok:#61DDA1;
   --tint:rgba(234,240,232,.07); --tint-strong:rgba(234,240,232,.14);
+  /* form results — win, draw, loss. Separated by lightness as well as hue so
+     the letter and the weight carry it for a colour-blind player. */
+  --form-w:#C0DD97; --form-w-ink:#173404;
+  --form-d:#FAC775; --form-d-ink:#412402;
+  --form-l:#F7C1C1; --form-l-ink:#501313;
 }
 .xi-mark{font-family:var(--disp);font-weight:700;color:var(--xi-ink)}

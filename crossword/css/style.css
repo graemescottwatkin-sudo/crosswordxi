@@ -2869,16 +2869,14 @@ body.home-showing .tbar{visibility:hidden}
 
 /* Form chips. Green, amber, red at the same thresholds the season table uses. */
 .home-run{display:flex;align-items:center;gap:7px;margin-top:9px}
-.run-chips{display:flex;gap:6px}
-.rc{width:23px;height:23px;border-radius:5px;font-size:11.5px;font-weight:700;
-    display:flex;align-items:center;justify-content:center}
-.rc.w{background:#C0DD97;color:#173404}
-.rc.d{background:#FAC775;color:#412402}
-.rc.l{background:#F7C1C1;color:#501313}
+
+
+
+
+
 .run-best{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
-/* The unplayed slot: the chip shape, drawn as an outline. Reads as a place
-   for a result rather than as a result nobody can name. */
-.rc.none{background:transparent;border:1.5px dashed var(--line);box-shadow:none}
+/* The chips themselves are the shared chrome's, so a win looks the same in
+   both games. Only the line they sit on belongs to this page. */
 .run-none{font-size:13px;color:var(--ink-soft);margin-left:auto;align-self:center}
 
 /* Three across, below the fixture. Equal weight because they are alternatives

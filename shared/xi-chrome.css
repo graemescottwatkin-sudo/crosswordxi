@@ -272,3 +272,23 @@ a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; 
   background: none; border: 1px solid var(--line); border-radius: var(--radius);
   padding: .3rem .7rem; color: inherit; }
 .xic-gsi { min-height: 40px; }
+
+/* ---- form chips ---------------------------------------------------------
+   Drawn by XIChrome.formChips() and styled here, so the two games cannot
+   disagree about what a win looks like any more than about what one is.
+   Separated by lightness as well as hue: a colour-blind player reads the
+   letter and the weight, not the green. */
+.xic-form { display: flex; gap: 6px; }
+.xic-rc {
+  width: 23px; height: 23px; border-radius: 5px;
+  font-size: 11.5px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.xic-rc.xic-w { background: var(--form-w); color: var(--form-w-ink); }
+.xic-rc.xic-d { background: var(--form-d); color: var(--form-d-ink); }
+.xic-rc.xic-l { background: var(--form-l); color: var(--form-l-ink); }
+/* The unplayed slot: the chip shape as an outline. A place for a result,
+   rather than a result nobody can name. */
+.xic-rc.xic-none {
+  background: transparent; border: 1.5px dashed var(--line); box-shadow: none;
+}

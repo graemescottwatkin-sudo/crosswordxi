@@ -316,5 +316,53 @@
   }
 
   /* Exposed for the suites, and for a game that renders a bar after boot. */
-  window.XIChrome = { init: init, squad: SQUAD, pages: PAGES, close: close };
+  /* ---- FORM, THE WAY FOOTBALL SHOWS IT --------------------------------
+
+     Five results as W, D or L rather than a sentence. "Run of 3 · best 7" is
+     a stat line; W W D W L is the same information in the language the rest
+     of the family speaks, and a red L is something you want to fix tomorrow
+     in a way "run of 0" is not.
+
+     IT LIVES HERE BECAUSE BOTH GAMES DRAW IT. The thresholds are the part
+     that must never disagree: a 76 that is a win on the crossword and a draw
+     on the word search is the same fact told twice, and the player would be
+     the one to find out. Each game still owns what a RESULT is — a numbered
+     day here, a dated one there — and hands over the scores it wants shown.
+
+     FORM_LENGTH is five, and the empty slots are drawn from the same number,
+     so a new player can see the shape of what is coming rather than a blank
+     box beside "play today to start one". */
+  var FORM_LENGTH = 5;
+
+  /* The band a score falls in. Stated once, as a table, so adding a band is
+     one edit and not a chain of ternaries in two games. */
+  var BANDS = [
+    { at: 76, key: "w" },
+    { at: 38, key: "d" },
+    { at: 0,  key: "l" },
+  ];
+  function band(score) {
+    var v = typeof score === "number" ? score : 0;
+    for (var i = 0; i < BANDS.length; i++) if (v >= BANDS[i].at) return BANDS[i].key;
+    return "l";
+  }
+
+  /* scores: most recent LAST, as a game would naturally keep them. */
+  function formChips(scores) {
+    var recent = (scores || []).slice(-FORM_LENGTH);
+    var html = "";
+    for (var i = 0; i < recent.length; i++) {
+      var k = band(recent[i]);
+      html += '<span class="xic-rc xic-' + k + '">' + k.toUpperCase() + "</span>";
+    }
+    /* Unplayed slots after the played ones, so the row is always the same
+       width and the eye is not asked to re-find where form starts. */
+    for (var j = recent.length; j < FORM_LENGTH; j++) {
+      html += '<span class="xic-rc xic-none"></span>';
+    }
+    return '<span class="xic-form">' + html + "</span>";
+  }
+
+  window.XIChrome = { init: init, squad: SQUAD, pages: PAGES, close: close,
+    formChips: formChips, formBand: band, FORM_LENGTH: FORM_LENGTH };
 })();
