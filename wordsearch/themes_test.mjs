@@ -10,7 +10,7 @@
  * rather than the data: an unreleased board is one this stub simply does not
  * return, the same way the real query does not return it.
  */
-import { indexPage, treeRoute, categorySlug, groups } from "../functions/_lib/ws-theme-pages.js";
+import { indexPage, treeRoute, categorySlug, groups, splitTheme } from "../functions/_lib/ws-theme-pages.js";
 import { utcDayKey } from "../functions/_lib/wsdata.js";
 
 let pass = 0, fail = 0;
@@ -27,6 +27,7 @@ const SEALED = { id: "XIWS-0300", theme: "Arsenal — The Invincibles", category
 const ROWS = [
   { id: "XIWS-0002", theme: "Premier League Icons — 2000s", category: "PL Era Icons", first: "2026-08-20" },
   { id: "XIWS-0001", theme: "Premier League Icons — 1990s", category: "PL Era Icons", first: "2026-08-18" },
+  { id: "XIWS-0003", theme: "Icons of the Premier League", category: "PL Era Icons", first: "2026-08-22" },
   { id: "XIWS-0057", theme: "Brazil — 2002 World Cup", category: "Tournament XI", first: "2026-08-25" },
   { ...SEALED, first: "2999-01-01" },
 ];
@@ -65,7 +66,7 @@ const gs = await groups(env);
 t("released boards group by category, sorted by name",
   gs.map((g) => g.slug).join(",") === "pl-era-icons,tournament-xi", gs.map((g) => g.slug).join(","));
 t("boards within a group are in id order, so their numbers hold",
-  gs[0].boards.map((b) => b.id).join(",") === "XIWS-0001,XIWS-0002");
+  gs[0].boards.map((b) => b.id).join(",") === "XIWS-0001,XIWS-0002,XIWS-0003");
 t("the sealed board's category is absent, because its only board is",
   !gs.some((g) => g.name === SEALED.category));
 
@@ -74,7 +75,7 @@ const idx = await indexPage({ env });
 const idxHtml = await text(idx);
 t("the index renders", idx.status === 200);
 t("it names the categories with their counts",
-  idxHtml.includes(">PL Era Icons</a><span class=\"meta\">2 boards</span>") &&
+  idxHtml.includes(">PL Era Icons</a><span class=\"meta\">3 boards</span>") &&
   idxHtml.includes(">Tournament XI</a><span class=\"meta\">1 board</span>"));
 t("categories link to their own page under /theme/",
   idxHtml.includes('href="/wordsearch/theme/pl-era-icons/"') &&
@@ -84,27 +85,45 @@ t("it is cacheable", /max-age/.test(idx.headers.get("Cache-Control") || ""));
 t("it carries a canonical url",
   idxHtml.includes('rel="canonical" href="https://www.thexigames.com/wordsearch/themes/"'));
 
+console.log("\n=== Series and editions ===");
+t("a theme splits on its dash into series and edition",
+  JSON.stringify(splitTheme("Euros Winner Starting XI — 1980")) ===
+  JSON.stringify({ series: "Euros Winner Starting XI", edition: "1980" }));
+t("a theme without a dash is a series of one",
+  JSON.stringify(splitTheme("Icons of the Premier League")) ===
+  JSON.stringify({ series: "Icons of the Premier League", edition: "" }));
+t("a hyphen is not the dash", splitTheme("Runner-Up — 1984").series === "Runner-Up");
+
 console.log("\n=== A category page ===");
 const page = await treeRoute(ctx(["pl-era-icons"]));
 const pageHtml = await text(page);
 t("the category page renders", page.status === 200);
 /* Parsed by splitting rather than by regex — a backslash eaten on the way to
-   a file has left checks that matched nothing before. */
+   a file has left checks that matched nothing before. A row is a series; its
+   chips are the editions, each a link. */
 const rows = pageHtml.split('<li class="set">').slice(1).map((chunk) => {
   const cell = chunk.split("</li>")[0];
   const name = cell.split('<span class="name">')[1].split("</span>")[0];
-  const href = (cell.split('class="no" href="')[1] || "").split('"')[0];
-  const no = Number((cell.split(">#")[1] || "").split("<")[0]);
-  return { name, href, no };
+  const chips = cell.split('<a class="no" href="').slice(1).map((c) => ({
+    href: c.split('"')[0],
+    label: c.split(">")[1].split("<")[0],
+  }));
+  return { name, chips };
 });
-if (!rows.length) throw new Error("no board rows parsed — the checks below would be vacuous");
-t("every released board in the category is a row, in id order",
-  rows.length === 2 && rows[0].name === "Premier League Icons — 1990s" &&
-  rows[1].name === "Premier League Icons — 2000s",
-  rows.map((r) => r.name + " #" + r.no).join(" | "));
-t("each row's number is its own target under this category",
-  rows[0].no === 1 && rows[0].href === "/wordsearch/theme/pl-era-icons/1" &&
-  rows[1].no === 2 && rows[1].href === "/wordsearch/theme/pl-era-icons/2");
+if (!rows.length) throw new Error("no series rows parsed — the checks below would be vacuous");
+t("boards sharing a series share a row, with the editions as the chips",
+  rows.length === 2 && rows[0].name === "Premier League Icons" &&
+  rows[0].chips.map((c) => c.label).join(",") === "1990s,2000s",
+  rows.map((r) => r.name + " [" + r.chips.map((c) => c.label).join(" ") + "]").join(" | "));
+t("a board without an edition is a series of one, numbered",
+  rows[1].name === "Icons of the Premier League" && rows[1].chips.length === 1 &&
+  rows[1].chips[0].label === "#3");
+t("each chip is its board's own door, numbered by place in the category",
+  rows[0].chips[0].href === "/wordsearch/theme/pl-era-icons/1" &&
+  rows[0].chips[1].href === "/wordsearch/theme/pl-era-icons/2" &&
+  rows[1].chips[0].href === "/wordsearch/theme/pl-era-icons/3");
+t("a chip names its whole board for a screen reader",
+  pageHtml.includes('aria-label="Premier League Icons — 1990s">1990s</a>'));
 t("it does not offer another category's boards", !pageHtml.includes("Brazil"));
 t("it links back to the index", pageHtml.includes('href="/wordsearch/themes/"'));
 t("it is indexable", !/noindex/.test(pageHtml));
@@ -128,7 +147,7 @@ t("with the board named on the game's address, and nothing else",
   door.headers.get("Location") === "https://www.thexigames.com/wordsearch/?b=XIWS-0002",
   door.headers.get("Location"));
 for (const [label, path] of [
-  ["a number past the end", ["pl-era-icons", "3"]],
+  ["a number past the end", ["pl-era-icons", "4"]],
   ["zero", ["pl-era-icons", "0"]],
   ["a word", ["pl-era-icons", "two"]],
   ["a category that is not there", ["fa-cup-final-xi"]],

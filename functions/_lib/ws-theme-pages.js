@@ -121,20 +121,47 @@ export async function treeRoute({ params, env }) {
   return groupPage(group);
 }
 
-/* Every board its own row: what it is, then its number as the thing you
-   press. The number is the control, shaped like one. */
-function boardRow(group, b, n) {
-  return `<li class="set"><span class="name">${esc(b.theme)}</span>` +
-    `<a class="no" href="${esc(groupPath(group.slug))}${n}"` +
-    ` aria-label="${esc(b.theme)}, board ${n}">#${n}</a></li>`;
+/* A THEME IS "SERIES — EDITION": "Euros Winner Starting XI — 1980",
+   "Manchester United — 1998/99". The series is the row and each edition is
+   the thing you press, so twenty-three Euros finals read as two rows of
+   years rather than twenty-three lines saying nearly the same thing. A theme
+   without the dash is a series of one, and its chip is its number. */
+export function splitTheme(theme) {
+  const s = String(theme == null ? "" : theme);
+  const i = s.indexOf(" — ");
+  if (i < 0) return { series: s.trim(), edition: "" };
+  return { series: s.slice(0, i).trim(), edition: s.slice(i + 3).trim() };
+}
+
+/* Boards of a group as rows: series in order of first appearance, each with
+   its editions in the group's own order. A board's address is still its
+   place in the whole group, so the doors do not move when the rows do. */
+export function seriesRows(group) {
+  const rows = [];
+  const byName = new Map();
+  group.boards.forEach((b, i) => {
+    const { series, edition } = splitTheme(b.theme);
+    if (!byName.has(series)) { byName.set(series, { series, chips: [] }); rows.push(byName.get(series)); }
+    byName.get(series).chips.push({ no: i + 1, label: edition || `#${i + 1}`, theme: b.theme });
+  });
+  return rows;
+}
+
+function seriesRow(group, row) {
+  const chips = row.chips.map((c) =>
+    `<a class="no" href="${esc(groupPath(group.slug))}${c.no}"` +
+    ` aria-label="${esc(c.theme)}">${esc(c.label)}</a>`).join("");
+  return `<li class="set"><span class="name">${esc(row.series)}</span>${chips}</li>`;
 }
 
 function groupPage(group) {
+  const rows = seriesRows(group);
   const body = `<p class="crumb"><a href="${INDEX}">Clubs and themes</a></p>
 <h1>${esc(group.name)}</h1>
-<p class="sub">${plural(group.boards.length, "board", "boards")}. Pick a number — it opens
-ready to start, and the clock waits for you to kick off.</p>
-<ul>${group.boards.map((b, i) => boardRow(group, b, i + 1)).join("")}</ul>
+<p class="sub">${plural(group.boards.length, "board", "boards")} in
+${plural(rows.length, "series", "series")}. Pick one — it opens on the board, and the
+clock waits for you to kick off.</p>
+<ul>${rows.map((r) => seriesRow(group, r)).join("")}</ul>
 <a class="cta" href="/wordsearch/">Play today's board</a>`;
 
   return htmlResponse(sitePage({

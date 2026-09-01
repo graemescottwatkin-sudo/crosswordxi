@@ -242,23 +242,60 @@ t("the daily state carries saved_at for the away-time charge",
   const w3 = dom3.window, d3 = w3.document;
   await new Promise((r) => w3.addEventListener("load", r));
   await new Promise((r) => setTimeout(r, 500));
-  const card = d3.getElementById("boardCard");
-  t("?b= from a themes page opens the board's card, not the board",
-    !card.classList.contains("hidden") &&
-    d3.getElementById("boardCardTitle").textContent === released.theme &&
-    d3.getElementById("gameApp").classList.contains("hidden"),
-    d3.getElementById("boardCardTitle").textContent);
+  const app3 = d3.getElementById("gameApp"), cover = d3.getElementById("kickCover");
+  /* ON THE BOARD, not on a card back on the landing: the grid is drawn at
+     its real size, the letters and the eleven are covered, the clock has
+     not started, and the card over the grid names the board. */
+  t("?b= from a themes page opens on the board, covered, with the clock waiting",
+    !app3.classList.contains("hidden") && app3.classList.contains("covered") &&
+    !cover.classList.contains("hidden") &&
+    d3.getElementById("kickTitle").textContent === released.theme &&
+    d3.getElementById("themeTitle").textContent === released.theme &&
+    d3.getElementById("clock").textContent === "0'" &&
+    d3.querySelectorAll("#grid .cell").length === 14 * 12 &&
+    d3.getElementById("prematch").classList.contains("hidden"),
+    d3.getElementById("kickTitle").textContent);
+  t("the cover names where the board came from",
+    /FROM THE THEMES/.test(d3.getElementById("kickKicker").textContent));
+  /* A swipe under the cover must find nothing: the letters are unreadable
+     and the clock is stopped, so a find here would be a free one. */
+  const rel = await (await fetch(`http://localhost:${PORT}/api/wordsearch/puzzle?id=${released.id}`)).json().then((r) => r.puzzle);
+  const cells3 = d3.querySelectorAll("#grid .cell");
+  d3.elementFromPoint = (x) => cells3[x] || null;
+  const drag3 = (cells) => {
+    const grid = d3.getElementById("grid");
+    const ev = (type, i) => {
+      const e = new w3.Event(type, { bubbles: true });
+      e.clientX = i; e.clientY = 0; e.pointerId = 1;
+      grid.dispatchEvent(e);
+    };
+    ev("pointerdown", cells[0]); ev("pointermove", cells[cells.length - 1]); ev("pointerup", cells[cells.length - 1]);
+  };
+  drag3(cellsOf(rel.answers[0]));
+  t("a drag under the cover finds nothing", d3.getElementById("count").textContent === "0");
+  d3.getElementById("kickBtn").click();
+  await new Promise((r) => setTimeout(r, 100));
+  t("kick off takes the cover off and starts free play on that board",
+    !app3.classList.contains("covered") && cover.classList.contains("hidden") &&
+    d3.getElementById("modeLabel").textContent === "Free play" &&
+    d3.getElementById("themeTitle").textContent === released.theme);
+  drag3(cellsOf(rel.answers[0]));
+  t("and the same drag now finds the name", d3.getElementById("count").textContent === "1");
   t("the in-game menu offers the themes pages and no drawer",
     !!d3.querySelector('#gameMenu [data-act="themes"]') && !d3.querySelector('#gameMenu [data-act="free"]'));
 
-  /* Previous puzzles: the list by day, from the archive. The sample schedule
-     has one day behind today, so one row, and it is there to play. */
+  /* Back to the landing, then Previous puzzles: the list by day, from the
+     archive. The sample schedule has one day behind today, so one row, and
+     it is there to play. */
+  d3.querySelector('#gameMenu [data-act="menu"]').click();
+  await new Promise((r) => setTimeout(r, 100));
+  t("back to menu returns to the landing", !d3.getElementById("prematch").classList.contains("hidden"));
   d3.getElementById("homePrevious").click();
   await new Promise((r) => setTimeout(r, 300));
   const panel = d3.getElementById("archivePanel");
   const rows = d3.querySelectorAll("#archiveList .arch-row");
-  t("previous puzzles opens a list by day, and the card it replaces closes",
-    !panel.classList.contains("hidden") && card.classList.contains("hidden") &&
+  t("previous puzzles opens a list by day",
+    !panel.classList.contains("hidden") &&
     d3.getElementById("homePrevious").getAttribute("aria-expanded") === "true");
   const archive = await (await fetch(`http://localhost:${PORT}/api/wordsearch/archive`)).json();
   t("one row per day the schedule has played, newest first, named",
@@ -273,16 +310,18 @@ t("the daily state carries saved_at for the away-time charge",
     /1 day to play/.test(d3.getElementById("archiveSub").textContent),
     d3.getElementById("archiveSub").textContent);
   rows[0].click();
-  await new Promise((r) => setTimeout(r, 100));
-  t("a day opens its card with the clock waiting, and the list closes",
-    !card.classList.contains("hidden") && panel.classList.contains("hidden") &&
-    /PREVIOUS PUZZLE/.test(d3.getElementById("boardCardKicker").textContent) &&
-    d3.getElementById("boardCardTitle").textContent === archive.days[0].theme &&
-    d3.getElementById("gameApp").classList.contains("hidden"));
-  d3.getElementById("kickBtn").click();
   await new Promise((r) => setTimeout(r, 400));
+  t("a day opens on its board, covered, named by its date, and the list closes",
+    !app3.classList.contains("hidden") && app3.classList.contains("covered") &&
+    panel.classList.contains("hidden") &&
+    /PREVIOUS PUZZLE/.test(d3.getElementById("kickKicker").textContent) &&
+    d3.getElementById("kickTitle").textContent === archive.days[0].theme &&
+    d3.getElementById("clock").textContent === "0'",
+    d3.getElementById("kickKicker").textContent);
+  d3.getElementById("kickBtn").click();
+  await new Promise((r) => setTimeout(r, 100));
   t("kick off starts that day's board as free play",
-    !d3.getElementById("gameApp").classList.contains("hidden") &&
+    !app3.classList.contains("covered") &&
     d3.getElementById("themeTitle").textContent === archive.days[0].theme &&
     d3.getElementById("modeLabel").textContent === "Free play");
   dom3.window.close();

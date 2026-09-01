@@ -35,7 +35,7 @@
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v7">
 <link rel="stylesheet" href="../shared/xi-landing.css?v=v7">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v7">
-<link rel="stylesheet" href="css/style.css?v=v001s">
+<link rel="stylesheet" href="css/style.css?v=v001t">
 </head>
 <body>
 
@@ -153,17 +153,6 @@
       </button>
     </div>
 
-    <!-- THE CARD A CHOSEN BOARD OPENS ON. Board of the week, a board arriving
-         from its themes page (?b=), or a previous day: each one lands here,
-         named, with the clock waiting for Kick off. It replaces a drawer of
-         two selects that was the whole landing once. -->
-    <div class="board-card hidden" id="boardCard">
-      <span class="hc-kicker" id="boardCardKicker">BOARD</span>
-      <span class="hc-title" id="boardCardTitle">&mdash;</span>
-      <span class="hc-note" id="boardCardNote"></span>
-      <button class="kick" id="kickBtn" type="button">Kick off</button>
-    </div>
-
     <!-- PREVIOUS PUZZLES, by day. A list rather than the crossword's calendar
          because a word search has a name: "Brazil — 2002 World Cup" is the
          reason to pick a day, and a calendar cell cannot say it. Newest first;
@@ -243,6 +232,19 @@
     <section class="boardWrap" id="boardWrap" aria-label="Word search board">
       <div class="gridShell" id="gridShell">
         <div class="grid" id="grid"><div class="highlightLayer" id="highlightLayer"></div></div>
+        <!-- KICK OFF, ON THE BOARD. A board reached from its themes page, the
+             board of the week or a previous day opens HERE, named, with the
+             letters and the eleven covered and the clock waiting. A card on
+             the landing was the first version: it sent a person who had
+             just chosen a board back to the front page to choose it again. -->
+        <div class="kickCover hidden" id="kickCover">
+          <div class="kickCard">
+            <span class="hc-kicker" id="kickKicker">BOARD</span>
+            <div class="kickTitle" id="kickTitle">&mdash;</div>
+            <div class="kickNote" id="kickNote"></div>
+            <button class="kick" id="kickBtn" type="button">Kick off</button>
+          </div>
+        </div>
       </div>
     </section>
     <aside class="side" id="side">
@@ -288,6 +290,6 @@
 <footer class="xic-foot"></footer>
 <script src="../shared/xi-clubs.js?v=v7"></script>
 <script src="../shared/xi-chrome.js?v=v7"></script>
-<script src="js/game.js?v=v001s"></script>
+<script src="js/game.js?v=v001t"></script>
 </body>
 </html>

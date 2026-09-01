@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001s";
+  var BUILD = "v001t";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -420,6 +420,9 @@
     return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
   }
   function onPointerDown(e) {
+    /* Under the cover nothing is a drag: the letters are not readable and
+       the clock has not started, so a swipe must not find a word for free. */
+    if (pending) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
       dragging = false; setPreview([]);
@@ -817,33 +820,41 @@
     });
     return ordered[weekIndex() % ordered.length];
   }
-  /* THE CARD A CHOSEN BOARD OPENS ON. Board of the week, a board arriving
-     from its themes page, a previous day: each is named here with the clock
-     waiting for Kick off. Nothing starts because a link was followed. */
-  var picked = null;
+  /* A CHOSEN BOARD OPENS ON THE BOARD. Board of the week, a board arriving
+     from its themes page, a previous day: each one opens the game with its
+     letters and its eleven covered, named on a card over the grid, and the
+     clock waiting for Kick off. Nothing starts because a link was followed;
+     and nobody is sent back to the landing to choose again. */
+  var pending = null;   /* the board opened and not yet kicked off */
   /* Guarded: jsdom, which the suites run in, has no scrollIntoView. */
   function nudge(el) {
     if (el && typeof el.scrollIntoView === "function") el.scrollIntoView({ block: "nearest" });
   }
-  function showBoardCard(board, kicker, note) {
+  function openBoard(board, kicker, note) {
     if (!board) return;
-    picked = board;
     hideArchive();
-    $("boardCardKicker").textContent = kicker || "BOARD";
-    $("boardCardTitle").textContent = board.theme;
-    $("boardCardNote").textContent = note || (board.category ? board.category + " · free play, no run at stake" : "Free play, no run at stake");
-    $("boardCard").classList.remove("hidden");
-    nudge($("boardCard"));
+    api("puzzle?id=" + encodeURIComponent(board.id)).then(function (r) {
+      pending = { puzzle: r.puzzle, kicker: kicker, note: note };
+      mode = "free";
+      enterBoard(r.puzzle, "Free play");
+      $("kickKicker").textContent = kicker || "BOARD";
+      $("kickTitle").textContent = r.puzzle.theme;
+      $("kickNote").textContent = note ||
+        (r.puzzle.category ? r.puzzle.category + " · free play, no run at stake" : "Free play, no run at stake");
+      $("gameApp").classList.add("covered");
+      $("kickCover").classList.remove("hidden");
+    }, function () { toast("Board unavailable"); });
   }
-  function hideBoardCard() {
-    picked = null;
-    $("boardCard").classList.add("hidden");
+  function uncover() {
+    pending = null;
+    $("gameApp").classList.remove("covered");
+    $("kickCover").classList.add("hidden");
   }
   function selectBoard(id, kicker, note) {
     if (!id) return false;
     var b = catalogBoards.find(function (x) { return x.id === id; });
     if (!b) return false;
-    showBoardCard(b, kicker, note);
+    openBoard(b, kicker, note);
     return true;
   }
 
@@ -941,7 +952,6 @@
   function toggleArchive() {
     var panel = $("archivePanel");
     if (!panel.classList.contains("hidden")) { hideArchive(); return; }
-    hideBoardCard();
     panel.classList.remove("hidden");
     $("homePrevious").setAttribute("aria-expanded", "true");
     if (archiveDays) {
@@ -1013,16 +1023,13 @@
      which is the one board this page can offer without leaving it. */
   function setPrematchMode(next) {
     mode = next;
-    if (next === "free") {
-      if (!picked) selectBoard(featuredId, "BOARD OF THE WEEK");
-    } else {
-      hideBoardCard();
-    }
+    if (next === "free" && !pending) selectBoard(featuredId, "BOARD OF THE WEEK");
   }
   function goToMenu() {
     if (mode === "daily" && startedAt && found.size < 11) saveDailyProgress();
     clearInterval(timer); timer = null; startedAt = null;
     varPauseUntil = 0;
+    uncover();
     $("result").classList.remove("show");
     $("gameApp").classList.add("hidden");
     $("prematch").classList.remove("hidden");
@@ -1103,14 +1110,15 @@
       var day = row.getAttribute("data-day");
       var entry = (archiveDays || []).find(function (e) { return e.day === day; });
       if (!entry) return;
-      mode = "free";
-      showBoardCard(entry, "PREVIOUS PUZZLE · " + dayLabel(day).toUpperCase(),
+      openBoard(entry, "PREVIOUS PUZZLE · " + dayLabel(day).toUpperCase(),
         "Free play — only today's board keeps a run going.");
     };
+    /* Kick off, on the board: the cover comes off and the clock starts. */
     $("kickBtn").onclick = function () {
-      if (!picked) { toast("Pick a board"); return; }
-      api("puzzle?id=" + encodeURIComponent(picked.id)).then(function (r) { startFree(r.puzzle); },
-        function () { toast("Board unavailable"); });
+      if (!pending) return;
+      var p = pending.puzzle;
+      uncover();
+      startFree(p);
     };
     $("gameBtn").onclick = function () { toggleMenu("gameMenu", "gameBtn"); };
     $("helpBtn").onclick = function () { toggleMenu("helpMenu", "helpBtn"); };
