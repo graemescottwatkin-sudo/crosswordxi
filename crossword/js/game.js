@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v001x";
+  var BUILD = "v001y";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -6553,7 +6553,18 @@
       var st = FCW.seasonStats(phaseResults(), FCW.dailyNumber());
       if (!st.played) {
         if (title) title.textContent = "No run yet";
-        el.innerHTML = "<span class=\"run-none\">Play today to start one.</span>";
+        /* THE SHAPE OF WHAT IS COMING, not just the absence of it.
+
+           This said "Play today to start one." beside an empty box, so a new
+           player could not see that form is five results or that anything
+           would ever appear there. Five outlined slots say both without a
+           sentence. They are the same chips the run draws, unfilled — and the
+           count comes from FORM_LENGTH, so it cannot drift from the number of
+           results the run actually keeps. */
+        var slots = "";
+        for (var fi = 0; fi < FCW.SCORING.FORM_LENGTH; fi++) slots += '<span class="rc none"></span>';
+        el.innerHTML = '<span class="run-chips">' + slots + "</span>" +
+          '<span class="run-none">Play today to start one.</span>';
         return;
       }
       if (title) {

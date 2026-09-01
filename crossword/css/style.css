@@ -2876,14 +2876,68 @@ body.home-showing .tbar{visibility:hidden}
 .rc.d{background:#FAC775;color:#412402}
 .rc.l{background:#F7C1C1;color:#501313}
 .run-best{margin-left:auto;font-size:12.5px;color:var(--ink-faint)}
-.run-none{font-size:13px;color:var(--ink-soft)}
+/* The unplayed slot: the chip shape, drawn as an outline. Reads as a place
+   for a result rather than as a result nobody can name. */
+.rc.none{background:transparent;border:1.5px dashed var(--line);box-shadow:none}
+.run-none{font-size:13px;color:var(--ink-soft);margin-left:auto;align-self:center}
 
 /* Three across, below the fixture. Equal weight because they are alternatives
    to each other, not to today — today is the block above with all the colour. */
+/* A GRID BEHIND THE FIXTURE, at the edge of visible.
+
+   The hero is the one block on the page with weight, and it was flat green.
+   A crossword lattice says what the game is before a word is read. Drawn with
+   two repeating-linear-gradients rather than an image: no request, no asset to
+   version, and it scales with the card instead of tiling at a fixed size.
+   Kept under 10% opacity — it is a texture, not a diagram, and the white
+   heading over it has to stay the thing being read. */
+:root{--hero-rule:rgba(255,255,255,.085)}
+:root[data-theme="dark"]{--hero-rule:rgba(0,0,0,.075)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--hero-rule:rgba(0,0,0,.075)}
+}
+.home-choice.hero{position:relative;overflow:hidden}
+.home-choice.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  /* The line colour is a token because the hero inverts: it is deep green in
+     light mode and pale green in dark, so a fixed white line is depth on one
+     and a wash that eats the contrast of the Kick off button on the other. */
+  background:
+    repeating-linear-gradient(to right,var(--hero-rule) 0 1px,transparent 1px 44px),
+    repeating-linear-gradient(to bottom,var(--hero-rule) 0 1px,transparent 1px 44px);
+  /* Fading out to the left keeps it off the words and lets it read as depth
+     rather than as a pattern laid over the type. */
+  -webkit-mask-image:linear-gradient(105deg,transparent 0%,transparent 34%,#000 78%);
+  mask-image:linear-gradient(105deg,transparent 0%,transparent 34%,#000 78%);
+}
+/* The card content sits above it. */
+.home-choice.hero > *{position:relative;z-index:1}
+
 .site-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch}
+/* One line icon per card, bottom-right, out of the way of the words.
+
+   The three cards carry a kicker, a title and a note each, and at a glance
+   that is three identical blocks of text — the eye has to read to tell them
+   apart. A shape per card is something to recognise before reading. Inline
+   SVG rather than a sprite or a font: no request, nothing to version, and it
+   takes currentColor so it follows the theme without a second rule. */
+.hc-icon{
+  position:absolute;right:14px;bottom:12px;width:34px;height:34px;
+  color:var(--pitch-deep);opacity:.28;pointer-events:none;
+}
+:root[data-theme="dark"] .hc-icon{opacity:.34}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .hc-icon{opacity:.34}
+}
+/* The note must not run under the icon. */
+.home-choice.col .hc-note{padding-right:40px}
+
 .home-choice.col{
   width:100%;text-align:left;display:flex;flex-direction:column;
   padding:16px 17px;min-height:132px;
+  /* The icon is positioned against this card, not against whatever ancestor
+     happens to be positioned further up. */
+  position:relative;
 }
 .home-choice.col .hc-kicker{
   display:block;font-size:11px;letter-spacing:.11em;color:var(--pitch);margin-bottom:5px;
