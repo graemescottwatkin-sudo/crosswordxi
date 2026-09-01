@@ -17,6 +17,7 @@ import { JSDOM } from "jsdom";
 import { onRequestGet as daily } from "../functions/api/wordsearch/daily.js";
 import { onRequestGet as puzzleFn } from "../functions/api/wordsearch/puzzle.js";
 import { onRequestGet as catalogFn } from "../functions/api/wordsearch/catalog.js";
+import { onRequestGet as archiveFn } from "../functions/api/wordsearch/archive.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(DIR, "..");
@@ -35,6 +36,7 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/api/wordsearch/daily") return send(await daily(ctx));
   if (url.pathname === "/api/wordsearch/puzzle") return send(await puzzleFn(ctx));
   if (url.pathname === "/api/wordsearch/catalog") return send(await catalogFn(ctx));
+  if (url.pathname === "/api/wordsearch/archive") return send(await archiveFn(ctx));
   let file = url.pathname === "/wordsearch/" ? "/wordsearch/index.html" : url.pathname;
   const full = path.join(ROOT, file);
   if (fs.existsSync(full) && fs.statSync(full).isFile()) {
@@ -66,9 +68,19 @@ await new Promise((r) => setTimeout(r, 500)); // let both fetches land
    fails this check rather than killing the run — the suite died on a null
    here, which reports nothing about the eleven checks after it. */
 t("the page loads with the sample bank behind the API", (() => {
-  const el = d.getElementById("homePreviousCount");
+  const el = d.getElementById("homeThemedState");
   return !!el && /board/i.test(el.textContent);
+})(), (d.getElementById("homeThemedState") || {}).textContent);
+/* Previous PUZZLES counts days, from the archive, which stops at yesterday:
+   the sample schedule always has exactly one. */
+t("the previous puzzles card counts days, not boards", (() => {
+  const el = d.getElementById("homePreviousCount");
+  return !!el && /^1 day so far$/.test(el.textContent);
 })(), (d.getElementById("homePreviousCount") || {}).textContent);
+t("clubs and themes is a link to its pages, not a drawer",
+  d.getElementById("homeThemed").tagName === "A" &&
+  d.getElementById("homeThemed").getAttribute("href") === "/wordsearch/themes/" &&
+  !d.getElementById("catSelect"));
 t("the build tag is on the page", d.getElementById("buildTag").textContent === w.WORDSEARCHXI_BUILD);
 t("no schedule and no bank in the served page",
   !/DAILY_SCHEDULE|const PUZZLES/.test(d.documentElement.outerHTML));
@@ -102,6 +114,14 @@ t("no keyboard and no active-clue strip exists",
 
 /* ---- drag a word out of the grid -------------------------------------- */
 const puzzle = await (await fetch(`http://localhost:${PORT}/api/wordsearch/daily`)).json().then((r) => r.puzzle);
+/* THE BONUS HAS A CLUE, and it is shown. The bank has always carried one and
+   the server always sent it; the box read "Undiscovered" and threw it away.
+   The clue and the length are on the card from kick-off; the word is not. */
+t("the bonus box shows the clue and the length before the bonus is found",
+  d.getElementById("bonusState").textContent === puzzle.bonus.clue &&
+  d.getElementById("bonusSub").textContent.indexOf(puzzle.bonus.grid.length + " letters") === 0 &&
+  d.getElementById("bonusBox").textContent.indexOf(puzzle.bonus.display) === -1,
+  d.getElementById("bonusState").textContent + " / " + d.getElementById("bonusSub").textContent);
 const dirMap = { E:[0,1],W:[0,-1],S:[1,0],N:[-1,0],SE:[1,1],SW:[1,-1],NE:[-1,1],NW:[-1,-1] };
 const cellsOf = (a) => {
   const dxy = dirMap[a.placement.direction], out = [];
@@ -208,6 +228,64 @@ t("the daily state carries saved_at for the away-time charge",
   t("the late board banks as played, scored at the floor",
     JSON.parse(w2.localStorage.getItem("xiws.results")).length === 1);
   dom2.window.close();
+}
+
+/* ---- the doors: a themes page hands over a board, previous puzzles lists
+   the days — and in both cases the clock waits for Kick off ------------- */
+{
+  const cat = await (await fetch(`http://localhost:${PORT}/api/wordsearch/catalog`)).json();
+  const released = cat.boards[0];
+  const dom3 = await JSDOM.fromURL(`http://localhost:${PORT}/wordsearch/?b=${released.id}`, {
+    runScripts: "dangerously", resources: "usable", pretendToBeVisual: true,
+    beforeParse: giveFetch,
+  });
+  const w3 = dom3.window, d3 = w3.document;
+  await new Promise((r) => w3.addEventListener("load", r));
+  await new Promise((r) => setTimeout(r, 500));
+  const card = d3.getElementById("boardCard");
+  t("?b= from a themes page opens the board's card, not the board",
+    !card.classList.contains("hidden") &&
+    d3.getElementById("boardCardTitle").textContent === released.theme &&
+    d3.getElementById("gameApp").classList.contains("hidden"),
+    d3.getElementById("boardCardTitle").textContent);
+  t("the in-game menu offers the themes pages and no drawer",
+    !!d3.querySelector('#gameMenu [data-act="themes"]') && !d3.querySelector('#gameMenu [data-act="free"]'));
+
+  /* Previous puzzles: the list by day, from the archive. The sample schedule
+     has one day behind today, so one row, and it is there to play. */
+  d3.getElementById("homePrevious").click();
+  await new Promise((r) => setTimeout(r, 300));
+  const panel = d3.getElementById("archivePanel");
+  const rows = d3.querySelectorAll("#archiveList .arch-row");
+  t("previous puzzles opens a list by day, and the card it replaces closes",
+    !panel.classList.contains("hidden") && card.classList.contains("hidden") &&
+    d3.getElementById("homePrevious").getAttribute("aria-expanded") === "true");
+  const archive = await (await fetch(`http://localhost:${PORT}/api/wordsearch/archive`)).json();
+  t("one row per day the schedule has played, newest first, named",
+    rows.length === archive.days.length && rows.length === 1 &&
+    rows[0].querySelector(".arch-theme").textContent === archive.days[0].theme &&
+    rows[0].querySelector(".arch-state").textContent === "To play",
+    rows.length + " rows");
+  t("the day is a date, not a board number",
+    /[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}/.test(rows[0].querySelector(".arch-day").textContent),
+    rows[0].querySelector(".arch-day").textContent);
+  t("and the count on the card says how many days are left to play",
+    /1 day to play/.test(d3.getElementById("archiveSub").textContent),
+    d3.getElementById("archiveSub").textContent);
+  rows[0].click();
+  await new Promise((r) => setTimeout(r, 100));
+  t("a day opens its card with the clock waiting, and the list closes",
+    !card.classList.contains("hidden") && panel.classList.contains("hidden") &&
+    /PREVIOUS PUZZLE/.test(d3.getElementById("boardCardKicker").textContent) &&
+    d3.getElementById("boardCardTitle").textContent === archive.days[0].theme &&
+    d3.getElementById("gameApp").classList.contains("hidden"));
+  d3.getElementById("kickBtn").click();
+  await new Promise((r) => setTimeout(r, 400));
+  t("kick off starts that day's board as free play",
+    !d3.getElementById("gameApp").classList.contains("hidden") &&
+    d3.getElementById("themeTitle").textContent === archive.days[0].theme &&
+    d3.getElementById("modeLabel").textContent === "Free play");
+  dom3.window.close();
 }
 
 t("no uncaught errors anywhere in the run", uncaught.length === 0, uncaught.join(" ; "));

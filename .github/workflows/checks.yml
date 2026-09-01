@@ -108,6 +108,9 @@ jobs:
           # The answers pages: the seal, the refusal that names nothing,
           # and the window imported rather than restated.
           node wordsearch/answers_test.mjs
+          # The themes pages: the index, a category's numbered boards, the
+          # door into the game, and an unreleased board named nowhere.
+          node wordsearch/themes_test.mjs
           # The cross-game contract: what every game must have, checked
           # identically. Game three is a row in its GAMES table.
           node tools/aligned_test.mjs

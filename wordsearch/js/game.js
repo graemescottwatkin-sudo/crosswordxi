@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001r";
+  var BUILD = "v001s";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -632,8 +632,16 @@
          every unfound one while both groups stay alphabetical inside. */
       x.style.order = (done ? 100 : 0) + Number(x.dataset.rank || 0);
     });
-    $("bonusState").textContent = bonusFound ? "★ " + puzzle.bonus.display : "Undiscovered";
-    $("bonusSub").textContent = bonusFound ? "A full +10 points at full time." : "Hidden in the grid · +10 points";
+    /* THE CLUE IS SHOWN. Every board carries one for its bonus, and the
+       server has always sent it; the box said "Undiscovered" and threw it
+       away, so a player had no idea what they were hunting for. The clue and
+       the length are the hunt; the word itself stays hidden until found. */
+    var bonusClue = puzzle.bonus && puzzle.bonus.clue;
+    var bonusLen = puzzle.bonus && puzzle.bonus.grid ? puzzle.bonus.grid.length : 0;
+    $("bonusState").textContent = bonusFound ? "★ " + puzzle.bonus.display
+      : (bonusClue || "Undiscovered");
+    $("bonusSub").textContent = bonusFound ? "A full +10 points at full time."
+      : (bonusLen ? bonusLen + " letters · " : "") + "Hidden in the grid · +10 points";
     if (found.size >= 11) {
       if (bonusFound) { finish("complete"); return; }
       $("finishPrompt").classList.add("show");
@@ -809,13 +817,34 @@
     });
     return ordered[weekIndex() % ordered.length];
   }
-  function selectBoard(id) {
-    if (!id) return;
+  /* THE CARD A CHOSEN BOARD OPENS ON. Board of the week, a board arriving
+     from its themes page, a previous day: each is named here with the clock
+     waiting for Kick off. Nothing starts because a link was followed. */
+  var picked = null;
+  /* Guarded: jsdom, which the suites run in, has no scrollIntoView. */
+  function nudge(el) {
+    if (el && typeof el.scrollIntoView === "function") el.scrollIntoView({ block: "nearest" });
+  }
+  function showBoardCard(board, kicker, note) {
+    if (!board) return;
+    picked = board;
+    hideArchive();
+    $("boardCardKicker").textContent = kicker || "BOARD";
+    $("boardCardTitle").textContent = board.theme;
+    $("boardCardNote").textContent = note || (board.category ? board.category + " · free play, no run at stake" : "Free play, no run at stake");
+    $("boardCard").classList.remove("hidden");
+    nudge($("boardCard"));
+  }
+  function hideBoardCard() {
+    picked = null;
+    $("boardCard").classList.add("hidden");
+  }
+  function selectBoard(id, kicker, note) {
+    if (!id) return false;
     var b = catalogBoards.find(function (x) { return x.id === id; });
-    if (!b) return;
-    $("catSelect").value = b.category;
-    $("catSelect").dispatchEvent(new Event("change"));
-    $("boardSelect").value = b.id;
+    if (!b) return false;
+    showBoardCard(b, kicker, note);
+    return true;
   }
 
   /* FORM, drawn by the shared chrome so a win looks the same in every game.
@@ -888,40 +917,107 @@
     }
     $("homeThemedState").textContent = catalogBoards.length
       ? catalogBoards.length + " boards available" : "";
-    $("homePreviousCount").textContent = catalogBoards.length
-      ? catalogBoards.length + " released boards" : "Every day so far";
+    /* Days, not boards: the card is Previous PUZZLES, and a day is what you
+       missed. Counted from the archive, which stops at yesterday. */
+    $("homePreviousCount").textContent = archiveDays
+      ? (archiveDays.length
+          ? archiveDays.length + (archiveDays.length === 1 ? " day so far" : " days so far")
+          : "The first day is today")
+      : "Every day so far";
     renderForm();
     fillClubs();
   }
 
-  /* ---- pre-match ------------------------------------------------------- */
-  function fillBrowser() {
-    var cats = {};
-    catalogBoards.forEach(function (b) { (cats[b.category] = cats[b.category] || []).push(b); });
-    var catSel = $("catSelect"), boardSel = $("boardSelect");
-    catSel.innerHTML = "";
-    Object.keys(cats).sort().forEach(function (c) {
-      var o = document.createElement("option"); o.value = c; o.textContent = c + " (" + cats[c].length + ")";
-      catSel.appendChild(o);
-    });
-    function fillBoards() {
-      boardSel.innerHTML = "";
-      (cats[catSel.value] || []).forEach(function (b) {
-        var o = document.createElement("option"); o.value = b.id; o.textContent = b.theme;
-        boardSel.appendChild(o);
-      });
-    }
-    catSel.onchange = fillBoards; fillBoards();
+  /* ---- previous puzzles ------------------------------------------------ */
+  /* A LIST BY DAY, newest first, from /api/wordsearch/archive. A day played
+     as the daily shows its score; the rest are there to play. Not a
+     calendar, unlike the crossword: a word search has a name, and the name is
+     the reason to pick a day. */
+  var archiveDays = null;
+  function hideArchive() {
+    $("archivePanel").classList.add("hidden");
+    $("homePrevious").setAttribute("aria-expanded", "false");
   }
+  function toggleArchive() {
+    var panel = $("archivePanel");
+    if (!panel.classList.contains("hidden")) { hideArchive(); return; }
+    hideBoardCard();
+    panel.classList.remove("hidden");
+    $("homePrevious").setAttribute("aria-expanded", "true");
+    if (archiveDays) {
+      renderArchive();
+      nudge(panel);
+      return;
+    }
+    $("archiveSub").textContent = "Loading…";
+    loadArchive(function () { nudge(panel); });
+  }
+  function loadArchive(then) {
+    api("archive").then(function (r) {
+      archiveDays = r.days || [];
+      renderArchive();
+      if ($("homePreviousCount")) renderLanding();
+      if (then) then();
+    }, function () {
+      $("archiveSub").textContent = "Could not load the list.";
+    });
+  }
+  /* The day as a date, in UTC because that is the day the server named. */
+  function dayLabel(day) {
+    var d = new Date(day + "T00:00:00Z");
+    if (isNaN(d.getTime())) return day;
+    return d.toLocaleDateString("en-GB",
+      { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  }
+  function renderArchive() {
+    var list = $("archiveList");
+    if (!list || !archiveDays) return;
+    var played = {};
+    readResults().forEach(function (r) { if (r && r.day) played[r.day] = r; });
+    list.innerHTML = "";
+    if (!archiveDays.length) {
+      var empty = document.createElement("li");
+      empty.className = "arch-empty";
+      empty.textContent = "The first day is today — come back tomorrow.";
+      list.appendChild(empty);
+      $("archiveSub").textContent = "";
+      return;
+    }
+    var left = 0;
+    archiveDays.forEach(function (e) {
+      var rec = played[e.day];
+      if (!rec) left++;
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "arch-row" + (rec ? " done" : "");
+      b.setAttribute("data-id", e.id);
+      b.setAttribute("data-day", e.day);
+      var day = document.createElement("span"); day.className = "arch-day";
+      var theme = document.createElement("span"); theme.className = "arch-theme";
+      var state = document.createElement("span"); state.className = "arch-state";
+      day.textContent = dayLabel(e.day);
+      theme.textContent = e.theme;
+      state.textContent = rec ? (rec.score != null ? rec.score + " pts" : "Played") : "To play";
+      b.appendChild(day); b.appendChild(theme); b.appendChild(state);
+      li.appendChild(b); list.appendChild(li);
+    });
+    $("archiveSub").textContent = left === 0
+      ? "You have played every day so far."
+      : left + (left === 1 ? " day" : " days") + " to play";
+  }
+
+  /* ---- pre-match ------------------------------------------------------- */
   /* THE MODE IS CHOSEN BY WHICH CARD YOU PRESS, not by a tile that stays lit.
-     Two tiles above a single Kick off meant the button did different things
-     depending on a selection made earlier and shown small; the landing puts
-     today under its own button and the other boards under theirs. */
+     Free play without a board named yet shows the board of the week's card,
+     which is the one board this page can offer without leaving it. */
   function setPrematchMode(next) {
     mode = next;
-    var browser = $("freeBrowser");
-    if (browser) browser.classList.toggle("hidden", next !== "free");
-    if (next === "free" && browser) browser.scrollIntoView({ block: "nearest" });
+    if (next === "free") {
+      if (!picked) selectBoard(featuredId, "BOARD OF THE WEEK");
+    } else {
+      hideBoardCard();
+    }
   }
   function goToMenu() {
     if (mode === "daily" && startedAt && found.size < 11) saveDailyProgress();
@@ -986,23 +1082,34 @@
       setPrematchMode("daily");
       startDaily(window.__daily);
     };
-    /* The other boards. Both open the same browser; the featured card pre-picks
-       the board of the week rather than being a second way to browse. */
-    var openBrowser = function (pick) {
-      setPrematchMode("free");
-      if (pick) selectBoard(pick);
-    };
-    $("homeThemed").onclick = function () { openBrowser(null); };
-    /* The section nav drives the controls that already do these jobs rather
-       than reimplementing them — Today is where you already are. */
+    /* The other boards. Clubs and themes is a link to its pages and needs no
+       handler; the board of the week opens its card; previous puzzles opens
+       the list by day. The section nav drives the same controls rather than
+       reimplementing them — Today is where you already are. */
+    var openThemes = function () { location.href = "/wordsearch/themes/"; };
     var navThemes = $("navThemes");
-    if (navThemes) navThemes.onclick = function () { openBrowser(null); };
-    $("homePrevious").onclick = function () { openBrowser(null); };
-    $("homeFeatured").onclick = function () { openBrowser(featuredId); };
+    if (navThemes) navThemes.onclick = openThemes;
+    $("homePrevious").onclick = toggleArchive;
+    $("homeFeatured").onclick = function () {
+      mode = "free";
+      if (!selectBoard(featuredId, "BOARD OF THE WEEK")) toast("No board this week");
+    };
+    /* Delegated: the list is rebuilt on every render, so a handler per row
+       would have to be rebound each time. A row opens the day's card; the
+       clock waits for Kick off, as it does for every other board. */
+    $("archiveList").onclick = function (ev) {
+      var row = ev.target.closest ? ev.target.closest(".arch-row") : null;
+      if (!row) return;
+      var day = row.getAttribute("data-day");
+      var entry = (archiveDays || []).find(function (e) { return e.day === day; });
+      if (!entry) return;
+      mode = "free";
+      showBoardCard(entry, "PREVIOUS PUZZLE · " + dayLabel(day).toUpperCase(),
+        "Free play — only today's board keeps a run going.");
+    };
     $("kickBtn").onclick = function () {
-      var id = $("boardSelect").value;
-      if (!id) { toast("Pick a board"); return; }
-      api("puzzle?id=" + encodeURIComponent(id)).then(function (r) { startFree(r.puzzle); },
+      if (!picked) { toast("Pick a board"); return; }
+      api("puzzle?id=" + encodeURIComponent(picked.id)).then(function (r) { startFree(r.puzzle); },
         function () { toast("Board unavailable"); });
     };
     $("gameBtn").onclick = function () { toggleMenu("gameMenu", "gameBtn"); };
@@ -1014,7 +1121,7 @@
         closeMenus();
         if (r.dataset.act === "menu") { goToMenu(); return; }
         if (r.dataset.act === "daily") { goToMenu(); setPrematchMode("daily"); return; }
-        if (r.dataset.act === "free") { goToMenu(); setPrematchMode("free"); return; }
+        if (r.dataset.act === "themes") { openThemes(); return; }
       };
     });
     document.querySelectorAll("#helpMenu .menuRow[data-help]").forEach(function (r) {
@@ -1061,10 +1168,17 @@
       /* #bankLine belonged to the card this landing replaced. The counts it
          carried are on the board cards now, where they describe the thing they
          are next to rather than sitting under a Kick off button. */
-      fillBrowser();
       renderLanding();
-      /* #p= is a Free Play invitation and nothing more: the endpoint refuses
-         unreleased ids, so the link cannot be a door to a future daily. */
+      /* ?b= IS THE DOOR FROM A THEMES PAGE: the board is named on its card
+         and the clock waits for Kick off. Only a released board is in the
+         catalog, so a link to tomorrow's names nothing and opens nothing.
+         #p= is the older Free Play invitation from a share, and starts at
+         once as it always has — the person following it was challenged. */
+      var q = (location.search.match(/[?&]b=(XIWS-\d{4})/) || [])[1];
+      if (q) {
+        mode = "free";
+        if (!selectBoard(q, "FROM THE THEMES")) toast("That board is not available");
+      }
       var m = location.hash.match(/p=(XIWS-\d{4})/);
       if (m) {
         api("puzzle?id=" + m[1]).then(function (r2) { startFree(r2.puzzle); },
@@ -1073,6 +1187,10 @@
     }, function () {
       setDailyState("Could not load the board list.");
     });
+    /* The days already played, for the count on the card and the list under
+       it. Fetched here so the card can say how many, and the list opens
+       without a wait. */
+    loadArchive();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

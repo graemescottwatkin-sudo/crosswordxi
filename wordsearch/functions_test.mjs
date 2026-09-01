@@ -6,6 +6,7 @@
 import { onRequestGet as daily } from "../functions/api/wordsearch/daily.js";
 import { onRequestGet as puzzleFn } from "../functions/api/wordsearch/puzzle.js";
 import { onRequestGet as catalogFn } from "../functions/api/wordsearch/catalog.js";
+import { onRequestGet as archiveFn } from "../functions/api/wordsearch/archive.js";
 import { utcDayKey } from "../functions/_lib/wsdata.js";
 
 let pass = 0, fail = 0;
@@ -48,6 +49,22 @@ const env = { DB: { prepare: (sql) => ({ bind: (...args) => ({
         const first = Object.entries(SCHED).filter(([, id]) => id === p.id).map(([d]) => d).sort()[0];
         return !first || first <= args[0];
       }).map((p) => ({ id: p.id, theme: p.theme, category: p.category, status: p.status }));
+      return { results };
+    }
+    /* The archive: days strictly before the bound day, newest first, with
+       the board that stood each day. The stub applies the rule itself so a
+       route that asked for everything would still be caught by the check
+       on what came back, not by luck. */
+    if (/SELECT s\.day AS day, p\.id AS id/.test(sql)) {
+      /* The stub reads the operator off the SQL rather than assuming it: a
+         route that asked "<= today" would otherwise be filtered by the stub
+         to the right answer, and the check would pass a query that lists
+         today. Watched failing with the operator loosened. */
+      const strict = /s\.day < \?/.test(sql);
+      const results = Object.entries(SCHED)
+        .filter(([day]) => (strict ? day < args[0] : day <= args[0]))
+        .sort(([a], [b]) => (a < b ? 1 : -1))
+        .map(([day, id]) => ({ day, id, theme: PUZZ[id].theme, category: PUZZ[id].category }));
       return { results };
     }
     return { results: [] };
@@ -99,6 +116,24 @@ const jsonOf = async (r) => ({ status: r.status, body: await r.json(), headers: 
   t("catalog lists released boards only", ids.includes("XIWS-0001") && ids.includes("XIWS-0002") && !ids.includes("XIWS-0003"), ids.join(","));
   t("catalog rows carry no grids and no answers",
     r.body.boards.every((b) => !b.grid && !b.answers && !b.payload));
+}
+
+/* ---- archive: the days already played, and nothing after them --------- */
+{
+  const r = await jsonOf(await archiveFn(req("https://x/api/wordsearch/archive")));
+  const days = r.body.days.map((d) => d.day);
+  t("archive answers with the server's day and the days before it",
+    r.status === 200 && r.body.today === today && days.length === 1 && days[0] === shift(-1),
+    days.join(","));
+  t("it stops at yesterday: today is the hero and tomorrow is the secret",
+    !days.includes(today) && !days.includes(shift(1)));
+  t("each day names its board and theme, and no more",
+    r.body.days.every((d) => d.id === "XIWS-0001" && d.theme === "Yesterday" &&
+      !d.grid && !d.answers && !d.bonus && !d.payload));
+  t("archive is no-store, because midnight moves it", r.headers.get("Cache-Control") === "no-store");
+  const s = await jsonOf(await archiveFn({ request: new Request("https://x/"), env: {} }));
+  t("without a database the sample path lists yesterday only",
+    s.status === 200 && s.body.days.length === 1 && s.body.days[0].day === shift(-1) && !!s.body.days[0].theme);
 }
 
 /* ---- the sample path (no DB bound) ------------------------------------ */

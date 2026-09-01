@@ -250,8 +250,57 @@ if (d && d.puzzle) {
     d.puzzle.answers.every((a) => refText.indexOf(a.display) === -1));
 }
 
+/* ---- the themes pages --------------------------------------------------- */
+/* The same shape as the crossword's clubs: an index, a page per category, and
+   a board address that is a door into the game. Rendered from the catalog, so
+   they can name nothing the catalog does not. */
+const themesIndex = await get("/wordsearch/themes/");
+const themesText = themesIndex.status === 200 ? await themesIndex.text() : "";
+t("the themes index is served", themesIndex.status === 200, "HTTP " + themesIndex.status);
+t("and it is indexable",
+  themesIndex.status === 200 && !/noindex/.test(themesText) && !themesIndex.headers.get("x-robots-tag"));
+const firstGroup = (themesText.match(/href="\/wordsearch\/theme\/([a-z0-9-]+)\/"/) || [])[1];
+t("it links a category page", !!firstGroup, firstGroup);
+if (firstGroup) {
+  const groupPage = await get("/wordsearch/theme/" + firstGroup + "/");
+  const groupText = groupPage.status === 200 ? await groupPage.text() : "";
+  t("a category page is served", groupPage.status === 200, "HTTP " + groupPage.status);
+  const chips = (groupText.match(/class="no" href="\/wordsearch\/theme\/[a-z0-9-]+\/\d+"/g) || []).length;
+  t("every board on it is a numbered target", chips > 0, chips + " boards");
+  const door = await get("/wordsearch/theme/" + firstGroup + "/1");
+  const loc = door.headers.get("location") || "";
+  t("a board address is a door into the game, with the board named",
+    door.status === 302 && /^https:\/\/www\.thexigames\.com\/wordsearch\/\?b=XIWS-\d{4}$/.test(loc),
+    door.status + " -> " + loc);
+  const doorId = (loc.match(/b=(XIWS-\d{4})/) || [])[1];
+  t("and the board behind the door is a released one", !!doorId && releasedIds.has(doorId), doorId);
+  const beyond = await get("/wordsearch/theme/" + firstGroup + "/99999");
+  t("a board that is not there is refused, not cacheable, not indexed",
+    beyond.status === 404 && /no-store/.test(beyond.headers.get("cache-control") || "") &&
+    beyond.headers.get("x-robots-tag") === "noindex", "HTTP " + beyond.status);
+}
+if (d && d.puzzle) {
+  t("the themes index names no answer from today's board",
+    d.puzzle.answers.every((a) => themesText.indexOf(a.display) === -1) &&
+    themesText.indexOf(d.puzzle.bonus.display) === -1);
+}
+
+/* ---- the archive: previous days, and nothing after them ----------------- */
+const arch = await get("/api/wordsearch/archive");
+const a = arch.status === 200 ? await arch.json() : null;
+t("the archive endpoint answers", arch.status === 200 && !!a && Array.isArray(a.days), "HTTP " + arch.status);
+t("it is not cacheable, because midnight moves it", /no-store/.test(arch.headers.get("cache-control") || ""));
+if (a) {
+  t("it stops at yesterday: every day is before the server's today",
+    a.days.length > 0 && a.days.every((e) => e.day < a.today), a.days.length + " days, today " + a.today);
+  t("newest first", a.days.every((e, i) => i === 0 || a.days[i - 1].day >= e.day));
+  t("it carries identity only — no grid, no names, no bonus",
+    a.days.every((e) => e.id && e.theme && !e.grid && !e.answers && !e.bonus));
+  t("and every day's board is a released one", a.days.every((e) => releasedIds.has(e.id)));
+}
+
 /* ---- HEAD --------------------------------------------------------------- */
-for (const p of ["/api/wordsearch/daily", "/wordsearch/answers/"]) {
+for (const p of ["/api/wordsearch/daily", "/wordsearch/answers/", "/wordsearch/themes/"]) {
   const r = await get(p, { method: "HEAD" });
   t(`HEAD ${p} answers like its GET`, r.status === 200, "HTTP " + r.status);
 }

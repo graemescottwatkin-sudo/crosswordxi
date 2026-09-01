@@ -277,6 +277,13 @@ t("sample placements spell their words at base 0", (() => {
 
 /* ---- hygiene ---------------------------------------------------------- */
 t("no node_modules in the game folder", !has("node_modules"));
+/* THE ROOT TOO. This gate passed with a .wrangler directory sitting in the
+   repository root — a local dev server's state — while the other two gates
+   refused. Pages must not build and must not upload tool state, and the rule
+   is the family's, so the check is. Watched failing with a .wrangler present. */
+for (const junk of ["node_modules", "package.json", "package-lock.json", ".wrangler"]) {
+  t(`no ${junk} in the repository root`, !hasRoot(junk));
+}
 t("no absolute or machine-specific paths",
   !/\/home\/|\/Users\/|C:\\\\/.test(html + js + css));
 t("API calls use relative URLs", !/fetch\("https?:\/\//.test(js));

@@ -87,3 +87,26 @@ export async function catalog(env, now) {
       ORDER BY p.id`).bind(today).all();
   return rows.results || [];
 }
+
+/* Previous days: every day the schedule has already played, newest first,
+   with the board that stood that day. STRICTLY BEFORE TODAY — today is the
+   hero on the landing, and tomorrow is the one secret this game has. A day
+   that has gone is released by the rule above (its first day is behind us),
+   so this list can never name a board the catalog would not. Identity only:
+   no grid, no names, no bonus. */
+export async function archive(env, now) {
+  const today = utcDayKey(now);
+  if (!hasDB(env)) {
+    /* One day back only. The sample schedule is a rolling fiction, and two
+       days back it lands on the board the sample holds as unreleased. */
+    const day = new Date(Date.parse(today + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
+    const p = samplePuzzleForDay(day);
+    return [{ day, id: p.id, theme: p.theme, category: p.category }];
+  }
+  const rows = await env.DB.prepare(
+    `SELECT s.day AS day, p.id AS id, p.theme AS theme, p.category AS category
+       FROM ws_schedule s JOIN ws_puzzles p ON p.id = s.puzzle_id
+      WHERE s.day < ?
+      ORDER BY s.day DESC`).bind(today).all();
+  return rows.results || [];
+}
