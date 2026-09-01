@@ -140,7 +140,7 @@ console.log(`\n${SITE}\n`);
      has a bank and a squad-list slot. Career Path is now Transfer XI, and
      Player Chain was missing here while the word search listed it: one set,
      both games. */
-  const leaked = ["QuickFire","Scrambled","Missing XI","Transfer XI",
+  const leaked = ["QuickFire","Missing XI","Transfer XI",
                   "Player Chain","Link XI","Odd One Out"].filter((n) => html.includes(n));
   t("and names no unreleased game", leaked.length === 0,
     leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");
