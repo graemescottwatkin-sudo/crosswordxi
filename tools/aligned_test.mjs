@@ -318,8 +318,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v6";
-const SHARED_HASH = "3c419edcb52110c5";
+const SHARED_TAG = "v7";
+const SHARED_HASH = "747d5e119f1a75de";
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   /* EVERY served asset in shared/, not the two that existed when this was
@@ -467,6 +467,38 @@ console.log("\nThe landing shell is defined once");
 
   t("every game loads it", GAMES.every((g) =>
     read(`${g.dir}/index.html`).indexOf("shared/xi-landing.css") > -1));
+}
+
+/* ---- games consume tokens; they never define them ---- */
+/* THE AUDIT'S HEADLINE. crossword/css/style.css carried its own :root with
+   twelve of the shared tokens restated at identical values, and an inverted
+   dark palette on top. Change --pitch in shared/ and two games moved; the
+   crossword did not. The rule in shared/DESIGN.md is that a game may set a
+   custom property only for a fact that exists in that game alone — so any
+   name that ALSO exists in the shared token file is a restatement, whatever
+   its value, and is refused here by name. Scanned by splitting, not by
+   pattern, like every other check in this file that has to survive a shell. */
+console.log("\nNo game restates a shared token");
+{
+  const names = (css) => {
+    const out = new Set();
+    for (const chunk of css.split("--").slice(1)) {
+      const name = chunk.split(/[^a-z0-9-]/)[0];
+      const rest = chunk.slice(name.length).trimStart();
+      if (name && rest.startsWith(":")) out.add("--" + name);
+    }
+    return out;
+  };
+  const shared = names(read("shared/xi-tokens.css"));
+  t("the shared token file defines the palette", shared.size > 60, shared.size + " tokens");
+  for (const g of GAMES) {
+    const restated = [];
+    for (const f of listCss(g.dir)) {
+      for (const n of names(read(f))) if (shared.has(n)) restated.push(n);
+    }
+    t(`${g.name} defines no token the shared file already owns`, restated.length === 0,
+      restated.length ? restated.slice(0, 6).join(", ") + (restated.length > 6 ? " …" : "") : "own facts only");
+  }
 }
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

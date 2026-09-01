@@ -99,6 +99,12 @@
      sits ON green (white in both modes); --pitch-hover is where a green
      control goes under the pointer, darker in light and lighter in dark. */
   --pitch-ink:#1E6B45; --on-pitch:#FFFFFF; --pitch-hover:#123B27;
+  /* Secondary text ON green — a kicker or a note on the hero. Mint, not
+     white at reduced opacity, so it stays a colour rather than a fade. */
+  --on-pitch-soft:#9FE1CB;
+  /* Draw and loss as STRONG marks — a form letter on a dark chip, the half-
+     time clock — where --form-d/--form-l are the pale chip surfaces. */
+  --draw:#B9922E; --loss:#B4483B;
   --sel:#7FC29C; --sel-word:#C6E2D0;
   --correct:#C0DD97; --correct-ink:#173404;
   --wrong:#C0392B; --wrong-ink:#8A2419; --wrong-bg:#FBE3E0;
@@ -114,6 +120,8 @@
   --shadow-1:0 1px 2px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.3);
   --shadow-2:0 8px 24px rgba(0,0,0,.5);
   --pitch-ink:#8FD9AE; --on-pitch:#FFFFFF; --pitch-hover:#3CA070;
+  --on-pitch-soft:#9FE1CB;
+  --draw:#B9922E; --loss:#B4483B;
   --sel:#6E8564; --sel-word:#47513F;
   --correct:#C0DD97; --correct-ink:#173404;
   --wrong:#E3695A; --wrong-ink:#FFD9D3; --wrong-bg:#4A231D;

@@ -35,8 +35,14 @@
   display:block;width:100%;text-align:left;cursor:pointer;
   background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pitch);
   border-radius:8px;padding:14px 16px;margin-bottom:10px;min-height:44px;
+  transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease);
 }
 .home-choice:hover{border-color:var(--pitch);background:var(--sel-word)}
+/* KEYBOARD. The family ring on every control on the landing; there was none,
+   so a keyboard player could tab through the page and see nothing move. */
+.home-choice:focus-visible,.site-nav button:focus-visible,.site-ghost:focus-visible,
+.site-navlink:focus-visible,.home-club select:focus-visible{outline:none;box-shadow:var(--ring)}
+.home-choice.hero:focus-visible{box-shadow:var(--ring),0 0 0 8px var(--pitch)}
 .hc-title{
   display:block;font-family:var(--disp);font-weight:700;font-size:17px;
   letter-spacing:.02em;color:var(--ink);
@@ -155,6 +161,7 @@
 .site-nav button{
   background:none;border:0;color:var(--ink-soft);font-size:14.5px;
   padding:8px 10px;min-height:var(--tap);border-radius:6px;
+  transition:color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease);
 }
 /* The current tab is the one place green still earns its keep in furniture:
    it marks where you are, which is a fact about state, not decoration. */
@@ -179,16 +186,16 @@
   text-align:left;display:block;
 }
 .home-choice.hero .hc-kicker{
-  display:block;font-size:11.5px;letter-spacing:.11em;color:#9FE1CB;margin-bottom:8px;
+  display:block;font-size:11.5px;letter-spacing:.11em;color:var(--on-pitch-soft);margin-bottom:8px;
 }
 .home-choice.hero .hc-title{
   display:block;font-family:var(--disp);font-size:34px;line-height:1.08;
-  font-weight:700;color:#fff;letter-spacing:-.02em;
+  font-weight:700;color:var(--on-pitch);letter-spacing:-.02em;
 }
-.home-choice.hero .hc-note{display:block;font-size:14px;color:#9FE1CB;margin:9px 0 0;max-width:44ch}
-.home-choice.hero .hc-state{display:block;font-size:13px;color:#9FE1CB;margin-top:6px}
+.home-choice.hero .hc-note{display:block;font-size:14px;color:var(--on-pitch-soft);margin:9px 0 0;max-width:44ch}
+.home-choice.hero .hc-state{display:block;font-size:13px;color:var(--on-pitch-soft);margin-top:6px}
 .home-choice.hero .hc-cta{
-  display:inline-block;background:#E1F5EE;color:var(--pitch-deep,#04342C);
+  display:inline-block;background:var(--paper);color:var(--pitch-ink);
   border-radius:10px;padding:12px 28px;margin-top:18px;
   font-size:15.5px;font-weight:700;
 }

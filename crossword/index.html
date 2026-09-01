@@ -102,10 +102,10 @@
      width:var(--tap) was invalid, not because it was styled small. Order
      matters — style.css comes after and still wins wherever the crossword
      genuinely differs. -->
-<link rel="stylesheet" href="../shared/xi-tokens.css?v=v6">
-<link rel="stylesheet" href="../shared/xi-landing.css?v=v6">
-<link rel="stylesheet" href="../shared/xi-chrome.css?v=v6">
-<link rel="stylesheet" href="css/style.css?v=v002">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v7">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v7">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v7">
+<link rel="stylesheet" href="css/style.css?v=v002a">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -265,7 +265,7 @@
   <div class="strap" id="strapText">Football Crossword</div>
 </header>
 
-<div id="errStrip" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99;background:#7a1f1f;color:#f5efe0;font:12px/1.5 monospace;padding:6px 34px 6px 10px;white-space:pre-wrap;word-break:break-all"><button id="errStripX" style="position:absolute;right:6px;top:4px;background:none;border:1px solid #f5efe0;color:#f5efe0;border-radius:4px;cursor:pointer">&times;</button><span id="errStripMsg"></span></div>
+<div id="errStrip" style="display:none"><button id="errStripX">&times;</button><span id="errStripMsg"></span></div>
 
 <!-- Connection notice. Everything about correctness is a server call now, so
      an offline player needs to know why the solved count has stopped moving. -->
@@ -1094,7 +1094,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002a</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1113,10 +1113,10 @@
      aligned_test only grepped for the class, which is true of an element
      sealed inside a hidden container. -->
 <footer class="xic-foot"></footer>
-<script src="../shared/xi-clubs.js?v=v6"></script>
-<script src="../shared/xi-chrome.js?v=v6"></script>
-<script src="js/seasons.js?v=v002"></script>
-<script src="js/engine.js?v=v002"></script>
-<script src="js/game.js?v=v002"></script>
+<script src="../shared/xi-clubs.js?v=v7"></script>
+<script src="../shared/xi-chrome.js?v=v7"></script>
+<script src="js/seasons.js?v=v002a"></script>
+<script src="js/engine.js?v=v002a"></script>
+<script src="js/game.js?v=v002a"></script>
 </body>
 </html>

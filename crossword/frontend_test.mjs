@@ -424,7 +424,11 @@ server.listen(0, "127.0.0.1", async () => {
     const legacyWritten = w.localStorage.getItem("fcw.theme");
     return seen.join(",") === "light,dark,auto" && stored === "auto" &&
       legacyWritten === null &&
-      !d.documentElement.hasAttribute("data-theme");
+      /* Auto is RESOLVED to the attribute now, not left off it: the tokens
+         switch on data-theme alone, so the game asks the system and writes
+         the answer. jsdom has no matchMedia, so auto resolves to light. */
+      d.documentElement.getAttribute("data-theme") ===
+        (w.matchMedia && w.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   })(), $("themeToggle") && $("themeToggle").textContent);
   t("forcing light beats the OS dark setting", (() => {
     const btn = $("themeToggle");
@@ -932,7 +936,10 @@ server.listen(0, "127.0.0.1", async () => {
        from AFCBOURNEMOUTH, and the enumeration only says so if you read it. */
     const flat = fs.readFileSync(path.join(DIR, "css/style.css"), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "");
-    return /--wordbreak:#1E6B45/.test(flat) && /--wordbreak:#9DB3A6/.test(flat) &&
+    /* Light is the brand green by reference now — var(--pitch) is #1E6B45 in
+       shared/xi-tokens.css — and dark keeps its own pale value, because the
+       shared --pitch in dark is a surface and would vanish as a hairline. */
+    return /--wordbreak:var\(--pitch\)/.test(flat) && /--wordbreak:#9DB3A6/.test(flat) &&
       /\.cell\.brk-r\{border-right:3px/.test(flat);
   })());
 

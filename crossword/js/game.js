@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002";
+  var BUILD = "v002a";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2333,11 +2333,22 @@
             localStorage.getItem("fcw.theme") || "auto";
   } catch (e) {}
   if (THEMES.indexOf(theme) === -1) theme = "auto";
+  /* AUTO IS RESOLVED HERE, NOT IN THE STYLESHEET. The tokens switch on
+     data-theme alone (shared/DESIGN.md), so "follow the system" means
+     asking the system and writing the answer to the attribute — and asking
+     again when it changes. This stylesheet used to carry a second, inverted
+     dark palette under a media query to do the same job; that is gone. */
+  var systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   function applyTheme() {
-    if (theme === "auto") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", theme);
+    var resolved = theme === "auto"
+      ? (systemDark && systemDark.matches ? "dark" : "light")
+      : theme;
+    document.documentElement.setAttribute("data-theme", resolved);
     var b = $("themeToggle");
     if (b) b.textContent = "theme: " + theme;
+  }
+  if (systemDark && systemDark.addEventListener) {
+    systemDark.addEventListener("change", function () { if (theme === "auto") applyTheme(); });
   }
   on("themeToggle", "click", function () {
     theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];

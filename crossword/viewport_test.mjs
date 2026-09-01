@@ -147,13 +147,17 @@ t("and the script no longer reserves width for a rail", (() => {
    shape got lost as a mass. Both dark blocks — the OS one and the forced one —
    must carry the fix, or choosing "dark" by hand would look different from
    having dark set in the OS. */
-const darkBlocks = (css.match(/--cell-bg:#5A6356/g) || []).length;
-t("both dark themes lighten the playable cells", darkBlocks === 2, darkBlocks + " blocks");
+/* The cell colour is the family's now — --grid-cell in shared/xi-tokens.css —
+   and dark is ONE set switched by data-theme; the media-query copy this game
+   carried is gone, and auto is resolved to the attribute by the game. */
+const tokens = fs.readFileSync(path.join(DIR, "..", "shared", "xi-tokens.css"), "utf8");
+const darkBlocks = (tokens.match(/--grid-cell:#5A6356/g) || []).length;
+t("the dark set lightens the playable cells", darkBlocks === 1, darkBlocks + " blocks");
 t("cells are painted from their own token, not the card colour",
-  /\.cell\{[^}]*background:var\(--cell-bg\)/.test(css.replace(/\s*\n\s*/g, "")) &&
-  /:root\{[^}]*--cell-bg:#FFFFFF/.test(css.replace(/\s*\n\s*/g, "")));
+  /\.cell\{[^}]*background:var\(--grid-cell\)/.test(css.replace(/\s*\n\s*/g, "")) &&
+  /:root\{[^}]*--grid-cell:#FFFFFF/.test(tokens.replace(/\s*\n\s*/g, "")));
 t("the solved animation settles back to the cell colour, not the card",
-  /@keyframes solved\{.*?background:var\(--cell-bg\)/.test(css.replace(/\s*\n\s*/g, "")));
+  /@keyframes solved\{.*?background:var\(--grid-cell\)/.test(css.replace(/\s*\n\s*/g, "")));
 
 /* Phone reorder: clock/solved/pause/new on one row, help on one row, and the
    league table moved below the board. */
