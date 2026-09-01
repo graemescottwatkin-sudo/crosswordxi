@@ -44,7 +44,14 @@ const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`);
    The uncaughtException hook is load-bearing: a rejection out of top-level
    await terminates by a path that never runs 'exit' listeners, so a guard
    hung on 'exit' alone stays as silent as the bug it is meant to catch. */
-const MIN_ASSERTIONS = 30;
+/* REVIEWED at v001s: the run counts 50. The blocks that can legitimately go
+   quiet are the bytes comparison (1), a sealed id (3), a published answer (2),
+   today's board (4), a category page (5) and the archive body (4) — but they
+   skip one at a time, not together, so the floor is set to catch any TWO of
+   the larger blocks vanishing at once (50 - 5 - 4 - 4 = 37), not all of them:
+   36. A floor at 30 could not have noticed the themes and the archive, sixteen
+   assertions, going missing together. */
+const MIN_ASSERTIONS = 36;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;
