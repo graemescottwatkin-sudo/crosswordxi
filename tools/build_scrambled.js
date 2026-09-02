@@ -57,9 +57,30 @@ const SOURCE_ARG = (() => {
    holds, so the module it builds is identical either way and --check gates
    truthfully in both places. With the bank present it gates all 261 and still
    writes those four. */
-const BANK = path.join(SOURCE_ARG || DEFAULT_SOURCE, "xi");
+const SOURCE_ROOT = SOURCE_ARG || DEFAULT_SOURCE;
+const BANK = path.join(SOURCE_ROOT, "xi");
 const SAMPLE_SRC = path.join(HERE, "scrambled", "sample-xi");
 const SRC = fs.existsSync(BANK) ? BANK : SAMPLE_SRC;
+
+/* THE PACKAGES, AND THE ID SPACE THE SITE OWNS.
+   The research side numbers every package from 1: the Daily bank is 1–365,
+   the iconic lineups are 1–546, and sc_board has one id column. Imported as
+   authored, the iconic boards would overwrite the dailies and join the ring.
+   So each package has a base its ids are lifted by and a say in whether its
+   boards are dailies at all — a rule the site applies, rather than a fact the
+   author is asked to restate in every file. The Daily bank keeps its authored
+   ids because the ring counts by them; the iconic bank sits from 1001 and is
+   never a daily. A package's boards must fit under the next base, and the
+   importer refuses a bank that does not. The last-two set is not here: it is
+   its own table, replaced whole, and tools/import_last2.js owns it. */
+export const PACKAGES = [
+  { dir: "xi",     idBase: 0,    daily: true,  what: "the Daily bank" },
+  { dir: "iconic", idBase: 1000, daily: false, what: "the iconic lineups" },
+];
+export function packageDirs(root) {
+  return PACKAGES.map((p) => ({ ...p, path: path.join(root, p.dir) }))
+    .filter((p) => fs.existsSync(p.path));
+}
 
 /* What ships in the repo is a SAMPLE, not the bank — the same shape as the
    crossword's sample-puzzles.js. It exists so an unbound D1 binding degrades
@@ -113,26 +134,129 @@ export function minimumFixedPoints(letters) {
   return Math.max(0, ...Object.values(counts).map((k) => Math.max(0, 2 * k - n)));
 }
 
-export function scrambleName(letters, rand) {
-  const src = letters.split("");
-  const floor = minimumFixedPoints(letters);
-  let best = null, bestFixed = Infinity;
+/* ---- THE SCRAMBLE RULE, V1 --------------------------------------------------
+ *
+ * Difficulty is driven by the length of the answer, separators excluded:
+ *   under hardBelow letters   HARD    every letter may move — as deranged as
+ *                                     the letters allow, never the answer
+ *   hardBelow..easyAbove      MEDIUM  mediumFixedShare of the letters stay put
+ *   over easyAbove            EASY    easyFixedShare stay — several anchors
+ *
+ * The fixed count is the PRIMARY control and is hit exactly, not fished for:
+ * a shuffle that keeps lucky hits works at the hard end and hangs at the easy
+ * end (exactly 8 fixed of 13 is one shuffle in a hundred thousand). So the
+ * anchors are CHOSEN first and only the movers are deranged among themselves,
+ * and the target is met by construction. Movement is SECONDARY: among the
+ * arrangements that hit the target, the half whose moved letters travelled
+ * furthest is discarded and one of the rest is picked at random — the random
+ * pick matters, because a recurring player must not be recognisable by the
+ * shape of his tile.
+ *
+ * REPEATED LETTERS count by what the player can see: a letter is fixed when it
+ * stands where the answer shows that letter, and travel matches each moved
+ * letter to the nearest unclaimed copy of itself. Swapping GIGGS's two Gs is
+ * not a move. The derangement floor (2k-n per repeated letter) still bounds
+ * the hard end from below: one of GIGGS's three Gs stays because it must.
+ *
+ * The band edges and shares are V1 defaults that WILL move with playtesting,
+ * so they live in one exported object and nowhere else. */
+export const DIFFICULTY = { hardBelow: 5, easyAbove: 8, mediumFixedShare: 0.40, easyFixedShare: 0.60 };
 
-  /* Rejection rather than a constructive algorithm: the constraint is cheap to
-     test and the strings are short. Bounded, because an unbounded search on
-     impossible input is a hung build rather than a failed one. */
-  for (let attempt = 0; attempt < 4000; attempt++) {
-    const out = src.slice();
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
+export function bandOf(totalLetters) {
+  if (totalLetters < DIFFICULTY.hardBelow) return "hard";
+  if (totalLetters > DIFFICULTY.easyAbove) return "easy";
+  return "medium";
+}
+
+/* How many letters of an answer of this length stand home. Hard is zero — the
+   floor, applied per word below, is what keeps GIGGS's G where it is. */
+export function fixedTarget(totalLetters) {
+  const band = bandOf(totalLetters);
+  if (band === "hard") return 0;
+  const share = band === "easy" ? DIFFICULTY.easyFixedShare : DIFFICULTY.mediumFixedShare;
+  return Math.round(totalLetters * share);
+}
+
+/* One word, exactly `anchors` letters fixed. Anchor positions are drawn at
+   random and the movers are deranged among themselves by rejection — a mover
+   may not land where the answer shows its own letter — which is cheap on a
+   handful of letters and bounded so an impossible ask is a null, not a hang.
+   Some anchor sets leave the movers with no derangement (three Gs and two
+   non-G positions), so several sets are tried. Returns up to `want`
+   candidates for the travel filter. */
+function arrangementsWith(src, anchors, rand, want) {
+  const n = src.length;
+  const found = [];
+  const seen = new Set();
+  for (let set = 0; set < 40 && found.length < want; set++) {
+    const idx = [...Array(n).keys()];
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    const home = new Set(idx.slice(0, anchors));
+    const movers = idx.slice(anchors);
+    const pool = movers.map((i) => src[i]);
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const letters = pool.slice();
+      for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
+      let ok = true;
+      for (let k = 0; k < movers.length; k++) if (letters[k] === src[movers[k]]) { ok = false; break; }
+      if (!ok) continue;
+      const out = src.slice();
+      movers.forEach((i, k) => { out[i] = letters[k]; });
+      const s = out.join("");
+      if (!seen.has(s)) { seen.add(s); found.push(out); }
+      break;
     }
-    let fixed = 0;
-    for (let i = 0; i < out.length; i++) if (out[i] === src[i]) fixed++;
-    if (fixed < bestFixed) { bestFixed = fixed; best = out.join(""); }
-    if (fixed === floor) return { scramble: best, fixed, floor };
+    void home;
   }
-  return best ? { scramble: best, fixed: bestFixed, floor } : null;
+  return found;
+}
+
+/* How far the moved letters went, matching each to the nearest unclaimed copy
+   of itself in the answer. A letter standing home claims its own copy. */
+export function travel(src, out) {
+  const claimed = new Set();
+  for (let i = 0; i < src.length; i++) if (out[i] === src[i]) claimed.add(i);
+  let total = 0;
+  for (let i = 0; i < src.length; i++) {
+    if (out[i] === src[i]) continue;
+    let best = -1, bestDist = Infinity;
+    for (let j = 0; j < src.length; j++) {
+      if (claimed.has(j) || src[j] !== out[i]) continue;
+      const d = Math.abs(i - j);
+      if (d < bestDist) { bestDist = d; best = j; }
+    }
+    if (best >= 0) { claimed.add(best); total += bestDist; }
+  }
+  return total;
+}
+
+/* One word to exactly `target` fixed letters, or as near as the letters
+   allow: the target is walked out by one in each direction before giving
+   up, and the caller's gate decides whether that walk is acceptable. */
+export function scrambleName(letters, rand, target) {
+  const src = letters.split("");
+  const n = src.length;
+  const floor = minimumFixedPoints(letters);
+  /* A single letter cannot move and is an anchor by nature. */
+  if (n === 1) return { scramble: letters, fixed: 1, floor, target: 1 };
+  const want = target === undefined ? floor : target;
+  /* Never the answer itself: at most n-2 anchors, since one mover alone has
+     nowhere to go. Never below the floor, which the letters impose. */
+  const cap = Math.max(floor, n - 2);
+  const asked = Math.min(Math.max(want, floor), cap);
+  for (const a of [asked, asked + 1, asked - 1]) {
+    if (a < floor || a > cap) continue;
+    const found = arrangementsWith(src, a, rand, 16);
+    if (!found.length) continue;
+    /* The travel filter: keep the nearer half, then pick at random. */
+    const ranked = found.map((out) => ({ out, t: travel(src, out) })).sort((x, y) => x.t - y.t);
+    const keep = ranked.slice(0, Math.max(1, Math.ceil(ranked.length / 2)));
+    const pick = keep[Math.floor(rand() * keep.length)].out;
+    let fixed = 0;
+    for (let i = 0; i < n; i++) if (pick[i] === src[i]) fixed++;
+    return { scramble: pick.join(""), fixed, floor, target: asked };
+  }
+  return null;
 }
 
 /*
@@ -160,18 +284,69 @@ export function nameFloor(name) {
     .reduce((n, w) => n + minimumFixedPoints(w), 0);
 }
 
+/* MULTI-WORD TILES band on the TOTAL letters of the answer, then split the
+   anchor budget across the words by length. Each word is scrambled with its
+   share, separator kept, and each word must differ from its answer (a word's
+   anchors are capped at its length minus two). A one-letter clash initial is
+   an anchor by nature and spends one of the budget. Largest remainder, so
+   the shares sum to the target; a word whose share the letters cannot hit
+   pushes the difference to the others where they have room. */
+export function wordTargets(words, target) {
+  const n = words.reduce((a, w) => a + w.length, 0);
+  const exact = words.map((w) => (target * w.length) / n);
+  const share = exact.map(Math.floor);
+  let left = target - share.reduce((a, b) => a + b, 0);
+  const order = exact.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac);
+  for (const { i } of order) { if (left <= 0) break; share[i]++; left--; }
+  /* Bounds: the floor the letters impose, the cap that keeps the word from
+     being the answer, the initial that is an anchor whether asked or not. */
+  const lo = words.map((w) => (w.length === 1 ? 1 : minimumFixedPoints(w)));
+  const hi = words.map((w, i) => (w.length === 1 ? 1 : Math.max(lo[i], w.length - 2)));
+  const out = share.map((s, i) => Math.min(Math.max(s, lo[i]), hi[i]));
+  /* Rebalance what clamping moved, one letter at a time, to a word with room. */
+  let diff = target - out.reduce((a, b) => a + b, 0);
+  for (let guard = 0; diff !== 0 && guard < 64; guard++) {
+    const i = out.findIndex((s, k) => (diff > 0 ? s < hi[k] : s > lo[k]));
+    if (i < 0) break;
+    out[i] += diff > 0 ? 1 : -1;
+    diff += diff > 0 ? -1 : 1;
+  }
+  return out;
+}
+
 export function scrambleWords(name, rand) {
   const words = String(name).trim().split(/\s+/).map(normalise).filter(Boolean);
   if (!words.length) return null;
+  const total = words.reduce((a, w) => a + w.length, 0);
+  /* THE CAPS ARE PART OF THE RULE. Three three-letter words — VAN DER SAR,
+     nine letters, easy, five to keep — can keep at most one each, or a word
+     would be its own answer. So the target a multi-word tile is built to is
+     the band's target or the words' ceiling, whichever is lower; the band's
+     own figure is kept beside it so the walk is visible. */
+  const bandTarget = fixedTarget(total);
+  const ceiling = words.reduce((a, w) => a + (w.length === 1 ? 1 : Math.max(minimumFixedPoints(w), w.length - 2)), 0);
+  /* And the floor is the other bound: BABB is hard and asked for none home,
+     but two of its three Bs have nowhere else to stand. */
+  const target = Math.min(Math.max(bandTarget, nameFloor(name)), ceiling);
+  const shares = wordTargets(words, target);
 
   let scramble = "", fixed = 0;
-  for (const w of words) {
-    const r = scrambleName(w, rand);
-    if (!r) return null;
+  words.forEach((w, i) => {
+    if (scramble === null) return;
+    const r = scrambleName(w, rand, shares[i]);
+    if (!r) { scramble = null; return; }
     scramble += r.scramble;
     fixed += r.fixed;
-  }
-  return { scramble, fixed, floor: nameFloor(name) };
+  });
+  if (scramble === null) return null;
+  return {
+    scramble, fixed, floor: nameFloor(name), target, bandTarget,
+    difficulty: bandOf(total),
+    /* Walked: the letters could not hit the band's target exactly — a word's
+       floor or cap got in the way. Within one of the built target is the
+       rule's own tolerance; the build's gate refuses anything wider. */
+    walked: fixed !== bandTarget,
+  };
 }
 
 /* ---- The formation, parsed ----------------------------------------------
@@ -449,7 +624,7 @@ export function poolOf(src) {
     `gameweek ${src.gameweek}, ${src.kickoff}`;
 }
 
-export function build(src, file) {
+export function build(src, file, pkg) {
   const shape = parseFormation(src.formation);
   const problems = gate(src, shape);
   if (problems.length) {
@@ -467,9 +642,13 @@ export function build(src, file) {
     const letters = normalise(p.name);
     const r = scrambleWords(p.name, rand);
     if (!r) throw new Error(`${file}: "${p.name}" produced no scramble at all.`);
-    const { scramble, fixed, floor } = r;
-    if (fixed > floor) {
-      throw new Error(`${file}: "${p.name}" settled at ${fixed} fixed letters, floor is ${floor}.`);
+    const { scramble, fixed, floor, target, difficulty } = r;
+    /* THE RULE'S OWN GATE. The target is hit by construction; a word whose
+       letters cannot hit its share walks the target out by one, and that is
+       tolerated. Wider than one is a bug in the scrambler, not the data, and
+       below the derangement floor is a scramble that does not exist. */
+    if (fixed < floor || Math.abs(fixed - target) > 1) {
+      throw new Error(`${file}: "${p.name}" settled at ${fixed} fixed letters — target ${target}, floor ${floor}.`);
     }
     if (letterBag(scramble) !== letterBag(p.name)) {
       throw new Error(`${file}: "${p.name}" — the scramble lost a letter. A bug, not bad data.`);
@@ -525,12 +704,18 @@ export function build(src, file) {
       ...(p.source ? { source: p.source } : {}),
       scramble,
       fixed,
+      /* Additive, from the rule: how hard this tile is by its length, and the
+         anchors it was built to. Show it or ignore it; nothing else moves. */
+      difficulty,
+      target,
       len: enumerationOf(p.name),
     };
   });
 
   return {
-    id: src.id,
+    /* Lifted by the package's base: the site owns the id space, the author
+       numbers from 1. A board built with no package is the Daily shape. */
+    id: Number(src.id) + ((pkg && pkg.idBase) || 0),
     title: src.title,
     pool: src.pool || poolOf(src),
     formation: src.formation,
@@ -538,7 +723,7 @@ export function build(src, file) {
     /* Carried through only when it is false. A board with no opinion has no
        key, so the built shape does not gain a field stating the default — and
        `daily !== false` in the ring reads the same either way. */
-    ...(src.daily === false ? { daily: false } : {}),
+    ...(src.daily === false || (pkg && pkg.daily === false) ? { daily: false } : {}),
     /* A LAST-TWO BOARD, WHOLE. The fixture is its identity, so the club, the
        gameweek, the kickoff and the venue ride with it, and it is never a
        daily — derived from the type rather than asked of the author, because
@@ -568,19 +753,28 @@ const isMain = process.argv[1] &&
 if (!isMain) { /* imported for its parts */ } else main();
 
 function main() {
-const files = fs.readdirSync(SRC).filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort();
-if (!files.length) {
-  console.error(`\nNo XI files in ${path.relative(ROOT, SRC)}. Copy _TEMPLATE.json and fill it in.\n`);
-  process.exit(1);
-}
-
+/* Every package the bank holds, or the in-tree sample when there is no bank.
+   The sample is the Daily package's shape at base 0, which is what the
+   shipped module is. */
+const packages = SRC === BANK
+  ? packageDirs(SOURCE_ROOT)
+  : [{ ...PACKAGES[0], path: SAMPLE_SRC }];
 const built = [];
 let refused = 0;
-for (const f of files) {
-  const src = JSON.parse(fs.readFileSync(path.join(SRC, f), "utf8"));
-  const board = build(src, f);
-  if (!board) { refused++; continue; }
-  built.push(board);
+for (const pkg of packages) {
+  const files = fs.readdirSync(pkg.path).filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort();
+  if (!files.length) {
+    console.error(`\nNo XI files in ${path.relative(ROOT, pkg.path)}. Copy _TEMPLATE.json and fill it in.\n`);
+    process.exit(1);
+  }
+  for (const f of files) {
+    const src = JSON.parse(fs.readFileSync(path.join(pkg.path, f), "utf8"));
+    const board = build(src, `${pkg.dir}/${f}`, pkg);
+    if (!board) { refused++; continue; }
+    built.push(board);
+  }
+  console.log(`\n${pkg.what}: ${files.length} boards from ${pkg.dir}/, ids from ${pkg.idBase + 1}` +
+    `${pkg.daily ? "" : ", none a daily"}`);
 }
 
 const ids = built.map((b) => b.id);

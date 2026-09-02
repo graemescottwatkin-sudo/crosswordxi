@@ -92,8 +92,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1988,
         "source": "https://en.wikipedia.org/wiki/Rui_Patrício",
-        "scramble": "TPCORIAI",
-        "fixed": 0,
+        "scramble": "PAOITCRI",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           8
         ]
@@ -207,8 +209,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1991,
         "source": "https://en.wikipedia.org/wiki/Cédric_Soares",
-        "scramble": "OSRESA",
-        "fixed": 0,
+        "scramble": "SEROAS",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -287,8 +291,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 2001,
         "source": "https://en.wikipedia.org/wiki/Nathan_Collins",
-        "scramble": "LSNICLO",
-        "fixed": 0,
+        "scramble": "LOICLNS",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -367,8 +373,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1984,
         "source": "https://en.wikipedia.org/wiki/Branislav_Ivanović",
-        "scramble": "VOICINVA",
-        "fixed": 0,
+        "scramble": "IVCANOIV",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           8
         ]
@@ -426,8 +434,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1988,
         "source": "https://en.wikipedia.org/wiki/Seamus_Coleman",
-        "scramble": "ENAOLMC",
-        "fixed": 0,
+        "scramble": "CALOEMN",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -555,8 +565,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1990,
         "source": "https://en.wikipedia.org/wiki/Junior_Hoilett",
-        "scramble": "TLTIOHE",
-        "fixed": 0,
+        "scramble": "LOIETHT",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -614,8 +626,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1998,
         "source": "https://en.wikipedia.org/wiki/Vitaly_Janelt",
-        "scramble": "ELJTNA",
-        "fixed": 0,
+        "scramble": "JATLNE",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -680,8 +694,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1971,
         "source": "https://en.wikipedia.org/wiki/Roy_Keane",
-        "scramble": "EKNEA",
-        "fixed": 0,
+        "scramble": "KNEAE",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -760,8 +776,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1971,
         "source": "https://en.wikipedia.org/wiki/Craig_Burley",
-        "scramble": "URLBYE",
-        "fixed": 0,
+        "scramble": "BRLYEU",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -889,8 +907,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1975,
         "source": "https://en.wikipedia.org/wiki/John_Hartson",
-        "scramble": "AHSRNTO",
-        "fixed": 0,
+        "scramble": "NAHRSOT",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -1032,8 +1052,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1992,
         "source": "https://en.wikipedia.org/wiki/Danny_Ings",
-        "scramble": "SGIN",
+        "scramble": "NSIG",
         "fixed": 0,
+        "difficulty": "hard",
+        "target": 0,
         "len": [
           4
         ]
@@ -1189,8 +1211,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1992,
         "source": "https://en.wikipedia.org/wiki/Emiliano_Martínez",
-        "scramble": "RIAZMENT",
-        "fixed": 0,
+        "scramble": "NARTMEZI",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           8
         ]
@@ -1276,8 +1300,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1968,
         "source": "https://en.wikipedia.org/wiki/Mike_Whitlow",
-        "scramble": "LWTIHWO",
-        "fixed": 0,
+        "scramble": "WHTILWO",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -1405,8 +1431,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1962,
         "source": "https://en.wikipedia.org/wiki/Andy_Linighan",
-        "scramble": "NHGLNIIA",
-        "fixed": 0,
+        "scramble": "LNGHIIAN",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           8
         ]
@@ -1464,8 +1492,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1990,
         "source": "https://en.wikipedia.org/wiki/Christopher_Schindler",
-        "scramble": "CRDESNHLI",
-        "fixed": 0,
+        "scramble": "SCHLNDERI",
+        "fixed": 5,
+        "difficulty": "easy",
+        "target": 5,
         "len": [
           9
         ]
@@ -1530,8 +1560,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1976,
         "source": "https://en.wikipedia.org/wiki/Stephen_Carr",
-        "scramble": "RRCA",
+        "scramble": "RRAC",
         "fixed": 0,
+        "difficulty": "hard",
+        "target": 0,
         "len": [
           4
         ]
@@ -1617,8 +1649,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1984,
         "source": "https://en.wikipedia.org/wiki/Mathieu_Flamini",
-        "scramble": "MAIINFL",
-        "fixed": 0,
+        "scramble": "FLMAIIN",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -1711,8 +1745,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1969,
         "source": "https://en.wikipedia.org/wiki/Gary_Speed",
-        "scramble": "EEPDS",
-        "fixed": 0,
+        "scramble": "PESED",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -1791,8 +1827,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1988,
         "source": "https://en.wikipedia.org/wiki/Mesut_Özil",
-        "scramble": "ZOLI",
+        "scramble": "ZLOI",
         "fixed": 0,
+        "difficulty": "hard",
+        "target": 0,
         "len": [
           4
         ]
@@ -1899,8 +1937,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1977,
         "source": "https://en.wikipedia.org/wiki/Danny_Murphy_(footballer_born_1977)",
-        "scramble": "PMHRYU",
-        "fixed": 0,
+        "scramble": "UMRYHP",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -2021,8 +2061,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1978,
         "source": "https://en.wikipedia.org/wiki/Louis_Saha",
-        "scramble": "AHAS",
+        "scramble": "ASAH",
         "fixed": 0,
+        "difficulty": "hard",
+        "target": 0,
         "len": [
           4
         ]
@@ -2227,8 +2269,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1983,
         "source": "https://en.wikipedia.org/wiki/Jermaine_Pennant",
-        "scramble": "NNPTEAN",
-        "fixed": 0,
+        "scramble": "NNPEANT",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -2349,8 +2393,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1971,
         "source": "https://en.wikipedia.org/wiki/Brad_Friedel",
-        "scramble": "LEDIEFR",
-        "fixed": 0,
+        "scramble": "FREILED",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -2401,8 +2447,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1984,
         "source": "https://en.wikipedia.org/wiki/Leighton_Baines",
-        "scramble": "SNABIE",
-        "fixed": 0,
+        "scramble": "BASINE",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -2525,6 +2573,8 @@ export const SC_BOARDS = [
         "source": "https://en.wikipedia.org/wiki/Steve_Cook",
         "scramble": "OCKO",
         "fixed": 0,
+        "difficulty": "hard",
+        "target": 0,
         "len": [
           4
         ]
@@ -2631,8 +2681,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1975,
         "source": "https://en.wikipedia.org/wiki/Riccardo_Scimeca",
-        "scramble": "CASCIEM",
-        "fixed": 0,
+        "scramble": "SIECMCA",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -2725,8 +2777,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1997,
         "source": "https://en.wikipedia.org/wiki/Ainsley_Maitland-Niles",
-        "scramble": "NMDLNIAISETAL",
-        "fixed": 0,
+        "scramble": "MTIILNADNALES",
+        "fixed": 8,
+        "difficulty": "easy",
+        "target": 8,
         "len": [
           13
         ]
@@ -2798,8 +2852,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1981,
         "source": "https://en.wikipedia.org/wiki/Xabi_Alonso",
-        "scramble": "SANOOL",
-        "fixed": 0,
+        "scramble": "AOLOSN",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -2913,8 +2969,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1982,
         "source": "https://en.wikipedia.org/wiki/Wes_Hoolahan",
-        "scramble": "OLNAOAHH",
-        "fixed": 0,
+        "scramble": "HOLAHAON",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           8
         ]
@@ -3070,8 +3128,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1984,
         "source": "https://en.wikipedia.org/wiki/David_Jones_(footballer,_born_1984)",
-        "scramble": "NESJO",
-        "fixed": 0,
+        "scramble": "JNEOS",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -3192,8 +3252,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1977,
         "source": "https://en.wikipedia.org/wiki/Luís_Boa_Morte",
-        "scramble": "TEOMR",
-        "fixed": 0,
+        "scramble": "MRETO",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -3300,8 +3362,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1963,
         "source": "https://en.wikipedia.org/wiki/Ian_Wright",
-        "scramble": "HGRWTI",
-        "fixed": 0,
+        "scramble": "WRHITG",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -3443,8 +3507,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1987,
         "source": "https://en.wikipedia.org/wiki/Robert_Snodgrass",
-        "scramble": "RGNSSSDOA",
-        "fixed": 0,
+        "scramble": "NSODSRASG",
+        "fixed": 5,
+        "difficulty": "easy",
+        "target": 5,
         "len": [
           9
         ]
@@ -3523,8 +3589,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1979,
         "source": "https://en.wikipedia.org/wiki/Julián_Speroni",
-        "scramble": "ERSNPIO",
-        "fixed": 0,
+        "scramble": "PENROSI",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -3624,8 +3692,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1990,
         "source": "https://en.wikipedia.org/wiki/Marcos_Alonso_(footballer,_born_1990)",
-        "scramble": "SNAOOL",
-        "fixed": 0,
+        "scramble": "AOLNOS",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           6
         ]
@@ -3725,8 +3795,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1988,
         "source": "https://en.wikipedia.org/wiki/Erik_Pieters",
-        "scramble": "RSPITEE",
-        "fixed": 0,
+        "scramble": "PIRTSEE",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -3791,8 +3863,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1991,
         "source": "https://en.wikipedia.org/wiki/Virgil_van_Dijk",
-        "scramble": "NVAIJKD",
-        "fixed": 0,
+        "scramble": "AVNIDJK",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           3,
           4
@@ -3886,8 +3960,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1975,
         "source": "https://en.wikipedia.org/wiki/Alessandro_Pistone",
-        "scramble": "TPOSIEN",
-        "fixed": 0,
+        "scramble": "POSTEIN",
+        "fixed": 3,
+        "difficulty": "medium",
+        "target": 3,
         "len": [
           7
         ]
@@ -3959,8 +4035,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1993,
         "source": "https://en.wikipedia.org/wiki/Paul_Pogba",
-        "scramble": "ABOPG",
-        "fixed": 0,
+        "scramble": "PBGAO",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -4053,8 +4131,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1999,
         "source": "https://en.wikipedia.org/wiki/Matheus_Cunha",
-        "scramble": "HACNU",
-        "fixed": 0,
+        "scramble": "CUHAN",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -4105,8 +4185,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1996,
         "source": "https://en.wikipedia.org/wiki/Wilfred_Ndidi",
-        "scramble": "INDID",
-        "fixed": 0,
+        "scramble": "IDDNI",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -4220,8 +4302,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1971,
         "source": "https://en.wikipedia.org/wiki/Andy_Impey",
-        "scramble": "PYMIE",
-        "fixed": 0,
+        "scramble": "PIMEY",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]
@@ -4335,8 +4419,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1981,
         "source": "https://en.wikipedia.org/wiki/Peter_Odemwingie",
-        "scramble": "DEWGNOIEMI",
-        "fixed": 0,
+        "scramble": "ODEIIMNGWE",
+        "fixed": 6,
+        "difficulty": "easy",
+        "target": 6,
         "len": [
           10
         ]
@@ -4394,8 +4480,10 @@ export const SC_BOARDS = [
         ],
         "birthYear": 1996,
         "source": "https://en.wikipedia.org/wiki/Jarrod_Bowen",
-        "scramble": "EWNOB",
-        "fixed": 0,
+        "scramble": "BWNEO",
+        "fixed": 2,
+        "difficulty": "medium",
+        "target": 2,
         "len": [
           5
         ]

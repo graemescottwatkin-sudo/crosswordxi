@@ -70,38 +70,61 @@ try {
    the only symptom would have been a ring that repeated every four days.
    Both this tool and the builder now read the same sources, so the module is
    out of the import path entirely and cannot shrink what reaches D1. */
-const { gate, parseFormation, build } = await import(
+const { gate, parseFormation, build, PACKAGES, packageDirs } = await import(
   "file://" + path.join(ROOT, "tools", "build_scrambled.js").split(path.sep).join("/"));
 
 const SOURCE_ARG = (() => {
   const i = process.argv.indexOf("--source");
   return i > -1 ? process.argv[i + 1] : null;
 })();
-const SRC = path.join(SOURCE_ARG || path.join(ROOT, "..", "scrambledxi-source"), "xi");
-if (!fs.existsSync(SRC)) {
-  console.error(`REFUSED: no board sources at ${SRC}`);
+const SOURCE_ROOT = SOURCE_ARG || path.join(ROOT, "..", "scrambledxi-source");
+/* EVERY PACKAGE THE BANK HOLDS, each at its own id base and with its own say
+   on the daily ring — the builder's PACKAGES table, read here rather than
+   restated, so the module and the rows agree on which board is which id.
+   The Daily bank must be present; the others are imported when they are. */
+const packages = packageDirs(SOURCE_ROOT);
+if (!packages.some((p) => p.dir === PACKAGES[0].dir)) {
+  console.error(`REFUSED: no board sources at ${path.join(SOURCE_ROOT, PACKAGES[0].dir)}`);
   console.error("The bank lives outside this repository. Pass --source <dir> if it is elsewhere.");
   process.exit(1);
 }
-const SC_BOARDS = fs.readdirSync(SRC)
-  .filter((f) => f.endsWith(".json") && !f.startsWith("_"))
-  .sort()
-  .map((f) => {
-    const src = JSON.parse(fs.readFileSync(path.join(SRC, f), "utf8"));
+const SC_BOARDS = [];
+for (const pkg of packages) {
+  const files = fs.readdirSync(pkg.path).filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort();
+  for (const f of files) {
+    const src = JSON.parse(fs.readFileSync(path.join(pkg.path, f), "utf8"));
     /* Gated again here rather than trusted: --check above proves the module
        matches the sources, not that every source is fit to import. */
     const problems = gate(src, parseFormation(src.formation)) || [];
     if (problems.length) {
-      console.error(`REFUSED: ${f}\n  x ${problems[0]}`);
+      console.error(`REFUSED: ${pkg.dir}/${f}\n  x ${problems[0]}`);
       process.exit(1);
     }
     /* Built here with the builder's own build(), so the rows that reach D1
        carry the derived scrambles, bands and enumerations rather than the raw
        authoring shape. Two builders would eventually be two boards. */
-    const board = build(src, f);
-    if (!board) { console.error(`REFUSED: ${f} did not build.`); process.exit(1); }
-    return board;
-  });
+    const board = build(src, `${pkg.dir}/${f}`, pkg);
+    if (!board) { console.error(`REFUSED: ${pkg.dir}/${f} did not build.`); process.exit(1); }
+    SC_BOARDS.push(board);
+    pkg.top = Math.max(pkg.top || 0, board.id);
+  }
+  console.log(`${pkg.what}: ${files.length} boards, ids ${pkg.idBase + 1}–${pkg.top}` +
+    `${pkg.daily ? ", in the daily ring" : ", out of the ring"}`);
+}
+/* THE ID SPACE HOLDS. A package must fit under the next package's base, and
+   no id may appear twice across the bank — the fault this table exists to
+   prevent is two packages numbered from 1 sharing one id column. */
+{
+  const ids = SC_BOARDS.map((b) => b.id);
+  if (new Set(ids).size !== ids.length) { console.error("REFUSED: duplicate board ids across the bank."); process.exit(1); }
+  for (const pkg of packages) {
+    const next = PACKAGES.map((p) => p.idBase).filter((b) => b > pkg.idBase).sort((a, b) => a - b)[0];
+    if (next !== undefined && pkg.top > next) {
+      console.error(`REFUSED: ${pkg.what} reaches id ${pkg.top}, past the next package's base ${next}.`);
+      process.exit(1);
+    }
+  }
+}
 
 /* Every board must name its source. The builder already refuses one without,
    so this cannot fire — which is the point of asserting it anyway: the day the

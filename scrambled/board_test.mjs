@@ -10,8 +10,9 @@
  */
 import fs from "node:fs";
 import {
-  gate, parseFormation, minimumFixedPoints, scrambleName, nameFloor,
+  gate, parseFormation, minimumFixedPoints, scrambleName, scrambleWords, nameFloor,
   build, seedOf, poolOf, LAST2_POS,
+  DIFFICULTY, bandOf, fixedTarget, wordTargets, travel,
 } from "../tools/build_scrambled.js";
 import { SC_BOARDS } from "../functions/_lib/sc-boards.js";
 import {
@@ -228,13 +229,23 @@ t("BECKHAM can be fully deranged", minimumFixedPoints("BECKHAM") === 0);
 t("GIGGS cannot: one G is stuck", minimumFixedPoints("GIGGS") === 1);
 t("and the floor is the worst letter's floor, not a tolerance",
   minimumFixedPoints("AAAB") === 2);
-t("every shipped scramble hits its floor exactly", SC_BOARDS.every((b) =>
-  b.slots.every((sl) => {
-    const letters = normalise(sl.name);
-    let fixed = 0;
-    for (let i = 0; i < letters.length; i++) if (sl.scramble[i] === letters[i]) fixed++;
-    return fixed === nameFloor(sl.name);
+/* THE FLOOR STILL BOUNDS THE HARD END. The rule above it is now length:
+   short names are deranged as far as the letters allow, longer ones keep a
+   share of their letters home. */
+const visibleFixed = (name, scramble) => {
+  const letters = normalise(name);
+  let fixed = 0;
+  for (let i = 0; i < letters.length; i++) if (scramble[i] === letters[i]) fixed++;
+  return fixed;
+};
+t("every shipped scramble sits within one of its target and never below its floor",
+  SC_BOARDS.every((b) => b.slots.every((sl) => {
+    const fixed = visibleFixed(sl.name, sl.scramble);
+    return fixed >= nameFloor(sl.name) && Math.abs(fixed - sl.target) <= 1 && fixed === sl.fixed;
   })));
+t("and every shipped tile says how hard it is, by its length",
+  SC_BOARDS.every((b) => b.slots.every((sl) =>
+    sl.difficulty === bandOf(normalise(sl.name).length) && ["hard", "medium", "easy"].includes(sl.difficulty))));
 t("every shipped scramble is a true anagram of its name", SC_BOARDS.every((b) =>
   b.slots.every((sl) => letterBag(sl.scramble) === letterBag(sl.name))));
 t("and no scramble is just the name", SC_BOARDS.every((b) =>
@@ -242,9 +253,54 @@ t("and no scramble is just the name", SC_BOARDS.every((b) =>
 /* Determinism: the seed is what makes a stored board reproducible from its
    source file. Two runs of the same seed must agree or the file is not the
    board. */
-t("the same seed produces the same scramble", (() => {
-  const mk = () => { let a = 12345 >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; };
-  return scrambleName("BECKHAM", mk()).scramble === scrambleName("BECKHAM", mk()).scramble;
+const mk = (seed) => { let a = (seed || 12345) >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; };
+t("the same seed produces the same scramble",
+  scrambleWords("BECKHAM", mk()).scramble === scrambleWords("BECKHAM", mk()).scramble);
+
+console.log("\n=== The scramble rule, V1: difficulty is the length of the answer ===");
+t("the band edges and shares live in one exported object",
+  DIFFICULTY.hardBelow === 5 && DIFFICULTY.easyAbove === 8 &&
+  DIFFICULTY.mediumFixedShare === 0.4 && DIFFICULTY.easyFixedShare === 0.6);
+t("under five letters is hard, five to eight medium, over eight easy",
+  bandOf(4) === "hard" && bandOf(5) === "medium" && bandOf(8) === "medium" && bandOf(9) === "easy");
+t("hard keeps nothing home; BECKHAM, seven letters, keeps three; thirteen letters keep eight",
+  fixedTarget(4) === 0 && fixedTarget(7) === 3 && fixedTarget(13) === 8);
+/* HIT EXACTLY, BY CONSTRUCTION. The anchors are chosen first and the movers
+   deranged among themselves, so the target is met rather than fished for.
+   Eight of thirteen by shuffling would be one hit in a hundred thousand. */
+for (const [name, want] of [["BECKHAM", 3], ["SCHWEINSTEIGER", 8], ["COLE", 0], ["MBAPPE", 2]]) {
+  const r = scrambleWords(name, mk(7));
+  t(`${name} is built to exactly ${want} fixed`,
+    !!r && r.fixed === want && r.target === want && !r.walked && visibleFixed(name, r.scramble) === want,
+    r && r.scramble);
+}
+t("GIGGS, five letters, is medium and keeps two — never below the one G that must stay",
+  (() => { const r = scrambleWords("GIGGS", mk(3)); return r.difficulty === "medium" && r.fixed === 2 && r.fixed >= r.floor; })());
+/* Counted by what the player can see: a G standing where the answer shows a
+   G is fixed, whichever G it was. */
+t("a repeated letter standing on its twin is fixed, not moved",
+  visibleFixed("GIGGS", "GSGIG") === 2 && travel("GIGGS".split(""), "GSGIG".split("")) > 0);
+t("travel is zero when nothing moved, and matches each mover to its nearest copy",
+  travel("COLE".split(""), "COLE".split("")) === 0 && travel("ABC".split(""), "BCA".split("")) === 4,
+  "B and C each moved one, A moved two");
+/* THE RANDOM PICK MATTERS: a recurring player must not be recognisable by
+   the shape of his tile. */
+t("different seeds give different shapes for the same name", (() => {
+  const seen = new Set();
+  for (let s = 1; s <= 40; s++) seen.add(scrambleWords("BECKHAM", mk(s)).scramble);
+  return seen.size >= 10;
+})(), "distinct BECKHAM tiles over forty seeds");
+/* MULTI-WORD: band on the total, split the budget by length, each word
+   scrambled with its share and never left as itself. */
+t("VAN DIJK bands on seven letters and splits three anchors one and two",
+  wordTargets(["VAN", "DIJK"], fixedTarget(7)).join(",") === "1,2");
+t("a one-letter initial is an anchor by nature and spends one of the budget",
+  wordTargets(["A", "ROBINSON"], fixedTarget(9)).join(",") === "1,4");
+t("a word's anchors are capped at its length minus two, so no word is its own answer",
+  wordTargets(["AB", "CDEFGHIJKLMN"], 8)[0] === 0);
+t("each word of a multi-word tile differs from its answer", (() => {
+  const r = scrambleWords("VAN DIJK", mk(5));
+  return r.scramble.slice(0, 3) !== "VAN" && r.scramble.slice(3) !== "DIJK" && r.fixed === 3;
 })());
 
 console.log("\n=== The boards as built ===");

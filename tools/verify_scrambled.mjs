@@ -154,8 +154,21 @@ const COUNTRY = {
   TRI: "Trinidad and Tobago", UKR: "Ukraine", URU: "Uruguay", USA: "United States",
   WAL: "Wales", ZIM: "Zimbabwe", "FR_Yugoslavia": "Yugoslavia", YUG: "Yugoslavia",
   "GER-1949": "West Germany", FRG: "West Germany",
+  /* The iconic bank's first walk found ninety-four boards "wrong" that were
+     right: every one was a code this table did not hold. Added from that
+     walk, so the verifier's ignorance is no longer reported as the board's
+     error. */
+  RUS: "Russia", JAM: "Jamaica", CHI: "Chile", FRY: "Yugoslavia", RSA: "South Africa",
+  SAF: "South Africa", IRE: "Republic of Ireland", EIR: "Republic of Ireland",
+  SVK: "Slovakia", ISR: "Israel", HUN: "Hungary", PER: "Peru", GUI: "Guinea",
+  GAB: "Gabon", COD: "DR Congo", DRC: "DR Congo", BFA: "Burkina Faso", ZAM: "Zambia",
+  VEN: "Venezuela", TAN: "Tanzania", SWI: "Switzerland", ROM: "Romania",
+  NZL: "New Zealand", LUX: "Luxembourg", LBR: "Liberia", GRN: "Grenada",
+  GDR: "East Germany", DOM: "Dominican Republic", DNK: "Denmark", CGO: "Congo",
+  CAY: "Cayman Islands", CIS: "CIS", BER: "Bermuda", ALB: "Albania", BAN: "Bangladesh",
 };
-export const country = (flag) => COUNTRY[flag] || `?${flag}`;
+/* A flag written as a name — {{flagicon|England}} — is its own answer. */
+export const country = (flag) => COUNTRY[flag] || (/[a-z]/.test(String(flag)) ? String(flag) : `?${flag}`);
 
 /* ---- comparison against an authored board ------------------------------ */
 
@@ -185,8 +198,8 @@ function matchRow(rows, want, taken) {
   return null;
 }
 
-function checkBoard(fileName) {
-  const board = JSON.parse(readFileSync(path.join(XI_DIR, fileName), "utf8"));
+function checkBoard(fileName, dir = XI_DIR) {
+  const board = JSON.parse(readFileSync(path.join(dir, fileName), "utf8"));
   const src = board.source || "";
   const m = /en\.wikipedia\.org\/wiki\/([^#?]+)/.exec(src);
   if (!m) return { fileName, skipped: `source is not a Wikipedia article: ${src}` };
@@ -248,10 +261,21 @@ else if (cmd === "show") {
     for (const r of xi) console.log(`  ${r.pos.padEnd(4)} ${String(r.num).padStart(2)}  ${country(r.flag).padEnd(22)} ${r.name}`);
   }
 } else if (cmd === "check") {
-  const files = readdirSync(XI_DIR).filter((f) => /^\d/.test(f)).sort();
+  /* Every package the bank holds — the Daily bank in xi/ and the iconic
+     lineups in iconic/ — because the iconic boards cite Wikipedia and are
+     exactly the ones this tool can check, and a walk of xi/ alone would have
+     verified none of them while reporting a clean bank. */
+  const files = [];
+  for (const dir of ["xi", "iconic"]) {
+    const full = path.join(BANK, dir);
+    if (!existsSync(full)) continue;
+    for (const name of readdirSync(full).filter((f) => /^\d/.test(f)).sort()) {
+      files.push({ dir: full, name, label: `${dir}/${name}` });
+    }
+  }
   let bad = 0, skipped = 0;
-  for (const f of files) {
-    const r = checkBoard(f);
+  for (const { dir, name, label: f } of files) {
+    const r = checkBoard(name, dir);
     if (r.skipped) { console.log(`\n  ~  ${f}\n       ${r.skipped}`); skipped++; continue; }
     if (!r.problems.length) { console.log(`  ok ${f}`); continue; }
     bad++;
