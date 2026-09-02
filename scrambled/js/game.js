@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001o";
+var BUILD = "v001p";
 
 (function () {
   "use strict";
@@ -359,6 +359,29 @@ var BUILD = "v001o";
       el.classList.add("could");
       letters.textContent = rest;
     });
+    paintEcho();
+  }
+
+  /* THE PICKED TILE, ECHOED ABOVE THE BOX. On a phone the system keyboard
+     scrolls the box into view and the pitch out of it, so a player typing at
+     a tile could not see the tile. The echo repeats what the tile shows —
+     position, the letters lifted so far, the letters left in the bag, the
+     enumeration — and the box sits directly under it, so whatever the
+     keyboard does to the page the two stay together. Hidden when no tile is
+     picked: typing at the whole board has eleven tiles to watch, not one. */
+  function paintEcho() {
+    var echo = $("echo");
+    if (!echo) return;
+    var id = state.picked;
+    var slot = id && state.board ? slotOf(id) : null;
+    if (!slot || state.solved[id]) { echo.hidden = true; return; }
+    var typed = ($("answer").value || "").toUpperCase().replace(/[^A-Z]/g, "");
+    var rest = typed ? supplyFrom(slot.scramble, typed) : null;
+    $("echoPos").textContent = slot.pos;
+    $("echoLifted").textContent = rest === null ? "" : typed;
+    $("echoLetters").textContent = rest === null ? tileText(slot) : rest;
+    $("echoEnum").textContent = "(" + slot.len.join(",") + ")";
+    echo.hidden = false;
   }
 
   function drawPitch() {
@@ -454,7 +477,7 @@ var BUILD = "v001o";
 
   function pick(slotId) {
     if (state.over) return;
-    if (state.solved[slotId]) { state.picked = null; hideBench(); drawPitch(); return; }
+    if (state.solved[slotId]) { state.picked = null; hideBench(); drawPitch(); paintEcho(); return; }
     state.picked = slotId;
     syncBench();
     drawPitch();
@@ -494,6 +517,7 @@ var BUILD = "v001o";
     var mine = state.hints[id];
     $("benchHint").textContent = mine || "";
     $("benchHint").hidden = !mine;
+    paintEcho();
     /* The last letter is never for sale: a letter reveal that completes the
        name is a name reveal at the cheaper price. The server refuses it; the
        button has to say so rather than take the click and return nothing. */
@@ -616,6 +640,7 @@ var BUILD = "v001o";
         $("answer").value = "";
         state.picked = null;
         hideBench();
+        paintEcho();
         say(r.name.toUpperCase() + " \u2014 in.", "good");
         save();
         drawPitch();
@@ -838,7 +863,7 @@ var BUILD = "v001o";
   $("buyLetter").addEventListener("click", function () { buy("letter"); });
   $("buyName").addEventListener("click", function () { buy("name"); });
   $("benchClose").addEventListener("click", function () {
-    state.picked = null; hideBench(); drawPitch();
+    state.picked = null; hideBench(); drawPitch(); paintEcho();
   });
   $("copyShare").addEventListener("click", function () {
     $("shareText").select();

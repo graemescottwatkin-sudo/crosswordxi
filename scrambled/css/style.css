@@ -261,6 +261,15 @@ html, body {
 .feedback.good { color: var(--ok); }
 .feedback.bad { color: var(--danger); }
 
+/* The picked tile echoed above the box, so the keyboard cannot hide what
+   is being typed at. The same three parts as the tile — lifted letters, the
+   rest of the bag, the enumeration — at a size that reads at arm's length. */
+.echo { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 8px; font-family: var(--disp); }
+.echo .pos { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.echo .lifted { font-weight: 700; font-size: 22px; letter-spacing: .06em; color: var(--pitch-ink); }
+.echo .lifted:empty { display: none; }
+.echo .letters { font-weight: 700; font-size: 22px; letter-spacing: .06em; color: var(--ink); }
+.echo .enum { font-size: 12px; color: var(--ink-soft); }
 .entry { display: flex; gap: 8px; }
 
 .entry input {

@@ -201,6 +201,27 @@ const pickedSlot = board.slots.find((s) => s.id === pickedId);
 tile().dispatchEvent(new window.Event("click"));
 await settle();
 t("picking a tile opens the bench", !$("benchRow").hidden);
+/* THE ECHO. On a phone the keyboard scrolls the pitch away, so the picked
+   tile is repeated above the box: its position, its letters and its
+   enumeration, with the letters lifting as they are typed. */
+t("and echoes the picked tile above the box",
+  !$("echo").hidden && $("echoPos").textContent === pickedSlot.pos &&
+  $("echoLetters").textContent === pickedSlot.scramble &&
+  $("echoEnum").textContent === "(" + pickedSlot.len.join(",") + ")" &&
+  $("echoLifted").textContent === "");
+{
+  const first = pickedSlot.scramble.replace(/[^A-Z]/g, "")[0];
+  $("answer").value = first.toLowerCase();
+  $("answer").dispatchEvent(new window.Event("input"));
+  t("a typed letter lifts out of the echo as it lifts out of the tile",
+    $("echoLifted").textContent === first &&
+    $("echoLetters").textContent.replace(/[^A-Z]/g, "").length ===
+      pickedSlot.scramble.replace(/[^A-Z]/g, "").length - 1,
+    $("echoLifted").textContent + " · " + $("echoLetters").textContent);
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+  t("and clearing the box puts it back", $("echoLetters").textContent === pickedSlot.scramble);
+}
 t("the bench names what this board sells",
   $("hintLabel").textContent === SELLS,
   "read from the board, not written down: the Daily sells a career");

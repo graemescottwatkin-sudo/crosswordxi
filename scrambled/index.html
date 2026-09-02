@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="../shared/xi-tokens.css?v=v7">
 <link rel="stylesheet" href="../shared/xi-landing.css?v=v7">
 <link rel="stylesheet" href="../shared/xi-chrome.css?v=v7">
-<link rel="stylesheet" href="css/style.css?v=v001o">
+<link rel="stylesheet" href="css/style.css?v=v001p">
 </head>
 <body>
 
@@ -176,6 +176,18 @@
 
     <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
 
+    <!-- THE TILE YOU ARE TYPING AT, ECHOED ABOVE THE BOX. On a phone the
+         system keyboard scrolls the box into view and the pitch out of it,
+         so the picked tile — its position, its letters, the ones you have
+         lifted so far — is repeated here, where the keyboard cannot hide
+         it. The crossword keeps its active clue beside the keys for the same
+         reason. Empty and hidden until a tile is picked. -->
+    <div class="echo" id="echo" hidden>
+      <span class="pos" id="echoPos"></span>
+      <span class="lifted" id="echoLifted"></span>
+      <span class="letters" id="echoLetters"></span>
+      <span class="enum" id="echoEnum"></span>
+    </div>
     <div class="entry">
       <input id="answer" type="text" inputmode="text" autocomplete="off"
              autocorrect="off" autocapitalize="characters" spellcheck="false"
@@ -221,8 +233,8 @@
 
 <script src="../shared/xi-clubs.js?v=v7"></script>
 <script src="../shared/xi-chrome.js?v=v7"></script>
-<script src="js/config.js?v=v001o"></script>
-<script src="js/scoring.js?v=v001o"></script>
-<script src="js/game.js?v=v001o"></script>
+<script src="js/config.js?v=v001p"></script>
+<script src="js/scoring.js?v=v001p"></script>
+<script src="js/game.js?v=v001p"></script>
 </body>
 </html>
