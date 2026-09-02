@@ -3,7 +3,7 @@
  *   node scrambled/names_test.mjs        (from the repo root)
  */
 import {
-  NAME_SHAPE, isEnglishForm, normalise, matchesSlot, letterBag, enumerationOf,
+  NAME_SHAPE, isEnglishForm, normalise, matchesSlot, letterBag, enumerationOf, wordsOf,
 } from "../functions/_lib/sc-names.js";
 
 let pass = 0, fail = 0;
@@ -56,6 +56,16 @@ t("the enumeration counts words", JSON.stringify(enumerationOf("JACK CHARLTON"))
    number the player is shown and then fails to match the letters they see. */
 t("and does not count an apostrophe",
   JSON.stringify(enumerationOf("O'SHEA")) === "[5]");
+/* A HYPHEN IS A WORD BREAK. OXLADE-CHAMBERLAIN was counted as one word of
+   seventeen and drawn as one run of letters; it is two words, and the tile
+   keeps the hyphen between them. */
+t("a hyphen is a word break: OXLADE-CHAMBERLAIN counts (6,11)",
+  JSON.stringify(enumerationOf("OXLADE-CHAMBERLAIN")) === "[6,11]");
+t("and the splitter keeps which separator stood between the words",
+  JSON.stringify(wordsOf("ALEX OXLADE-CHAMBERLAIN")) ===
+  JSON.stringify({ words: ["ALEX", "OXLADE", "CHAMBERLAIN"], seps: [" ", "-"] }) &&
+  JSON.stringify(wordsOf("VAN DIJK").seps) === JSON.stringify([" "]) &&
+  JSON.stringify(wordsOf("GIGGS").seps) === "[]");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

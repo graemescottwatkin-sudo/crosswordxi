@@ -232,10 +232,17 @@ t("and the floor is the worst letter's floor, not a tolerance",
 /* THE FLOOR STILL BOUNDS THE HARD END. The rule above it is now length:
    short names are deranged as far as the letters allow, longer ones keep a
    share of their letters home. */
+/* Counted word by word, because the scramble keeps the name's separators:
+   "AVN IDJK" against VAN DIJK compares V-A-N with A-V-N and D-I-J-K with
+   I-D-J-K, never a letter against a space. */
 const visibleFixed = (name, scramble) => {
-  const letters = normalise(name);
+  const words = String(name).trim().split(/[\s-]+/).map(normalise).filter(Boolean);
+  const parts = String(scramble).split(/[ -]/);
   let fixed = 0;
-  for (let i = 0; i < letters.length; i++) if (scramble[i] === letters[i]) fixed++;
+  words.forEach((w, k) => {
+    const part = parts[k] || "";
+    for (let i = 0; i < w.length; i++) if (part[i] === w[i]) fixed++;
+  });
   return fixed;
 };
 t("every shipped scramble sits within one of its target and never below its floor",
@@ -300,8 +307,20 @@ t("a word's anchors are capped at its length minus two, so no word is its own an
   wordTargets(["AB", "CDEFGHIJKLMN"], 8)[0] === 0);
 t("each word of a multi-word tile differs from its answer", (() => {
   const r = scrambleWords("VAN DIJK", mk(5));
-  return r.scramble.slice(0, 3) !== "VAN" && r.scramble.slice(3) !== "DIJK" && r.fixed === 3;
+  const [a, b] = r.scramble.split(" ");
+  return a !== "VAN" && b !== "DIJK" && a.length === 3 && b.length === 4 && r.fixed === 3;
 })());
+/* A HYPHEN IS A WORD BREAK, AND THE TILE KEEPS IT. OXLADE-CHAMBERLAIN was a
+   seventeen-letter word to the builder and drew as one run of letters; it is
+   two words with the hyphen between them, banded on the seventeen. */
+t("a hyphenated surname is two words, and the hyphen stays on the tile", (() => {
+  const r = scrambleWords("OXLADE-CHAMBERLAIN", mk(2));
+  const [a, b] = r.scramble.split("-");
+  return r.scramble.length === 18 && a.length === 6 && b.length === 11 &&
+    letterBag(a) === letterBag("OXLADE") && letterBag(b) === letterBag("CHAMBERLAIN") &&
+    a !== "OXLADE" && b !== "CHAMBERLAIN" && r.difficulty === "easy" && r.target === 10;
+})());
+t("and a space stays a space", scrambleWords("VAN DIJK", mk(5)).scramble.indexOf(" ") === 3);
 
 console.log("\n=== The boards as built ===");
 t("there is at least one board", SC_BOARDS.length > 0, `${SC_BOARDS.length} boards`);
@@ -403,13 +422,12 @@ console.log("\n=== The cypher is scrambled word by word ===");
    word, and the enumeration stays true. */
 t("no letter ever leaves its own word", SC_BOARDS.every((b) =>
   b.slots.every((sl) => {
-    const words = String(sl.name).trim().split(/\s+/).map(normalise).filter(Boolean);
-    let at = 0;
-    return words.every((w) => {
-      const part = sl.scramble.slice(at, at + w.length);
-      at += w.length;
-      return letterBag(part) === letterBag(w);
-    });
+    /* The scramble carries the separators the name has — a space or a
+       hyphen — so it splits back into the same words the name does. */
+    const words = String(sl.name).trim().split(/[\s-]+/).map(normalise).filter(Boolean);
+    const parts = sl.scramble.split(/[ -]/);
+    return parts.length === words.length &&
+      words.every((w, i) => letterBag(parts[i]) === letterBag(w) && parts[i].length === w.length);
   })));
 /* Named separately because the check above passes vacuously on a bank of
    single-word cyphers, and most cyphers ARE single words. If this ever reads

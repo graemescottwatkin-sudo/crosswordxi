@@ -30,7 +30,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-  NAME_SHAPE, normalise, letterBag, enumerationOf,
+  NAME_SHAPE, normalise, letterBag, enumerationOf, wordsOf,
 } from "../functions/_lib/sc-names.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -280,8 +280,7 @@ export function scrambleName(letters, rand, target) {
    test, to re-derive what the builder accepted. Summed per word, since
    scrambleWords will not let a letter leave its word to cover a repeat. */
 export function nameFloor(name) {
-  return String(name).trim().split(/\s+/).map(normalise).filter(Boolean)
-    .reduce((n, w) => n + minimumFixedPoints(w), 0);
+  return wordsOf(name).words.reduce((n, w) => n + minimumFixedPoints(w), 0);
 }
 
 /* MULTI-WORD TILES band on the TOTAL letters of the answer, then split the
@@ -315,7 +314,11 @@ export function wordTargets(words, target) {
 }
 
 export function scrambleWords(name, rand) {
-  const words = String(name).trim().split(/\s+/).map(normalise).filter(Boolean);
+  /* Words and the separators between them, from the one splitter the
+     enumeration and the tile also use. The scramble keeps the separators —
+     "VNA DJIK", "XOALED-CHAMBRELAIN" — so the tile shows the shape of the
+     name and a hyphenated surname is no longer a seventeen-letter word. */
+  const { words, seps } = wordsOf(name);
   if (!words.length) return null;
   const total = words.reduce((a, w) => a + w.length, 0);
   /* THE CAPS ARE PART OF THE RULE. Three three-letter words — VAN DER SAR,
@@ -335,7 +338,7 @@ export function scrambleWords(name, rand) {
     if (scramble === null) return;
     const r = scrambleName(w, rand, shares[i]);
     if (!r) { scramble = null; return; }
-    scramble += r.scramble;
+    scramble += (i ? (seps[i - 1] || " ") : "") + r.scramble;
     fixed += r.fixed;
   });
   if (scramble === null) return null;
@@ -653,7 +656,7 @@ export function build(src, file, pkg) {
     if (letterBag(scramble) !== letterBag(p.name)) {
       throw new Error(`${file}: "${p.name}" — the scramble lost a letter. A bug, not bad data.`);
     }
-    if (scramble === letters) {
+    if (normalise(scramble) === letters) {
       throw new Error(`${file}: "${p.name}" — the scramble is the name.`);
     }
     const place = slotBand[i];

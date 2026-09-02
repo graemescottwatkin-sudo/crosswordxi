@@ -69,9 +69,31 @@ export function letterBag(name) {
   return normalise(name).split("").sort().join("");
 }
 
-/* Word lengths, for the enumeration under the tile: VAN DIJK -> [3, 4].
-   Counted from the authored string with normalise applied per word, so a
-   hyphen or an apostrophe does not inflate the count the player is shown. */
+/* THE WORDS OF A NAME, in one place because the builder scrambles by them,
+   the enumeration counts them and the tile draws them — and the three used
+   to disagree. A HYPHEN IS A WORD BREAK: OXLADE-CHAMBERLAIN is two words
+   with a hyphen between them, not a seventeen-letter word, and the tile
+   keeps the hyphen so the player sees the shape of the name. Splits on
+   whitespace and hyphens; the separator between each pair of words is kept
+   beside them, a space or a hyphen, so the tile can be drawn back. */
+export function wordsOf(name) {
+  const parts = String(name || "").trim().split(/(\s+|-+)/);
+  const words = [], seps = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      const w = normalise(parts[i]);
+      if (w) words.push(w);
+      else if (words.length && seps.length === words.length) seps.pop();
+    } else if (words.length) {
+      seps.push(/-/.test(parts[i]) ? "-" : " ");
+    }
+  }
+  return { words, seps: seps.slice(0, Math.max(0, words.length - 1)) };
+}
+
+/* Word lengths, for the enumeration under the tile: VAN DIJK -> [3, 4],
+   OXLADE-CHAMBERLAIN -> [6, 11]. Counted with normalise applied per word,
+   so an apostrophe does not inflate the count the player is shown. */
 export function enumerationOf(name) {
-  return String(name).trim().split(/\s+/).map((w) => normalise(w).length);
+  return wordsOf(name).words.map((w) => w.length);
 }
