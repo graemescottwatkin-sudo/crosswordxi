@@ -430,9 +430,13 @@ html, body {
 .slot .clubs {
   display: block;
   margin-top: 2px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.35;
-  color: var(--ink-soft);
+  /* ON GREEN, NOT ON PAPER. A solved tile is pitch green and a revealed one
+     is near black, and --ink-soft is the soft ink for the page's paper — on
+     the tile it read as grey on green and could not be seen at all. The
+     family's token for quiet text on the pitch is the right one here. */
+  color: var(--on-pitch-soft);
   max-width: 22ch;
   overflow-wrap: break-word;
 }
