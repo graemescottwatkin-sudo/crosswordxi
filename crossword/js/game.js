@@ -2659,6 +2659,7 @@
         isAdmin = !!d.admin;
         var btn = $("adminToggle");
         if (btn) btn.style.display = isAdmin ? "" : "none";
+        if (isAdmin) fillAdminGames(d.games);
       })
       .catch(function () {});
   }
@@ -3064,6 +3065,30 @@
           "</div>";
       }).join("");
     }).catch(function (err) { adminMsg(String(err.message || err)); });
+  }
+
+  /* THE SELECTOR IS FILLED FROM THE SERVER, not written into the page.
+     It was written into the page: three <option>s typed by hand, while the
+     server counted five games. Nothing errored and nothing looked wrong —
+     QuickFire and HiLo were simply not in the menu, so their funnels could
+     not be opened, and the panel gave no hint that they existed. A list of
+     games in the markup is a list that stops matching the day a game is
+     added, which is the one day nobody is looking at the admin panel.
+     "All games" is kept as the first option and stays selected. */
+  function fillAdminGames(games) {
+    var sel = $("adminGame");
+    if (!sel || !games || !games.length) return;     /* leave the markup as it stands */
+    var keep = sel.value;
+    sel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = ""; all.textContent = "All games";
+    sel.appendChild(all);
+    games.forEach(function (g) {
+      var o = document.createElement("option");
+      o.value = g.id; o.textContent = g.label || g.id;
+      sel.appendChild(o);
+    });
+    sel.value = keep || "";
   }
 
   /* Which game the three funnel reports are about: the selector in the panel,

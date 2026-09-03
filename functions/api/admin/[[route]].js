@@ -12,7 +12,7 @@ import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB, serverToday } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
 import { dailyNumber, dailyKey } from "../../_lib/daily.js";
-import { validGame } from "../../_lib/games.js";
+import { validPlayGame, reportableGames } from "../../_lib/games.js";
 
 async function requireAdmin(request, env) {
   if (!hasDB(env)) return { error: bad("Accounts are not configured.", 503) };
@@ -33,7 +33,13 @@ export async function onRequest({ request, env, params }) {
   if (route === "whoami" && request.method === "GET") {
     if (!hasDB(env)) return json({ admin: false });
     const user = await currentUser(request, env);
-    return json({ admin: !!(user && user.is_admin) });
+    const admin = !!(user && user.is_admin);
+    /* The games the funnel can report on, sent with the flag that decides
+       whether the panel appears at all, so the selector is built from the
+       server rather than typed into the page. It was typed into the page,
+       and it listed three games while five were being counted. Only to an
+       admin: the list names games that have not launched. */
+    return json(admin ? { admin: true, games: reportableGames() } : { admin: false });
   }
 
   const gate = await requireAdmin(request, env);
@@ -182,7 +188,7 @@ export async function onRequest({ request, env, params }) {
        name the server does not list is a 400 rather than an empty report
        that looks like nobody played. */
     const gameAsked = url.searchParams.get("game");
-    const game = gameAsked ? validGame(gameAsked) : null;
+    const game = gameAsked ? validPlayGame(gameAsked) : null;
     if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
       `SELECT game, board_key, mode, daily_no, phase, solved, total, completed, elapsed_secs,
@@ -325,7 +331,7 @@ export async function onRequest({ request, env, params }) {
   if (route === "sources" && request.method === "GET") {
     /* One game or the family, the same as the funnel above. */
     const gameAsked = new URL(request.url).searchParams.get("game");
-    const game = gameAsked ? validGame(gameAsked) : null;
+    const game = gameAsked ? validPlayGame(gameAsked) : null;
     if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
       `SELECT COALESCE(utm_source, '(direct)') AS source,
@@ -534,7 +540,7 @@ export async function onRequest({ request, env, params }) {
        way, so a family export can be split in a spreadsheet and a one-game
        export reads the same. */
     const gameAsked = new URL(request.url).searchParams.get("game");
-    const game = gameAsked ? validGame(gameAsked) : null;
+    const game = gameAsked ? validPlayGame(gameAsked) : null;
     if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
       `SELECT started_at, ended_at, game, board_key, mode, daily_no, theme_key, phase,

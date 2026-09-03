@@ -95,6 +95,38 @@ export function validMode(v) {
   return MODES.indexOf(m) === -1 ? null : m;
 }
 
+/* WHAT THE OWNER'S FUNNEL CALLS EACH GAME.
+ *
+ * xi-chrome.js already holds a squad list with these names in it, and a second
+ * list of names is exactly the fault this file exists to prevent — so it is
+ * worth saying why this is not that. The squad is the PUBLIC list: it is
+ * ordered by shirt number, it carries unreleased games as a status with no
+ * name, and it must never name a game that has not launched. The funnel is the
+ * opposite on the one point that matters: an unreleased game is precisely the
+ * one whose numbers are being watched, so it has to be named here to be picked
+ * from a menu. The two lists disagree on purpose and cannot be merged.
+ *
+ * The drift this replaces was real and one-directional: the selector in the
+ * admin panel was typed into crossword/index.html by hand, so it listed three
+ * games while the server counted five. Nothing was broken and nothing showed
+ * an error — QuickFire and HiLo simply could not be looked at.
+ */
+export const LABELS = {
+  crossword: "Crossword XI",
+  wordsearch: "Wordsearch XI",
+  scrambled: "Scrambled XI",
+  quickfire: "QuickFire XI",
+  hilo: "HiLo XI",
+};
+
+/* The games the funnel can report on, named, for the panel to build itself
+   from. BUILT rather than GAMES, for the reason validPlayGame gives. A game
+   with no label is still listed, under its id: an unnamed game in the menu is
+   a smaller fault than a game missing from it. */
+export function reportableGames() {
+  return BUILT.map((id) => ({ id, label: LABELS[id] || id }));
+}
+
 /* THE ONE KEY. What makes a result unique for a player, per game.
  *
  *   crossword    daily:2            the daily number, as it always was

@@ -190,14 +190,18 @@
     </div>
 
     <div class="admin-group">
-      <!-- Every game counts attempts through the same route now; the three
-           reports below take the game from here, and "all" is the family. -->
+      <!-- Every game counts attempts through the same route; the three reports
+           below take the game from here, and "all" is the family.
+           THE OPTIONS ARE NOT WRITTEN HERE. They were, and the list went stale
+           the moment a fourth game was built: three games in this markup while
+           the server counted five, with no error raised and nothing to suggest
+           the menu was short. whoami now returns the games the funnel can
+           report on, and the panel builds the list from that. "All games" is
+           the one option that is always right, so it stays, and it is what
+           remains if the call fails. -->
       <label class="tb-label" for="adminGame">Game</label>
       <select id="adminGame">
         <option value="">All games</option>
-        <option value="crossword">Crossword XI</option>
-        <option value="wordsearch">Wordsearch XI</option>
-        <option value="scrambled">Scrambled XI</option>
       </select>
       <button class="btn outline" id="adminPlays">How far people get</button>
       <button class="btn outline" id="adminChallenges">Challenges</button>
