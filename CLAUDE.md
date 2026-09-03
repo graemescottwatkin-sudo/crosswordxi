@@ -23,8 +23,13 @@ the repo root, shared by all games. The hub is `/index.html`; shared assets in
 - **Never change a tag or a `LAST_*` constant without saying so explicitly.**
 - After every deploy: bump `LAST_SHIPPED` in BOTH gates to what is now live,
   commit, push. Skipping this widens the range the gate cannot refuse.
-- After the bump, `deploy_check` fails "moved past the version now live" until
-  the next release moves the tag. That is the law working, not a bug.
+- A tag equal to `LAST_SHIPPED` is the RESTING state and passes: the tree is
+  what is live. The gate refuses a tag that goes BACKWARDS, and the paired
+  asset-hash check refuses changed bytes under a tag that has not moved —
+  which is the half that carries the law. Until 3 Sep 2026 the gate demanded
+  the tag be strictly ahead, so every commit after a post-deploy bump was red
+  on every game, including games it never touched, and that red was expected
+  and therefore unread.
 
 ## The deploy sequence
 

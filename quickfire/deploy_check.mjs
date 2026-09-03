@@ -81,8 +81,12 @@ const num = (v) => {
   if (!m) return 0;
   return parseInt(m[1], 10) + (m[2] ? (m[2].charCodeAt(0) - 96) / 100 : 0);
 };
-t("the build tag has moved past the version now live",
-  num(tagJs) > num(LAST_SHIPPED), `now ${tagJs}, live ${LAST_SHIPPED}`);
+/* NEVER BACKWARDS, rather than always ahead — the same change the other four
+   gates took. Strictly-ahead made the resting state between releases red, on
+   every game, including games a commit never touched. The asset pairing below
+   is what carries the law. */
+t("the build tag never goes backwards",
+  num(tagJs) >= num(LAST_SHIPPED), `now ${tagJs}, live ${LAST_SHIPPED}`);
 
 function ownAssetHash() {
   const paths = ownAssets.map((a) => a.file).sort();
@@ -91,7 +95,9 @@ function ownAssetHash() {
   for (const p of paths) {
     if (!has(p)) return null;
     h.update(p); h.update("\0");
-    h.update(fs.readFileSync(path.join(DIR, p)));
+    /* Normalised to LF, as in the other four: the hash describes the bytes
+       that ship, and a Windows checkout writes the same file with CRLF. */
+    h.update(fs.readFileSync(path.join(DIR, p), "utf8").replace(/\r\n/g, "\n"));
   }
   return h.digest("hex").slice(0, 16);
 }

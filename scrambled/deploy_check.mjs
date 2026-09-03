@@ -8,8 +8,9 @@
  *
  * THE TAG LAW. LAST_SHIPPED is what is LIVE, and LAST_SHIPPED_ASSETS is a hash
  * of the bytes it names. A tag is burned the moment it ships and never goes
- * backwards, so after a deploy this gate fails "moved past the version now
- * live" until the next release moves the tag. That is the law working.
+ * backwards. Equal to LAST_SHIPPED is the RESTING state and passes — the tree
+ * is what is live. What carries the law is the pair below it: if the bytes
+ * changed, the tag must have moved, and if they did not, it must not have.
  *
  * WHAT THIS GATE CANNOT SEE. It reads shape, not truth. It will pass a board
  * whose XI is wrong, a career that belongs to another player, or a scramble
@@ -54,7 +55,14 @@ function ownAssetHash() {
   const h = crypto.createHash("sha256");
   for (const p of paths) {
     h.update(p); h.update("\0");
-    h.update(fs.readFileSync(path.join(ROOT, "scrambled", p)));
+    /* NORMALISED TO LF FIRST. The hash is meant to describe the bytes that
+       SHIP, and what ships is what is in git — LF. On a Windows checkout the
+       same file is CRLF in the working tree, so the hash depended on which
+       tool last wrote the file: a plain `git checkout` of an untouched file
+       turned every one of these gates red for a change nobody had made.
+       All five places that compute this hash normalise, or they cannot
+       agree. */
+    h.update(fs.readFileSync(path.join(ROOT, "scrambled", p), "utf8").replace(/\r\n/g, "\n"));
   }
   return h.digest("hex").slice(0, 16);
 }
@@ -72,7 +80,21 @@ t("LAST_SHIPPED is a real version, not a sentinel",
    in order to search for it — written both ways, the check matched its own
    text and failed a file that does not declare the constant at all. One fact,
    one place, and the place is the cross-game contract. */
-t("the build tag has moved past the version now live", tag > LAST_SHIPPED,
+/* NEVER BACKWARDS, rather than always ahead.
+
+   This asked for the tree's tag to be strictly AHEAD of what is live, so
+   the resting state between releases — the tree is exactly what is live —
+   failed it. Every commit after a post-deploy bump was red until the next
+   release, on every game, including games the commit never touched. Red
+   that is expected is red nobody reads, which is worse than no gate.
+
+   Nothing is lost by allowing equal. The pairing below is the check that
+   carries the law: if the bytes changed, the tag must have moved; if they
+   did not, it must not have. Equal with unchanged bytes is exactly right,
+   and equal with changed bytes is what that check refuses. What is left
+   for this one is the thing it is now named for: a tag that goes
+   backwards, which would hand a browser an old ?v= for new bytes. */
+t("the build tag never goes backwards", tag >= LAST_SHIPPED,
   `now ${tag}, live ${LAST_SHIPPED}`);
 /* The pairing that makes the tag mean something: if the bytes moved, the tag
    must have moved with them, or a browser holding yesterday's copy keeps it. */

@@ -49,7 +49,14 @@ function assetHash(dir) {
   const h = crypto.createHash("sha256");
   for (const p of paths) {
     h.update(p); h.update("\0");
-    h.update(fs.readFileSync(path.join(ROOT, dir, p)));
+    /* NORMALISED TO LF FIRST. The hash is meant to describe the bytes that
+       SHIP, and what ships is what is in git — LF. On a Windows checkout the
+       same file is CRLF in the working tree, so the hash depended on which
+       tool last wrote the file: a plain `git checkout` of an untouched file
+       turned every one of these gates red for a change nobody had made.
+       All five places that compute this hash normalise, or they cannot
+       agree. */
+    h.update(fs.readFileSync(path.join(ROOT, dir, p), "utf8").replace(/\r\n/g, "\n"));
   }
   return h.digest("hex").slice(0, 16);
 }

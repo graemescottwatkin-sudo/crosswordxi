@@ -124,21 +124,35 @@ t("every og:image is an absolute https URL", (() => {
   return true;
 })());
 
-t("the build tag has moved past the version now live",
+/* NEVER BACKWARDS, rather than always ahead.
+
+   This asked for the tree's tag to be strictly AHEAD of what is live, so
+   the resting state between releases — the tree is exactly what is live —
+   failed it. Every commit after a post-deploy bump was red until the next
+   release, on every game, including games the commit never touched. Red
+   that is expected is red nobody reads, which is worse than no gate.
+
+   Nothing is lost by allowing equal. The pairing below is the check that
+   carries the law: if the bytes changed, the tag must have moved; if they
+   did not, it must not have. Equal with unchanged bytes is exactly right,
+   and equal with changed bytes is what that check refuses. What is left
+   for this one is the thing it is now named for: a tag that goes
+   backwards, which would hand a browser an old ?v= for new bytes. */
+t("the build tag never goes backwards",
   (() => {
     const now = (html.match(/<span id="buildTag">([^<]+)</) || [])[1] || "";
     const parse = (v) => {
       const m = /^v(\d+)([a-z]?)$/.exec(String(v).trim());
       return m ? [parseInt(m[1], 10), m[2] || ""] : null;
     };
-    const gt = (x, y) => x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]);
+    const gte = (x, y) => x[0] > y[0] || (x[0] === y[0] && x[1] >= y[1]);
     const a = parse(now), live = parse(LAST_SHIPPED);
     if (!a || !live) return false;
     /* The one lineage restart: while what is LIVE is still the old numbering
        (>= v100), only number one — v001 and its letters — may follow it, in
        presentation order. v002 cannot leapfrog the bridge, and this clause
        retires itself the first time LAST_SHIPPED becomes a new-scheme tag. */
-    const shippedOk = live[0] >= 100 ? a[0] === 1 : gt(a, live);
+    const shippedOk = live[0] >= 100 ? a[0] === 1 : gte(a, live);
     return shippedOk;
   })(),
   `now ${(html.match(/<span id="buildTag">([^<]+)</) || [])[1]}, live ${LAST_SHIPPED}`);
@@ -169,7 +183,14 @@ function ownAssetHash() {
   for (const p of paths) {
     if (!has(p)) return null;          // fail closed: the page names a file that is not there
     h.update(p); h.update("\0");
-    h.update(fs.readFileSync(path.join(DIR, p)));
+    /* NORMALISED TO LF FIRST. The hash is meant to describe the bytes that
+       SHIP, and what ships is what is in git — LF. On a Windows checkout the
+       same file is CRLF in the working tree, so the hash depended on which
+       tool last wrote the file: a plain `git checkout` of an untouched file
+       turned every one of these gates red for a change nobody had made.
+       All five places that compute this hash normalise, or they cannot
+       agree. */
+    h.update(fs.readFileSync(path.join(DIR, p), "utf8").replace(/\r\n/g, "\n"));
   }
   return h.digest("hex").slice(0, 16);
 }
