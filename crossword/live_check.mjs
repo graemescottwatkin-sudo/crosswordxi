@@ -401,8 +401,17 @@ reachedEnd = true;
     html.includes('<base href="/crossword/">'));
   t("naming the board in its title and its canonical",
     /<title>[^<]+ \u00b7 /.test(html) && html.includes("/crossword/daily/" + key + '"'));
-  t("and asking not to be indexed, being one shell per day",
-    /content="noindex,follow"/.test(html));
+  t("and offered to a crawler with a line of its own",
+    !/noindex/.test(html) && /name="description" content="[^"]*\d{4}"?/.test(html));
+
+  /* THE ONLY CRAWLABLE LINK A PERMALINK HAS. These pages are indexable by
+     the owner's decision, and nothing else on the site points at one — an
+     answers page is where a reader who wants to play that board is, and it
+     is a page that is already indexed. */
+  const ans = await fetch(HUB + "/crossword/answers/1");
+  const ansHtml = ans.status === 200 ? await ans.text() : "";
+  t("a published answers page links the board it is about",
+    ansHtml.includes('href="/crossword/daily/1"'), String(ans.status));
 
   const future = await fetch(HUB + "/crossword/daily/99999", { redirect: "manual" });
   t("a board that does not exist yet is not a page", future.status === 404, String(future.status));

@@ -128,8 +128,8 @@ t("and the API is not indexed", (daily.headers.get("x-robots-tag") || "").includ
     html.includes('<base href="/hilo/">'));
   t("naming the board in its title and its canonical",
     /<title>[^<]+ \u00b7 /.test(html) && html.includes("/hilo/daily/" + key + '"'));
-  t("and asking not to be indexed, being one shell per day",
-    /content="noindex,follow"/.test(html));
+  t("and offered to a crawler with a line of its own",
+    !/noindex/.test(html) && /name="description" content="[^"]*\d{4}"?/.test(html));
 
   const future = await fetch(BASE + "/hilo/daily/2099-01-01", { redirect: "manual" });
   t("a board that does not exist yet is not a page", future.status === 404, String(future.status));

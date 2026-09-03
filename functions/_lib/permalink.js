@@ -112,11 +112,14 @@ export const permalinkPath = (game, key) => `/${game}/daily/${key}`;
  * title     what a share preview says. A bot posting eleven threads a week
  *           wants them to read "Matchday 12", not eleven identical lines.
  * canonical itself, so the permalink is the address of the puzzle.
- * robots    noindex. These pages are the same shell as /<game>/ until the
- *           board renders, so letting a crawler index one per day would be
- *           asking it to index a thousand near-identical pages. The board's
- *           real indexable page is its answers page, which already exists.
- *           follow stays on: the links out are worth crawling. */
+ * description the day again, in a sentence. These pages ARE indexed — the
+ *           owner's call, made knowing that the board arrives by script so
+ *           the HTML a crawler is handed is the same shell every time. The
+ *           title and this line are what differ, and they are the least a
+ *           page should have of its own before it is offered to a crawler.
+ *           The board's content-rich page is still its answers page, which
+ *           has always been indexable and is where the search traffic for a
+ *           board actually goes. */
 export function permalinkHtml(html, { game, key, origin }) {
   const g = PERMA_GAMES[game];
   const title = `${keyLabel(game, key)} · ${g.name}`;
@@ -129,15 +132,18 @@ export function permalinkHtml(html, { game, key, origin }) {
      run the same in both places, against a head this repo writes and this
      repo's own test reads. A rewrite that stops matching is not silent: the
      suite asserts every one of them landed, on the real page. */
-  const head = `<base href="/${game}/">` +
-    `<meta name="robots" content="noindex,follow">`;
+  const head = `<base href="/${game}/">`;
+  const desc = `The ${g.name} board from ${keyLabel(game, key)}, playable in full. ` +
+    `One address, one puzzle — this link opens this board and no other.`;
   return html
     .replace(/<head(\s[^>]*)?>/i, (m) => m + head)
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(title)}</title>`)
     .replace(/(<link[^>]+rel="canonical"[^>]*href=")[^"]*(")/i, (m, a, b) => a + esc(url) + b)
     .replace(/(<meta[^>]+property="og:url"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(url) + b)
     .replace(/(<meta[^>]+property="og:title"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(title) + b)
-    .replace(/(<meta[^>]+name="twitter:title"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(title) + b);
+    .replace(/(<meta[^>]+name="twitter:title"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(title) + b)
+    .replace(/(<meta[^>]+name="description"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(desc) + b)
+    .replace(/(<meta[^>]+property="og:description"[^>]*content=")[^"]*(")/i, (m, a, b) => a + esc(desc) + b);
 }
 
 /* The whole route, for every game. A game's file under functions/<game>/daily/

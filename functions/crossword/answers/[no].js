@@ -104,6 +104,12 @@ Today's board is new, sealed, and scored out of 114.</p>
 ${across.length ? `<p class="dir">Across</p><ol>${across.map(item).join("")}</ol>` : ""}
 ${down.length ? `<p class="dir">Down</p><ol>${down.map(item).join("")}</ol>` : ""}
 <a class="cta" href="/crossword/">Play today's board</a>
+<!-- THIS board, not just today's. Somebody reading the answers for #12 has
+     been given no way to play #12, which is the board they are looking at.
+     It is also the only crawlable link a permalink has: nothing else on the
+     site points at one, and a page nothing links to is a page nothing
+     indexes, whatever its robots tag says. -->
+<a class="cta ghost" href="/crossword/daily/${no}">Play board #${no}</a>
 <nav>
 ${answersAvailable(no - 1, today) ? `<a href="/crossword/answers/${no - 1}">Board #${no - 1}</a>` : ""}
 ${answersAvailable(no + 1, today) ? `<a href="/crossword/answers/${no + 1}">Board #${no + 1}</a>` : ""}

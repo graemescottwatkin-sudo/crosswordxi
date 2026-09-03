@@ -375,8 +375,8 @@ reachedEnd = true;
     html.includes('<base href="/wordsearch/">'));
   t("naming the board in its title and its canonical",
     /<title>[^<]+ \u00b7 /.test(html) && html.includes("/wordsearch/daily/" + key + '"'));
-  t("and asking not to be indexed, being one shell per day",
-    /content="noindex,follow"/.test(html));
+  t("and offered to a crawler with a line of its own",
+    !/noindex/.test(html) && /name="description" content="[^"]*\d{4}"?/.test(html));
 
   const future = await fetch(BASE + "/wordsearch/daily/2099-01-01", { redirect: "manual" });
   t("a board that does not exist yet is not a page", future.status === 404, String(future.status));

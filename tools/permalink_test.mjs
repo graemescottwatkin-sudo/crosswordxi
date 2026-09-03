@@ -99,9 +99,20 @@ console.log("\nWhat a share preview says names the board");
   t("og:url and og:title follow it",
     html.includes('content="https://www.thexigames.com/crossword/daily/5"') &&
     html.includes('content="30 August 2026 · Crossword XI"'));
-  /* Thousands of near-identical shells is not something to hand a crawler.
-     The board's indexable page is its answers page, which already exists. */
-  t("and the shell is noindex, follow", /content="noindex,follow"/.test(html));
+  /* INDEXED, on the owner's call. What a page offered to a crawler must at
+     least have is something of its own, and for these that is the title and
+     the description — the board itself arrives by script, so the HTML is the
+     same shell every time. Nothing here is asserted about ranking; what is
+     asserted is that the page is not blocked and is not word-for-word the
+     page beside it. */
+  t("the page is not held back from a crawler", !/noindex/.test(html));
+  t("and says something of its own, not the game's front page line", (() => {
+    const d = (html.match(/name="description" content="([^"]*)"/) || [])[1] || "";
+    const shellDesc = (shellFor("crossword").match(/name="description" content="([^"]*)"/) || [])[1] || "";
+    return d.includes("30 August 2026") && d !== shellDesc;
+  })());
+  t("and its social description says the same",
+    /property="og:description" content="[^"]*30 August 2026/.test(html));
   const w = await call("wordsearch", "2026-09-01");
   const wh = await w.text();
   t("and a game that schedules by date says the same kind of thing",
