@@ -107,14 +107,22 @@ export function boardForToken(bank, token, now) {
    source: the rest is names and context so the page can draw the pair it is
    asking about. detail rides only where it is display (a birth date for a
    live age); nothing in it decides a call. */
+/* ONLY THE FIRST ROW IS OPEN. A hidden row goes out as its name and nothing
+   else: no value, and no context or birth date either. The context is
+   authored prose about the item and it can carry a date — "In charge until
+   2026" beside a coach whose answer is the year he took charge gave the
+   call away on the live page, on launch day. So the context, the birth
+   date and the precision travel with the verdict, from judge(), and the
+   page shows them as the call settles. The name is enough to ask the
+   question; everything else is part of the answer. */
 export function publicBoard(board, token) {
-  const rows = (board.chain || []).map((r, i) => ({
+  const rows = (board.chain || []).map((r, i) => (i === 0 ? {
     name: r.name,
     context: r.context || "",
-    ...(i === 0 ? { value: r.value } : {}),
+    value: r.value,
     ...(r.detail && r.detail.birthDate ? { birthDate: r.detail.birthDate } : {}),
     ...(r.precision ? { precision: r.precision } : {}),
-  }));
+  } : { name: r.name }));
   return {
     token,
     id: String(board.id),
@@ -144,8 +152,13 @@ export function judge(board, index, call) {
   const prev = Number(chain[i - 1].value), next = Number(chain[i].value);
   const truth = next > prev ? "higher" : "lower";
   const src = chain[i].source || {};
+  const row = chain[i];
   return {
     index: i, right: c === truth, value: next,
+    /* The rest of the row, released with its value: see publicBoard. */
+    context: row.context || "",
+    ...(row.detail && row.detail.birthDate ? { birthDate: row.detail.birthDate } : {}),
+    ...(row.precision ? { precision: row.precision } : {}),
     source: { publisher: src.publisher || null, url: src.url || null, quote: src.quote || null },
   };
 }

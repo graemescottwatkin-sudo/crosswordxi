@@ -57,7 +57,18 @@ t("twelve rows go out", pub.rows.length === 12);
 t("the first value goes out and no other", pub.rows[0].value === daily.chain[0].value &&
   pub.rows.slice(1).every((r) => r.value === undefined) && (wire.match(/"value"/g) || []).length === 1);
 t("no row's source goes out", !/"source"|"quote"|"publisher"|"url"/.test(wire));
-t("names and context go out, so the pair can be drawn", pub.rows.every((r, i) => r.name === daily.chain[i].name));
+t("names go out, so the pair can be drawn", pub.rows.every((r, i) => r.name === daily.chain[i].name));
+/* The first row is open — value, context, birth date. Every other row is
+   its name and NOTHING else: a context is prose about the item and can
+   carry the very date being asked for ("In charge until 2026" beside the
+   year a coach took charge), and it did, on the live page, on launch day. */
+t("the first row carries its context", typeof pub.rows[0].context === "string" && pub.rows[0].context === (daily.chain[0].context || ""));
+t("a hidden row is its name and nothing else — no context, birth date or precision",
+  pub.rows.slice(1).every((r) => Object.keys(r).join() === "name"));
+t("the verdict releases the row's context with its value", (() => {
+  const v = judge(daily, 1, "higher");
+  return !!v && v.context === (daily.chain[1].context || "");
+})());
 t("the token rides with it", pub.token === "hl:2026-09-03");
 
 console.log("\n=== The judge ===");

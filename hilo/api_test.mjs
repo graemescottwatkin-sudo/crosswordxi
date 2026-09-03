@@ -47,6 +47,7 @@ console.log("=== The daily ===");
   t("today's board, from D1, on the server's day", r.status === 200 && r.body.day === today && r.body.board.id === "T1" && r.body.source === "d1");
   t("twelve rows, the first value only, no source", r.body.board.rows.length === 12 &&
     (JSON.stringify(r.body).match(/"value"/g) || []).length === 1 && !/quote|publisher/.test(JSON.stringify(r.body)));
+  t("a hidden row is its name and nothing else", r.body.board.rows.slice(1).every((x) => Object.keys(x).join() === "name"));
   t("the token names the day", r.body.board.token === "hl:" + today);
   const y = await json(await daily(req("https://x/api/hilo/daily?day=" + shift(-1))));
   t("yesterday's board is open, as free play", y.status === 200 && y.body.board.id === "Y1");
@@ -79,6 +80,7 @@ console.log("\n=== A call ===");
   const r = await json(await post({ token: t1, index: 1, call: truth }));
   t("a right call comes back right, with the value and the source",
     r.status === 200 && r.body.right === true && r.body.value === T.chain[1].value && !!r.body.source.quote && !!r.body.source.url);
+  t("and the row's context, released with its value", r.body.context === (T.chain[1].context || ""));
   const w = await json(await post({ token: t1, index: 1, call: truth === "higher" ? "lower" : "higher" }));
   t("a wrong call comes back wrong, with the value all the same", w.body.right === false && w.body.value === T.chain[1].value);
   const n = await json(await post({ token: t1, index: 3, call: "none" }));

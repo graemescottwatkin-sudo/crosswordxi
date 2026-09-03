@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001a";
+var BUILD = "v001b";
 
 (function () {
   "use strict";
@@ -312,16 +312,31 @@ var BUILD = "v001a";
     showPair(round, true);
     paint(round);
   }
+  function rowContext(round, i) {
+    if (i === 0) return round.board.rows[0].context || "";
+    return (round.contexts && round.contexts[i]) || "";
+  }
+  function rowBorn(round, i) {
+    if (i === 0) return round.board.rows[0].birthDate || "";
+    return (round.born && round.born[i]) || "";
+  }
   function showPair(round, quiet) {
     var b = round.board, L = b.rows[round.step], R = b.rows[round.step + 1];
     var left = $("left"), right = $("right");
     left.className = "player known"; right.className = "player";
+    /* The known side shows what the server has released for it: the first
+       row's context comes with the board, every later row's comes with its
+       verdict. The hidden side shows its name and nothing else — a context
+       is prose about the item and can carry the very date being asked for,
+       which is how "In charge until 2026" stood beside a question mark on
+       the live page. */
+    var Lc = rowContext(round, round.step), Lb = rowBorn(round, round.step);
     left.querySelector(".who").textContent = L.name;
-    left.querySelector(".sub").textContent = L.context + (L.birthDate ? " " + DOT + " " + bornText(L.birthDate) : "");
+    left.querySelector(".sub").textContent = Lc + (Lb ? (Lc ? " " + DOT + " " : "") + bornText(Lb) : "");
     left.querySelector(".val").textContent = fmt(round.values[round.step], b.unit);
     left.querySelector(".val").className = "val";
     right.querySelector(".who").textContent = R.name;
-    right.querySelector(".sub").textContent = R.context;
+    right.querySelector(".sub").textContent = "";
     right.querySelector(".val").textContent = "?";
     right.querySelector(".val").className = "val q";
     var f = faces(b), ref = fmt(round.values[round.step], b.unit);
@@ -428,6 +443,9 @@ var BUILD = "v001a";
     var b = g.board, L = b.rows[g.step], R = b.rows[g.step + 1];
     g.values[g.step + 1] = v.value;
     g.sources[g.step + 1] = v.source || null;
+    g.contexts = g.contexts || {}; g.born = g.born || {};
+    g.contexts[g.step + 1] = v.context || "";
+    g.born[g.step + 1] = v.birthDate || "";
     g.results[g.step] = !!v.right;
     g.worths[g.step] = v.right ? worth : 0;
     if (!v.right) g.subsUsed++;
@@ -446,7 +464,7 @@ var BUILD = "v001a";
     var st = document.createElement("div"); st.className = "stamp";
     var sb = document.createElement("b"); sb.textContent = v.right ? "Correct" : "Wrong";
     var ss = document.createElement("span");
-    var born = R.birthDate ? bornText(R.birthDate) : "";
+    var born = v.birthDate ? bornText(v.birthDate) : "";
     ss.textContent = v.right
       ? ("+" + worth + (born ? " " + DOT + " " + born : ""))
       : ((timedOut ? "out of time " + DOT + " " : "") +

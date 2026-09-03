@@ -52,6 +52,11 @@ t("the board comes from D1, not the sample", d.source === "d1", d.source);
 t("twelve rows, eleven calls", !!d.board && d.board.rows.length === 12);
 const wire = JSON.stringify(d);
 t("only the first value rides down with the board", (wire.match(/"value"/g) || []).length === 1);
+/* And only the first row's prose. A context can carry a date — "In charge
+   until 2026" beside the year a coach took charge — and one did, on the live
+   page, on launch day. A hidden row is its name and nothing else. */
+t("and a hidden row is its name and nothing else",
+  !!d.board && d.board.rows.slice(1).every((r) => Object.keys(r).join() === "name"));
 t("and no source does", !/"quote"|"publisher"|"url"/.test(wire), "the source shows as a call settles, never before");
 
 console.log("\nA call is judged on the server");
@@ -62,6 +67,7 @@ const call = await fetch(BASE + "/api/hilo/call", {
 const v = call.status === 200 ? await call.json() : null;
 t("the call endpoint answers", call.status === 200, String(call.status));
 t("with a verdict, the value and its source", !!v && typeof v.right === "boolean" && typeof v.value === "number" && !!(v.source && v.source.url));
+t("and the row's context, released with its value", !!v && typeof v.context === "string");
 const nocsrf = await fetch(BASE + "/api/hilo/call", { method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ token: d.board && d.board.token, index: 1, call: "higher" }) });
 t("and refuses a call without the family's header", nocsrf.status === 403, String(nocsrf.status));
