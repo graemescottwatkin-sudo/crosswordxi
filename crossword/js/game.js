@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002j";
+  var BUILD = "v002k";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2978,20 +2978,15 @@
            remember to add one. Preferences are left alone: they are named
            individually in the KEEP list, because a reset clears what you have
            done, not how you like the thing to look. */
+        /* THE WHOLE FAMILY, not this game. The sweep below used to cover
+           fcw. only, so "clear everything" left the word search, Scrambled
+           and HiLo exactly as they were while the server had already deleted
+           every result the account held — the two sides disagreeing about
+           what "everything" meant. The chrome owns the sweep because a game
+           may not write another game's prefix; WIPE_KEYS stays for the named
+           legacy keys this game alone knows about. */
         WIPE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
-        var KEEP = ["xi.theme", "fcw.clubPref", "fcw.deviceCode", "fcw.theme", "fcw.pitch",
-                    "fcw.bank", "fcw.skip", "fcw.fxmode", "fcw.filter"];
-        var doomed = [], i, k;
-        for (i = 0; i < localStorage.length; i++) {
-          k = localStorage.key(i);
-          if (!k || k.indexOf("fcw.") !== 0) continue;
-          if (KEEP.indexOf(k) !== -1) continue;
-          if (k.indexOf("fcw.v04.") === 0 || k.indexOf("fcw.results") === 0 ||
-              k.indexOf("fcw.themeResults") === 0) doomed.push(k);
-        }
-        /* Collected first, removed after: removing inside the loop shifts the
-           indices and skips every other key. */
-        doomed.forEach(function (key) { localStorage.removeItem(key); });
+        if (window.XIChrome && XIChrome.records) XIChrome.records.clear();
       } catch (e) {}
       // Reload, so the clock, the season strip and the board all start again
       // together rather than one at a time.
@@ -6990,6 +6985,14 @@
       openBoard(t, mine ? saved : null);
       newPuzzle(mine && saved.seed != null ? saved.seed : FCW.dailySeed(board.no),
                 mine ? saved : null);
+      /* The address follows the board. One funnel for every daily — the
+         calendar, a permalink, the daily button — so there is one place that
+         decides what the URL says. */
+      if (window.XIChrome && XIChrome.permalink) {
+        var n = t.no || today();
+        if (n === today()) XIChrome.permalink.clear("crossword");
+        else XIChrome.permalink.show("crossword", String(n));
+      }
       return;
     }
     /* Practice is gone as a mode, but a shared link still opens one and a save
@@ -7201,15 +7204,11 @@
     showHome();
   });
 
-  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
-     see functions/_lib/permalink.js for the shape and the server's half. The
-     path IS the fact; nothing is injected into the page for the client to
-     read, so there is one statement of which board this is. The server has
-     already refused a key that is malformed or in the future, so what arrives
-     here is a board this game can be asked for. */
+  /* The permalink is read from the path by the shared chrome, which states
+     its shape once for the family — see shared/xi-chrome.js, and
+     functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
-    return m ? decodeURIComponent(m[1]) : null;
+    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
   }
 
   /* ---------- Boot: today's daily first; unfinished practice resumes ---------- */

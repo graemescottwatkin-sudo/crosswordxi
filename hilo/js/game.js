@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001g";
+var BUILD = "v001h";
 
 (function () {
   "use strict";
@@ -121,15 +121,11 @@ var BUILD = "v001g";
     }).catch(function (e) { accountNote("session", e); return null; });
   }
 
-  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
-     see functions/_lib/permalink.js for the shape and the server's half. The
-     path IS the fact; nothing is injected into the page for the client to
-     read, so there is one statement of which board this is. The server has
-     already refused a key that is malformed or in the future, so what arrives
-     here is a board this game can be asked for. */
+  /* The permalink is read from the path by the shared chrome, which states
+     its shape once for the family — see shared/xi-chrome.js, and
+     functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
-    return m ? decodeURIComponent(m[1]) : null;
+    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
   }
 
   /* ---- the landing ----------------------------------------------------- */
@@ -286,6 +282,11 @@ var BUILD = "v001g";
     api("daily?day=" + encodeURIComponent(day)).then(function (r) {
       if (!r.board) { toast("No board that day"); return; }
       coverBoard(r.board, day === serverDay ? "daily" : "free", { day: day === serverDay ? day : null, kicker: kicker });
+      /* The address follows the board, and today's keeps the plain one. */
+      if (window.XIChrome && XIChrome.permalink) {
+        if (day === serverDay) XIChrome.permalink.clear("hilo");
+        else XIChrome.permalink.show("hilo", day);
+      }
     }, function () { toast("Board unavailable"); });
   }
   function openBoard(id, kicker) {

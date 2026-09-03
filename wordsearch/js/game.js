@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002b";
+  var BUILD = "v002c";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -967,15 +967,11 @@
     $("gameApp").classList.remove("covered");
     $("kickCover").classList.add("hidden");
   }
-  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
-     see functions/_lib/permalink.js for the shape and the server's half. The
-     path IS the fact; nothing is injected into the page for the client to
-     read, so there is one statement of which board this is. The server has
-     already refused a key that is malformed or in the future, so what arrives
-     here is a board this game can be asked for. */
+  /* The permalink is read from the path by the shared chrome, which states
+     its shape once for the family — see shared/xi-chrome.js, and
+     functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
-    return m ? decodeURIComponent(m[1]) : null;
+    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
   }
 
   /* HELD UNTIL BOTH FACTS ARE IN: which day the SERVER says it is, and what
@@ -996,9 +992,13 @@
     permaWaiting = null;
     /* Today's permalink is today's board, which this page is already
        opening. Nothing to do, and nothing to say. */
-    if (key === serverDay) return;
+    if (key === serverDay) {
+      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.clear("wordsearch");
+      return;
+    }
     var entry = archiveDays.find(function (e) { return e.day === key; });
     if (!entry) { toast("That board is not available"); return; }
+    if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.show("wordsearch", key);
     openBoard(entry, "PREVIOUS PUZZLE \u00b7 " + dayLabel(key).toUpperCase(),
       "Free play — only today's board keeps a run going.");
   }
@@ -1266,6 +1266,9 @@
       var day = row.getAttribute("data-day");
       var entry = (archiveDays || []).find(function (e) { return e.day === day; });
       if (!entry) return;
+      /* Opened from the list: the address says which day, so it can be
+         copied out of the bar or shared from the browser's own menu. */
+      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.show("wordsearch", day);
       openBoard(entry, "PREVIOUS PUZZLE · " + dayLabel(day).toUpperCase(),
         "Free play — only today's board keeps a run going.");
     };

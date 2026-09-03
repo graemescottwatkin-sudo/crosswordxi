@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001w";
+var BUILD = "v001x";
 
 (function () {
   "use strict";
@@ -117,10 +117,13 @@ var BUILD = "v001w";
       var pick = (Math.floor(utc / 604800000) % today) + 1;
       $("homeFeaturedName").textContent = "Board #" + pick;
       $("homeFeaturedState").textContent = "One of " + today + " released";
-      $("homeFeatured").onclick = function () { location.search = "?no=" + pick; };
+      /* THE PERMALINK, not a query. Both of these reloaded the page with
+         ?no=, which works and leaves an address that says nothing about what
+         it opens. The permalink is the same board at an address that does. */
+      $("homeFeatured").onclick = function () { location.href = "/scrambled/daily/" + pick; };
       $("homePreviousCount").textContent = today + " boards so far";
       $("homePrevious").onclick = function () {
-        location.search = "?no=" + Math.max(1, today - 1);
+        location.href = "/scrambled/daily/" + Math.max(1, today - 1);
       };
     }
     renderForm();
@@ -817,15 +820,11 @@ var BUILD = "v001w";
       .catch(function () { /* not an admin, or offline: the bar stays hidden */ });
   }
 
-  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
-     see functions/_lib/permalink.js for the shape and the server's half. The
-     path IS the fact; nothing is injected into the page for the client to
-     read, so there is one statement of which board this is. The server has
-     already refused a key that is malformed or in the future, so what arrives
-     here is a board this game can be asked for. */
+  /* The permalink is read from the path by the shared chrome, which states
+     its shape once for the family — see shared/xi-chrome.js, and
+     functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
-    return m ? decodeURIComponent(m[1]) : null;
+    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
   }
 
   function boot() {

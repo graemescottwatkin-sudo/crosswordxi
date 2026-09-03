@@ -46,12 +46,12 @@
     { n: 1,  name: "Crossword XI",   href: "/crossword/" },
     { n: 2,  name: "Wordsearch XI",  href: "/wordsearch/" },
     { n: 3,  name: "Scrambled XI",   href: "/scrambled/" },
-    { n: 4,  status: "In testing",   href: "/quickfire/" },
-    { n: 5,  status: "In build" },
+    { n: 4,  name: "HiLo XI",        href: "/hilo/" },
+    { n: 5,  status: "In testing",   href: "/quickfire/" },
     { n: 6,  status: "In build" },
-    { n: 7,  status: "On the drawing board" },
+    { n: 7,  status: "In build" },
     { n: 8,  status: "On the drawing board" },
-    { n: 9,  name: "HiLo XI",        href: "/hilo/" },
+    { n: 9,  status: "On the drawing board" },
     { n: 10, status: "Not yet signed" },
     { n: 11, status: "Not yet signed" }
   ];
@@ -781,6 +781,96 @@
     return '<span class="xic-form">' + html + "</span>";
   }
 
+  /* ======================================================================
+     CLEARING A RECORD, for the whole family.
+
+     "Clear everything" cleared everything the CROSSWORD had written and left
+     the word search, Scrambled and HiLo untouched — so a player who asked for
+     a clean slate got one quarter of one, and no warning that the rest had
+     survived. The server side was already right: the endpoint deletes every
+     result the account holds, whatever game it came from.
+
+     IT LIVES HERE BECAUSE IT HAS TO. The project's rule is that a game never
+     writes another game's prefix, and it is a good rule — this is the one
+     operation that has to reach all of them, so it belongs to the layer that
+     belongs to all of them. A game asks; the chrome sweeps.
+
+     WHAT IS A RECORD AND WHAT IS A PREFERENCE. A reset clears what you have
+     DONE, never how you like the thing to look, and never who you are: the
+     club you play as, the palette, the board settings and the device code all
+     stay. The keeps are listed by name so each one reads as a decision rather
+     than a gap, which is how the crossword's own list was written and the one
+     part of it worth carrying over. */
+  var RECORD_PREFIXES = ["fcw.", "xiws.", "xisc.", "xihl.", "qfx."];
+  var RECORD_KEEP = [
+    /* Identity. Wiping this would cut the player off from results already
+       synced to their account, which clearing local history has no business
+       doing. */
+    "xi.deviceCode", "fcw.deviceCode",
+    /* Who you play as, family-wide and per game. */
+    "xi.club", "fcw.clubPref",
+    /* How it looks and plays. */
+    "xi.theme", "fcw.theme", "fcw.pitch", "fcw.bank", "fcw.skip", "fcw.fxmode",
+    "fcw.filter", "xiws.zoom", "xisc.zoom", "xihl.zoom",
+  ];
+  function clearRecords() {
+    var doomed = [], i, k;
+    try {
+      for (i = 0; i < localStorage.length; i++) {
+        k = localStorage.key(i);
+        if (!k || RECORD_KEEP.indexOf(k) !== -1) continue;
+        for (var j = 0; j < RECORD_PREFIXES.length; j++) {
+          if (k.indexOf(RECORD_PREFIXES[j]) === 0) { doomed.push(k); break; }
+        }
+      }
+      /* Collected first, removed after: removing inside the loop shifts every
+         later index and skips half of them. The crossword's sweep learned
+         that the hard way and the comment went with the code. */
+      doomed.forEach(function (key) { localStorage.removeItem(key); });
+    } catch (e) { /* storage blocked: nothing was written, nothing to clear */ }
+    return doomed.length;
+  }
+
+  /* ======================================================================
+     THE PERMALINK, on the client — the same shape functions/_lib/permalink.js
+     keeps on the server, said once here rather than four times.
+
+     Reading it was already done in all four games; WRITING it was not, which
+     is why opening a board from the archive left the address bar saying
+     /crossword/ and gave the player nothing to copy. A board that can be
+     addressed should say its address while you are on it.
+
+     replaceState, not pushState: the page is not re-rendered by going back,
+     so an entry per board would leave the back button walking through URLs
+     the page ignores. One entry, and back leaves the game as it always did.
+
+     Today's board is deliberately NOT given a number. Somebody who asked for
+     "today" gets /<game>/daily or the game's front page; the number is what
+     the archive is for. */
+  var PERMA = /\/daily(?:\/([^/?#]+))?\/?$/;
+  function permaRead() {
+    var m = PERMA.exec(location.pathname || "");
+    return m && m[1] ? decodeURIComponent(m[1]) : null;
+  }
+  function permaWrite(path) {
+    try {
+      if (location.pathname === path) return;
+      history.replaceState(null, "", path + (location.search || "") + (location.hash || ""));
+    } catch (e) { /* a browser that will not have it keeps the address it has */ }
+  }
+  function permaShow(game, key) {
+    if (!game || !key) return;
+    permaWrite("/" + game + "/daily/" + encodeURIComponent(key));
+  }
+  /* Off a numbered address and back to the game's own. Called when today's
+     board is opened, and does nothing anywhere else — leaving /<game>/daily
+     alone, which is a name for today and correct as it stands. */
+  function permaClear(game) {
+    if (!game || !PERMA.test(location.pathname || "")) return;
+    if (!permaRead()) return;
+    permaWrite("/" + game + "/");
+  }
+
   /* Exposed for the games and the suites. account.user() is the session as
      the chrome last heard it; account.say() puts a line in the open sheet,
      which is how a game reports what it carried over after a sign-in. */
@@ -790,5 +880,7 @@
                known: function () { return acct.known; }, available: function () { return acct.accounts; },
                say: say, deviceCode: deviceCode },
     settings: { open: openPop, close: closePop, add: addSetting },
+    permalink: { read: permaRead, show: permaShow, clear: permaClear },
+    records: { clear: clearRecords, prefixes: RECORD_PREFIXES, keep: RECORD_KEEP },
     addSetting: addSetting };
 })();
