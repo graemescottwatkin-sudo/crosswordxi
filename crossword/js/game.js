@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002i";
+  var BUILD = "v002j";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -7201,8 +7201,29 @@
     showHome();
   });
 
+  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
+     see functions/_lib/permalink.js for the shape and the server's half. The
+     path IS the fact; nothing is injected into the page for the client to
+     read, so there is one statement of which board this is. The server has
+     already refused a key that is malformed or in the future, so what arrives
+     here is a board this game can be asked for. */
+  function permalinkKey() {
+    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
   /* ---------- Boot: today's daily first; unfinished practice resumes ---------- */
   (function boot() {
+    /* A permalink beats the resume. Somebody following a link to matchday 12
+       asked for matchday 12, not for whatever they last had open. Opening it
+       through chooseMode is the same door the calendar uses, so the board is
+       replayable and only today's counts — that rule lives in recordDaily and
+       is not restated here. */
+    var perma = permalinkKey();
+    if (perma && /^[0-9]+$/.test(perma)) {
+      chooseMode("daily", { kind: "daily", no: Number(perma) });
+      return;
+    }
     /* Return to whatever was last being played. The old rule resumed practice
        only if letters had been typed *and* today's daily was finished — so
        refreshing on a practice board you had not written in yet dropped you

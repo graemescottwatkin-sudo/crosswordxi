@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001f";
+var BUILD = "v001g";
 
 (function () {
   "use strict";
@@ -119,6 +119,17 @@ var BUILD = "v001f";
       if (!account) return null;
       return pushResults().then(pullResults);
     }).catch(function (e) { accountNote("session", e); return null; });
+  }
+
+  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
+     see functions/_lib/permalink.js for the shape and the server's half. The
+     path IS the fact; nothing is injected into the page for the client to
+     read, so there is one statement of which board this is. The server has
+     already refused a key that is malformed or in the future, so what arrives
+     here is a board this game can be asked for. */
+  function permalinkKey() {
+    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
+    return m ? decodeURIComponent(m[1]) : null;
   }
 
   /* ---- the landing ----------------------------------------------------- */
@@ -615,6 +626,14 @@ var BUILD = "v001f";
          clock waiting for Kick off. Only a released board answers. */
       var q = (location.search.match(/[?&]b=([A-Za-z0-9_-]{1,40})/) || [])[1];
       if (q) openBoard(q, "FROM THE CLUBS");
+      /* The permalink names a day. Opened as a previous puzzle, which is what
+         it is unless it is today's; what counts towards a run is decided
+         where it always was. */
+      var perma = permalinkKey();
+      if (perma && /^\d{4}-\d{2}-\d{2}$/.test(perma)) {
+        openDay(perma, perma === serverDay
+          ? "TODAY" : "PREVIOUS PUZZLE " + DOT + " " + dayLabel(perma).toUpperCase());
+      }
     }, function () {
       $("startState").textContent = "Could not reach the server — check your connection.";
     });

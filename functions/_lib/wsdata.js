@@ -10,13 +10,13 @@
  * sends it up; it asks. Changing a device clock changes nothing.
  */
 import { SAMPLE_PUZZLES, samplePuzzleForDay, sampleFirstDay } from "./ws-sample.js";
+import { utcDay } from "./daily.js";
 
 export function hasDB(env) { return !!(env && env.DB); }
 
-export function utcDayKey(now) {
-  const d = now ? new Date(now) : new Date();
-  return d.toISOString().slice(0, 10);
-}
+/* The family's, not this game's: see utcDay in daily.js. Kept as a name this
+   file already used so nothing that calls it has to change. */
+export function utcDayKey(now) { return utcDay(now || Date.now()); }
 
 function parsePayload(row) {
   const body = JSON.parse(row.payload);

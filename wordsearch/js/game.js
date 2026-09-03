@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002a";
+  var BUILD = "v002b";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -967,6 +967,42 @@
     $("gameApp").classList.remove("covered");
     $("kickCover").classList.add("hidden");
   }
+  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
+     see functions/_lib/permalink.js for the shape and the server's half. The
+     path IS the fact; nothing is injected into the page for the client to
+     read, so there is one statement of which board this is. The server has
+     already refused a key that is malformed or in the future, so what arrives
+     here is a board this game can be asked for. */
+  function permalinkKey() {
+    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  /* HELD UNTIL BOTH FACTS ARE IN: which day the SERVER says it is, and what
+     the archive holds. Either alone gets it wrong — the archive stops at
+     yesterday by design, so a permalink for today is not in it, and deciding
+     before the day is known would call today's board missing. Both fetches
+     call this, and whichever lands second does the work. */
+  var permaWaiting = null;
+  function openPermalink() {
+    var key = permalinkKey();
+    if (!key || !/^\d{4}-\d{2}-\d{2}$/.test(key)) return;
+    permaWaiting = key;
+    tryPermalink();
+  }
+  function tryPermalink() {
+    if (!permaWaiting || !serverDay || !archiveDays) return;
+    var key = permaWaiting;
+    permaWaiting = null;
+    /* Today's permalink is today's board, which this page is already
+       opening. Nothing to do, and nothing to say. */
+    if (key === serverDay) return;
+    var entry = archiveDays.find(function (e) { return e.day === key; });
+    if (!entry) { toast("That board is not available"); return; }
+    openBoard(entry, "PREVIOUS PUZZLE \u00b7 " + dayLabel(key).toUpperCase(),
+      "Free play — only today's board keeps a run going.");
+  }
+
   function selectBoard(id, kicker, note) {
     if (!id) return false;
     var b = catalogBoards.find(function (x) { return x.id === id; });
@@ -1082,6 +1118,7 @@
   function loadArchive(then) {
     api("archive").then(function (r) {
       archiveDays = r.days || [];
+      tryPermalink();
       renderArchive();
       if ($("homePreviousCount")) renderLanding();
       if (then) then();
@@ -1287,6 +1324,7 @@
        the browser. Neither response contains a schedule. */
     api("daily").then(function (r) {
       serverDay = r.day; window.__daily = r.puzzle;
+      tryPermalink();
       /* The hero says whether there is one, where the mode tile used to. */
       setDailyState(r.puzzle ? "" : "No Daily scheduled today — the themes are open.");
     }, function () {
@@ -1308,6 +1346,11 @@
         mode = "free";
         if (!selectBoard(q, "FROM THE THEMES")) toast("That board is not available");
       }
+      /* The permalink names a DAY, which is what this game's dailies are
+         called. Opened as a previous puzzle, which is what it is unless it is
+         today's — and the run only ever counts today's, decided where it
+         always was rather than here. */
+      openPermalink();
       var m = location.hash.match(/p=(XIWS-\d{4})/);
       if (m) {
         api("puzzle?id=" + m[1]).then(function (r2) { startFree(r2.puzzle); },

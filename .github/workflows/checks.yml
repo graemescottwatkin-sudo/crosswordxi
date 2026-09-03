@@ -68,6 +68,12 @@ jobs:
       - name: Every built game counts plays
         run: node tools/tracking_test.mjs
 
+      # Family-wide for the same reason: one URL, one puzzle, forever. A link
+      # posted to a thread on the 3rd has to open the 3rd's board on the 10th,
+      # and the four games must not grow four schemes for saying so.
+      - name: One URL, one puzzle
+        run: node tools/permalink_test.mjs
+
       - name: API
         run: |
           node crossword/functions_test.mjs

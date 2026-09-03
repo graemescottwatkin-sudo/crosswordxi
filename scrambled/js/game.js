@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001v";
+var BUILD = "v001w";
 
 (function () {
   "use strict";
@@ -817,6 +817,17 @@ var BUILD = "v001v";
       .catch(function () { /* not an admin, or offline: the bar stays hidden */ });
   }
 
+  /* THE PERMALINK. /<game>/daily/<key> is one URL for one puzzle, forever —
+     see functions/_lib/permalink.js for the shape and the server's half. The
+     path IS the fact; nothing is injected into the page for the client to
+     read, so there is one statement of which board this is. The server has
+     already refused a key that is malformed or in the future, so what arrives
+     here is a board this game can be asked for. */
+  function permalinkKey() {
+    var m = /\/daily\/([^/?#]+)\/?$/.exec(location.pathname || "");
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
   function boot() {
     /* ?id= is the OWNER's address — any board, through the admin route, which
        re-checks the flag server-side. ?no= stays the public one: a position in
@@ -824,7 +835,10 @@ var BUILD = "v001v";
        gets a 401 from that route and the start card says so, which is the
        honest failure rather than a silent fall back to today's board. */
     var params = new URLSearchParams(location.search);
-    var asked = params.get("no");
+    /* The permalink is the same question ?no= asks, in the path: one URL, one
+       board, forever. It wins over ?no= because it is the address the visitor
+       actually came to. */
+    var asked = permalinkKey() || params.get("no");
     var byId = params.get("id");
     var url = byId
       ? "/api/admin/scrambled?id=" + encodeURIComponent(byId)

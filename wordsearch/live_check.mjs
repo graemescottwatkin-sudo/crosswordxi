@@ -350,5 +350,37 @@ if (ran < MIN_ASSERTIONS) {
   console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
 }
 reachedEnd = true;
+/* ---- the permalink: one URL, one puzzle, forever ---------------------- */
+/* The whole contract a linking bot depends on, checked against production:
+   /wordsearch/daily lands on a dated address, that address serves the game, and a
+   board that does not exist yet is not a page. Here rather than only in the
+   offline suite because the route is a Function, and the offline suite runs
+   in node, which has no Workers runtime to run one in. */
+{
+  const hop = await fetch(BASE + "/wordsearch/daily", { redirect: "manual" });
+  const loc = hop.headers.get("location") || "";
+  const key = loc.split("/").filter(Boolean).pop() || "";
+  t("/wordsearch/daily sends you to a dated address",
+    hop.status === 302 && new RegExp("/wordsearch/daily/.+").test(loc), `${hop.status} -> ${loc}`);
+  t("and never lets that answer be cached",
+    (hop.headers.get("cache-control") || "").includes("no-store"));
+
+  const page = await fetch(BASE + "/wordsearch/daily/" + key, { redirect: "manual" });
+  const html = page.status === 200 ? await page.text() : "";
+  t("the permalink serves the game itself",
+    page.status === 200 && html.includes("js/game.js"), String(page.status));
+  /* Every asset on the page is relative and the page is served one level
+     deeper than it lives. Without this the board is a blank screen. */
+  t("with a base, so its relative assets still resolve",
+    html.includes('<base href="/wordsearch/">'));
+  t("naming the board in its title and its canonical",
+    /<title>[^<]+ \u00b7 /.test(html) && html.includes("/wordsearch/daily/" + key + '"'));
+  t("and asking not to be indexed, being one shell per day",
+    /content="noindex,follow"/.test(html));
+
+  const future = await fetch(BASE + "/wordsearch/daily/2099-01-01", { redirect: "manual" });
+  t("a board that does not exist yet is not a page", future.status === 404, String(future.status));
+}
+
 console.log(`\n${pass} passed, ${fail} failed${warn ? `, ${warn} unknown` : ""}`);
 process.exit(fail ? 1 : 0);

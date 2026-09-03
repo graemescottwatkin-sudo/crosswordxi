@@ -103,6 +103,38 @@ const head = await get("/api/hilo/daily", { method: "HEAD" });
 t("HEAD on the API answers without a body", head.status === 200, String(head.status));
 t("and the API is not indexed", (daily.headers.get("x-robots-tag") || "").includes("noindex"));
 
+/* ---- the permalink: one URL, one puzzle, forever ---------------------- */
+/* The whole contract a linking bot depends on, checked against production:
+   /hilo/daily lands on a dated address, that address serves the game, and a
+   board that does not exist yet is not a page. Here rather than only in the
+   offline suite because the route is a Function, and the offline suite runs
+   in node, which has no Workers runtime to run one in. */
+{
+  const hop = await fetch(BASE + "/hilo/daily", { redirect: "manual" });
+  const loc = hop.headers.get("location") || "";
+  const key = loc.split("/").filter(Boolean).pop() || "";
+  t("/hilo/daily sends you to a dated address",
+    hop.status === 302 && new RegExp("/hilo/daily/.+").test(loc), `${hop.status} -> ${loc}`);
+  t("and never lets that answer be cached",
+    (hop.headers.get("cache-control") || "").includes("no-store"));
+
+  const page = await fetch(BASE + "/hilo/daily/" + key, { redirect: "manual" });
+  const html = page.status === 200 ? await page.text() : "";
+  t("the permalink serves the game itself",
+    page.status === 200 && html.includes("js/game.js"), String(page.status));
+  /* Every asset on the page is relative and the page is served one level
+     deeper than it lives. Without this the board is a blank screen. */
+  t("with a base, so its relative assets still resolve",
+    html.includes('<base href="/hilo/">'));
+  t("naming the board in its title and its canonical",
+    /<title>[^<]+ \u00b7 /.test(html) && html.includes("/hilo/daily/" + key + '"'));
+  t("and asking not to be indexed, being one shell per day",
+    /content="noindex,follow"/.test(html));
+
+  const future = await fetch(BASE + "/hilo/daily/2099-01-01", { redirect: "manual" });
+  t("a board that does not exist yet is not a page", future.status === 404, String(future.status));
+}
+
 console.log(`\n${pass} passed, ${fail} failed, ${warn} unjudged`);
 t(`the run made at least ${MIN_ASSERTIONS} assertions`, pass + fail >= MIN_ASSERTIONS, `${pass + fail} ran`);
 finished = true;

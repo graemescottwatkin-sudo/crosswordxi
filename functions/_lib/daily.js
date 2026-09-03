@@ -13,6 +13,15 @@ export function dailyNumber(now = Date.now()) {
   return Math.max(1, Math.round((midnight - EPOCH) / 86400000) + 1);
 }
 
+/* WHAT DAY IT IS, in UTC, as YYYY-MM-DD. The server decides the day for
+   every game in the family, and this is where it decides it. Two games
+   already had this function under two names — utcDayKey in wsdata.js and
+   todayKey in hl-board.js, identical to the character — and a third copy for
+   the permalinks would have made three. Both now call this one. */
+export function utcDay(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
 /* The day a board number stands for, as YYYY-MM-DD: the inverse of
    dailyNumber, from the same epoch, so a numbered result (the crossword's,
    Scrambled's) can carry the shared played_on column without a second

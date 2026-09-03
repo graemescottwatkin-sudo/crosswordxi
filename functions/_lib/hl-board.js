@@ -20,13 +20,13 @@
  * in every payload so a live check can refuse a run that quietly fell back.
  */
 import { HL_SAMPLE_BOARDS, HL_SAMPLE_SCHEDULE } from "./hl-sample.js";
+import { utcDay } from "./daily.js";
 
 export function hasDB(env) { return !!(env && env.DB); }
 
 /* The server decides what day it is, in UTC. Never a date sent up. */
-export function todayKey(now = Date.now()) {
-  return new Date(now).toISOString().slice(0, 10);
-}
+/* The family's, not this game's: see utcDay in daily.js. */
+export function todayKey(now = Date.now()) { return utcDay(now); }
 
 /* A club board is one whose category names a club's managers or head
    coaches. The research side carries no club field, and a rule derived from
