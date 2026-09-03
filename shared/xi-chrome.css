@@ -86,6 +86,11 @@
 .xic-ghost {
   font: inherit;
   font-size: 13px;
+  /* THE BOX IS THE TARGET, as for the burger: render_test measured the
+     Settings button at 36px on every viewport the day it reached the
+     in-game bar. The bar is already the burger's --tap tall, so this costs
+     no height. */
+  min-height: var(--tap);
   color: var(--ink-soft);
   background: none;
   border: 1px solid transparent;
@@ -276,10 +281,14 @@ a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; 
 /* The drawer's account row. Quiet: a utility row, not a call to action. */
 .xic-acct { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 12px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+/* display:flex beats the browser's [hidden] rule, so a hidden row still
+   rendered — and its button was measured at 36px in a drawer nobody had
+   opened. Said explicitly, as the sheet and the menu already say it. */
+.xic-acct[hidden] { display: none; }
 .xic-acct-state { opacity: .8; flex: 1 1 auto; }
 .xic-acct-btn { font: inherit; font-size: 13px; cursor: pointer;
   background: none; border: 1px solid var(--line); border-radius: 8px;
-  min-height: 36px; padding: 0 12px; color: var(--ink); }
+  min-height: var(--tap); padding: 0 12px; color: var(--ink); }
 .xic-acct-btn:hover { background: var(--tint); }
 .xic-dsettings { font: inherit; border: 0; background: none; cursor: pointer;
   width: 100%; text-align: left; }
