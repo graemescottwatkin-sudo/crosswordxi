@@ -1091,16 +1091,26 @@ tr.faroff{display:none}
      middle of the screen with small letters and a lot of empty space either
      side. Width now scales with the viewport; height is scaled by viewport
      height, because that is the scarce dimension in landscape. */
-  /* The widest row is 10 keys, so the floor has to fit the narrowest phone:
-     10 keys + 9 gaps + padding must clear 320px. 27 + 9x3 + 8 = 305. */
-  --osk-key:clamp(27px,8vw,64px);
+  /* THE ROW DECIDES, NOT THE VIEWPORT. This was a viewport percentage with a
+     64px ceiling, so on anything wide the keyboard stopped growing and sat in
+     the middle of the screen with room to spare on both sides. The ceiling is
+     raised and the real limit moved to where it belongs: the width of the row
+     the keys are in. A key is the biggest it can be that still fits ten of
+     them across, which is true on a 320px phone and on a desk monitor without
+     either being a special case, and the row can no longer overflow whatever
+     is asked for here. */
+  --osk-key:clamp(27px,9.4vw,92px);
   --osk-h:clamp(34px,5.4vh,52px);
   --osk-gap:clamp(3px,0.7vw,8px);
 }
 body.touch .osk{display:block}
 .osk-row{display:flex;justify-content:center;gap:var(--osk-gap);margin-bottom:var(--osk-gap)}
 .osk-key{
-  flex:0 0 auto;width:var(--osk-key);height:var(--osk-h);
+  /* The percentage resolves against the row, so ten keys and nine gaps are
+     exactly the row: bigger than that is not available and smaller than that
+     is space going to waste. */
+  flex:0 0 auto;height:var(--osk-h);
+  width:min(var(--osk-key),calc((100% - 9 * var(--osk-gap)) / 10));
   border:1px solid var(--line);border-radius:var(--r-sm);
   background:var(--card);font-family:var(--disp);font-weight:600;
   /* Clamped, not purely proportional: a plain ratio would have made the
@@ -1108,7 +1118,10 @@ body.touch .osk{display:block}
   font-size:clamp(16px,calc(var(--osk-key) * .42),26px);color:var(--ink);
 }
 .osk-key:active{background:var(--sel)}
-.osk-key.wide{width:calc(var(--osk-key) * 1.5);font-size:clamp(14px,calc(var(--osk-key) * .32),20px)}
+.osk-key.wide{
+  width:calc(1.5 * min(var(--osk-key),calc((100% - 9 * var(--osk-gap)) / 10)));
+  font-size:clamp(14px,calc(var(--osk-key) * .30),22px);
+}
 
 /* ============ COMPLETION ============ */
 .overlay{
@@ -2597,18 +2610,50 @@ body.home-showing .tbar{visibility:hidden}
 
 /* Three across, below the fixture. Equal weight because they are alternatives
    to each other, not to today — today is the block above with all the colour. */
-/* A GRID BEHIND THE FIXTURE, at the edge of visible.
+/* A CROSSWORD BEHIND THE FIXTURE, at the edge of visible.
 
-   The hero is the one block on the page with weight, and it was flat green.
-   A crossword lattice says what the game is before a word is read. Drawn with
-   two repeating-linear-gradients rather than an image: no request, no asset to
-   version, and it scales with the card instead of tiling at a fixed size.
-   Kept under 10% opacity — it is a texture, not a diagram, and the white
-   heading over it has to stay the thing being read. */
+   The hero is the one block on the page with weight, and the family's card
+   draws a plain lattice behind it — which says "grid" and stops there. This
+   game is a crossword, so the card shows one: blocked squares, clue numbers,
+   letters that spell nothing, and clues beside it at a width you can see and
+   not read. The shared lattice is turned off here rather than drawn under it,
+   because two grids at two spacings is a moiré, not depth.
 
-
-@media (prefers-color-scheme: dark){
-
+   An element rather than a background image: it is themed with the same
+   tokens as everything else, it needs no escaping, and the next person can
+   read what it draws. Everything is one colour at low opacity — a texture,
+   not a diagram, and the white heading over it stays the thing being read. */
+#homeDaily.hero::after{display:none}
+.home-choice.hero .hc-art{
+  /* Fitted whole, not cropped to fill: sliced to cover, the card's own
+     height cut the grid off the left and left a column of clue lines that
+     said nothing about what game this is. */
+  position:absolute;right:8px;top:0;height:100%;width:min(66%,460px);
+  z-index:0;pointer-events:none;overflow:visible;
+  /* Faded out towards the words. The card is read left to right and the art
+     has to give way before it reaches the heading. */
+  -webkit-mask-image:linear-gradient(100deg,transparent 0%,transparent 22%,#000 72%);
+  mask-image:linear-gradient(100deg,transparent 0%,transparent 22%,#000 72%);
+}
+/* --on-pitch rather than --hero-rule: the rule token is tuned for a lattice
+   that is meant to be sensed and not seen, and at that weight the squares
+   disappeared at reading size and left a column of clue lines with nothing
+   beside them. Both tokens invert with the theme, so this is a weight change
+   and not a colour one. */
+.hc-art-grid rect{fill:none;stroke:var(--on-pitch);stroke-width:1;opacity:.13}
+/* The blocked squares carry the shape of a crossword more than the lines do,
+   so they are the one part allowed to be seen rather than sensed. */
+.hc-art-grid rect.b{fill:var(--on-pitch);stroke:none;opacity:.10}
+.hc-art-ink{fill:var(--on-pitch);opacity:.15}
+.hc-art-ink text.l{
+  font-family:var(--disp);font-size:15px;font-weight:700;text-anchor:middle;
+}
+.hc-art-ink text.n{font-family:var(--body);font-size:8px}
+.hc-art-ink rect.r{fill:var(--on-pitch)}
+/* Narrow screens: the words need the whole card, so the art steps back to a
+   corner rather than sitting under them. */
+@media (max-width:560px){
+  .home-choice.hero .hc-art{width:min(78%,320px);opacity:.55}
 }
 
 /* The device code. Two controls: one gives the code out, one takes one in. */

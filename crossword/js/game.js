@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002l";
+  var BUILD = "v002q";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2986,7 +2986,7 @@
            may not write another game's prefix; WIPE_KEYS stays for the named
            legacy keys this game alone knows about. */
         WIPE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
-        if (window.XIChrome && XIChrome.records) XIChrome.records.clear();
+        if (window.XIChrome && window.XIChrome.records) window.XIChrome.records.clear();
       } catch (e) {}
       // Reload, so the clock, the season strip and the board all start again
       // together rather than one at a time.
@@ -5460,9 +5460,18 @@
     $("homeDailyTitle").textContent = phase.label;
     /* The kicker names the competition, the title names the fixture. */
     if ($("homeDailyKicker")) {
-      $("homeDailyKicker").textContent =
-        (phase.phase === "preseason" ? "TODAY \u00B7 PRE-SEASON"
-         : phase.phase === "season" ? "TODAY \u00B7 SEASON" : "TODAY");
+      /* AND THE BOARD'S NUMBER. The engine keeps the number out of the phase
+         LABEL and the reasoning there still holds — a count that only goes up
+         invites somebody arriving on #59 to feel late. This is a different
+         line doing a different job: it is the board's identity, it is the
+         number in the board's own address, and the owner asked for it to be
+         visible. The label above is untouched. */
+      var comp = (phase.phase === "preseason" ? "TODAY \u00B7 PRE-SEASON"
+                  : phase.phase === "season" ? "TODAY \u00B7 SEASON" : "TODAY");
+      /* The local `today` here is the NUMBER, not the helper of the same
+         name in the outer scope — which is what this called first, and a
+         number is not a function. */
+      $("homeDailyKicker").textContent = comp + " \u00B7 #" + today;
     }
     $("homeDaily").classList.toggle("hero", true);
     $("homeDaily").classList.toggle("soon", !DAILY_OPEN);
@@ -6988,10 +6997,10 @@
       /* The address follows the board. One funnel for every daily — the
          calendar, a permalink, the daily button — so there is one place that
          decides what the URL says. */
-      if (window.XIChrome && XIChrome.permalink) {
+      if (window.XIChrome && window.XIChrome.permalink) {
         var n = t.no || today();
-        if (n === today()) XIChrome.permalink.clear("crossword");
-        else XIChrome.permalink.show("crossword", String(n));
+        if (n === today()) window.XIChrome.permalink.clear("crossword");
+        else window.XIChrome.permalink.show("crossword", String(n));
       }
       return;
     }
@@ -7208,7 +7217,7 @@
      its shape once for the family — see shared/xi-chrome.js, and
      functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
+    return window.XIChrome && window.XIChrome.permalink ? window.XIChrome.permalink.read() : null;
   }
 
   /* ---------- Boot: today's daily first; unfinished practice resumes ---------- */
@@ -7224,7 +7233,7 @@
       chooseMode("daily", { kind: "daily", no: pn });
       /* Only when the page was OPENED here. Picking a board out of the
          calendar needs no telling: the list said which day it was. */
-      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.aged("crossword", today() - pn);
+      if (window.XIChrome && window.XIChrome.permalink) window.XIChrome.permalink.aged("crossword", today() - pn);
       return;
     }
     /* Return to whatever was last being played. The old rule resumed practice

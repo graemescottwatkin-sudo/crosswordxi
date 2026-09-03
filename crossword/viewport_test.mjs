@@ -43,13 +43,69 @@ const dial = (name) => {
 const key = dial("osk-key"), gap = dial("osk-gap");
 t("the keyboard is sized from clamped variables", !!key && !!gap);
 const widths = [320, 360, 390, 430, 768, 1024, 1366, 1920];
+
+/* THE ROW IS THE CEILING, so the clamp above is a wish and not the width.
+   Keys used to be sized by the clamp alone, which meant the cap had to be
+   small enough for the narrowest phone and the keyboard then huddled in the
+   middle of anything wider. The width is now the smaller of that wish and
+   what a row of ten will actually take, so the wish can be generous.
+
+   That moves what can go wrong. Overflow is impossible by construction; what
+   is NOT impossible is the ceiling's own arithmetic drifting from the
+   keyboard it describes — it divides by the number of keys in the widest row
+   and subtracts one gap fewer, and both of those are written as literals. If
+   a row gains a key, they are wrong and every key is too wide by a tenth. So
+   the numbers in the CSS are checked against the keys in the markup. */
+const oskCss = css.replace(/\s*\n\s*/g, "");
+/* The rows are built by the script, not written into the page, so the key
+   count is read from where it is actually stated. */
+const oskJs = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+const ceiling = oskCss.match(
+  /\.osk-key\{[^}]*width:min\(var\(--osk-key\),calc\(\(100% - (\d+) \* var\(--osk-gap\)\) \/ (\d+)\)\)/);
+t("a key is capped by the row it is in, not only by the viewport", !!ceiling,
+  ceiling ? `minus ${ceiling[1]} gaps, over ${ceiling[2]}` : "no row ceiling in .osk-key");
+
+/* The keyboard's own rows, not the first `var rows` in the file — there are
+   several, and matching the first gave lengths from an unrelated list. */
+const rows = ((oskJs.match(/var rows = \[\s*("[A-Z]+"\s*,?\s*)+\]/) || [""])[0]
+  .match(/"[A-Z]+"/g) || []).map((q) => q.length - 2);
+const widest = Math.max(0, ...rows);
+t("and the row it divides by is the widest row the keyboard has",
+  !!ceiling && Number(ceiling[2]) === widest && Number(ceiling[1]) === widest - 1,
+  `rows ${rows.join("/")} — CSS divides by ${ceiling ? ceiling[2] : "?"}`);
+
+/* With that ceiling the row cannot exceed its container at any width, which
+   is the property the old arithmetic was reaching for. Checked by computing
+   the effective width the same way the browser will. */
 const overflow = widths.filter((vw) => {
-  const k = Math.min(Math.max(key.lo, vw * key.vw / 100), key.hi);
   const g = Math.min(Math.max(gap.lo, vw * gap.vw / 100), gap.hi);
-  return 10 * k + 9 * g + 8 > vw;
+  const wish = Math.min(Math.max(key.lo, vw * key.vw / 100), key.hi);
+  const room = (vw - 8 - (widest - 1) * g) / widest;
+  const k = Math.min(wish, room);
+  return widest * k + (widest - 1) * g + 8 > vw + 0.01;
 });
 t("the widest keyboard row fits every supported width", overflow.length === 0,
   overflow.length ? overflow.join(", ") + "px overflow" : widths.length + " widths checked");
+/* AND IT IS NOT LEAVING THE ROOM EMPTY, which is the fault that started
+   this: on a tablet a row of ten sat in the middle of the screen at a 64px
+   cap with space to spare on both sides. Measured as the key's own size
+   rather than as a fraction of the viewport — a fraction passes on the old
+   CSS at 768px and only tells the truth on a very wide one, where the cap is
+   doing something deliberate and not something to complain about. */
+const keyAt = (vw) => {
+  const g = Math.min(Math.max(gap.lo, vw * gap.vw / 100), gap.hi);
+  const wish = Math.min(Math.max(key.lo, vw * key.vw / 100), key.hi);
+  return Math.min(wish, (vw - 8 - (widest - 1) * g) / widest);
+};
+t("a key on a tablet is bigger than the old fixed cap", keyAt(1024) >= 80,
+  Math.round(keyAt(1024)) + "px at 1024");
+t("and a phone gains from it too, rather than only the tablet",
+  keyAt(390) >= 33 && keyAt(320) >= 27,
+  Math.round(keyAt(320)) + "px at 320, " + Math.round(keyAt(390)) + "px at 390");
+/* The cap is what stops a key stretching into a letterbox on a wide screen,
+   so it is a shape rule, not an oversight. */
+t("but a key never grows wider than about two and a half times its height",
+  key.hi <= 2.6 * 52, key.hi + "px against a 52px tallest key");
 t("keys grow with the screen instead of huddling at a fixed cap",
   key.hi >= 60 && !/\.osk-key\{[^}]*max-width:44px/.test(css.replace(/\s*\n\s*/g, "")));
 t("letter size is clamped, so phones do not lose out to the tablet fix",
