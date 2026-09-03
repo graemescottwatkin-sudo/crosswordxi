@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001y";
+var BUILD = "v001z";
 
 (function () {
   "use strict";
@@ -824,7 +824,7 @@ var BUILD = "v001y";
      its shape once for the family — see shared/xi-chrome.js, and
      functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
+    return window.XIChrome && window.XIChrome.permalink ? window.XIChrome.permalink.read() : null;
   }
 
   function boot() {
@@ -855,8 +855,8 @@ var BUILD = "v001y";
         state.todayNo = board.today || board.no;
         /* Followed a link to an older board: say how old, once, and only
            where the page was opened at one. */
-        if (permalinkKey() && window.XIChrome && XIChrome.permalink) {
-          XIChrome.permalink.aged("scrambled", (state.todayNo || 0) - (board.no || 0));
+        if (permalinkKey() && window.XIChrome && window.XIChrome.permalink) {
+          window.XIChrome.permalink.aged("scrambled", (state.todayNo || 0) - (board.no || 0));
         }
         $("startTitle").textContent = board.title;
         $("startPool").textContent = board.pool;

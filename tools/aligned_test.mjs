@@ -517,9 +517,15 @@ console.log("\nThe landing shell is defined once");
    pattern, like every other check in this file that has to survive a shell. */
 console.log("\nNo game restates a shared token");
 {
+  /* COMMENTS ARE NOT DECLARATIONS. This read the whole file, so a comment
+     that named a token and then punctuated — "--on-pitch rather than
+     --hero-rule: the rule token is tuned for..." — was read as a game
+     redefining --hero-rule, and the game had done nothing of the kind. A
+     check that can be tripped by prose is one that gets worked around
+     rather than trusted. */
   const names = (css) => {
     const out = new Set();
-    for (const chunk of css.split("--").slice(1)) {
+    for (const chunk of css.replace(/\/\*[\s\S]*?\*\//g, "").split("--").slice(1)) {
       const name = chunk.split(/[^a-z0-9-]/)[0];
       const rest = chunk.slice(name.length).trimStart();
       if (name && rest.startsWith(":")) out.add("--" + name);

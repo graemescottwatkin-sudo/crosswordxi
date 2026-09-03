@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002d";
+  var BUILD = "v002e";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -961,7 +961,7 @@
      its shape once for the family — see shared/xi-chrome.js, and
      functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
+    return window.XIChrome && window.XIChrome.permalink ? window.XIChrome.permalink.read() : null;
   }
 
   /* HELD UNTIL BOTH FACTS ARE IN: which day the SERVER says it is, and what
@@ -983,14 +983,14 @@
     /* Today's permalink is today's board, which this page is already
        opening. Nothing to do, and nothing to say. */
     if (key === serverDay) {
-      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.clear("wordsearch");
+      if (window.XIChrome && window.XIChrome.permalink) window.XIChrome.permalink.clear("wordsearch");
       return;
     }
     var entry = archiveDays.find(function (e) { return e.day === key; });
     if (!entry) { toast("That board is not available"); return; }
-    if (window.XIChrome && XIChrome.permalink) {
-      XIChrome.permalink.show("wordsearch", key);
-      XIChrome.permalink.aged("wordsearch",
+    if (window.XIChrome && window.XIChrome.permalink) {
+      window.XIChrome.permalink.show("wordsearch", key);
+      window.XIChrome.permalink.aged("wordsearch",
         Math.round((Date.parse(serverDay) - Date.parse(key)) / 86400000));
     }
     openBoard(entry, "PREVIOUS PUZZLE \u00b7 " + dayLabel(key).toUpperCase(),
@@ -1262,7 +1262,7 @@
       if (!entry) return;
       /* Opened from the list: the address says which day, so it can be
          copied out of the bar or shared from the browser's own menu. */
-      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.show("wordsearch", day);
+      if (window.XIChrome && window.XIChrome.permalink) window.XIChrome.permalink.show("wordsearch", day);
       openBoard(entry, "PREVIOUS PUZZLE · " + dayLabel(day).toUpperCase(),
         "Free play — only today's board keeps a run going.");
     };
@@ -1280,7 +1280,7 @@
     $("setBtn").onclick = function (ev) {
       ev.stopPropagation();
       closeMenus();
-      if (window.XIChrome && XIChrome.settings) XIChrome.settings.open($("setBtn"));
+      if (window.XIChrome && window.XIChrome.settings) window.XIChrome.settings.open($("setBtn"));
     };
     document.querySelectorAll("#gameMenu .menuRow").forEach(function (r) {
       r.onclick = function () {

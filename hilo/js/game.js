@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001i";
+var BUILD = "v001j";
 
 (function () {
   "use strict";
@@ -125,7 +125,7 @@ var BUILD = "v001i";
      its shape once for the family — see shared/xi-chrome.js, and
      functions/_lib/permalink.js for the server's half. */
   function permalinkKey() {
-    return window.XIChrome && XIChrome.permalink ? XIChrome.permalink.read() : null;
+    return window.XIChrome && window.XIChrome.permalink ? window.XIChrome.permalink.read() : null;
   }
 
   /* ---- the landing ----------------------------------------------------- */
@@ -283,9 +283,9 @@ var BUILD = "v001i";
       if (!r.board) { toast("No board that day"); return; }
       coverBoard(r.board, day === serverDay ? "daily" : "free", { day: day === serverDay ? day : null, kicker: kicker });
       /* The address follows the board, and today's keeps the plain one. */
-      if (window.XIChrome && XIChrome.permalink) {
-        if (day === serverDay) XIChrome.permalink.clear("hilo");
-        else XIChrome.permalink.show("hilo", day);
+      if (window.XIChrome && window.XIChrome.permalink) {
+        if (day === serverDay) window.XIChrome.permalink.clear("hilo");
+        else window.XIChrome.permalink.show("hilo", day);
       }
     }, function () { toast("Board unavailable"); });
   }
@@ -634,8 +634,8 @@ var BUILD = "v001i";
       if (perma && /^\d{4}-\d{2}-\d{2}$/.test(perma)) {
         openDay(perma, perma === serverDay
           ? "TODAY" : "PREVIOUS PUZZLE " + DOT + " " + dayLabel(perma).toUpperCase());
-        if (window.XIChrome && XIChrome.permalink) {
-          XIChrome.permalink.aged("hilo",
+        if (window.XIChrome && window.XIChrome.permalink) {
+          window.XIChrome.permalink.aged("hilo",
             Math.round((Date.parse(serverDay) - Date.parse(perma)) / 86400000));
         }
       }
