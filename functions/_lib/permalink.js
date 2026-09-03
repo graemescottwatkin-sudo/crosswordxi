@@ -153,24 +153,23 @@ export async function permalinkRoute({ request, env, params }, game) {
   const url = new URL(request.url);
   const parts = [].concat(params && params.path ? params.path : []).filter(Boolean);
 
-  /* No key: send them to today's, which is a different URL every day and is
-     the point — the bot links here once and lands on the right board. 302,
-     not 301: what "today" means changes at midnight and a browser must not
-     keep yesterday's answer. */
-  if (parts.length === 0) {
-    const today = todayKeyFor(game);
-    return new Response(null, {
-      status: 302,
-      headers: { Location: permalinkPath(game, today), "Cache-Control": "no-store" },
-    });
-  }
+  /* NO KEY MEANS TODAY, AND TODAY DOES NOT WEAR A NUMBER.
+     This bounced to /daily/9 with a 302, which put a board number in front of
+     somebody who had asked for "today" — the number belongs to the archive,
+     where it is the thing being pointed at. So today's board is served here,
+     at the address that was asked for, and the numbered address is named in
+     the canonical instead: crawlers consolidate on the permanent one, and a
+     bot can read today's number from the canonical or the Link header
+     without following anything. */
+  const asked = parts.length === 0 ? todayKeyFor(game) : parts[0];
   if (parts.length > 1) return notFound();
 
-  const key = validKey(game, parts[0]);
+  const key = validKey(game, asked);
   if (!key) return notFound();
   /* One board, one address. A key that is not in its canonical form redirects
-     to the one that is, rather than serving the same board twice. */
-  if (key !== parts[0]) {
+     to the one that is, rather than serving the same board twice. Not for
+     /daily itself, which is a name for today rather than a key. */
+  if (parts.length === 1 && key !== parts[0]) {
     return new Response(null, {
       status: 301,
       headers: { Location: permalinkPath(game, key), "Cache-Control": "no-store" },
@@ -188,6 +187,11 @@ export async function permalinkRoute({ request, env, params }, game) {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
+      /* The permanent address of what this page is showing, readable from a
+         HEAD request. /daily is today and changes at midnight; this says
+         which board today turned out to be, so a bot can record the URL that
+         will still mean this board next week without parsing any HTML. */
+      Link: `<${url.origin}${permalinkPath(game, key)}>; rel="canonical"`,
     },
   });
 }

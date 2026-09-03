@@ -54,16 +54,24 @@ for (const game of GAMES) {
     permalinkPath(game, today) === `/${game}/daily/${today}`);
 }
 
-console.log("\n/<game>/daily sends you to today's permalink");
+console.log("\n/<game>/daily IS today, and today does not wear a number");
 for (const game of GAMES) {
   const r = await call(game, null);
-  const loc = r.headers.get("Location");
-  /* Not 301: what "today" means changes at midnight, and a browser that
-     cached the answer would open yesterday's board tomorrow. */
-  t(`${game}: 302, and to a dated address`,
-    r.status === 302 && loc === permalinkPath(game, todayKeyFor(game)),
-    `${r.status} -> ${loc}`);
-  t(`${game}: and is never cached`, r.headers.get("Cache-Control") === "no-store");
+  /* It used to 302 to /daily/9, which put a board number in front of
+     somebody who had asked for today. The number belongs to the archive,
+     where it is the thing being pointed at. */
+  t(`${game}: serves today rather than bouncing to a numbered address`,
+    r.status === 200, String(r.status));
+  t(`${game}: and is never cached, because today changes at midnight`,
+    r.headers.get("Cache-Control") === "no-store");
+  /* The permanent address of what it just served, readable without parsing
+     any HTML: a bot records this and it still means this board next week. */
+  t(`${game}: naming today's permanent address in a Link header`,
+    (r.headers.get("Link") || "").includes(permalinkPath(game, todayKeyFor(game))),
+    r.headers.get("Link"));
+  const html = await r.text();
+  t(`${game}: and in the canonical, so a crawler consolidates on it`,
+    html.includes('href="https://www.thexigames.com' + permalinkPath(game, todayKeyFor(game)) + '"'));
 }
 
 console.log("\nA permalink opens that board and nothing else");

@@ -150,11 +150,16 @@ t("and the API is not indexed",
    offline suite because the route is a Function, and the offline suite runs
    in node, which has no Workers runtime to run one in. */
 {
+  /* /daily IS today, at the address that was asked for: a player who came
+     from the site's own button must not be handed a board number, which is
+     the archive's way of pointing at a board. The permanent address is named
+     in the Link header instead. */
   const hop = await fetch(BASE + "/scrambled/daily", { redirect: "manual" });
-  const loc = hop.headers.get("location") || "";
-  const key = loc.split("/").filter(Boolean).pop() || "";
-  t("/scrambled/daily sends you to a dated address",
-    hop.status === 302 && new RegExp("/scrambled/daily/.+").test(loc), `${hop.status} -> ${loc}`);
+  const link = hop.headers.get("link") || "";
+  const key = (link.match(/\/scrambled\/daily\/([^>]+)>/) || [])[1] || "";
+  t("/scrambled/daily serves today, with no number in the address",
+    hop.status === 200, String(hop.status));
+  t("and names today's permanent address in a Link header", !!key, link);
   t("and never lets that answer be cached",
     (hop.headers.get("cache-control") || "").includes("no-store"));
 
