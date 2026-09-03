@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001y";
+  var BUILD = "v001z";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -372,6 +372,7 @@
     });
     grid.setAttribute("role", "grid");
     grid.setAttribute("aria-label", puzzle.theme + " word search grid");
+    fitBoard();
     syncPanelHeight();
   }
   /* THE LIST ORDER. The DOM order is the payload order and never changes:
@@ -406,7 +407,10 @@
     var h = shell.getBoundingClientRect().height;
     if (h > 100) side.style.setProperty("--board-h", Math.round(h) + "px");
   }
-  window.addEventListener("resize", function () { syncPanelHeight(); redrawHighlights(); });
+  window.addEventListener("resize", function () { fitBoard(); syncPanelHeight(); redrawHighlights(); });
+  /* An iPad turned on its side changes the width before it reports the new
+     innerHeight, so the fit is taken again on the settled frame. */
+  window.addEventListener("orientationchange", function () { setTimeout(fitBoard, 250); });
 
   /* ---- board zoom — the board and only the board ----------------------- */
   /* One CSS variable, --cell, scales the grid. The page, the panel and the
@@ -418,6 +422,40 @@
     px = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(px)));
     grid.style.setProperty("--cell", px + "px");
     redrawHighlights(); syncPanelHeight();
+  }
+
+  /* THE BOARD FILLS THE CARD IT SITS IN.
+     --cell was a flat 34px whatever the screen, and the grid was centred in
+     a card that stretches. On an iPad that put a 424px board in a 680px card
+     with 128px of nothing down each side, and the board was the one thing on
+     the page that could have used the room. The cell is now the largest that
+     fits the card's width, and the board's height is held inside the window
+     so filling the width never pushes the last rows out of sight.
+     ZOOM_DEFAULT survives as the fallback for a page with no layout yet — a
+     suite in jsdom measures every box as zero, and a board of ZOOM_MIN tiles
+     there would be a measurement artefact, not a fit. */
+  var userZoomed = false;
+  function fitCell() {
+    if (!grid) return ZOOM_DEFAULT;
+    var shell = $("gridShell");
+    if (!shell) return ZOOM_DEFAULT;
+    var pad = 16;                                   /* .grid padding, both sides */
+    var w = shell.clientWidth - pad;
+    if (!(w > 0)) return ZOOM_DEFAULT;              /* no layout: jsdom, or pre-paint */
+    var byW = Math.floor(w / COLS);
+    /* The height budget comes from the WINDOW, not from the shell: the shell
+       grows with the board, so measuring it here would size the board from
+       its own height. */
+    var top = shell.getBoundingClientRect().top;
+    var room = window.innerHeight - top - 24;
+    var byH = room > 0 ? Math.floor((room - pad) / ROWS) : byW;
+    return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(byW, byH)));
+  }
+  /* Only where the player has not taken over. Someone who has zoomed in has
+     said what size they want, and a window resize must not argue with it. */
+  function fitBoard() {
+    if (userZoomed) { redrawHighlights(); syncPanelHeight(); return; }
+    setZoom(fitCell());
   }
   /* Pinch. The pointer count is DERIVED from the map — never kept in a
      separate counter. Crossword's pinch kept its own count, the two drifted,
@@ -442,7 +480,7 @@
   function onPointerMove(e) {
     if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
-      if (pinchStartDist > 0) setZoom(pinchStartCell * (pinchDist() / pinchStartDist));
+      if (pinchStartDist > 0) { userZoomed = true; setZoom(pinchStartCell * (pinchDist() / pinchStartDist)); }
       return;
     }
     pointerMove(e);
@@ -1171,9 +1209,11 @@
     document.querySelectorAll("#zoomMenu .menuRow[data-zoom]").forEach(function (r) {
       r.onclick = function () {
         var z = r.dataset.zoom;
-        if (z === "in") setZoom(cellPx() + ZOOM_STEP);
-        else if (z === "out") setZoom(cellPx() - ZOOM_STEP);
-        else setZoom(ZOOM_DEFAULT);
+        /* In and out are the player taking over; reset hands the board back
+           to the size that fits, which is what "reset" now means. */
+        if (z === "in") { userZoomed = true; setZoom(cellPx() + ZOOM_STEP); }
+        else if (z === "out") { userZoomed = true; setZoom(cellPx() - ZOOM_STEP); }
+        else { userZoomed = false; setZoom(fitCell()); }
       };
     });
     document.querySelectorAll("#setMenu .menuRow").forEach(function (r) {

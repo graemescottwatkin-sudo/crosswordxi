@@ -110,7 +110,7 @@ a.home-choice{text-decoration:none;color:inherit}
 .grid{
   --cell:34px; /* the board zoom variable — the ONLY thing zoom touches */
   position:relative;display:grid;grid-template-columns:repeat(12,var(--cell));
-  grid-auto-rows:var(--cell);width:max-content;margin:0 auto;padding:8px;
+  grid-auto-rows:var(--cell);width:max-content;margin:0;padding:8px;
   touch-action:none; user-select:none;-webkit-user-select:none;
 }
 /* The letters sit ON something. The rebuild dropped the tile and left bare
@@ -120,7 +120,13 @@ a.home-choice{text-decoration:none;color:inherit}
    exactly as it was. */
 .cell{display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:calc(var(--cell)*.52);color:var(--ink);border-radius:6px;
   background:var(--tint);box-shadow:0 0 0 1px var(--line) inset}
-.cell.preview{background:var(--tint-strong)}
+/* THE FINGER IS HERE. This was --tint-strong on a --tint tile: 12% ink over
+   6% ink, a difference you had to look for, and on an iPad in daylight the
+   dragged letters read as unselected. A selection is not a shade, it is the
+   opposite of the board — the tile takes the ink and the letter takes the
+   paper, which inverts correctly in either theme. Deliberately NOT the green
+   or the red: those mean found and wrong, and this is neither yet. */
+.cell.preview{background:var(--ink);color:var(--paper);box-shadow:0 0 0 1px var(--ink) inset}
 .cell.bad{background:color-mix(in srgb,var(--danger) 22%,transparent)}
 .cell.first-hint{animation:hintFlash 2.2s ease}
 .cell.live-hint{animation:hintFlash 6.2s ease}
