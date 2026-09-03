@@ -22,6 +22,7 @@ function t(name, ok, note) {
 }
 
 const chromeJs = fs.readFileSync("shared/xi-chrome.js", "utf8");
+const themeJs = fs.readFileSync("shared/xi-theme.js", "utf8");
 const chromeCss = fs.readFileSync("shared/xi-chrome.css", "utf8");
 const tokens = fs.readFileSync("shared/xi-tokens.css", "utf8");
 
@@ -30,6 +31,7 @@ const tokens = fs.readFileSync("shared/xi-tokens.css", "utf8");
 function render(path, url) {
   const dom = new JSDOM(fs.readFileSync(path, "utf8"),
     { runScripts: "outside-only", url });
+  dom.window.eval(themeJs);
   dom.window.eval(chromeJs);
   dom.window.XIChrome.init();
   return dom.window.document;
@@ -158,12 +160,108 @@ t("--tap is a token, so no page can disagree about the floor",
   /--tap\s*:\s*44px/.test(tokens));
 
 console.log("\nThe drawer can be left");
-t("escape closes it", /key === "Escape"/.test(chromeJs));
+t("escape closes it", (() => {
+  /* Executed, not read: this matched the source for one phrase and went red
+     when the handler grew to close the sheet and the menu as well. */
+  const doc = render("scrambled/index.html", "https://www.thexigames.com/scrambled/");
+  const win = doc.defaultView;
+  doc.querySelector(".xic-burger").click();
+  const opened = doc.querySelector(".xic-drawer").classList.contains("open");
+  doc.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape" }));
+  return opened && !doc.querySelector(".xic-drawer").classList.contains("open");
+})());
 t("the scrim closes it", /scrim\.addEventListener\("click", close\)/.test(chromeJs));
 t("focus moves into it on open and back to the opener on close",
   /first\.focus\(\)/.test(chromeJs) && /opener\.focus\(\)/.test(chromeJs));
 t("and it respects a player who asked for no animation",
   /prefers-reduced-motion/.test(chromeCss));
+
+
+console.log("\nThe account and the settings are universal");
+/* They were the crossword's: a Sign in / Account / Settings trio in its bar,
+   an account sheet of its own and a settings menu built from its footer.
+   Every other game had a sign-in row in the drawer and no settings. The
+   owner's rule is that they are universal, so the chrome draws them into
+   every bar and no page writes them. */
+const hilo = render("hilo/index.html", "https://www.thexigames.com/hilo/");
+for (const [name, doc] of [["crossword", cw], ["wordsearch", ws], ["scrambled", sc], ["hilo", hilo],
+                           ["the hub", hub], ["privacy", priv], ["how to play", htp]]) {
+  const bars = [...doc.querySelectorAll(".xic-bar")];
+  t(`${name}: every bar carries Sign in, Account and Settings`,
+    bars.length > 0 && bars.every((b) => b.querySelector(".xic-right .xic-signin") &&
+      b.querySelector(".xic-right .xic-account") && b.querySelector(".xic-right .xic-settings")));
+}
+t("the crossword's two bars both carry them, and the page itself writes none",
+  cw.querySelectorAll(".xic-bar .xic-signin").length === 2 &&
+  !/id="homeSignIn"|id="homeAccount"|id="homeSettings"/.test(fs.readFileSync("crossword/index.html", "utf8")));
+t("a bar filled twice has one burger, not two", (() => {
+  const doc = render("wordsearch/index.html", "https://www.thexigames.com/wordsearch/");
+  doc.defaultView.XIChrome.init();
+  return doc.querySelectorAll(".xic-bar .xic-burger").length === 1 &&
+    doc.querySelectorAll(".xic-bar .xic-settings").length === 1;
+})());
+t("the sign-in controls stay hidden until the session is known",
+  hilo.querySelector(".xic-signin").hidden && hilo.querySelector(".xic-account").hidden);
+t("no page carries an account sheet of its own", (() => {
+  const raw = ["crossword/index.html", "wordsearch/index.html", "scrambled/index.html", "hilo/index.html", "index.html"]
+    .map((f) => fs.readFileSync(f, "utf8").replace(/<!--[\s\S]*?-->/g, "")).join("");
+  return !/id="accountSheet"|id="googleBtn"|accounts\.google\.com\/gsi/.test(raw);
+})());
+
+{
+  const doc = hilo, win = doc.defaultView, X = win.XIChrome;
+  t("the account sheet is built on the first ask, once", (() => {
+    if (doc.querySelector(".xic-sheet")) return false;
+    X.account.open(); X.account.close(); X.account.open();
+    return doc.querySelectorAll(".xic-sheet").length === 1 && !doc.querySelector(".xic-sheet").hidden;
+  })());
+  const sheet = doc.querySelector(".xic-sheet");
+  t("it offers Google, a device code both ways, a name, and sign out",
+    !!sheet.querySelector(".xic-gsi") && !!sheet.querySelector(".xic-code-mine") &&
+    !!sheet.querySelector(".xic-code-in") && !!sheet.querySelector(".xic-name") &&
+    !!doc.getElementById("xicAcctSignOut") && !!doc.getElementById("xicAcctClose"));
+  t("the device code is twelve characters from the family key",
+    /^[2-9A-HJKMNP-TV-Z]{4}-[2-9A-HJKMNP-TV-Z]{4}-[2-9A-HJKMNP-TV-Z]{4}$/.test(sheet.querySelector(".xic-code-mine").textContent) &&
+    win.localStorage.getItem("xi.deviceCode").length === 12);
+  t("and it says what signing in shares, beside the button",
+    /name and email/.test(sheet.querySelector(".xic-out").textContent) && !!sheet.querySelector('.xic-out a[href*="privacy"]'));
+  t("no password field exists in it", sheet.querySelectorAll("input[type=password]").length === 0);
+  t("Escape closes it", (() => {
+    doc.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape" }));
+    return sheet.hidden;
+  })());
+
+  /* The menu: the family's theme row, then whatever the game adds. */
+  let pressed = 0, shown = true;
+  X.addSetting({ label: "Letter bank", state: () => (pressed % 2 ? "off" : "on"), press: () => { pressed++; }, shown: () => shown });
+  const btn = doc.querySelector(".xic-bar .xic-settings");
+  X.settings.open(btn);
+  const pop = doc.querySelector(".xic-pop");
+  const rows = () => [...pop.querySelectorAll(".xic-row")].map((r) => r.textContent);
+  t("the settings menu opens under the bar's button with the theme row first",
+    !!pop && !pop.hidden && /^Theme/.test(rows()[0]) && btn.getAttribute("aria-expanded") === "true");
+  t("a row a game adds appears with its state", rows().some((r) => r === "Letter bankon"));
+  t("pressing it presses the game's control and the menu stays open, restated", (() => {
+    [...pop.querySelectorAll(".xic-row")].find((r) => /Letter bank/.test(r.textContent)).click();
+    return pressed === 1 && !pop.hidden && rows().some((r) => r === "Letter bankoff");
+  })());
+  t("the theme row cycles the family theme and announces it", (() => {
+    let heard = null;
+    doc.addEventListener("xi:theme", (ev) => { heard = ev.detail.choice; });
+    pop.querySelector('[data-row="theme"]').click();
+    return heard !== null && win.XITheme.get() === heard &&
+      doc.documentElement.getAttribute("data-theme") === (heard === "dark" ? "dark" : "light");
+  })());
+  t("a row whose control is hidden is left out", (() => {
+    shown = false; X.settings.close(); X.settings.open(btn);
+    return !rows().some((r) => /Letter bank/.test(r));
+  })());
+  t("the menu ends with Privacy", /Privacy/.test(rows()[rows().length - 1]));
+  t("and Escape closes it too", (() => {
+    doc.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape" }));
+    return pop.hidden && btn.getAttribute("aria-expanded") === "false";
+  })());
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

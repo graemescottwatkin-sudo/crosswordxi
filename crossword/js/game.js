@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002e";
+  var BUILD = "v002f";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2356,6 +2356,9 @@
     if (window.XITheme) window.XITheme.cycle();
     applyTheme();
   });
+  /* The chrome's settings row cycles the same theme; the footer label
+     follows it. */
+  document.addEventListener("xi:theme", applyTheme);
   applyTheme();
 
   /* The league table moves below the board on a phone. CSS cannot reorder across
@@ -2677,11 +2680,9 @@
     pushResults().then(function (m) {
       pullAccountResults();
       if (!m) return;
-      var note = $("acctMigrated");
-      if (!note) return;
       if (m.added) {
-        note.textContent = m.added + (m.added === 1 ? " result" : " results") +
-          " from this device saved to your account.";
+        sayAccount(m.added + (m.added === 1 ? " result" : " results") +
+          " from this device saved to your account.");
       /* phase name, not `counts`: that is false for BOTH "preseason" and
          "daily", so from board #11 this claimed a friendly forever. */
       } else if (FCW.dailyPhase(FCW.dailyNumber()).phase === "preseason") {
@@ -2689,78 +2690,42 @@
            nothing to carry across — friendlies are played and scored but not
            recorded — and a player who has just finished a puzzle deserves to be
            told that rather than left wondering. */
-        note.textContent = "Nothing to carry over yet \u2014 pre-season friendlies " +
-          "are not recorded. Your record starts on Matchday 1.";
+        sayAccount("Nothing to carry over yet \u2014 pre-season friendlies " +
+          "are not recorded. Your record starts on Matchday 1.");
       } else {
-        note.textContent = "No results on this device to carry over.";
+        sayAccount("No results on this device to carry over.");
       }
     }).catch(function (e) { accountNote("sign-in sync", e); });
   }
 
-  function loadGoogle(clientId) {
-    if (window.google && window.google.accounts) return renderGoogleButton(clientId);
-    var sc = document.createElement("script");
-    sc.src = "https://accounts.google.com/gsi/client";
-    sc.async = true; sc.defer = true;
-    sc.onload = function () { renderGoogleButton(clientId); };
-    sc.onerror = function () {
-      accountsAvailable = false;
-      if ($("acctUnavailable")) {
-        $("acctUnavailable").textContent = "Could not reach the sign-in service.";
-        $("acctUnavailable").style.display = "";
-      }
-    };
-    document.head.appendChild(sc);
-  }
-
-  function renderGoogleButton(clientId) {
-    if (!window.google || !window.google.accounts || !$("googleBtn")) return;
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: function (resp) {
-        apiAuth("/api/auth/google", { credential: resp.credential })
-          .then(afterSignIn)
-          .catch(function (err) {
-            var note = $("acctUnavailable");
-            if (note) { note.textContent = String(err.message || err); note.style.display = ""; }
-          });
-      },
-    });
-    window.google.accounts.id.renderButton($("googleBtn"),
-      { theme: "outline", size: "large", text: "signin_with", shape: "pill" });
-  }
-
+  /* THE SHEET IS THE CHROME'S. accountToggle stays as the footer's control
+     and every route in the game presses it — the toolbar name, the Full Time
+     offer, the settings row — but what it opens is the family's account sheet
+     in shared/xi-chrome.js: one Google button, one display name, one device
+     code, on every game. This file no longer draws any of that. What it still
+     owns is its results: the chrome announces a sign-in, a sign-out or a
+     rename on document as xi:account, and the push, the pull and the owner
+     tools follow from here. */
   on("accountToggle", "click", function () {
-    renderDeviceCode();
-    $("accountSheet").classList.add("show");
-    if (accountsAvailable && !account) loadGoogle(accountsAvailable);
+    if (window.XIChrome && window.XIChrome.account) window.XIChrome.account.open($("accountToggle"));
   });
-  on("acctClose", "click", function () { $("accountSheet").classList.remove("show"); });
-  on("acctSignOut", "click", function () {
-    apiAuth("/api/auth/signout", {}).then(function () {
+  document.addEventListener("xi:account", function (ev) {
+    var d = ev.detail || {};
+    if (d.type === "signin") { afterSignIn({ user: d.user }); return; }
+    if (d.type === "signout") {
       account = null; isAdmin = false;
       renderAccount(); refreshAdmin();
-      /* The Google button has to be rebuilt, or the sheet shows a signed-out
-         account with no way back in until the page is reloaded. Google's
-         library renders the button once into an element and does not restore it
-         when the session it was rendered for ends. */
-      if (accountsAvailable) loadGoogle(accountsAvailable);
-      /* And the footer, the owner tools and anything else that reads the
-         session are re-rendered here rather than on the next refresh: signing
-         out should look like something that happened, not like nothing did. */
+      /* The footer, the owner tools and anything else that reads the session
+         are re-rendered here rather than on the next refresh: signing out
+         should look like something that happened, not like nothing did. */
       if (typeof renderHome === "function") renderHome();
-    }).catch(function (e) {
-      /* A failed sign-out is the one of these that MISLEADS if silent: the
-         page shows signed-out while the cookie is still live. */
-      accountNote("sign-out", e);
-    });
+      return;
+    }
+    if (d.type === "profile") { account = d.user || account; renderAccount(); }
   });
-  on("acctSave", "click", function () {
-    var name = $("acctName") ? $("acctName").value : "";
-    apiAuth("/api/account/profile", { displayName: name, club: club || null })
-      .then(function (r) { account = r.user; renderAccount(); })
-      .catch(function (e) { accountNote("profile save", e); });
-  });
+  function sayAccount(text) {
+    if (window.XIChrome && window.XIChrome.account) window.XIChrome.account.say(text);
+  }
 
   /* One call at boot, and the game does not wait for it. */
   apiAuth("/api/auth/session").then(function (r) {
@@ -6445,69 +6410,9 @@
      than show it — it stops the clock and flushes the pending save first. This
      is the display half, and showHome() calls it. Naming it the same shadowed
      the original and made it call itself. */
-  /* ---------- Device code ----------
-
-     A twelve-character code that identifies this player. Generated here and
-     kept in this browser; nothing reaches the server until they ask to save,
-     which keeps the server holding nothing for the great majority who never
-     do.
-
-     Thirty characters: Crockford base32 with 0 and 1 dropped as well. I, L,
-     O and U go for Crockford's reasons; 0 and 1 go because 0/O and 1/I are
-     exactly what people get wrong copying a code from an iPad onto a laptop,
-     and removing one side of each pair is not enough. 2^59 over twelve. */
-  var CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTVWXYZ";
-  var CODE_KEY = "fcw.deviceCode";
-
-  function makeDeviceCode() {
-    var out = "";
-    try {
-      /* crypto, not Math.random: predictable randomness makes the entropy
-         calculation a fiction, and this is the only thing standing between an
-         account and anyone. */
-      var buf = new Uint32Array(12);
-      crypto.getRandomValues(buf);
-      for (var i = 0; i < 12; i++) out += CODE_ALPHABET[buf[i] % CODE_ALPHABET.length];
-    } catch (e) {
-      for (var j = 0; j < 12; j++) {
-        out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
-      }
-    }
-    return out;
-  }
-
-  function deviceCode() {
-    var c = null;
-    try { c = localStorage.getItem(CODE_KEY); } catch (e) {}
-    if (c && c.length === 12) return c;
-    c = makeDeviceCode();
-    try { localStorage.setItem(CODE_KEY, c); } catch (e) {}
-    return c;
-  }
-
-  /* XXXX-XXXX-XXXX. Three even groups of four is the pattern people already
-     know from product keys, and the eye chunks it without being asked. */
-  function formatCode(c) {
-    return String(c || "").replace(/(.{4})(.{4})(.{4})/, "$1-$2-$3");
-  }
-
-  function claimCode(code, then) {
-    apiAuth("/api/account/code", { code: code }).then(function (d) {
-      if (!d || d.error) { toast("That code is not right", "Check it and try again", "loss"); return; }
-      account = d.user || account;
-      try { localStorage.setItem(CODE_KEY, String(code).toUpperCase().replace(/[^0-9A-Z]/g, "")); } catch (e) {}
-      renderAccount();
-      /* Push what this device has, then pull everything the account holds.
-         Merged, never replaced — linking a second device must not wipe what
-         was played on it before linking. */
-      pushResults().then(function () {
-        pullAccountResults();
-      });
-      if (then) then(d);
-    }).catch(function () {
-      toast("Could not reach the server", "Try again in a moment", "loss");
-    });
-  }
+  /* The device code lives in the chrome now: shared/xi-chrome.js generates
+     it, shows it and links it, under the family key xi.deviceCode with this
+     game's old key read as a fallback. */
 
   function setHomeVisible(on) {
     var v = $("homeOverlay");
@@ -6620,10 +6525,8 @@
      reimplements checking, revealing or scoring — a second implementation is
      two things that have to agree forever, and this codebase has been bitten by
      exactly that shape more than once. */
-  var buildSettings = function () {};
-
   (function () {
-    var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop", "tbSettingsPop"];
+    var POPS = ["tbModePop", "tbCheckPop", "tbRevealPop"];
     function closePops(except) {
       POPS.forEach(function (id) {
         var p = $(id);
@@ -6642,13 +6545,12 @@
         closePops(opening ? popId : null);
         p.hidden = !opening;
         this.setAttribute("aria-expanded", opening ? "true" : "false");
-        if (opening) { refreshMenus(); if (popId === "tbSettingsPop") buildSettings(); }
+        if (opening) refreshMenus();
       });
     }
     toggle("tbMode", "tbModePop");
     toggle("tbCheck", "tbCheckPop");
     toggle("tbReveal", "tbRevealPop");
-    toggle("tbSettings", "tbSettingsPop");
     /* Driving a footer control synthesises a click on it, and that click bubbles
        to the document — where the handler below closes every menu. So pressing
        a setting closed the menu it was pressed in, which is the opposite of
@@ -6889,90 +6791,55 @@
       saveSoon();
     });
 
-    /* The settings menu is built from the footer, every time it opens.
-
-       Each row is a live mirror of a footer control: its text is that control's
-       text, and pressing it presses that control. So there is one place a
-       setting lives and one place its label is written — a second list would be
-       two things to keep in step, and this is a codebase where that shape has
-       gone wrong before.
-
-       Rows whose control is hidden are left out, so owner tools and reset clues
-       appear only when they apply. */
+    /* THE SETTINGS MENU IS THE CHROME'S. Each row here is still a live mirror
+       of a footer control — its text is that control's text, and pressing it
+       presses that control — but the menu they sit in is the family's, in
+       shared/xi-chrome.js, so the theme row is the same row on every game and
+       the cog opens the same menu the bar's Settings button does. Rows whose
+       control is hidden are left out, so owner tools and reset clues appear
+       only when they apply. The account and the theme are not listed: the
+       chrome draws those itself. */
     var SETTINGS = [
-      { id: "accountToggle", label: "Account" },
-      { id: "statsBtn",      label: "My Season" },
-      { id: "adminToggle",   label: "Owner tools" },
-      { id: "themeToggle",   label: "Theme" },
-      { id: "bankToggle",    label: "Letter bank" },
-      { id: "pitchToggle",   label: "Pitch" },
-      { id: "skipToggle",    label: "Skip filled" },
-      { id: "circReset",     label: "Reset clues" }
+      { id: "statsBtn",    label: "My Season",   closes: true },
+      { id: "adminToggle", label: "Owner tools", closes: true },
+      { id: "bankToggle",  label: "Letter bank" },
+      { id: "pitchToggle", label: "Pitch" },
+      { id: "skipToggle",  label: "Skip filled" },
+      { id: "circReset",   label: "Reset clues" }
     ];
     function stateOf(el) {
-      /* Footer labels read "theme: auto" and "letter bank: on". The part after
-         the colon is the state; the part before is the name, which the row
-         already gives. */
+      /* Footer labels read "letter bank: on". The part after the colon is the
+         state; the part before is the name, which the row already gives. */
       var t = (el.textContent || "").trim();
       var i = t.indexOf(":");
       return i === -1 ? "" : t.slice(i + 1).trim();
     }
-    /* Assigned to the outer binding, not declared here.
-
-       This lived inside the toolbar IIFE, which is right until something
-       outside it needs the same menu — the landing screen does, because the
-       toolbar is not on screen there. Exposing the one builder beats a second
-       copy: the menu is generated from the footer controls, and two builders
-       reading the same controls is how they drift.
-
-       Assigned rather than moved, so everything it closes over stays where it
-       was. */
-    buildSettings = function () {
-      var pop = $("tbSettingsPop");
-      if (!pop) return;
-      var rows = "";
+    if (window.XIChrome && window.XIChrome.addSetting) {
       SETTINGS.forEach(function (r) {
-        var el = $(r.id);
-        if (!el) return;
-        /* style.display is how the footer hides owner tools and reset clues. */
-        if (el.style && el.style.display === "none") return;
-        rows += '<button role="menuitem" data-drive="' + r.id + '">' +
-          escapeHtml(r.label) +
-          '<span class="pc">' + escapeHtml(stateOf(el)) + "</span></button>";
+        window.XIChrome.addSetting({
+          label: r.label, closes: !!r.closes,
+          shown: function () { var el = $(r.id); return !!el && !(el.style && el.style.display === "none"); },
+          state: function () { var el = $(r.id); return el ? stateOf(el) : ""; },
+          /* Driving a footer control synthesises a click on it, and that click
+             bubbles to the document, where the closer below shuts every menu.
+             The flag makes the synthesised click invisible to it. */
+          press: function () { var el = $(r.id); if (!el) return; driving = true; try { el.click(); } finally { driving = false; } }
+        });
       });
-      rows += '<a role="menuitem" href="privacy.html">Privacy<span class="pc">&rsaquo;</span></a>';
-      rows += '<div class="set-build">' +
-        escapeHtml(($("buildTag") && $("buildTag").textContent) || "") + "</div>";
-      pop.innerHTML = rows;
-    };
-    on("tbSettingsPop", "click", function (ev) {
-      var b = ev.target.closest && ev.target.closest("[data-drive]");
-      if (!b) { ev.stopPropagation(); return; }   // a link looks after itself
+    }
+    on("tbSettings", "click", function (ev) {
       ev.stopPropagation();
-      var el = $(b.getAttribute("data-drive"));
-      if (el) { driving = true; try { el.click(); } finally { driving = false; } }
-      /* Rebuilt rather than closed: changing the theme or the letter bank is
-         something people do two or three times in a row, and a menu that shuts
-         after each one makes that three round trips. Anything that opens a
-         sheet closes it, because the menu would be behind the sheet. */
-      var opensSheet = /accountToggle|statsBtn|adminToggle/.test(b.getAttribute("data-drive"));
-      if (opensSheet) { closePops(null); return; }
-      buildSettings();
+      closePops(null);
+      if (window.XIChrome && window.XIChrome.settings) window.XIChrome.settings.open($("tbSettings"));
     });
 
     refreshMenus();
   })();
 
-  /* Both routes press accountToggle rather than opening the sheet themselves.
-
-     Opening it meant adding the .show class — which is all the sheet needs to
-     appear, and not all that opening it involves: accountToggle also calls
-     loadGoogle(), which fetches Google's script and renders the sign-in button
-     into #googleBtn. So the sheet opened with an empty space where the button
-     should be, and only worked once something else had loaded the script — the
-     cog, which drives the real control.
-
-     "It is only one line" is exactly how a second implementation starts. */
+  /* Every route into the account presses accountToggle, and accountToggle
+     opens the chrome's sheet. Four ways in used to open a sheet of this
+     game's own, one of which remembered to load the sign-in button; now
+     there is one sheet and it belongs to the family. */
   on("fxTipYes", "click", function (ev) {
     ev.stopPropagation();
     closeTip(true);
@@ -7319,77 +7186,8 @@
      the sheet without loading Google, so the sign-in button was missing until
      something else had fetched the script. Four ways in, one of which knew how
      to open it. */
-  on("homeAccount", "click", function () {
-    var b = $("accountToggle");
-    if (b) b.click();
-  });
-  /* Opens the account sheet's sibling: the settings menu lives in the toolbar,
-     which is hidden here, so this drives the footer controls the menu is built
-     from. One list, reached from two places. */
-  /* The settings menu lives in the toolbar, which is not on screen here — so
-     the landing gets its own copy of the same list.
-
-     Built by buildSettings() from the footer controls, exactly as the
-     toolbar's is. One source, two places it can be opened from.
-
-     An earlier version added a "more-open" class: that was the old
-     footer-panel mechanism, removed two releases before, so the button did
-     nothing at all. */
-  on("homeSettings", "click", function (ev) {
-    ev.stopPropagation();
-    var pop = $("tbSettingsPop"), host = $("homeSettings");
-    if (!pop || !host) return;
-    var opening = pop.hidden;
-    if (opening) {
-      buildSettings();
-      /* Moved under the button rather than left in the toolbar, which is
-         hidden here and would leave the menu floating over nothing. */
-      host.parentNode.insertBefore(pop, host.nextSibling);
-    }
-    pop.hidden = !opening;
-    pop.classList.toggle("as-home", opening);
-  });
-
-  /* Shown when the sheet opens rather than at boot, so a code is only put on
-     screen for somebody who went looking for it. */
-  function renderDeviceCode() {
-    var el = $("acctCode");
-    if (el) el.textContent = formatCode(deviceCode());
-  }
-
-  on("acctCodeCopy", "click", function () {
-    var code = formatCode(deviceCode());
-    try {
-      navigator.clipboard.writeText(code);
-      toast("Code copied", "Enter it on your other device");
-    } catch (e) {
-      /* Clipboard refused, which happens without a secure context or a user
-         gesture the browser trusts. The code is on screen either way, so say
-         so rather than failing silently. */
-      toast("Copy it by hand", code);
-    }
-  });
-
-  on("acctCodeGo", "click", function () {
-    var raw = ($("acctCodeInput") && $("acctCodeInput").value) || "";
-    var code = String(raw).toUpperCase().replace(/[^0-9A-Z]/g, "");
-    if (code.length !== 12) {
-      toast("That code is not right", "Twelve characters, like XXXX-XXXX-XXXX", "loss");
-      return;
-    }
-    claimCode(code, function () {
-      /* Entering a code is the moment anonymous play becomes an account: the
-         server has to hold it for the other device to find it. Said once,
-         here, rather than letting it happen quietly. */
-      toast("Devices linked", "Your results are saved and will follow you");
-      $("accountSheet").classList.remove("show");
-    });
-  });
-
-  on("homeSignIn", "click", function () {
-    var b = $("accountToggle");
-    if (b) b.click();
-  });
+  /* The landing's Sign in, Account and Settings buttons are the chrome's now,
+     drawn into the bar on every page of the family; nothing here opens them. */
   on("kickBack", "click", showHome);
   /* From inside a game. Switching modes now goes through the menu rather than
      a button that silently moves you between a scored daily and free practice. */

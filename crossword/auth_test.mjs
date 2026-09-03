@@ -303,13 +303,17 @@ t("signing out clears the same cookie scope it was set with", (() => {
 /* Signing out has to look like something happened. The button Google renders is
    drawn once into an element and is not restored when the session it was drawn
    for ends, so the sheet showed a signed-out account with no way back in until
-   the page was reloaded. */
+   the page was reloaded. The sheet is the chrome's now, so the rule is asserted
+   on shared/xi-chrome.js; the game's part is to re-render what depends on the
+   session when the chrome says the player signed out. */
 {
+  const chrome = fs.readFileSync(path.join(DIR, "..", "shared", "xi-chrome.js"), "utf8");
+  const out = chrome.slice(chrome.indexOf("function signOut()"), chrome.indexOf("function saveName()"));
+  t("signing out rebuilds the sign-in button", /renderGoogle\(\)/.test(out));
   const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-  const out = js.slice(js.indexOf('on("acctSignOut"'), js.indexOf('on("acctSave"'));
-  t("signing out rebuilds the sign-in button", /loadGoogle\(accountsAvailable\)/.test(out));
-  t("and re-renders what depends on the session",
-    /renderAccount\(\)/.test(out) && /refreshAdmin\(\)/.test(out) && /renderHome\(\)/.test(out));
+  const on = js.slice(js.indexOf('document.addEventListener("xi:account"'), js.indexOf("function sayAccount"));
+  t("and the game re-renders what depends on the session",
+    /d\.type === "signout"/.test(on) && /renderAccount\(\)/.test(on) && /refreshAdmin\(\)/.test(on) && /renderHome\(\)/.test(on));
 }
 
 /* Signing in was one of three links in a row of small text, which is where a
@@ -319,21 +323,18 @@ t("signing out clears the same cookie scope it was set with", (() => {
   const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   t("sign-in has a control of its own on the landing screen", (() => {
-    /* It was a .home-signin button in the column; it is now a button in the
-       header bar, alongside Account and Settings. The class changed, the
-       property did not: sign-in is a control of its own rather than one of
-       three links in a row of small text.
-
-       Tested as "the button exists and is not inside the footer", which is
-       what the assertion was always about. */
-    if (!/id="homeSignIn"/.test(html)) return false;
-    const foot = html.slice(html.indexOf("site-foot"));
-    return !/id="homeSignIn"/.test(foot);
+    /* It was a .home-signin button in the column, then a button in this
+       page's header bar. It is the chrome's now: shared/xi-chrome.js draws
+       Sign in into every bar of the family, so this page writes none and
+       the control is there all the same. */
+    const chrome = fs.readFileSync(path.join(DIR, "..", "shared", "xi-chrome.js"), "utf8");
+    return !/id="homeSignIn"/.test(html) && /btn\("xic-ghost xic-signin", "Sign in"\)/.test(chrome);
   })());
   t("which disappears once there is an account", (() => {
     /* An account button is only interesting until you have one. */
-    const fn = js.slice(js.indexOf("function syncSignInPrompt"), js.indexOf("function renderAccount"));
-    return /b\.hidden = !!account/.test(fn);
+    const chrome = fs.readFileSync(path.join(DIR, "..", "shared", "xi-chrome.js"), "utf8");
+    const fn = chrome.slice(chrome.indexOf("function paintAccount"), chrome.indexOf("function say("));
+    return /b\.hidden = !acct\.known \|\| !!acct\.user \|\| !acct\.accounts/.test(fn);
   })());
   t("and is not offered when sign-in is not configured", (() => {
     /* Offering something that cannot work is worse than not offering it. */

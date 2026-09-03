@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001b";
+var BUILD = "v001c";
 
 (function () {
   "use strict";
@@ -105,6 +105,14 @@ var BUILD = "v001b";
       return merged.length;
     }).catch(function (e) { accountNote("pull", e); return null; });
   }
+  /* THE CHROME OWNS THE IDENTITY. Its account sheet announces a sign-in, a
+     sign-out or a rename on document as xi:account; this game answers by
+     syncing its own results, which is the one part that is still its own. */
+  document.addEventListener("xi:account", function (ev) {
+    var d = ev.detail || {};
+    if (d.type === "signout") { account = null; return; }
+    syncAccount();
+  });
   function syncAccount() {
     return apiAuth("/api/auth/session").then(function (r) {
       account = (r && r.user) || null;

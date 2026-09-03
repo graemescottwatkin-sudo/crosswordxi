@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001v";
+  var BUILD = "v001w";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -85,6 +85,8 @@
     if (window.XITheme) window.XITheme.cycle();
     themeApply();
   }
+  /* The chrome's settings row cycles the same theme; the label follows it. */
+  document.addEventListener("xi:theme", themeApply);
   themeApply();
 
   /* ---- the daily record and the durable results ------------------------ */
@@ -177,6 +179,14 @@
       return merged.length;
     }).catch(function (e) { accountNote("pull", e); return null; });
   }
+  /* THE CHROME OWNS THE IDENTITY. Its account sheet announces a sign-in, a
+     sign-out or a rename on document as xi:account; this game answers by
+     syncing its own results, which is the one part that is still its own. */
+  document.addEventListener("xi:account", function (ev) {
+    var d = ev.detail || {};
+    if (d.type === "signout") { account = null; return; }
+    syncAccount();
+  });
   function syncAccount() {
     return apiAuth("/api/auth/session").then(function (r) {
       account = (r && r.user) || null;

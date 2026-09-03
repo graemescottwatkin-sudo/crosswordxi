@@ -99,9 +99,9 @@ if (s0.user) {
   say("Already signed in. Signing out first so the test starts from a guest.");
   await page.click("#accountToggle", { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(400);
-  await page.click("#acctSignOut", { timeout: 8000 }).catch(() => {});
+  await page.click("#xicAcctSignOut", { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1200);
-  await page.click("#acctClose", { timeout: 4000 }).catch(() => {});
+  await page.click("#xicAcctClose", { timeout: 4000 }).catch(() => {});
   s0 = await session(page);
 }
 t("nobody is signed in yet", s0.user === null,
@@ -127,12 +127,12 @@ t("exactly one account was created", after1.users === startAccounts + 1 || after
 say("Signing out for you.");
 await page.click("#accountToggle", { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(400);
-await page.click("#acctSignOut", { timeout: 8000 }).catch(() => {});
+await page.click("#xicAcctSignOut", { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(1200);
 const s2 = await session(page);
 t("signing out ends the session", s2.user === null,
   s2.user ? "still signed in" : "signed out");
-await page.click("#acctClose", { timeout: 4000 }).catch(() => {});
+await page.click("#xicAcctClose", { timeout: 4000 }).catch(() => {});
 
 /* ---------- Second sign-in: the one that matters ---------- */
 const s3 = await waitFor(page,
@@ -160,9 +160,9 @@ t("the session survives a reload", !!s4?.user && s4.user.id === id1,
 say("Signing out again, then checking a guest game still plays.");
 await page.click("#accountToggle", { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(400);
-await page.click("#acctSignOut", { timeout: 8000 }).catch(() => {});
+await page.click("#xicAcctSignOut", { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(800);
-await page.click("#acctClose", { timeout: 4000 }).catch(() => {});
+await page.click("#xicAcctClose", { timeout: 4000 }).catch(() => {});
 await page.click("#kickOffBtn", { timeout: 8000 }).catch(() => {});
 await page.waitForSelector(".cell", { timeout: 10000 });
 t("a guest can still start a puzzle",

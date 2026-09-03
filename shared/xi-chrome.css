@@ -97,6 +97,10 @@
 .xic-ghost:hover { color: var(--ink); background: var(--tint); }
 .xic-ghost:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
+/* The signed-in name is the Account button's face. A long one is cut, not
+   allowed to squeeze the wordmark off a phone. */
+.xic-account { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
 /* Under about 430px the bar keeps the way out and drops the rest. The
    hamburger holds everything it drops, which is the whole reason it exists. */
 @media (max-width: 430px) {
@@ -263,15 +267,118 @@ a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; 
   line-height: 1.6;
 }
 
-/* The account, in the drawer so every game has it. Quiet by default: it is a
-   utility row, not a call to action, and it must not compete with the squad. */
-.xic-acct { display: flex; flex-direction: column; gap: .5rem;
-  padding: .75rem 1rem; border-top: 1px solid var(--line); font-size: 14px; }
-.xic-acct-state { opacity: .8; }
-.xic-acct-btn { align-self: flex-start; font: inherit; cursor: pointer;
-  background: none; border: 1px solid var(--line); border-radius: var(--radius);
-  padding: .3rem .7rem; color: inherit; }
-.xic-gsi { min-height: 40px; }
+/* ---- the account and the settings ----------------------------------------
+   The crossword's sheet and menu, moved here so every game has them. The
+   sheet is a card over a scrim; the menu is a small card under the button
+   that opened it, or in the middle when opened from the drawer. Every
+   value comes from the tokens. */
+
+/* The drawer's account row. Quiet: a utility row, not a call to action. */
+.xic-acct { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.xic-acct-state { opacity: .8; flex: 1 1 auto; }
+.xic-acct-btn { font: inherit; font-size: 13px; cursor: pointer;
+  background: none; border: 1px solid var(--line); border-radius: 8px;
+  min-height: 36px; padding: 0 12px; color: var(--ink); }
+.xic-acct-btn:hover { background: var(--tint); }
+.xic-dsettings { font: inherit; border: 0; background: none; cursor: pointer;
+  width: 100%; text-align: left; }
+.xic-dsettings:hover { background: var(--tint); }
+
+/* Buttons the chrome draws in its own sheets. */
+.xic-btn {
+  font-family: var(--disp); font-weight: 700; font-size: 14px; letter-spacing: .08em;
+  text-transform: uppercase; min-height: var(--tap); padding: 0 18px;
+  border-radius: var(--r-pill); border: 2px solid var(--pitch);
+  background: var(--pitch); color: var(--on-pitch); cursor: pointer;
+}
+.xic-btn:hover { filter: brightness(1.06); }
+.xic-btn.outline { background: transparent; color: var(--pitch-ink); }
+.xic-btn.outline:hover { background: var(--tint); }
+.xic-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* The account sheet. */
+.xic-sheet {
+  position: fixed; inset: 0; z-index: 210;
+  background: rgb(0 0 0 / .45);
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.xic-sheet[hidden] { display: none; }
+.xic-sheet-card {
+  background: var(--card); color: var(--ink); border-radius: var(--r-lg);
+  max-width: 480px; width: 100%; max-height: 92vh; overflow: auto;
+  padding: 22px 22px 20px; border-top: 6px solid var(--pitch);
+  box-shadow: var(--shadow-2); text-align: center; font-family: var(--body);
+}
+.xic-sheet-card h3 {
+  font-family: var(--disp); font-weight: 700; font-size: 15px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--pitch-ink); text-align: left;
+  border-bottom: 2px solid var(--pitch); padding-bottom: 4px; margin: 0 0 8px;
+}
+.xic-sub { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 16px; text-align: left; }
+.xic-why { font-size: 14.5px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 16px; }
+.xic-gsi { display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px; }
+.xic-small { font-size: 12.5px; color: var(--ink-faint); margin: 12px 0 0; line-height: 1.45; }
+.xic-small a { color: var(--pitch-ink); }
+.xic-msg:empty { display: none; }
+.xic-code { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); text-align: left; }
+.xic-code-or { font-size: 12px; letter-spacing: .09em; color: var(--ink-faint);
+  text-align: center; margin-bottom: 14px; text-transform: uppercase; }
+.xic-code-lbl { font-size: 13px; font-weight: 700; color: var(--ink); margin: 14px 0 6px; }
+.xic-code-lbl:first-of-type { margin-top: 0; }
+.xic-code-row { display: flex; gap: 8px; align-items: stretch; }
+.xic-code-row code, .xic-code-row input {
+  flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px; letter-spacing: .06em; padding: 11px 12px; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.xic-code-row code { display: flex; align-items: center; overflow: auto; }
+.xic-code-row input { text-transform: uppercase; }
+.xic-code-row .xic-btn { flex: none; padding: 0 14px; }
+.xic-code-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.45; }
+.xic-code-msg:empty { display: none; }
+.xic-field { display: block; text-align: left; margin-bottom: 14px; }
+.xic-field span {
+  display: block; font-family: var(--disp); font-weight: 600; font-size: 11px;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 5px;
+}
+.xic-field input {
+  width: 100%; box-sizing: border-box; font-family: var(--body); font-size: 15px; color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); padding: 9px 10px;
+}
+.xic-actions { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+.xic-sheet-close { width: 100%; margin-top: 14px; }
+
+/* The settings menu. */
+.xic-pop {
+  position: fixed; z-index: 205; min-width: 230px; max-width: calc(100vw - 16px);
+  background: var(--card); color: var(--ink); border: 1px solid var(--line);
+  border-radius: var(--r-md); box-shadow: var(--shadow-2); padding: 4px;
+  font-family: var(--body);
+}
+.xic-pop[hidden] { display: none; }
+.xic-pop.as-sheet {
+  top: 50%; left: 50%; right: auto; transform: translate(-50%, -50%);
+  width: min(320px, calc(100vw - 32px));
+}
+.xic-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  text-align: left; border: 0; background: none; color: var(--ink); font: inherit;
+  font-size: 14px; padding: 9px 10px; border-radius: var(--r-sm); min-height: 40px;
+  text-decoration: none; cursor: pointer;
+}
+.xic-row:hover, .xic-row:focus-visible { background: var(--tint); outline: none; }
+.xic-pc { margin-left: auto; font-size: 12px; color: var(--ink-faint);
+  font-variant-numeric: tabular-nums; text-transform: lowercase; }
+.xic-set-build {
+  padding: 8px 10px 2px; margin-top: 4px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--ink-faint); letter-spacing: .04em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .xic-pop:not([hidden]) { animation: xic-pop-in .12s ease-out; }
+}
+@keyframes xic-pop-in { from { opacity: 0; transform: translateY(-4px); } }
+.xic-pop.as-sheet:not([hidden]) { animation: none; }
 
 /* ---- form chips ---------------------------------------------------------
    Drawn by XIChrome.formChips() and styled here, so the two games cannot

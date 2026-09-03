@@ -112,13 +112,13 @@
      width:var(--tap) was invalid, not because it was styled small. Order
      matters — style.css comes after and still wins wherever the crossword
      genuinely differs. -->
-<link rel="stylesheet" href="../shared/xi-tokens.css?v=v9">
-<link rel="stylesheet" href="../shared/xi-landing.css?v=v9">
-<link rel="stylesheet" href="../shared/xi-chrome.css?v=v9">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v10">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v10">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v10">
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
-<script src="../shared/xi-theme.js?v=v9"></script>
-<link rel="stylesheet" href="css/style.css?v=v002e">
+<script src="../shared/xi-theme.js?v=v10"></script>
+<link rel="stylesheet" href="css/style.css?v=v002f">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -405,10 +405,8 @@
       <div class="tbar-menu">
           <button class="tbar-btn tbar-cog" id="tbSettings" aria-expanded="false"
                   aria-haspopup="menu" aria-label="Settings" title="Settings">&#9881;</button>
-          <!-- Built from the footer's own controls at open time, so each row shows
-               what that control currently says and pressing it presses that control.
-               One source for every setting, not a second list to keep in step. -->
-          <div class="tbar-pop tbar-set" id="tbSettingsPop" role="menu" hidden></div>
+          <!-- The menu it opens is the chrome's; see the SETTINGS list in
+               js/game.js for the rows this game adds to it. -->
         </div>
     </div>
   </div>
@@ -626,82 +624,8 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- Accounts are optional. Nothing here gates play: the sheet only opens if
-     the player asks for it, and the game never waits on it. -->
-<div class="sheet" id="accountSheet">
-  <div class="sheet-card">
-    <h3 id="acctTitle">Your account</h3>
-    <div class="sheet-sub" id="acctSub">Playing as a guest on this device</div>
-
-    <div id="acctSignedOut">
-      <p class="acct-why">
-        Create a free account to keep your streak, stats and league position
-        across devices. Your progress on this device comes with you.
-      </p>
-      <div id="googleBtn" class="acct-provider"></div>
-
-      <!-- Two controls, not one prompt. The device that has the progress needs
-           to be GIVEN a code; the device that does not needs to ENTER one.
-           A single line asking "are you playing elsewhere?" serves neither,
-           because whichever device you are on, half of it does not apply.
-
-           The second line of each says what it is for. Without those, the code
-           is a mysterious string and "will be merged" is the question anybody
-           hesitating actually has: will this wipe what I have done here? -->
-      <div class="code-block">
-        <div class="code-or">or, without an account</div>
-
-        <div class="code-mine">
-          <div class="code-lbl">This device</div>
-          <div class="code-row">
-            <code id="acctCode">&mdash;</code>
-            <button class="btn outline" id="acctCodeCopy">Copy</button>
-          </div>
-          <div class="code-note">Enter this on another device to play on both.</div>
-        </div>
-
-        <div class="code-enter">
-          <div class="code-lbl">Playing somewhere else already?</div>
-          <div class="code-row">
-            <input id="acctCodeInput" type="text" inputmode="latin"
-                   autocomplete="off" spellcheck="false"
-                   placeholder="XXXX-XXXX-XXXX" maxlength="14">
-            <button class="btn secondary" id="acctCodeGo">Use code</button>
-          </div>
-          <div class="code-note">Your results from both devices will be merged.</div>
-        </div>
-      </div>
-      <!-- Directly under the sign-in button rather than buried in the footer.
-           Signing in is the one moment somebody hands over an identity, so the
-           explanation of what happens to it belongs at that button. -->
-      <p class="acct-note">
-        Signing in shares your name and email address with us.
-        <a href="privacy.html">What we do with it</a>.
-      </p>
-      <p class="acct-note" id="acctUnavailable" style="display:none">
-        Sign-in is not switched on for this site yet.
-      </p>
-    </div>
-
-    <div id="acctSignedIn" style="display:none">
-      <label class="acct-field">
-        <span>Display name</span>
-        <input id="acctName" type="text" maxlength="40" autocomplete="nickname">
-      </label>
-      <div class="acct-actions">
-        <button class="btn secondary" id="acctSave">Save</button>
-        <button class="btn outline" id="acctSignOut">Sign out</button>
-      </div>
-      <div class="sheet-note" id="acctMigrated"></div>
-    </div>
-
-    <div class="sheet-note">
-      Signing in is optional. The daily puzzle, practice and your club all work
-      without an account.
-    </div>
-    <button class="btn outline sheet-close" id="acctClose">Close</button>
-  </div>
-</div>
+<!-- The account sheet is the chrome's: shared/xi-chrome.js builds one for
+     every page, so there is no markup for it here. -->
 
 <div class="sheet" id="statsSheet">
   <div class="sheet-card">
@@ -844,13 +768,9 @@
   <!-- Bar, then this game's own row. The bar is identical in every game; the
        row below is where the games differ, and keeping the difference on its
        own row is what lets the bar stay identical. -->
-  <header class="xic-bar">
-    <div class="xic-right">
-      <button class="xic-ghost" id="homeSignIn" hidden>Sign in</button>
-      <button class="xic-ghost" id="homeAccount">Account</button>
-      <button class="xic-ghost" id="homeSettings" data-optional>Settings</button>
-    </div>
-  </header>
+  <!-- The bar's Sign in, Account and Settings are drawn by the shared chrome
+       on every page; this page puts nothing in it. -->
+  <header class="xic-bar">  </header>
 
   <header class="site-head">
     <div class="site-bar">
@@ -1120,7 +1040,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002e</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002f</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1139,11 +1059,11 @@
      aligned_test only grepped for the class, which is true of an element
      sealed inside a hidden container. -->
 <footer class="xic-foot"></footer>
-<script src="../shared/xi-clubs.js?v=v9"></script>
-<script src="../shared/xi-chrome.js?v=v9"></script>
-<script src="../shared/xi-plays.js?v=v9"></script>
-<script src="js/seasons.js?v=v002e"></script>
-<script src="js/engine.js?v=v002e"></script>
-<script src="js/game.js?v=v002e"></script>
+<script src="../shared/xi-clubs.js?v=v10"></script>
+<script src="../shared/xi-chrome.js?v=v10"></script>
+<script src="../shared/xi-plays.js?v=v10"></script>
+<script src="js/seasons.js?v=v002f"></script>
+<script src="js/engine.js?v=v002f"></script>
+<script src="js/game.js?v=v002f"></script>
 </body>
 </html>

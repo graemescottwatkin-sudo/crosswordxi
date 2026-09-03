@@ -1630,19 +1630,22 @@ server.listen(0, "127.0.0.1", async () => {
   t("no sign-in wall: the board is playable without an account", (() => {
     // The whole point of Phase 1 — a guest must reach the puzzle untouched.
     return d.querySelectorAll("#grid .cell").length > 50 &&
-      !d.querySelector("#accountSheet").classList.contains("show");
+      !d.querySelector(".xic-sheet:not([hidden])");
   })());
-  t("the account sheet only opens when asked for", (() => {
-    const sheet = d.getElementById("accountSheet");
+  t("the account sheet only opens when asked for, and it is the chrome's", (() => {
+    /* The chrome builds it on the first ask; pressing the footer control
+       asks. It used to be this page's own sheet, opened four ways. */
+    if (d.querySelector(".xic-sheet")) return false;
     $("accountToggle").dispatchEvent(new w.Event("click", { bubbles: true }));
-    const opened = sheet.classList.contains("show");
-    $("acctClose").dispatchEvent(new w.Event("click", { bubbles: true }));
-    return !!sheet && opened && !sheet.classList.contains("show");
+    const sheet = d.querySelector(".xic-sheet");
+    const opened = !!sheet && !sheet.hidden;
+    d.getElementById("xicAcctClose").dispatchEvent(new w.Event("click", { bubbles: true }));
+    return opened && sheet.hidden;
   })());
   t("a guest sees the reason to sign up, not a form", (() => {
-    return d.getElementById("acctSignedOut").style.display !== "none" &&
-      d.getElementById("acctSignedIn").style.display === "none" &&
-      /streak|stats/i.test(d.querySelector(".acct-why").textContent);
+    const sheet = d.querySelector(".xic-sheet");
+    return !sheet.querySelector(".xic-out").hidden && sheet.querySelector(".xic-in").hidden &&
+      /streak|form|results/i.test(sheet.querySelector(".xic-why").textContent);
   })());
   t("no password field exists anywhere",
     d.querySelectorAll('input[type=password]').length === 0);
@@ -1651,9 +1654,12 @@ server.listen(0, "127.0.0.1", async () => {
     return /"X-Crossword-XI": "1"/.test(js) && /credentials: "same-origin"/.test(js);
   })());
   t("signing out never clears the local results", (() => {
+    /* Two places now: the chrome's sign-out, and this game's answer to it. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const out = js.slice(js.indexOf('on("acctSignOut"'), js.indexOf('on("acctSave"'));
-    return !/removeItem|clear\(/.test(out);
+    const on = js.slice(js.indexOf('document.addEventListener("xi:account"'), js.indexOf("function sayAccount"));
+    const chrome = fs.readFileSync(path.join(DIR, "..", "shared", "xi-chrome.js"), "utf8");
+    const out = chrome.slice(chrome.indexOf("function signOut()"), chrome.indexOf("function saveName()"));
+    return !/removeItem|clear\(/.test(on) && !/removeItem|clear\(/.test(out);
   })());
 
   console.log("\nLandscape tablet: the rail");
