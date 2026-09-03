@@ -126,6 +126,13 @@ body{
   border:2px solid rgba(255,255,255,.34);color:rgba(255,255,255,.5);
   background:transparent;text-decoration:none;transition:transform .12s ease}
 .shirt.live{border-color:#fff;color:#fff}
+/* A LIVE SHIRT WEARS ITS GAME, NOT ITS NUMBER. The strip was eleven numerals,
+   which told you how many games there are and nothing about what any of them
+   is. The four that exist now say so at a glance; the seven that do not are
+   still numbers, because a number is exactly what an unsigned shirt has. The
+   name stays in the title and the aria-label, so what was readable before is
+   still readable to a screen reader and on hover. */
+.shirt svg{width:58%;height:58%;display:block}
 .shirt.live:hover,.shirt.live:focus-visible{transform:translateY(-3px)}
 .shirt.done{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
 .shirt.soon{border-style:dashed;border-color:rgba(255,255,255,.2);
@@ -218,10 +225,18 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     <p class="date" id="sheetDate">Today</p>
 
     <div class="xi-strip">
-      <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI">1</a>
-      <a class="shirt live" id="shirt2" href="/wordsearch/" title="Wordsearch XI">2</a>
-      <a class="shirt live" id="shirt3" href="/scrambled/" title="Scrambled XI">3</a>
-      <a class="shirt live" id="shirt4" href="/hilo/" title="HiLo XI">4</a>
+      <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI" aria-label="Crossword XI">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.9"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect x="9" y="9" width="6" height="6" fill="currentColor" stroke="none"/></svg></a>
+      <a class="shirt live" id="shirt2" href="/wordsearch/" title="Wordsearch XI" aria-label="Wordsearch XI">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.9"><path d="M3 8h18M3 16h18M8 3v18M16 3v18" opacity=".5"/><rect x="2.6" y="9.4" width="18.8" height="5.2" rx="2.6" transform="rotate(-42 12 12)"/></svg></a>
+      <a class="shirt live" id="shirt3" href="/scrambled/" title="Scrambled XI" aria-label="Scrambled XI">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.9"><rect x="2.6" y="7" width="7.4" height="7.4" rx="1.4" transform="rotate(-13 6.3 10.7)"/><rect x="13.4" y="4.6" width="7.4" height="7.4" rx="1.4" transform="rotate(11 17.1 8.3)"/><rect x="8.4" y="14" width="7.4" height="7.4" rx="1.4" fill="currentColor" fill-opacity=".35" transform="rotate(-6 12.1 17.7)"/></svg></a>
+      <a class="shirt live" id="shirt4" href="/hilo/" title="HiLo XI" aria-label="HiLo XI">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.9"><path d="M6.5 9.5 12 4l5.5 5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 15.5 12 21l5.5-5.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg></a>
       <span class="shirt soon" title="Not out yet">5</span>
       <span class="shirt soon" title="Not out yet">6</span>
       <span class="shirt soon" title="Not out yet">7</span>
