@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001z";
+  var BUILD = "v002";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -372,7 +372,7 @@
     });
     grid.setAttribute("role", "grid");
     grid.setAttribute("aria-label", puzzle.theme + " word search grid");
-    fitBoard();
+    fitBoard(true);
     syncPanelHeight();
   }
   /* THE LIST ORDER. The DOM order is the payload order and never changes:
@@ -407,16 +407,36 @@
     var h = shell.getBoundingClientRect().height;
     if (h > 100) side.style.setProperty("--board-h", Math.round(h) + "px");
   }
-  window.addEventListener("resize", function () { fitBoard(); syncPanelHeight(); redrawHighlights(); });
-  /* An iPad turned on its side changes the width before it reports the new
-     innerHeight, so the fit is taken again on the settled frame. */
-  window.addEventListener("orientationchange", function () { setTimeout(fitBoard, 250); });
+  /* THE CARD IS WHAT IS WATCHED, not the window.
+     A window resize is the wrong signal twice over. It fires when iOS hides
+     its toolbar, which moves nothing that matters, and it does NOT fire when
+     the card itself changes width — which happens when the panel moves above
+     the grid at the narrow breakpoint, and when the game view replaces the
+     landing. That second case is how a phone ended up with a board sized for
+     a card it was no longer in, half the width of the one it was drawn in,
+     with the rest of the card empty beside it. A ResizeObserver on the card
+     fires for exactly the thing the fit depends on, and for nothing else. */
+  if (typeof ResizeObserver === "function") {
+    try {
+      new ResizeObserver(function () { fitBoard(); redrawHighlights(); })
+        .observe($("gridShell"));
+    } catch (e) { /* an old browser keeps the window listener below */ }
+  }
+  /* Kept for a browser with no ResizeObserver, and for the suites, where
+     every box measures zero and only this path runs. */
+  window.addEventListener("resize", function () { fitBoard(); redrawHighlights(); });
+  window.addEventListener("orientationchange", function () { setTimeout(function () { fitBoard(); }, 250); });
 
   /* ---- board zoom — the board and only the board ----------------------- */
   /* One CSS variable, --cell, scales the grid. The page, the panel and the
      toolbar never move; the shell scrolls if the board outgrows it. Buttons
      in the Board menu, and pinch on the grid, both end at the same setter. */
-  var ZOOM_MIN = 22, ZOOM_MAX = 64, ZOOM_STEP = 4, ZOOM_DEFAULT = 34;
+  /* ZOOM_MAX was 64, which the fit reached on any card wider than about 780px
+   and then stopped, leaving the strip of white space the fit exists to
+   remove. It is a ceiling for a board nobody wants to read, not a size the
+   layout should run into: twelve columns at 96px is 1152px, wider than any
+   card the layout builds. */
+  var ZOOM_MIN = 22, ZOOM_MAX = 96, ZOOM_STEP = 4, ZOOM_DEFAULT = 34;
   function cellPx() { return parseFloat(getComputedStyle(grid).getPropertyValue("--cell")) || ZOOM_DEFAULT; }
   function setZoom(px) {
     px = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(px)));
@@ -434,26 +454,47 @@
      ZOOM_DEFAULT survives as the fallback for a page with no layout yet — a
      suite in jsdom measures every box as zero, and a board of ZOOM_MIN tiles
      there would be a measurement artefact, not a fit. */
-  var userZoomed = false;
+  var userZoomed = false, fittedAt = 0;
+  /* WIDTH, AND NOTHING ELSE.
+     The first version of this took the window's height into account so the
+     whole board would fit without scrolling. Two things went wrong on a real
+     iPad, both reported.
+
+     Scrolling changed the size. Safari hides its toolbars as you scroll and
+     fires a resize for it, so the height moved, the fit moved with it, and
+     the board grew and shrank under the reader's hands.
+
+     And in landscape the height is the tighter of the two, so the cell came
+     out at the height's answer and left a third of the card empty down the
+     right — the very white space this was meant to remove.
+
+     So the board is sized by the width it has been given, which does not
+     change when a toolbar hides, and a board taller than the window is
+     scrolled to like any other long page. */
   function fitCell() {
     if (!grid) return ZOOM_DEFAULT;
     var shell = $("gridShell");
     if (!shell) return ZOOM_DEFAULT;
-    var pad = 16;                                   /* .grid padding, both sides */
-    var w = shell.clientWidth - pad;
+    var w = shell.clientWidth - 16;                 /* .grid padding, both sides */
     if (!(w > 0)) return ZOOM_DEFAULT;              /* no layout: jsdom, or pre-paint */
-    var byW = Math.floor(w / COLS);
-    /* The height budget comes from the WINDOW, not from the shell: the shell
-       grows with the board, so measuring it here would size the board from
-       its own height. */
-    var top = shell.getBoundingClientRect().top;
-    var room = window.innerHeight - top - 24;
-    var byH = room > 0 ? Math.floor((room - pad) / ROWS) : byW;
-    return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(byW, byH)));
+    return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.floor(w / COLS)));
   }
-  /* Only where the player has not taken over. Someone who has zoomed in has
-     said what size they want, and a window resize must not argue with it. */
-  function fitBoard() {
+  /* Refitted only when the WIDTH has actually changed. A resize on iOS is
+     usually the toolbar, not the layout; refitting on every one of them is
+     what made the board move while it was being read. */
+  function fitBoard(force) {
+    var shell = $("gridShell");
+    var w = shell ? shell.clientWidth : 0;
+    /* A card that is not on screen yet measures zero, and zero is not an
+       answer — recording it would make the next real measurement look like
+       no change at all if it also came back zero, and would fit the board to
+       a card it has not been given. The board keeps whatever it has and the
+       next call, from the observer or from the next resize, does the fit. */
+    if (w <= 0) return;
+    if (!force && w === fittedAt) { syncPanelHeight(); return; }
+    fittedAt = w;
+    /* Someone who has zoomed has said what size they want; a rotation must
+       not argue with it. */
     if (userZoomed) { redrawHighlights(); syncPanelHeight(); return; }
     setZoom(fitCell());
   }
@@ -470,6 +511,13 @@
        the clock has not started, so a swipe must not find a word for free. */
     if (pending) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    /* NO PINCH ON A PHONE. The board is already the width of the screen
+       there, so pinching can only make it worse, and a second finger landing
+       during a drag is far more likely to be a hand resting on the glass
+       than a request to resize. Reported as the board zooming in and out on
+       a phone for no reason the player asked for. The Board menu still has
+       its controls on every screen. */
+    if (pts.size === 2 && window.innerWidth < 760) { pts.delete(e.pointerId); return; }
     if (pts.size === 2) {
       dragging = false; setPreview([]);
       pinchStartDist = pinchDist(); pinchStartCell = cellPx();

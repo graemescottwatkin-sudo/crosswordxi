@@ -223,6 +223,89 @@ t("the daily state carries saved_at for the away-time charge",
     !d.documentElement.style.zoom);
 }
 
+/* ---- the board is sized by the width it is given, and by nothing else ----
+
+   Both halves of this were reported from an iPad on the day the fit shipped.
+
+   The board grew and shrank while it was being read: Safari hides its
+   toolbars as you scroll and fires a resize for it, the fit read the
+   window's height, and so the board moved. And in landscape the height was
+   the tighter of the two, so the cell took the height's answer and left a
+   third of the card empty down the right — the white space the fit existed
+   to remove.
+
+   jsdom measures every box as zero, so the shell is given a width here.
+   That is the whole input: fit it, then move the height and prove nothing
+   happens, then move the width and prove it follows. */
+{
+  const grid = d.getElementById("grid");
+  const shell = d.getElementById("gridShell");
+  const COLS = 12, PAD = 16;
+  const widthIs = (px) => Object.defineProperty(shell, "clientWidth",
+    { value: px, configurable: true });
+
+  widthIs(700);
+  w.dispatchEvent(new w.Event("resize"));
+  const fitted = grid.style.getPropertyValue("--cell");
+  t("the board is fitted to the width of its card",
+    fitted === Math.floor((700 - PAD) / COLS) + "px", fitted);
+
+  /* The toolbar case: a resize the layout did not move for.
+
+     Watched through a value the fit would never choose. Comparing --cell to
+     the fitted size instead would pass whether or not the guard exists —
+     the fit reads the width and the width has not moved, so recomputing
+     lands on the same number. That check would have been describing the
+     fit, not the guard it is named for. */
+  grid.style.setProperty("--cell", "11px");
+  w.dispatchEvent(new w.Event("resize"));
+  w.dispatchEvent(new w.Event("resize"));
+  t("a resize that did not change the width does not touch the board at all",
+    grid.style.getPropertyValue("--cell") === "11px",
+    grid.style.getPropertyValue("--cell"));
+  grid.style.setProperty("--cell", fitted);
+
+  widthIs(500);
+  w.dispatchEvent(new w.Event("resize"));
+  t("a resize that DID change the width refits it",
+    grid.style.getPropertyValue("--cell") === Math.floor((500 - PAD) / COLS) + "px",
+    grid.style.getPropertyValue("--cell"));
+
+  /* The card is as wide as the board wants to be, so what is left over is a
+     rounding remainder rather than a margin. */
+  const cell = parseInt(grid.style.getPropertyValue("--cell"), 10);
+  t("what is left of the card's width is less than one cell",
+    (500 - PAD) - cell * COLS < cell, `${(500 - PAD) - cell * COLS}px over`);
+
+  /* A card that is not on screen measures zero. Fitting a board to that
+     would size it for a card it has not been given, and recording it would
+     make the first real measurement look like no change at all. */
+  widthIs(0);
+  grid.style.setProperty("--cell", "12px");
+  w.dispatchEvent(new w.Event("resize"));
+  t("a card that measures zero is not a size to fit to",
+    grid.style.getPropertyValue("--cell") === "12px",
+    grid.style.getPropertyValue("--cell"));
+  widthIs(620);
+  w.dispatchEvent(new w.Event("resize"));
+  t("and the first real measurement after it is taken",
+    grid.style.getPropertyValue("--cell") === Math.floor((620 - PAD) / COLS) + "px",
+    grid.style.getPropertyValue("--cell"));
+
+  /* A player who has zoomed has said what size they want. */
+  d.getElementById("zoomBtn").click();
+  d.querySelector('#zoomMenu [data-zoom="in"]').click();
+  const zoomed = grid.style.getPropertyValue("--cell");
+  widthIs(900);
+  w.dispatchEvent(new w.Event("resize"));
+  t("a resize does not argue with a player who has zoomed",
+    grid.style.getPropertyValue("--cell") === zoomed, grid.style.getPropertyValue("--cell"));
+  d.querySelector('#zoomMenu [data-zoom="reset"]').click();
+  t("and reset hands the board back to the fit, not to a fixed size",
+    grid.style.getPropertyValue("--cell") === Math.floor((900 - PAD) / COLS) + "px",
+    grid.style.getPropertyValue("--cell"));
+}
+
 /* ---- the away-time charge, proven ------------------------------------- */
 {
   /* Rewind the completed state to in_progress with a stale saved_at, reload

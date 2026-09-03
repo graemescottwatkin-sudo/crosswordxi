@@ -106,7 +106,13 @@ a.home-choice{text-decoration:none;color:inherit}
    overflow the viewport. */
 .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,300px);gap:12px;align-items:start}
 .boardWrap{min-width:0}
-.gridShell{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);max-height:calc(100dvh - 190px)}
+/* NO INNER SCROLLER. This capped the board at the window's height and let it
+   scroll inside its own card, which is why a board that filled the width had
+   to be dragged around a box instead of read. The card is as tall as the
+   board, and a board taller than the window is scrolled to like any other
+   long page. overflow-x stays: a board can still be wider than the card if
+   the player zooms in past the fit. */
+.gridShell{overflow-x:auto;overflow-y:visible;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
 .grid{
   --cell:34px; /* the board zoom variable — the ONLY thing zoom touches */
   position:relative;display:grid;grid-template-columns:repeat(12,var(--cell));
@@ -142,7 +148,11 @@ a.home-choice{text-decoration:none;color:inherit}
 .side{
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:12px;display:flex;flex-direction:column;min-height:0;
-  max-height:var(--board-h,calc(100dvh - 190px));
+  /* The shorter of the board and the window. It was the board's height
+     alone, and once the board could outgrow the window that put the bottom
+     of the word list somewhere you had to scroll the page to reach. */
+  max-height:min(var(--board-h,100dvh),calc(100dvh - 120px));
+  position:sticky;top:12px;
 }
 .sideHead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .sideHead h3{font-size:17px;text-transform:uppercase}
@@ -191,8 +201,14 @@ a.home-choice{text-decoration:none;color:inherit}
 @media (max-width:760px){
   .main{grid-template-columns:1fr;gap:8px}
   .side{order:-1;max-height:none;flex-direction:column;padding:9px}
-  .words{display:flex;overflow-x:auto;overflow-y:hidden;gap:6px;padding-bottom:4px}
-  .word{flex:none;border-left-width:3px;white-space:nowrap}
+  /* WRAPPED, NOT SCROLLED. The names were a single row that ran off the
+     right of the screen, so the last of the eleven were reachable only by
+     dragging a rail nobody could see the end of — and they were set small to
+     get as many into that row as possible. They wrap now, at the size the
+     rest of the game is set in. Two rows of names cost less than a name you
+     cannot read. */
+  .words{display:flex;flex-wrap:wrap;overflow:visible;gap:6px;padding-bottom:2px}
+  .word{flex:none;border-left-width:4px;white-space:nowrap;font-size:15px;padding:8px 11px}
   .bonusBox{margin-top:6px}
   .gridShell{max-height:none}
   .matchHead{flex-wrap:wrap}
