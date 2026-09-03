@@ -106,13 +106,58 @@ for (const [label, file] of [
    means this assertion has to be edited every time a game ships, and an
    assertion nobody remembers to edit is the next frozen constant. */
 /* Scoped to the squad list. Unscoped, this also counts the drawer footer’s
-   How to play / Answers / Privacy links, which are .xic-slot too. */
-const releasedSlots = cw.querySelectorAll(".xic-squad .xic-slot[href]").length;
+   How to play / Answers / Privacy links, which are .xic-slot too.
+
+   RELEASED IS NAMED, not merely linked. A game in testing is a link as well
+   now, so counting [href] counted it as released and left the arithmetic one
+   short — which is this check doing its job on the day the third state
+   arrived. Released slots are the ones that are not .soon. */
+const releasedSlots = cw.querySelectorAll(".xic-squad .xic-slot[href]:not(.soon)").length;
 t("the drawer shows unbuilt slots as a number and a status, never a name",
   [...cw.querySelectorAll(".xic-slot.soon")].every((e) =>
     e.querySelector(".xic-shirt") && e.querySelector(".xic-status")) &&
   cw.querySelectorAll(".xic-slot.soon").length === 11 - releasedSlots,
   `${releasedSlots} released, ${cw.querySelectorAll(".xic-slot.soon").length} unbuilt`);
+
+console.log("\nA game in testing is reachable, and still not named");
+/* The third state. Built and playable but not launched: the owner asked for
+   those to be reachable from the front door, under "the rest of the XI". What
+   they get is a way in — the drawer slot opens, and the hub's dashed card
+   opens — while the name stays off every served page, which is the standing
+   rule and the checks above still hold it. */
+const testingSlots = [...cw.querySelectorAll(".xic-squad .xic-slot.soon[href]")];
+t("the slot for a game in testing opens", testingSlots.length === 1,
+  testingSlots.map((e) => e.getAttribute("href")).join(", "));
+t("and says only its number and its status, never a name", (() => {
+  const e = testingSlots[0];
+  if (!e) return false;
+  const status = e.querySelector(".xic-status");
+  return !!e.querySelector(".xic-shirt") && !!status && /testing/i.test(status.textContent) &&
+    /* The whole of its text is the shirt and the status: nothing else has
+       crept in, which is the property "never a name" actually needs. */
+    e.textContent.replace(/\s+/g, " ").trim() === `4${status.textContent}`;
+})());
+t("the route in is marked nofollow, so it is not an announcement",
+  !!testingSlots[0] && testingSlots[0].getAttribute("rel") === "nofollow");
+/* The footer lists games by NAME. A slot with a href and no name put an
+   empty link into the footer of every page on the site. */
+t("the footer names released games only, with no empty link", (() => {
+  const links = [...cw.querySelectorAll(".xic-foot-in a")];
+  return links.length > 0 && links.every((a) => a.textContent.trim().length > 0) &&
+    !links.some((a) => a.getAttribute("href") === "/quickfire/");
+})());
+t("the hub carries the same route in, on a card under the rest of the XI", (() => {
+  const card = hub.querySelector(".soon-grid a.soon-card");
+  if (!card) return false;
+  const strip = hub.querySelector(".xi-strip");
+  return card.getAttribute("href") === "/quickfire/" &&
+    card.getAttribute("rel") === "nofollow" &&
+    /in testing/i.test(card.textContent) &&
+    /Number four/i.test(card.textContent) &&
+    /* Not in Out now, and not promoted to a live shirt in the roll-call. */
+    !card.closest("section").textContent.includes("Out now") &&
+    !!strip && strip.querySelectorAll("a.shirt.live").length === 4;
+})());
 
 console.log("\nOne palette, and the chrome defines none of it");
 t("xi-chrome.css sets no colour of its own",

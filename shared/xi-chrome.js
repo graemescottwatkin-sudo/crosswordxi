@@ -29,13 +29,24 @@
 (function () {
   "use strict";
 
-  /* THE SQUAD. One list. `href` present means released and named; absent means
-     a number and a status, never a name. Order is the shirt number. */
+  /* THE SQUAD. One list, and THREE states, not two.
+       name + href  — released: named, linked, in the footer.
+       href only    — built and playable but not launched: a way in for
+                      whoever is testing it, and still NO NAME anywhere.
+       neither      — a number and a status, as before.
+     The middle state is new. The owner asked for a game that is available for
+     testing to be reachable from the front door, under "the rest of the XI"
+     rather than "Out now". Naming it is the part that was NOT asked for and
+     is the part with a price: the hub is indexed, and two competitors ship
+     regularly and already hold the names some of these were built under. So a
+     game in testing gets a route in and keeps its silence, and the rule the
+     gates enforce is unchanged — an unreleased game is named nowhere.
+     Order is the shirt number. */
   var SQUAD = [
     { n: 1,  name: "Crossword XI",   href: "/crossword/" },
     { n: 2,  name: "Wordsearch XI",  href: "/wordsearch/" },
     { n: 3,  name: "Scrambled XI",   href: "/scrambled/" },
-    { n: 4,  status: "In build" },
+    { n: 4,  status: "In testing",   href: "/quickfire/" },
     { n: 5,  status: "In build" },
     { n: 6,  status: "In build" },
     { n: 7,  status: "On the drawing board" },
@@ -101,11 +112,21 @@
     SQUAD.forEach(function (g) {
       var li = document.createElement("li");
       var shirt = '<span class="xic-shirt">' + g.n + "</span>";
-      if (g.href) {
+      if (g.href && g.name) {
         var a = el("a", "xic-slot", shirt + "<span>" + g.name + "</span>");
         a.href = g.href;
         if (isHere(g.href)) a.setAttribute("aria-current", "page");
         li.appendChild(a);
+      } else if (g.href) {
+        /* In testing: the slot opens, and says only what the span said. Marked
+           nofollow because the hub is indexed and the page at the other end
+           carries the game's name — the link is for whoever is testing it,
+           not an announcement. */
+        var t = el("a", "xic-slot soon", shirt + '<span class="xic-status">' + g.status + "</span>");
+        t.href = g.href;
+        t.rel = "nofollow";
+        if (isHere(g.href)) t.setAttribute("aria-current", "page");
+        li.appendChild(t);
       } else {
         /* A span, not a disabled link: there is nowhere to go, and a link that
            goes nowhere is a promise the site cannot keep. */
@@ -641,7 +662,10 @@
 
     var games = el("div", null, "<h2>The XI Games</h2>");
     var gl = el("ul");
-    SQUAD.filter(function (g) { return g.href; }).forEach(function (g) {
+    /* Named AND linked: released. A game in testing has a href and no name,
+       and would otherwise have put an empty link in the footer of every page
+       on the site. */
+    SQUAD.filter(function (g) { return g.href && g.name; }).forEach(function (g) {
       var li = document.createElement("li");
       var a = el("a", null, g.name);
       a.href = g.href;

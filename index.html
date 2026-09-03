@@ -22,7 +22,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The XI Games — daily football puzzles</title>
-<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI, Wordsearch XI and Scrambled XI are out now — a new board every day.">
+<meta name="description" content="Eleven daily football puzzles, one for every shirt. Crossword XI, Wordsearch XI, Scrambled XI and HiLo XI are out now — a new board every day.">
 <link rel="canonical" href="https://www.thexigames.com/">
 <script type="application/ld+json">
 {
@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v11">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v11">
-<script src="shared/xi-theme.js?v=v11"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v12">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v12">
+<script src="shared/xi-theme.js?v=v12"></script>
 <style>
 :root{
 
@@ -184,6 +184,12 @@ body{
   line-height:1.1}
 .soon-card .nm span{display:block;font-family:var(--body);font-weight:400;
   font-size:12px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase}
+/* A card you can open. Dashed still — it is not out — but it answers to the
+   pointer, and its shirt is not faded to a promise. */
+a.soon-card{text-decoration:none;transition:border-color .15s ease,transform .15s ease}
+a.soon-card:hover,a.soon-card:focus-visible{border-color:var(--ink-faint);transform:translateY(-2px)}
+a.soon-card .sq{opacity:.85}
+a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
 
 
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -328,7 +334,14 @@ body{
 
   <section class="section">
     <h2>The rest of the XI</h2>
-    <!-- Numbers only, no names.
+    <!-- A CARD WITH A DASHED BORDER THAT YOU CAN OPEN is a game in testing:
+         built, playable, not launched. The owner asked for those to be
+         reachable from the front door, here rather than under Out now. It is
+         still a number and a status — see below for why the name stays off
+         this page — and it is marked nofollow so the route in does not become
+         an announcement to a crawler.
+
+         Numbers only, no names.
 
          Two reasons. The roster reads as a squad being assembled rather than a
          list of promises, which is the whole point of the shirt strip above.
@@ -340,10 +353,11 @@ body{
          familiar before the name ever appears. The status line is the only
          thing that moves. -->
     <div class="soon-grid">
-      <div class="soon-card">
+      <a class="soon-card open" href="/quickfire/" rel="nofollow"
+         title="In testing — not finished, and not yet a daily game">
         <span class="sq" style="background:var(--kit-04)">4</span>
-        <span class="nm">Number four<span>In build</span></span>
-      </div>
+        <span class="nm">Number four<span>In testing</span></span>
+      </a>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-05)">5</span>
         <span class="nm">Number five<span>In build</span></span>
@@ -377,7 +391,7 @@ body{
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v11"></script>
+<script src="shared/xi-chrome.js?v=v12"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
