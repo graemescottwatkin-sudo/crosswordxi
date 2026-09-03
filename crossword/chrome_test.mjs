@@ -140,7 +140,7 @@ t("and says only its number and its status, never a name", (() => {
   return !!e.querySelector(".xic-shirt") && !!status && /testing/i.test(status.textContent) &&
     /* The whole of its text is the shirt and the status: nothing else has
        crept in, which is the property "never a name" actually needs. */
-    e.textContent.replace(/\s+/g, " ").trim() === `4${status.textContent}`;
+    e.textContent.replace(/\s+/g, " ").trim() === `5${status.textContent}`;
 })());
 t("the route in is marked nofollow, so it is not an announcement",
   !!testingSlots[0] && testingSlots[0].getAttribute("rel") === "nofollow");
@@ -158,7 +158,7 @@ t("the hub carries the same route in, on a card under the rest of the XI", (() =
   return card.getAttribute("href") === "/quickfire/" &&
     card.getAttribute("rel") === "nofollow" &&
     /in testing/i.test(card.textContent) &&
-    /Number four/i.test(card.textContent) &&
+    /Number five/i.test(card.textContent) &&
     /* Not in Out now, and not promoted to a live shirt in the roll-call. */
     !card.closest("section").textContent.includes("Out now") &&
     !!strip && strip.querySelectorAll("a.shirt.live").length === 4;
@@ -310,6 +310,35 @@ t("no page carries an account sheet of its own", (() => {
   t("and Escape closes it too", (() => {
     doc.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape" }));
     return pop.hidden && btn.getAttribute("aria-expanded") === "false";
+  })());
+}
+
+console.log("\nClearing a record clears the family's, not one game's");
+/* "Clear everything" swept fcw. only, so the word search, Scrambled and HiLo
+   survived a reset the server had already carried out in full — the two sides
+   disagreeing about what everything meant. It lives in the chrome because the
+   project's rule is that a game never writes another game's prefix. */
+{
+  const doc = render("hilo/index.html", "https://www.thexigames.com/hilo/");
+  const win = doc.defaultView, store = win.localStorage;
+  const records = ["fcw.results.v1", "fcw.v04.daily.3", "xiws.results",
+                   "xiws.daily.2026-09-02", "xisc.results", "xihl.results", "qfx.results"];
+  const kept = ["xi.theme", "xi.club", "xi.deviceCode", "fcw.clubPref",
+                "fcw.deviceCode", "fcw.pitch", "fcw.bank"];
+  records.concat(kept).forEach((k) => store.setItem(k, "x"));
+  const removed = win.XIChrome.records.clear();
+  t("every game's record goes, not just the one you are on",
+    records.every((k) => store.getItem(k) === null), `${removed} removed`);
+  /* A reset clears what you have DONE, never how you like the thing to look
+     and never who you are — wiping the device code would cut somebody off
+     from results already synced to their account. */
+  t("and no preference or identity goes with them",
+    kept.every((k) => store.getItem(k) === "x"),
+    kept.filter((k) => store.getItem(k) !== "x").join(", ") || "all kept");
+  t("the game that asks does not reach into another game's prefix itself", (() => {
+    const js = fs.readFileSync("crossword/js/game.js", "utf8");
+    return /XIChrome\.records\.clear\(\)/.test(js) &&
+      !/localStorage[^\n]*xiws\.|localStorage[^\n]*xisc\.|localStorage[^\n]*xihl\./.test(js);
   })());
 }
 

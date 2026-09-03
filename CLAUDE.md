@@ -122,13 +122,15 @@ Where facts live — extend these, never copy them:
 
 ## Shirt numbers
 
-- A new game takes the **next FREE number**, never one another game has
-  claimed. Free means "Not yet signed" — not "In build", not "On the drawing
-  board", both of which are a claim. HiLo XI launched on 10 because its build
-  brief said 10, while 9 was unsigned and 4 to 8 were all spoken for; it was
-  renumbered to 9 on 3 Sep 2026. The owner's rule, and the reorder is cheap:
-  the number lives in the squad list in `shared/xi-chrome.js`, and the hub
-  carries the strip, the card and its kit colour.
+- A game takes the **next free number when it LAUNCHES**. Only a launched
+  game holds a number; a game that is in build, on the drawing board or in
+  testing does not, and moves down when a game ships past it. HiLo XI went
+  out on 10 (its build brief said so), was renumbered to 9, and is 4 — the
+  fourth game to launch — from 3 Sep 2026. Launched games are 1 to 4 and the
+  rest queue behind them.
+- The reorder is cheap and stays cheap: the number lives in the squad list in
+  `shared/xi-chrome.js`, and the hub carries the strip, the card, the kit
+  colour and the played-today check. Nothing else may hold a shirt number.
 - Kit colours follow the GAME, not the number — `--kit-NN` is defined for the
   number a game actually wears.
 

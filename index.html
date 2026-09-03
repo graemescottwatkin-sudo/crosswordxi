@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v13">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v13">
-<script src="shared/xi-theme.js?v=v13"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v14">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v14">
+<script src="shared/xi-theme.js?v=v14"></script>
 <style>
 :root{
 
@@ -86,12 +86,17 @@
   --kit-01:#1E6B45;   /* pitch green   */
   --kit-02:#7BA7CC;  /* sky           */
   --kit-03:#F2C94C;   /* amber         */
-  --kit-04:#8E2F45;   /* claret        */
-  --kit-05:#2C3E63;     /* navy          */
-  --kit-06:#D96C2C;      /* tangerine     */
-  --kit-07:#5B4B8A;        /* purple        */
-  --kit-08:#4C8C7A;         /* teal          */
-  --kit-09:#1F4E79;         /* navy — HiLo XI */
+  /* A LAUNCHED GAME TAKES THE NEXT FREE NUMBER, and the numbers below it
+     move down rather than leaving a hole. HiLo XI is the fourth game to
+     launch, so it is the four, and its navy comes with it — a kit belongs to
+     the game, not to the number. Everything that had not launched shifts one
+     place and keeps the colour it was wearing. */
+  --kit-04:#1F4E79;   /* navy — HiLo XI */
+  --kit-05:#8E2F45;     /* claret        */
+  --kit-06:#2C3E63;      /* navy          */
+  --kit-07:#D96C2C;        /* tangerine     */
+  --kit-08:#5B4B8A;         /* purple        */
+  --kit-09:#4C8C7A;         /* teal          */
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -216,12 +221,12 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI">1</a>
       <a class="shirt live" id="shirt2" href="/wordsearch/" title="Wordsearch XI">2</a>
       <a class="shirt live" id="shirt3" href="/scrambled/" title="Scrambled XI">3</a>
-      <span class="shirt soon" title="Not out yet">4</span>
+      <a class="shirt live" id="shirt4" href="/hilo/" title="HiLo XI">4</a>
       <span class="shirt soon" title="Not out yet">5</span>
       <span class="shirt soon" title="Not out yet">6</span>
       <span class="shirt soon" title="Not out yet">7</span>
       <span class="shirt soon" title="Not out yet">8</span>
-      <a class="shirt live" id="shirt9" href="/hilo/" title="HiLo XI">9</a>
+      <span class="shirt soon" title="Not out yet">9</span>
       <span class="shirt soon" title="Not out yet">10</span>
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
@@ -314,8 +319,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       </article>
 
       <article class="game">
-        <div class="cap on-dark" style="background:var(--kit-09)">
-          <span class="num">9</span>
+        <div class="cap on-dark" style="background:var(--kit-04)">
+          <span class="num">4</span>
           <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
             <rect x="2" y="2" width="44" height="44" rx="3" stroke="#fff" stroke-width="2.5"/>
             <path d="M14 30l10-12 10 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -355,24 +360,24 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     <div class="soon-grid">
       <a class="soon-card open" href="/quickfire/" rel="nofollow"
          title="In testing — not finished, and not yet a daily game">
-        <span class="sq" style="background:var(--kit-04)">4</span>
-        <span class="nm">Number four<span>In testing</span></span>
-      </a>
-      <div class="soon-card">
         <span class="sq" style="background:var(--kit-05)">5</span>
-        <span class="nm">Number five<span>In build</span></span>
-      </div>
+        <span class="nm">Number five<span>In testing</span></span>
+      </a>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-06)">6</span>
         <span class="nm">Number six<span>In build</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-07)">7</span>
-        <span class="nm">Number seven<span>On the drawing board</span></span>
+        <span class="nm">Number seven<span>In build</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-08)">8</span>
         <span class="nm">Number eight<span>On the drawing board</span></span>
+      </div>
+      <div class="soon-card">
+        <span class="sq" style="background:var(--kit-09)">9</span>
+        <span class="nm">Number nine<span>On the drawing board</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:#8A968D">10</span>
@@ -391,7 +396,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v13"></script>
+<script src="shared/xi-chrome.js?v=v14"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
@@ -482,7 +487,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         if (!day || !day.day) return;
         var list = JSON.parse(localStorage.getItem("xihl.results") || "[]");
         if (list.some(function (r) { return r && r.day === day.day; })) {
-          markDone("shirt9", "HiLo XI"); played.push(9); settle();
+          markDone("shirt4", "HiLo XI"); played.push(4); settle();
         }
       }).catch(function () {});
   } catch (e) {}
