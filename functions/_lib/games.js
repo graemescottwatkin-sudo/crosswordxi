@@ -15,7 +15,7 @@
 /* Released games only. An id here is a value that can reach the database, so
    an unreleased game must not appear — the same rule the hub and live_check
    already keep about naming unbuilt games. */
-import { dailyKey } from "./daily.js";
+import { dailyKey, dailyDayKey } from "./daily.js";
 
 export const GAMES = ["crossword", "wordsearch", "scrambled"];
 
@@ -69,6 +69,13 @@ export function entryKey(game, row) {
     const d = String((row && (row.day || row.date)) || "");
     return /^\d{4}-\d{2}-\d{2}$/.test(d) ? "ws:" + d : null;
   }
+  if (game === "scrambled") {
+    /* THE THIRD GAME HAD NO KEY, so every Scrambled result pushed to an
+       account was skipped by migrate.js and the client believed it had
+       pushed. A board is addressed by its number in the daily ring. */
+    const n = Number(row && row.no);
+    return Number.isFinite(n) && n > 0 ? "sc:" + Math.floor(n) : null;
+  }
   return null;
 }
 
@@ -83,7 +90,11 @@ export function entryKey(game, row) {
  */
 export function playedOn(game, row) {
   const d = String((row && (row.date || row.day)) || "");
-  return /^\d{4}-\d{2}-\d{2}/.test(d) ? d.slice(0, 10) : null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
+  /* A numbered board carries no date of its own; its day is its number's,
+     from the one epoch. Scrambled's ring counts by the same daily number. */
+  if (game === "scrambled") return dailyDayKey(row && row.no);
+  return null;
 }
 
 /* The fields a game keeps that the others have no column for. The shared
@@ -93,11 +104,21 @@ export function playedOn(game, row) {
    Adding a column per game per fact is the duplication fault written into the
    schema, where it is far more expensive to undo than in a file. */
 export function detailOf(game, row) {
-  if (game !== "wordsearch") return null;
   const n = (v) => {
     const x = Number(v);
     return Number.isFinite(x) && x >= 0 ? Math.min(Math.floor(x), 1e6) : 0;
   };
+  if (game === "scrambled") {
+    /* What a Scrambled result keeps beyond the shared columns: the help
+       bought, the names revealed outright, and the board's title so a row
+       reads as a board rather than a number. */
+    return JSON.stringify({
+      help: n(row.help),
+      revealed: n(row.revealed),
+      title: row.title == null ? null : String(row.title).slice(0, 80),
+    });
+  }
+  if (game !== "wordsearch") return null;
   const pick = (a, b) => {
     const v = a === undefined || a === null ? b : a;
     return v === undefined || v === null ? null : String(v).slice(0, 40);

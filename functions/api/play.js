@@ -17,11 +17,39 @@ import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
 import { newId, isAdmin} from "../_lib/auth.js";
 import { limited } from "../_lib/limit.js";
+import { validGame, DEFAULT_GAME } from "../_lib/games.js";
+import { dailyKey } from "../_lib/daily.js";
 
 const int = (v, max = 100000) => {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? Math.min(Math.floor(n), max) : 0;
 };
+
+/* THE BOARD A PLAY IS OF, in the game's own address: daily:12 or a theme slug
+   for the crossword, ws:2026-09-01 or XIWS-0025 for the word search, sc:12
+   for Scrambled. One column, game beside it — the same shape results and the
+   reports use — so the funnel can be read per board in every game without a
+   column per game. Validated to a shape, refused rather than repaired: a key
+   that had to be cleaned is a key that will not group with the others. */
+const BOARD_KEY = /^[A-Za-z0-9][A-Za-z0-9:_.-]{0,60}$/;
+function boardKeyOf(body, mode, themeKey) {
+  const given = String(body.boardKey || "");
+  if (given && BOARD_KEY.test(given)) return given;
+  /* The crossword's client predates the column; derive its key from what it
+     already sends, so nothing it recorded loses its board. */
+  if (mode === "theme") return themeKey;
+  if (mode === "practice") return "practice";
+  return body.dailyNo ? dailyKey(int(body.dailyNo, 100000)) : null;
+}
+
+/* What one game alone cares about — a bonus found, help bought, an assisted
+   flag — kept as JSON the server never reads, and capped so a row cannot be
+   used as a store. Objects only; anything else is nothing. */
+function detailOf(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const s = JSON.stringify(v);
+  return s.length <= 2000 ? s : null;
+}
 
 export async function onRequestPost({ request, env }) {
   if (await limited(env, request, "play", 120, 3600))
@@ -43,12 +71,19 @@ export async function onRequestPost({ request, env }) {
      passed between friends. */
   const mode = body.mode === "practice" ? "practice"
              : body.mode === "theme" ? "theme"
+             : body.mode === "free" ? "free"
              : "daily";
+  /* WHICH GAME. Absent means the crossword, which is every row from before
+     the column existed; anything else must be a game the server lists, and a
+     name it does not know is refused rather than filed under a default. */
+  const game = validGame(body.game === undefined ? DEFAULT_GAME : body.game);
+  if (!game) return bad("Unknown game.");
   /* "man-united-3": the same slug the share link carries, so a row here joins
      to the link somebody actually sent. */
   const themeKey = mode === "theme"
     ? (/^[a-z0-9][a-z0-9-]{0,48}$/.test(String(body.themeKey || "")) ? body.themeKey : null)
     : null;
+  const boardKey = boardKeyOf(body, mode, themeKey);
 
   /* Was this the owner testing? Read from the session, never from the browser
      — a flag the client could set is a flag anyone could set about anyone.
@@ -73,13 +108,11 @@ export async function onRequestPost({ request, env }) {
        table: one query, no second thing to keep in step, and at this scale a
        simultaneous pair getting the same number is both unlikely and harmless —
        the reference is for reading, not for joining on. */
-    const scope = mode === "daily"
-      ? await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='daily' AND daily_no = ?")
-          .bind(body.dailyNo ? int(body.dailyNo, 100000) : null).first()
-      : mode === "theme"
-        ? await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='theme' AND theme_key = ?")
-            .bind(themeKey).first()
-        : await env.DB.prepare("SELECT COUNT(*) AS n FROM plays WHERE mode='practice'").first();
+    /* Scoped by the game and the board: the reference is "the 41st attempt
+       at this board in this game", whichever game it is. */
+    const scope = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM plays WHERE game = ? AND board_key IS ?")
+      .bind(game, boardKey).first();
     const playNo = ((scope && scope.n) || 0) + 1;
 
     /* Where this visit came from. Validated to the same slug shape the client
@@ -94,12 +127,12 @@ export async function onRequestPost({ request, env }) {
     };
 
     await env.DB.prepare(
-      `INSERT INTO plays (id, play_id, mode, daily_no, phase, total, theme_key,
+      `INSERT INTO plays (id, play_id, game, board_key, mode, daily_no, phase, total, theme_key,
                           by_owner, play_no,
                           utm_source, utm_medium, utm_campaign, utm_content,
                           utm_term, referrer, attribution_scope)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(newId(), playId, mode,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .bind(newId(), playId, game, boardKey, mode,
             body.dailyNo ? int(body.dailyNo, 100000) : null,
             body.phase === "season" ? "season" : "preseason",
             int(body.total, 50), themeKey, byOwner, playNo,
@@ -107,19 +140,19 @@ export async function onRequestPost({ request, env }) {
             slug(attr.utm_content), slug(attr.utm_term), slug(attr.referrer),
             "session").run();
     return json({ ok: true, playNo });
-    return json({ ok: true });
   }
 
   if (body.event === "end") {
     /* An update, not an insert: an attempt that ends twice — finished, then the
-       tab closed — is still one attempt. */
+       tab closed, or abandoned and then come back to and finished — is still
+       one attempt, and the last word wins. */
     await env.DB.prepare(
       `UPDATE plays SET solved = ?, completed = ?, elapsed_secs = ?,
-              checks = ?, reveals = ?, ended_at = datetime('now')
+              checks = ?, reveals = ?, detail = ?, ended_at = datetime('now')
         WHERE play_id = ?`)
       .bind(int(body.solved, 50), body.completed ? 1 : 0,
             int(body.elapsed, 86400), int(body.checks, 500),
-            int(body.reveals, 500), playId).run();
+            int(body.reveals, 500), detailOf(body.detail), playId).run();
     return json({ ok: true });
   }
 

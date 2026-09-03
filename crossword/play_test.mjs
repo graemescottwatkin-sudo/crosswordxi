@@ -25,17 +25,31 @@ function makeEnv() {
         if (sql.includes("SELECT id FROM plays WHERE play_id")) {
           return rows.find((r) => r.play_id === b[0]) || null;
         }
+        if (sql.includes("SELECT play_no FROM plays WHERE play_id")) {
+          return rows.find((r) => r.play_id === b[0]) || null;
+        }
+        /* The reference counter, scoped by game and board as the route asks:
+           the stub answers the question the SQL puts, so a scope that
+           widened would be seen here rather than assumed. */
+        if (sql.includes("COUNT(*) AS n FROM plays WHERE game = ? AND board_key IS ?")) {
+          return { n: rows.filter((r) => r.game === b[0] && (r.board_key ?? null) === (b[1] ?? null)).length };
+        }
         return null;
       },
       async all() { return { results: rows }; },
       async run() {
         if (sql.includes("INSERT INTO plays")) {
-          rows.push({ id: b[0], play_id: b[1], mode: b[2], daily_no: b[3],
-                      phase: b[4], total: b[5], completed: 0, ended_at: null });
+          /* The column list is the contract; the positions here are read
+             from it rather than remembered, so a column added to the route
+             and not to the stub fails loudly. */
+          const cols = sql.split("(")[1].split(")")[0].split(",").map((c) => c.trim());
+          const row = { completed: 0, ended_at: null };
+          cols.forEach((c, i) => { row[c] = b[i]; });
+          rows.push(row);
         } else if (sql.includes("UPDATE plays SET solved")) {
-          const r = rows.find((x) => x.play_id === b[5]);
+          const r = rows.find((x) => x.play_id === b[b.length - 1]);
           if (r) { r.solved = b[0]; r.completed = b[1]; r.elapsed_secs = b[2];
-                   r.checks = b[3]; r.reveals = b[4]; r.ended_at = "now"; }
+                   r.checks = b[3]; r.reveals = b[4]; r.detail = b[5]; r.ended_at = "now"; }
         }
         return { success: true };
       },
@@ -190,10 +204,9 @@ console.log("\nOne sitting, one row");
     /PLAY_DIGITS = 6/.test(client) && /padStart\(PLAY_DIGITS, "0"\)/.test(client));
 
   const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
-  t("numbers run per board, so each board starts at one", (() => {
+  t("numbers run per board and per game, so each board starts at one", (() => {
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "");
-    return /mode='daily' AND daily_no = \?/.test(code) &&
-      /mode='theme' AND theme_key = \?/.test(code);
+    return /WHERE game = \? AND board_key IS \?/.test(code);
   })());
   t("a play id the server has seen gets the same number back, not a new one",
     /SELECT play_no FROM plays WHERE play_id = \?/.test(src));
@@ -214,13 +227,20 @@ console.log("\nOne sitting, one row");
    repaired afterwards. */
 console.log("\nAttribution");
 {
-  const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  /* THE SHARED HELPER, not the crossword's own copy. Attribution moved to
+     shared/xi-plays.js the day the other games started counting attempts,
+     because a visit's campaign tags are a fact about the visit and not
+     about which game it opened first. The crossword calls the helper. */
+  const client = fs.readFileSync(path.join(DIR, "../shared/xi-plays.js"), "utf8");
+  const game = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
+  t("the crossword reads attribution from the shared helper and keeps no copy",
+    /XIPlays\.attribution\(\)/.test(game) && !/function readAttribution/.test(game));
 
   t("attribution is held for the session, not persisted", (() => {
     /* sessionStorage dies with the tab. localStorage here would be a tracking
        identifier and a consent decision, which is deliberately not being taken
        yet. */
-    const code = client.slice(client.indexOf("var ATTR_KEY"), client.indexOf("var playId"));
+    const code = client.slice(client.indexOf("var ATTR_KEY"), client.indexOf("function post"));
     return /sessionStorage\.setItem\(ATTR_KEY/.test(code) &&
       !/localStorage/.test(code);
   })());
@@ -242,7 +262,7 @@ console.log("\nAttribution");
     /if \(!any\) return have \|\| null;/.test(client));
 
   t("values are normalised to slugs before they are stored", (() => {
-    const fn = client.slice(client.indexOf("function slugify"), client.indexOf("function readAttribution"));
+    const fn = client.slice(client.indexOf("function slugify"), client.indexOf("function newId"));
     return /toLowerCase\(\)/.test(fn) && /\^r\\\//.test(fn) &&
       /\[\^a-z0-9\]\+/.test(fn);
   })());
@@ -264,6 +284,52 @@ console.log("\nAttribution");
   const mig = fs.readFileSync(path.join(DIR, "../data/migrations/010-attribution.sql"), "utf8");
   t("the columns are added by a migration",
     (mig.match(/ALTER TABLE plays ADD COLUMN/g) || []).length === 7);
+}
+
+/* EVERY GAME, ONE FUNNEL. The row carries the game and the board's own key,
+   the same shape results and the reports use, so the word search and
+   Scrambled count attempts through the same route and the same admin panel
+   as the crossword. Executed against the stub, not read from the source. */
+console.log("\nEvery game counts through the same route");
+{
+  const e = makeEnv();
+  const id = (n) => "play-" + String(n).padStart(8, "0");
+  t("a game the server does not know is refused, not filed under a default",
+    (await post({ event: "start", playId: id(1), game: "tiddlywinks", total: 11 }, e)).status === 400 &&
+    e._rows.length === 0);
+  await post({ event: "start", playId: id(2), mode: "daily", dailyNo: 12, total: 11 }, e);
+  t("a start with no game named is the crossword's, keyed by its daily",
+    e._rows[0].game === "crossword" && e._rows[0].board_key === "daily:12");
+  const ws = await (await post({ event: "start", playId: id(3), game: "wordsearch", mode: "daily",
+    boardKey: "ws:2026-09-01", total: 11 }, e)).json();
+  const sc = await (await post({ event: "start", playId: id(4), game: "scrambled", mode: "daily",
+    boardKey: "sc:12", total: 11 }, e)).json();
+  t("the word search and Scrambled record their game and their board's key",
+    e._rows[1].game === "wordsearch" && e._rows[1].board_key === "ws:2026-09-01" &&
+    e._rows[2].game === "scrambled" && e._rows[2].board_key === "sc:12");
+  const sc2 = await (await post({ event: "start", playId: id(5), game: "scrambled", mode: "daily",
+    boardKey: "sc:12", total: 11 }, e)).json();
+  t("references count per game and per board: first attempts are one, the second on a board is two",
+    ws.playNo === 1 && sc.playNo === 1 && sc2.playNo === 2, `${ws.playNo}, ${sc.playNo}, ${sc2.playNo}`);
+  t("a key that is not a key is refused rather than repaired",
+    (await (async () => { await post({ event: "start", playId: id(6), game: "wordsearch",
+      boardKey: "<script>", total: 11 }, e); return e._rows[e._rows.length - 1].board_key; })()) === null);
+  await post({ event: "end", playId: id(3), game: "wordsearch", solved: 9, completed: false,
+    elapsed: 300, detail: { bonusFound: false, assisted: true } }, e);
+  t("what one game alone cares about rides in detail, as JSON",
+    e._rows[1].solved === 9 && e._rows[1].detail === JSON.stringify({ bonusFound: false, assisted: true }));
+  await post({ event: "end", playId: id(4), game: "scrambled", solved: 11, completed: true,
+    elapsed: 500, detail: { big: "x".repeat(3000) } }, e);
+  t("and a detail too large to be a detail is dropped, not stored",
+    e._rows[2].completed === 1 && e._rows[2].detail === null);
+  await post({ event: "start", playId: id(7), game: "wordsearch", mode: "free", boardKey: "XIWS-0025", total: 11 }, e);
+  t("free play is a mode of its own, not folded into daily",
+    e._rows[e._rows.length - 1].mode === "free" && e._rows[e._rows.length - 1].board_key === "XIWS-0025");
+  const mig = fs.readFileSync(path.join(DIR, "../data/migrations/026-plays-game.sql"), "utf8");
+  t("the columns are added by a migration, one game column beside the board key",
+    /ALTER TABLE plays ADD COLUMN game TEXT NOT NULL DEFAULT 'crossword'/.test(mig) &&
+    /ALTER TABLE plays ADD COLUMN board_key TEXT/.test(mig) &&
+    /ALTER TABLE plays ADD COLUMN detail TEXT/.test(mig));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -205,5 +205,29 @@ console.log("\nReplaying a day");
     /DELETE FROM results WHERE user_id = \?"/.test(src));
 }
 
+/* EVERY GAME, ONE FUNNEL. The three attempt reports take ?game=, refuse a
+   name the server does not list, and the CSV carries the game and the
+   board's key on every row whichever way it is asked for. */
+console.log("\nThe attempt reports cover every game");
+{
+  const owner = makeEnv({ admin: 1 });
+  t("a game the server does not list is refused, not reported as empty",
+    (await call("plays?game=tiddlywinks", {}, owner)).status === 400 &&
+    (await call("sources?game=tiddlywinks", {}, owner)).status === 400 &&
+    (await call("plays.csv?game=tiddlywinks", {}, owner)).status === 400);
+  t("one game or the family both answer",
+    (await call("plays?game=wordsearch", {}, owner)).status === 200 &&
+    (await call("plays", {}, owner)).status === 200 &&
+    (await call("sources?game=scrambled", {}, owner)).status === 200);
+  const all = await call("plays.csv", {}, owner);
+  const head = (await all.text()).split(/\r?\n/)[0];
+  t("the CSV names the game and the board's key on every row",
+    all.status === 200 && /"Started","Ended","Game","Board key","Mode"/.test(head), head);
+  t("and the file is the site's, one game or all",
+    /filename="thexigames-plays-\d{4}-\d{2}-\d{2}\.csv"/.test(all.headers.get("Content-Disposition") || "") &&
+    /filename="thexigames-plays-scrambled-\d{4}-\d{2}-\d{2}\.csv"/.test(
+      (await call("plays.csv?game=scrambled", {}, owner)).headers.get("Content-Disposition") || ""));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -133,8 +133,12 @@ t("a sealed board is refused with 404", sealed.status === 404);
 t("the refusal is not cacheable — it would outlive its release date",
   /no-store/.test(sealed.headers.get("cache-control")));
 t("and is not indexable", sealedText.indexOf("noindex") > -1);
+/* The sealed board's own title, not the word "Theme": the family shell's
+   masthead carries a "Themes" tab on every wordsearch page, which is
+   furniture, and a check on the bare word read it as a leak. */
 t("and names nothing — no theme, no player, no hint the id exists",
-  sealedText.indexOf("XIWS-0002") === -1 && sealedText.indexOf("Theme") === -1);
+  sealedText.indexOf("XIWS-0002") === -1 && sealedText.indexOf("Sealed Theme") === -1 &&
+  sealedText.indexOf("Must Not Appear") === -1);
 /* One refusal for every kind of no. A different answer for "sealed" versus
    "does not exist" would let the address book be probed. */
 t("sealed, unknown and malformed ids are indistinguishable", (() => {

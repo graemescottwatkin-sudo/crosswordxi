@@ -125,6 +125,21 @@ for (const g of GAMES) {
   })());
   t("the shared chrome script is loaded and a bar is placed",
     /shared\/xi-chrome\.js/.test(html) && /class="xic-bar"/.test(html));
+  /* THE THEME IS DECIDED ONCE. shared/xi-theme.js stamps the root before
+     first paint — light unless chosen — and it must be in the head, because
+     a resolver that runs after the stylesheet paints is a flash of the wrong
+     palette on every dark-system phone. A game resolving the theme itself
+     is a second answer to one question. */
+  t("the shared theme script is loaded in the head, and the game keeps no resolver of its own",
+    html.indexOf("shared/xi-theme.js") > -1 && html.indexOf("shared/xi-theme.js") < html.indexOf("</head>") &&
+    !/prefers-color-scheme/.test(js) && !/setAttribute\("data-theme"/.test(js));
+  /* HOW FAR PEOPLE GET, in every game: the shared helper is loaded and the
+     game calls it at a start and at an end. A game that loaded it and never
+     called it would count nothing and look counted. */
+  t("the shared play helper is loaded, and the game starts and ends a play through it",
+    /shared\/xi-plays\.js/.test(html) &&
+    (/XIPlays\.start\(/.test(js) || /\.XIPlays\.start\(/.test(js)) &&
+    (/XIPlays\.end\(/.test(js) || /\.XIPlays\.end\(/.test(js) || /playEnd\(/.test(js)));
   t("the game's own stylesheet defines no .xic- rules",
     !/^\s*\.xic-[a-z-]+[^{]*\{/m.test(css),
     "a game styling the chrome is a second chrome starting");
@@ -318,8 +333,19 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v7";
-const SHARED_HASH = "747d5e119f1a75de";
+const SHARED_TAG = "v8";
+const SHARED_HASH = "8c044ab890a86927";
+/* EVERY PAGE THAT LINKS THE SHARED LAYER, not the games alone. The hub, the
+   two static pages and the unlaunched game all carry the chrome now, and the
+   server-rendered shell writes the tag from a constant of its own — so a tag
+   bump that missed one of them would serve two builds of one chrome. */
+const SHARED_PAGES = [
+  ...GAMES.map((g) => `${g.dir}/index.html`),
+  "index.html", "crossword/privacy.html", "crossword/how-to-play.html", "quickfire/index.html",
+];
+const sharedRefsOf = (page) => page.split("shared/xi-").slice(1)
+  .map((chunk) => chunk.split(String.fromCharCode(34))[0])
+  .filter((ref) => ref.indexOf("?v=") > -1);
 t("the shared chrome cannot change without its ?v= moving", (() => {
   const h = createHash("sha256");
   /* EVERY served asset in shared/, not the two that existed when this was
@@ -334,32 +360,42 @@ t("the shared chrome cannot change without its ?v= moving", (() => {
     h.update(f); h.update("\0"); h.update(read(f));
   }
   const now = h.digest("hex").slice(0, 16);
-  const tagged = GAMES.every((g) =>
-    /* EVERY shared asset a page links, not just the script. xi-tokens.css sat
-       on v2 while the chrome went to v5, so a token added to it would have
-       reached nobody who had visited before — the browser was right to reuse
-       what it had. Checking one file of four is checking the one that happened
-       to be remembered. */
-    /* Split, not matched: written as a pattern the backslashes were eaten on
-       the way into this file and it became a regex that could not compile. */
-    (() => {
-      const page = read(`${g.dir}/index.html`);
-      const refs = page.split("shared/xi-").slice(1)
-        .map((chunk) => chunk.split(String.fromCharCode(34))[0])
-        .filter((ref) => ref.indexOf("?v=") > -1);
-      return refs.length > 0 &&
-        refs.every((ref) => ref.split("?v=")[1] === SHARED_TAG);
-    })());
+  /* EVERY shared asset every page links, not just the script. xi-tokens.css
+     sat on v2 while the chrome went to v5, so a token added to it would have
+     reached nobody who had visited before — the browser was right to reuse
+     what it had. Checking one file of four is checking the one that happened
+     to be remembered. Split, not matched: written as a pattern the backslashes
+     were eaten on the way into this file and it became a regex that could not
+     compile. */
+  const tagged = SHARED_PAGES.every((p) => {
+    const refs = sharedRefsOf(read(p));
+    return refs.length > 0 && refs.every((ref) => ref.split("?v=")[1] === SHARED_TAG);
+  }) &&
+    /* The server-rendered shell writes its tag from a constant; it is one more
+       page, and it must agree. */
+    (read("functions/_lib/site-page.js").match(/export const SHARED_TAG = "([a-z0-9]+)"/) || [])[1] === SHARED_TAG;
   if (now === SHARED_HASH) return tagged;
   console.log(`        shared/ CHANGED — bump SHARED_TAG past ${SHARED_TAG} in every ` +
     `page, then set SHARED_HASH to ${now}`);
   return false;
 })(), `shared tag ${SHARED_TAG}`);
-t("every game references the shared layer at the same version", (() => {
-  const tags = GAMES.map((g) =>
-    (read(`${g.dir}/index.html`).match(/shared\/xi-chrome\.js\?v=([a-z0-9]+)/) || [])[1]);
-  return tags.length > 0 && new Set(tags).size === 1;
-})(), "one game on an older shared build is two chromes again");
+t("every page references the shared layer at the same version", (() => {
+  const tags = SHARED_PAGES.map((p) =>
+    (read(p).match(/shared\/xi-chrome\.js\?v=([a-z0-9]+)/) || [])[1]);
+  tags.push((read("functions/_lib/site-page.js").match(/export const SHARED_TAG = "([a-z0-9]+)"/) || [])[1]);
+  return tags.length > 0 && tags.every(Boolean) && new Set(tags).size === 1;
+})(), "one page on an older shared build is two chromes again");
+/* THE WHOLE SITE WEARS THE CHROME. The hub and the static pages carried
+   their own headers and footers; a page that loads the chrome script and
+   places a bar and a footer is one that cannot drift back. */
+t("every served page loads the shared chrome and places its bar and footer", (() => {
+  const missing = SHARED_PAGES.filter((p) => {
+    const html = read(p);
+    return !(/shared\/xi-chrome\.js/.test(html) && /class="xic-bar"/.test(html) &&
+             /class="xic-foot"/.test(html) && /shared\/xi-theme\.js/.test(html));
+  });
+  return missing.length === 0;
+})(), SHARED_PAGES.join(", "));
 
 
 /* ---- no game may style a class the chrome puts on the page ---- */

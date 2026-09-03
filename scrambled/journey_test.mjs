@@ -66,7 +66,17 @@ const ROUTES = {
   "/api/scrambled/daily": (req) => dailyGet({ request: req }),
   "/api/scrambled/guess": (req) => guessPost({ request: req }),
   "/api/scrambled/reveal": (req) => revealPost({ request: req }),
+  /* The play counter, captured rather than served: what the page SENDS is
+     the thing under test, and the real route is proven by play_test. */
+  "/api/play": async (req) => {
+    let body = null;
+    try { body = await req.json(); } catch (e) { body = { bad: true }; }
+    plays.push(body);
+    return new Response(JSON.stringify({ ok: true, playNo: plays.length }),
+      { headers: { "Content-Type": "application/json" } });
+  },
 };
+const plays = [];   /* every body the page posts to /api/play, in order */
 
 let calls = [];
 async function routedFetch(input, init) {
@@ -97,7 +107,10 @@ window.fetch = routedFetch;
 window.Request = Request;
 window.Response = Response;
 
-for (const f of ["scrambled/js/config.js", "scrambled/js/scoring.js", "scrambled/js/game.js"]) {
+/* The shared play helper too, as the page loads it: the engine counts
+   attempts through it, and a suite that left it out would prove nothing
+   about the counting. */
+for (const f of ["shared/xi-plays.js", "scrambled/js/config.js", "scrambled/js/scoring.js", "scrambled/js/game.js"]) {
   window.eval(fs.readFileSync(f, "utf8"));
 }
 
@@ -131,6 +144,14 @@ $("homeDaily").dispatchEvent(new window.Event("click"));
 await settle();
 
 t("the pitch is up", shown("screenGame"));
+/* HOW FAR PEOPLE GET, now counted here too: kick off posts a start naming
+   this game and this board, through the family's helper. */
+t("kick off posts a play start naming the game and the board",
+  plays.length === 1 && plays[0].event === "start" && plays[0].game === "scrambled" &&
+  /* Board one, because the page was opened at ?no=1 and the kicker said so. */
+  plays[0].boardKey === "sc:1" && plays[0].total === 11 &&
+  typeof plays[0].playId === "string" && plays[0].playId.length >= 8,
+  plays.length + " posted: " + plays.map((p) => p.event + (p.boardKey ? " " + p.boardKey : "")).join(", "));
 t("eleven tiles are drawn", doc.querySelectorAll(".slot").length === 11);
 t("none of them is solved yet", doc.querySelectorAll(".slot.solved").length === 0);
 t("every tile shows its scramble, not its name", (() => {
@@ -287,6 +308,16 @@ for (const s of board.slots) {
   await type(s.name);
 }
 t("solving the eleventh ends the match", shown("screenResults"), "no button to press");
+/* The end: the same attempt, finished, eleven of eleven, the help spent in
+   detail. Sent by fetch here — the beacon path is the page-leaving one. */
+{
+  const end = plays.find((p) => p.event === "end");
+  t("full time posts the play's end: finished, eleven of eleven, help in detail",
+    !!end && end.playId === plays[0].playId && end.game === "scrambled" && end.completed === true &&
+    end.solved === 11 && end.detail && typeof end.detail.help === "number" &&
+    typeof end.detail.revealed === "number",
+    JSON.stringify(end || null));
+}
 t("the Full Time card shows a score out of 114",
   /\/ 114$/.test(doc.querySelector(".ftScore").textContent),
   doc.querySelector(".ftScore").textContent);

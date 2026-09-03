@@ -26,6 +26,7 @@
  */
 import { ANSWERS_AFTER_DAYS } from "../../_lib/daily.js";
 import { hasDB, utcDayKey, boardById, firstScheduledDay } from "../../_lib/wsdata.js";
+import { sitePage } from "../../_lib/site-page.js";
 
 const SITE = "https://www.thexigames.com";
 
@@ -45,43 +46,26 @@ export function sealedNow(firstDay, todayKey) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-/* The same visual shell as the crossword's answers pages — paper, ink, one
-   green CTA. These are static strings on purpose: an answers page must render
-   with no script and no shared asset, because it is the page most likely to be
-   opened from a search result on a slow connection. */
+/* THE FAMILY SHELL, the same one every served page is poured into. This
+   carried its own copy of the shell's CSS on the argument that an answers
+   page must render with no shared asset; the price was a page that looked
+   like a different site from the game it belongs to. What is this page's
+   own — the table of placements and the bonus card — stays here. */
+const OWN_CSS = `
+.site-page table{border-collapse:collapse;width:100%;margin:14px 0 6px}
+.site-page th,.site-page td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:15px}
+.site-page th{font-family:var(--disp);font-size:13px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.site-page .bonus{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:20px 0 4px}
+.site-page .bonus b{font-family:var(--disp);font-size:19px;letter-spacing:.06em}
+.site-page .dir{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.site-page nav{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
+`;
 function shell(title, description, canonical, body, indexable) {
-  return `<!DOCTYPE html>
-<html lang="en-GB">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}">
-<link rel="canonical" href="${canonical}">
-${indexable ? "" : '<meta name="robots" content="noindex">'}
-<style>
-body{margin:0;background:#F4F5F2;color:#182219;font:16px/1.55 "Public Sans",-apple-system,"Segoe UI",Arial,sans-serif}
-main{max-width:720px;margin:0 auto;padding:34px 20px 60px}
-h1{font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:32px;
-  letter-spacing:.02em;text-transform:uppercase;margin:0 0 6px}
-.sub{color:#5A675D;margin:0 0 24px}
-ol{padding-left:22px}
-li{margin:0 0 9px}
-table{border-collapse:collapse;width:100%;margin:14px 0 6px}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #D9DDD6;font-size:15px}
-th{font-family:"Barlow Condensed",Arial,sans-serif;font-size:13px;letter-spacing:.12em;
-  text-transform:uppercase;color:#8A968D}
-.bonus{background:#fff;border:1px solid #D9DDD6;border-radius:10px;padding:14px 16px;margin:20px 0 4px}
-.bonus b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:19px;letter-spacing:.06em}
-.dir{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8A968D}
-nav{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:30px;padding-top:18px;border-top:1px solid #D9DDD6}
-a{color:#1E6B45}
-.cta{display:inline-block;background:#1E6B45;color:#fff;text-decoration:none;
-  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:17px;
-  letter-spacing:.1em;text-transform:uppercase;padding:11px 22px;border-radius:999px;margin-top:26px}
-</style>
-</head>
-<body><main>${body}</main></body></html>`;
+  return sitePage({
+    title, description, canonical, body,
+    noindex: !indexable, game: "wordsearch", current: "/wordsearch/answers/", extraCss: OWN_CSS,
+  });
 }
 
 const html = (markup, cacheable, status = 200) =>

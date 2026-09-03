@@ -301,6 +301,13 @@
   color:var(--ink-soft);font-size:14.5px;padding:8px 10px;border-radius:6px;
   text-decoration:none;display:flex;align-items:center;min-height:var(--tap);
 }
+/* On a server-rendered page the tabs are all links, and the current one is
+   marked the same way a button tab is on the landing: where you are is a
+   fact about state, and it is the one place green earns its keep here. */
+.site-navlink.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--pitch)}
+/* The masthead as a link, on the pages that are not the game itself: it goes
+   back to the game and looks like the masthead does everywhere else. */
+a.site-mast{text-decoration:none;color:var(--ink)}
 
 /* The heading a screen reader and a search engine read. Every game shows its
    name in the masthead, which is furniture; this is the one H1 that says what

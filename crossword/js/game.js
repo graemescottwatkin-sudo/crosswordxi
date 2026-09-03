@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002b";
+  var BUILD = "v002c";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2342,37 +2342,18 @@
 
   /* Theme: auto follows the operating system, which is why the same build looks
      dark on one device and light on another. Light and dark override it. */
-  var THEMES = ["auto", "light", "dark"];
-  var theme = "auto";
-  /* xi.theme is the family key — dark mode set in any game holds in all of
-     them. fcw.theme is where it lived when this was the only game; it stays
-     as a read fallback so no one's setting resets, and writes go only to the
-     family key. */
-  try {
-    theme = localStorage.getItem("xi.theme") ||
-            localStorage.getItem("fcw.theme") || "auto";
-  } catch (e) {}
-  if (THEMES.indexOf(theme) === -1) theme = "auto";
-  /* AUTO IS RESOLVED HERE, NOT IN THE STYLESHEET. The tokens switch on
-     data-theme alone (shared/DESIGN.md), so "follow the system" means
-     asking the system and writing the answer to the attribute — and asking
-     again when it changes. This stylesheet used to carry a second, inverted
-     dark palette under a media query to do the same job; that is gone. */
-  var systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  /* THE THEME IS THE FAMILY'S, decided in shared/xi-theme.js and stamped on
+     the root before first paint — light unless the player chose otherwise,
+     auto following the system. This game resolved it in a resolver of its
+     own, the word search in another, and pages with neither followed a
+     media query; three answers to one question. The toggle here only asks
+     the shared script to move on and shows what it chose. */
   function applyTheme() {
-    var resolved = theme === "auto"
-      ? (systemDark && systemDark.matches ? "dark" : "light")
-      : theme;
-    document.documentElement.setAttribute("data-theme", resolved);
     var b = $("themeToggle");
-    if (b) b.textContent = "theme: " + theme;
-  }
-  if (systemDark && systemDark.addEventListener) {
-    systemDark.addEventListener("change", function () { if (theme === "auto") applyTheme(); });
+    if (b) b.textContent = "theme: " + (window.XITheme ? window.XITheme.get() : "light");
   }
   on("themeToggle", "click", function () {
-    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
-    try { localStorage.setItem("xi.theme", theme); } catch (e) {}
+    if (window.XITheme) window.XITheme.cycle();
     applyTheme();
   });
   applyTheme();
@@ -2815,67 +2796,16 @@
      Values are normalised to lowercase slugs before they are stored, because
      the one thing that cannot be repaired later is a report split across
      Reddit, reddit.com, r/reddit and reddit-social. */
-  var ATTR_KEY = "fcw.attr";
-  var ATTR_FIELDS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
-
+  /* THE SHARED HELPER OWNS ATTRIBUTION NOW. The reader, the slug rule and the
+     session key moved to shared/xi-plays.js the day the other games started
+     counting attempts: where a visit came from is a fact about the visit,
+     not about which game it opened first, and the key is the family's
+     (xi.attr, with this game's old fcw.attr read as a fallback). slugify is
+     kept as a name because the admin's link builder uses it. */
   function slugify(v) {
-    return String(v || "").toLowerCase()
-      .replace(/^https?:\/\//, "")        // reddit.com/r/gunners -> reddit.com...
-      .replace(/^www\./, "")
-      .replace(/\.(com|co\.uk|org|net|io)\b.*$/, "")   // ...-> reddit
-      .replace(/^r\//, "")                // r/gunners -> gunners
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 40);
+    return (window.XIPlays && window.XIPlays.slugify(v)) || "";
   }
-
-  function readAttribution() {
-    var have = null;
-    try { have = JSON.parse(sessionStorage.getItem(ATTR_KEY)); } catch (e) {}
-    var q = new URLSearchParams(location.search || "");
-    var fresh = {}, any = false;
-    ATTR_FIELDS.forEach(function (f) {
-      var v = slugify(q.get(f));
-      if (v) { fresh[f] = v; any = true; }
-    });
-
-    /* ?r=a1 — a short alias for a campaign tag.
-
-       utm_source=reddit&utm_campaign=arsenal-match-thread is fifty characters
-       of machinery hanging off a link somebody is deciding whether to click,
-       and a long ugly URL is one people skip. A two-character code does the
-       same job: it groups the arrivals from one post, and it is opaque to
-       whoever reads it.
-
-       It fills the campaign field, with the source marked "ref" so a short-link
-       arrival is distinguishable from a tagged one. What a1 meant is a note you
-       keep, not something the site needs to know — a lookup table here would be
-       a second place to maintain for no gain.
-
-       An explicit utm_campaign still wins: this is the shorthand, not a
-       replacement. */
-    var short = slugify(q.get("r"));
-    if (short && !fresh.utm_campaign) {
-      fresh.utm_campaign = short;
-      if (!fresh.utm_source) fresh.utm_source = "ref";
-      any = true;
-    }
-    /* A link with campaign tags starts a new attribution; without them, keep
-       whatever this session already had. So moving from the landing page into
-       a puzzle does not lose where the visit came from. */
-    if (!any) return have || null;
-    /* The referring page, only where the browser offers it and only its host —
-       the full URL can carry a search query or a path that identifies a person,
-       and the host is what the report is grouped by anyway. */
-    try {
-      var ref = document.referrer || "";
-      if (ref) fresh.referrer = slugify(new URL(ref).hostname);
-    } catch (e) {}
-    try { sessionStorage.setItem(ATTR_KEY, JSON.stringify(fresh)); } catch (e) {}
-    return fresh;
-  }
-
-  var attribution = readAttribution();
+  var attribution = window.XIPlays ? window.XIPlays.attribution() : null;
 
   var playId = null, playSent = false, playNo = null;
   var PLAY_DIGITS = 6;
@@ -2890,58 +2820,55 @@
     return String(Date.now()) + "-" + Math.random().toString(36).slice(2, 12);
   }
 
+  /* What this attempt has reached, read by the helper at the end — by the
+     finish, or on the way out of the page. */
+  function playProgress() {
+    var solved = 0;
+    if (puzzle) puzzle.entries.forEach(function (e, i) { if (verified[i] === true) solved++; });
+    return { solved: solved, elapsed: elapsed, checks: checksUsed,
+             reveals: revealedLetterCount() + revealedAnswerCount() };
+  }
+
+  /* COUNTED THROUGH THE FAMILY'S HELPER, shared/xi-plays.js, which the other
+     games use too: one start, one end, the beacon on the way out and the
+     attribution, all in one place rather than a copy per game. This game
+     keeps its own play id and reference number because the save file
+     carries them across a reload, and hands them to the helper. */
   function playStart(keep) {
-    if (!puzzle) return;
+    if (!puzzle || !window.XIPlays) return;
     /* keep: a game restored from the save brings its own reference back, so
        the sitting continues rather than becoming a new one. The server hands
        the same number back for a play id it has already seen, so a resend is
        safe either way. */
     if (!keep || !playId) { playId = newPlayId(); playNo = null; }
     playSent = false;
+    window.XIPlays.resume(playId, playNo);
     var phase = board.kind === "daily" ? FCW.dailyPhase(board.no).phase : null;
-    fetch("/api/play", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "start", playId: playId, mode: board.kind,
-        dailyNo: board.kind === "daily" ? board.no : null, phase: phase,
-        /* Which board, when it is a themed one. Still nothing about the
-           person: the play id is random per attempt, as it was. */
-        themeKey: board.kind === "theme" && board.theme && board.theme.theme
-          ? board.theme.theme + "-" + board.theme.no : null,
-        total: puzzle.entries.length,
-        /* Kept separate from the board on purpose: somebody playing the Arsenal
-           board may have arrived from anywhere, including another page here. */
-        attribution: attribution }),
-    }).then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d && d.playNo) { playNo = d.playNo; saveSoon(); }
-      })
+    window.XIPlays.start({
+      game: "crossword", mode: board.kind,
+      /* The board's own key, the same one results and the reports use, so
+         this game's rows sit beside the other games' in one funnel. */
+      boardKey: board.kind === "daily" ? "daily:" + board.no
+        : board.kind === "theme" && board.theme && board.theme.theme
+          ? board.theme.theme + "-" + board.theme.no : "practice",
+      dailyNo: board.kind === "daily" ? board.no : null, phase: phase,
+      /* Which board, when it is a themed one. Still nothing about the
+         person: the play id is random per attempt, as it was. */
+      themeKey: board.kind === "theme" && board.theme && board.theme.theme
+        ? board.theme.theme + "-" + board.theme.no : null,
+      total: puzzle.entries.length,
+    }, playProgress, { keep: true })
+      .then(function (no) { if (no) { playNo = no; saveSoon(); } })
       .catch(function () {});          // never let counting break the game
   }
 
   function playEnd(done) {
-    if (!playId || playSent || !puzzle) return;
-    playSent = true;
-    var solved = 0;
-    puzzle.entries.forEach(function (e, i) { if (verified[i] === true) solved++; });
-    var payload = JSON.stringify({ event: "end", playId: playId, mode: board.kind,
-      solved: solved, completed: !!done, elapsed: elapsed,
-      checks: checksUsed, reveals: revealedLetterCount() + revealedAnswerCount() });
-    /* sendBeacon, because a normal fetch is cancelled when the tab closes —
-       and an abandoned puzzle is the case this whole thing exists to measure.
-       Losing exactly the interesting half would be worse than not counting. */
-    try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon("/api/play", new Blob([payload], { type: "application/json" }));
-        return;
-      }
-    } catch (e) {}
-    fetch("/api/play", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: payload, keepalive: true }).catch(function () {});
+    if (!playId || playSent || !puzzle || !window.XIPlays) return;
+    /* A finish is final; an abandon may be followed by a return and a
+       finish, and the helper lets the later word win. */
+    if (done) playSent = true;
+    window.XIPlays.end(!!done, !done);
   }
-
-  /* pagehide rather than unload: unload is unreliable on iOS and does not fire
-     when a tab is put in the background and later discarded. */
-  window.addEventListener("pagehide", function () { playEnd(false); });
 
   /* localStorage is shared by every tab on the origin, and until now no tab
      knew the others were there. Three windows open meant three clocks and
@@ -2964,9 +2891,9 @@
       "This game is being played somewhere else, so it is no longer being " +
       "saved here. Reload to pick up where that one is.", "loss");
   });
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") playEnd(false);
-  });
+  /* The page-leaving end — pagehide and the tab going hidden — is the
+     helper's: shared/xi-plays.js listens for both and sends the abandon by
+     beacon, for this game as for the others. */
 
   /* ---------- Owner tools ----------
      Shown only when the server says this account is an admin. That is
@@ -3139,8 +3066,15 @@
     }).catch(function (err) { adminMsg(String(err.message || err)); });
   }
 
+  /* Which game the three funnel reports are about: the selector in the panel,
+     "" meaning the whole family. Every game counts through the same route. */
+  function adminGameQ() {
+    var sel = $("adminGame");
+    var g = sel && sel.value ? sel.value : "";
+    return g ? "?game=" + encodeURIComponent(g) : "";
+  }
   on("adminPlays", "click", function () {
-    apiAuth("/api/admin/plays").then(function (d) {
+    apiAuth("/api/admin/plays" + adminGameQ()).then(function (d) {
       var mine = d.ownerPlays
         ? "\n\nYour own testing: " + d.ownerPlays + " attempt" +
           (d.ownerPlays === 1 ? "" : "s") + ", " + d.ownerFinished + " finished " +
@@ -3165,7 +3099,11 @@
            they are shared and how they will be talked about. "man-united-3"
            becomes "Manchester United #3". */
         var name;
-        if (x.mode === "theme") {
+        if (x.game && x.game !== "crossword") {
+          /* Another game's board, named by its game and its own key — the
+             word search by its day or board id, Scrambled by its number. */
+          name = x.game + " " + (x.boardKey || x.mode);
+        } else if (x.mode === "theme") {
           var k = String(x.themeKey || "unknown");
           var m = /^(.*)-(\d+)$/.exec(k);
           name = m
@@ -3216,7 +3154,7 @@
   });
 
   on("adminSources", "click", function () {
-    apiAuth("/api/admin/sources").then(function (d) {
+    apiAuth("/api/admin/sources" + adminGameQ()).then(function (d) {
       var rows = d.sources || [];
       if (!rows.length) { adminMsg("No attributed visits yet."); return; }
       adminMsg(rows.map(function (r) {
@@ -3248,7 +3186,7 @@
   });
 
   on("adminPlaysCsv", "click", function () {
-    window.location.href = "/api/admin/plays.csv";
+    window.location.href = "/api/admin/plays.csv" + adminGameQ();
   });
 
   /* The boards a link can point at: whatever is released, plus the daily. */

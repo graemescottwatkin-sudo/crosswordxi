@@ -58,6 +58,7 @@ function notFound(what) {
     title: "Not found — Crossword XI",
     description: "That page does not exist.",
     canonical: SITE + "/crossword/",
+    current: "/crossword/clubs/",
     noindex: true,
     body: `<h1>Not found</h1>
 <p class="sub">There is no ${esc(what)} here. It may not have been released yet.</p>
@@ -117,6 +118,7 @@ ${!clubBlocks && !topicBlocks
     description: "Crossword XI club and theme boards: Arsenal, Manchester United and more, " +
       "plus themed football crosswords. A new board every Friday.",
     canonical: SITE + "/crossword/clubs/",
+    current: "/crossword/clubs/",
     body,
   }));
 }
@@ -199,6 +201,7 @@ and the clock waits for you to kick off.</p>
     description: `${total} ${name} football crosswords across ${ordered.length} sets. ` +
       `Free to play, no answers given away.`,
     canonical: SITE + clubPath(clubId),
+    current: "/crossword/clubs/",
     body,
   }));
 }
@@ -216,6 +219,7 @@ Pick a number — it opens ready to start, and the clock waits for you to kick o
     description: `${theme.boards.length} ${theme.name} football crosswords. ` +
       `Free to play, no answers given away.`,
     canonical: SITE + pathOf(theme),
+    current: "/crossword/clubs/",
     body,
   }));
 }

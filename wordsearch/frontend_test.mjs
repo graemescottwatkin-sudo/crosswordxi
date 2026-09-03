@@ -26,6 +26,7 @@ const t = (n, ok, d) => { ok ? pass++ : fail++; console.log(`${ok ? "  ok  " : "
 
 /* ---- serve the tree and the real API (sample dataset — no DB env) ----- */
 const MIME = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript" };
+const plays = [];   /* every body the page posts to /api/play, in order */
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   const send = (r) => r.arrayBuffer().then((b) => {
@@ -37,6 +38,16 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/api/wordsearch/puzzle") return send(await puzzleFn(ctx));
   if (url.pathname === "/api/wordsearch/catalog") return send(await catalogFn(ctx));
   if (url.pathname === "/api/wordsearch/archive") return send(await archiveFn(ctx));
+  /* The play counter, captured rather than served: what the page SENDS is the
+     thing under test, and the real route is proven by play_test. */
+  if (url.pathname === "/api/play") {
+    let raw = "";
+    req.on("data", (c) => { raw += c; });
+    await new Promise((r) => req.on("end", r));
+    try { plays.push(JSON.parse(raw)); } catch (e) { plays.push({ bad: raw }); }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ ok: true, playNo: plays.length }));
+  }
   let file = url.pathname === "/wordsearch/" ? "/wordsearch/index.html" : url.pathname;
   const full = path.join(ROOT, file);
   if (fs.existsSync(full) && fs.statSync(full).isFile()) {
@@ -94,6 +105,13 @@ t("one H1, and it is the game's name, not the board's",
 d.getElementById("homeDaily").click();
 await new Promise((r) => setTimeout(r, 250));
 t("kick off opens the daily board", !d.getElementById("gameApp").classList.contains("hidden"));
+/* HOW FAR PEOPLE GET, now counted here too: the page posts a start naming
+   this game and today's board, through the family's helper. */
+t("kick off posts a play start naming the game and today's board",
+  plays.length === 1 && plays[0].event === "start" && plays[0].game === "wordsearch" &&
+  plays[0].mode === "daily" && /^ws:\d{4}-\d{2}-\d{2}$/.test(plays[0].boardKey) &&
+  plays[0].total === 11 && typeof plays[0].playId === "string" && plays[0].playId.length >= 8,
+  JSON.stringify(plays[0] || null));
 t("the grid has 168 cells", d.querySelectorAll("#grid .cell").length === 14 * 12);
 t("eleven names on the right, no clues anywhere",
   d.querySelectorAll("#wordList .word").length === 11 && !/clue/i.test(d.getElementById("side").textContent));
@@ -168,6 +186,15 @@ drag(cellsOf(puzzle.bonus));
 await new Promise((r) => setTimeout(r, 100));
 t("finding the bonus after the XI ends the match at full time",
   d.getElementById("result").classList.contains("show"));
+/* The end: the same attempt, finished, with the eleven and the bonus in it.
+   Sent by fetch here — the beacon path is the page-leaving one. */
+{
+  const end = plays.find((p) => p.event === "end");
+  t("full time posts the play's end: finished, eleven of eleven, bonus in detail",
+    !!end && end.playId === plays[0].playId && end.game === "wordsearch" && end.completed === true &&
+    end.solved === 11 && end.detail && end.detail.bonusFound === true && typeof end.elapsed === "number",
+    JSON.stringify(end || null));
+}
 t("the result equation shows base + 10 bonus",
   /\+ 10 bonus/.test(d.getElementById("resultEquation").textContent),
   d.getElementById("resultEquation").textContent);

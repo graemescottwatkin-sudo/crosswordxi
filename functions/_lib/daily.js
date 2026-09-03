@@ -13,6 +13,16 @@ export function dailyNumber(now = Date.now()) {
   return Math.max(1, Math.round((midnight - EPOCH) / 86400000) + 1);
 }
 
+/* The day a board number stands for, as YYYY-MM-DD: the inverse of
+   dailyNumber, from the same epoch, so a numbered result (the crossword's,
+   Scrambled's) can carry the shared played_on column without a second
+   statement of when day one was. */
+export function dailyDayKey(no) {
+  const n = Number(no);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return new Date(EPOCH + (Math.floor(n) - 1) * 86400000).toISOString().slice(0, 10);
+}
+
 /* A token names a stored puzzle, and check-answer and reveal will read answers
    out of it. For daily puzzles that has to be pinned to today: the puzzles
    table holds a year of pre-generated dailies, so without this guard a player

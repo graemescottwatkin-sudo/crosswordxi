@@ -12,46 +12,31 @@
  */
 import { getDailyPuzzle } from "../../_lib/db.js";
 import { dailyNumber, answersAvailable, ANSWERS_AFTER_DAYS } from "../../_lib/daily.js";
+import { sitePage, esc } from "../../_lib/site-page.js";
 
-const esc = (s) => String(s == null ? "" : s)
-  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+/* What is this page's own: the clue and its answer, the show-all control and
+   the direction headings. The shell — tokens, chrome, masthead, footer — is
+   the family's, the same as every other served page. */
+const OWN_CSS = `
+.site-page .clue{margin:0 0 6px}
+.site-page .ans{font-family:var(--disp);font-weight:700;
+  font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:var(--pitch-ink,var(--pitch));margin:6px 0 0}
+.site-page details>summary{cursor:pointer;font-size:13.5px;color:var(--pitch-ink,var(--pitch));list-style:none;
+  -webkit-tap-highlight-color:transparent;user-select:none}
+.site-page details>summary::-webkit-details-marker{display:none}
+.site-page details[open]>summary{display:none}
+.site-page .showall{background:var(--card);border:1px solid var(--ink);color:var(--ink);border-radius:var(--r-pill,999px);
+  font-family:var(--disp);font-weight:700;font-size:15px;
+  letter-spacing:.1em;text-transform:uppercase;padding:9px 18px;cursor:pointer;margin:0 0 14px}
+.site-page .dir{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin:22px 0 10px}
+.site-page nav{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
+`;
 
 function shell(title, desc, canonical, body, index) {
-  return `<!DOCTYPE html>
-<html lang="en-GB">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>
-<meta name="description" content="${esc(desc)}">
-<link rel="canonical" href="${canonical}">
-${index ? "" : '<meta name="robots" content="noindex">\n'}<style>
-body{margin:0;background:#F4F5F2;color:#182219;font:16px/1.55 "Public Sans",-apple-system,"Segoe UI",Arial,sans-serif}
-main{max-width:680px;margin:0 auto;padding:28px 20px 48px}
-h1{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;font-weight:700;
-  font-size:32px;letter-spacing:.03em;text-transform:uppercase;margin:0 0 4px}
-.sub{color:#5A675D;margin:0 0 24px}
-ol{margin:0;padding:0;list-style:none}
-li{background:#fff;border:1px solid #D9DDD6;border-radius:8px;padding:14px 16px;margin:0 0 10px}
-.clue{margin:0 0 6px}
-.ans{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;font-weight:700;
-  font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:#1E6B45;margin:6px 0 0}
-details>summary{cursor:pointer;font-size:13.5px;color:#1E6B45;list-style:none;
-  -webkit-tap-highlight-color:transparent;user-select:none}
-details>summary::-webkit-details-marker{display:none}
-details[open]>summary{display:none}
-.showall{background:#fff;border:1px solid #182219;color:#182219;border-radius:999px;
-  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:15px;
-  letter-spacing:.1em;text-transform:uppercase;padding:9px 18px;cursor:pointer;margin:0 0 14px}
-.dir{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8A968D;margin:22px 0 10px}
-nav{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:30px;padding-top:18px;border-top:1px solid #D9DDD6}
-a{color:#1E6B45}
-.cta{display:inline-block;background:#1E6B45;color:#fff;text-decoration:none;
-  font-family:"Barlow Condensed",Arial,sans-serif;font-weight:700;font-size:17px;
-  letter-spacing:.1em;text-transform:uppercase;padding:11px 22px;border-radius:999px;margin-top:26px}
-</style>
-</head>
-<body><main>${body}</main></body></html>`;
+  return sitePage({
+    title, description: desc, canonical, body,
+    noindex: !index, current: "/crossword/answers/", extraCss: OWN_CSS,
+  });
 }
 
 const html = (markup, cacheable, status = 200) =>

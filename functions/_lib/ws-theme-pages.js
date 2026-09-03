@@ -60,6 +60,7 @@ function notFound(what) {
     title: "Not found — Wordsearch XI",
     description: "That page does not exist.",
     canonical: SITE + "/wordsearch/",
+    game: "wordsearch", current: INDEX,
     noindex: true,
     body: `<h1>Not found</h1>
 <p class="sub">There is no ${esc(what)} here. It may not have been released yet.</p>
@@ -97,6 +98,7 @@ ${items ? `<ul>${items}</ul>` : `<p class="sub">No themed boards have been relea
     description: "Wordsearch XI themed boards: club sides, eras, cup finals and tournament " +
       "elevens. Eleven names to find in every grid, plus a secret bonus.",
     canonical: SITE + INDEX,
+    game: "wordsearch", current: INDEX,
     body,
   }));
 }
@@ -188,6 +190,7 @@ clock waits for you to kick off.</p>
     description: `${plural(group.boards.length, "board", "boards")} of ${group.name} football ` +
       `word searches. Eleven names in every grid, free to play, nothing given away.`,
     canonical: SITE + groupPath(group.slug),
+    game: "wordsearch", current: INDEX,
     body,
   }));
 }

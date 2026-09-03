@@ -59,8 +59,15 @@ const server = http.createServer(async (req, res) => {
     return res.end(body);
   }
   const rel = url.pathname === "/" ? "/index.html" : url.pathname;
-  const file = path.join(DIR, rel);
-  if (!file.startsWith(DIR) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+  /* The shared layer lives beside the game, not inside it: the page links
+     ../shared/, which from the served root is /shared/. Served from the
+     repository root, so the theme and play helpers load here as they do on
+     the site — before this, every shared script 404ed in this suite and the
+     page ran without them. */
+  const ROOT = path.join(DIR, "..");
+  const file = rel.startsWith("/shared/") ? path.join(ROOT, rel) : path.join(DIR, rel);
+  if (!(file.startsWith(DIR) || file.startsWith(path.join(ROOT, "shared"))) ||
+      !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404); return res.end("not found");
   }
   res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" });
@@ -426,40 +433,42 @@ server.listen(0, "127.0.0.1", async () => {
     !/\.(stage|clues|grid-panel)\{[^}]*position:absolute/.test(css));
 
   console.log("\nTheme and phone header");
-  t("theme follows the OS by default and can be overridden", (() => {
-    const flat = css.replace(/\s*\n\s*/g, "");
-    return /@media \(prefers-color-scheme: dark\)\{:root:not\(\[data-theme="light"\]\)/.test(flat) &&
-      /:root\[data-theme="dark"\]\{/.test(flat);
-  })());
-  t("the theme control cycles auto, light and dark, and persists", (() => {
+  /* THE THEME IS THE FAMILY'S, decided in shared/xi-theme.js: LIGHT unless the
+     player chose otherwise, auto following the system, stamped on the root
+     before first paint. This game's own resolver is gone; the toggle asks the
+     shared script to move on and shows what it chose. */
+  t("the shared theme script is on the page and light is the default with nothing stored",
+    !!w.XITheme && w.localStorage.getItem("xi.theme") === null &&
+    d.documentElement.getAttribute("data-theme") === "light",
+    d.documentElement.getAttribute("data-theme"));
+  t("the theme control cycles light, dark and auto, and persists to the family key", (() => {
     const btn = $("themeToggle");
     if (!btn) return false;
-    const seen = [];
+    const seen = [], attrs = [];
     for (let i = 0; i < 3; i++) {
       btn.dispatchEvent(new w.Event("click", { bubbles: true }));
       seen.push(btn.textContent.replace("theme: ", ""));
+      attrs.push(d.documentElement.getAttribute("data-theme"));
     }
-    /* xi.theme, the FAMILY key — dark mode set in any game holds in all of
-       them. It lived at fcw.theme when this was the only game; writes moved to
-       the family key when the cross-game contract caught the word search
-       borrowing the crossword's prefix. The legacy key is read as a fallback
-       and never written, so this asserts both halves of the migration. */
+    /* xi.theme, the FAMILY key. The legacy fcw.theme is read as a fallback
+       and never written, so this asserts both halves of the migration. Auto
+       is RESOLVED to the attribute: jsdom's matchMedia stub says not dark,
+       so auto lands as light. */
     const stored = w.localStorage.getItem("xi.theme");
     const legacyWritten = w.localStorage.getItem("fcw.theme");
-    return seen.join(",") === "light,dark,auto" && stored === "auto" &&
-      legacyWritten === null &&
-      /* Auto is RESOLVED to the attribute now, not left off it: the tokens
-         switch on data-theme alone, so the game asks the system and writes
-         the answer. jsdom has no matchMedia, so auto resolves to light. */
-      d.documentElement.getAttribute("data-theme") ===
-        (w.matchMedia && w.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    return seen.join(",") === "dark,auto,light" && attrs.join(",") === "dark,light,light" &&
+      stored === "light" && legacyWritten === null;
   })(), $("themeToggle") && $("themeToggle").textContent);
-  t("forcing light beats the OS dark setting", (() => {
-    const btn = $("themeToggle");
-    btn.dispatchEvent(new w.Event("click", { bubbles: true }));       // -> light
-    const forced = d.documentElement.getAttribute("data-theme");
-    for (let i = 0; i < 2; i++) btn.dispatchEvent(new w.Event("click", { bubbles: true }));
-    return forced === "light";
+  t("a stored choice beats the system, and a legacy key is honoured on read", (() => {
+    /* Dark stored under the family key stamps dark whatever the system says;
+       the crossword's old key alone still counts, so nobody's setting resets. */
+    w.localStorage.setItem("xi.theme", "dark"); w.XITheme.apply();
+    const dark = d.documentElement.getAttribute("data-theme");
+    w.localStorage.removeItem("xi.theme"); w.localStorage.setItem("fcw.theme", "dark"); w.XITheme.apply();
+    const legacy = d.documentElement.getAttribute("data-theme");
+    w.localStorage.removeItem("fcw.theme"); w.XITheme.apply();
+    const reset = d.documentElement.getAttribute("data-theme");
+    return dark === "dark" && legacy === "dark" && reset === "light";
   })());
   /* The lists open and close, and the state survives a reload — same shape as
      the help toggle, which is the pattern already established here. */

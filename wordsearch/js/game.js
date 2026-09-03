@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v001t";
+  var BUILD = "v001u";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -69,22 +69,20 @@
      contract now forbids. The legacy key stays as a read fallback so nobody's
      setting resets; writes go only to the family key, so the fallback retires
      itself one tap at a time. */
+  /* Decided in shared/xi-theme.js now, and stamped before first paint: light
+     unless the player chose otherwise, auto following the system, one
+     resolver for every page of the family. This only shows the choice and
+     asks the shared script to move on. */
   function themeRead() {
-    try {
-      return localStorage.getItem("xi.theme") ||
-             localStorage.getItem("fcw.theme") || "auto";
-    } catch (e) { return "auto"; }
+    return window.XITheme ? window.XITheme.get() : "light";
   }
   function themeApply() {
     var v = themeRead();
-    if (v === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
     var lab = $("mTheme"); if (lab) lab.textContent = v;
     return v;
   }
   function themeCycle() {
-    var next = { auto: "dark", dark: "light", light: "auto" }[themeRead()] || "auto";
-    try { localStorage.setItem("xi.theme", next); } catch (e) {}
+    if (window.XITheme) window.XITheme.cycle();
     themeApply();
   }
   themeApply();
@@ -663,6 +661,8 @@
     if ($("result").classList.contains("show")) return;
     clearInterval(timer); timer = null;
     clearTimeout(finishTimeout);
+    /* The attempt ends here, finished if the XI is complete, else at time. */
+    playsEnd(found.size >= 11);
     dragging = false; setPreview([]);
     $("finishPrompt").classList.remove("show");
     var m = footballMinute(), matchScore = liveScore(), sc = finalScore();
@@ -766,6 +766,7 @@
       redrawHighlights(); updateUI();
     }
     startTimer(); updateClock(); saveDailyProgress();
+    playsStart("daily", "ws:" + serverDay);
   }
   function showStoredResult(rec) {
     clearInterval(timer); timer = null; startedAt = null;
@@ -790,6 +791,26 @@
     mode = "free";
     enterBoard(p, "Free play");
     startTimer(); updateClock();
+    playsStart("free", p.id);
+  }
+
+  /* HOW FAR PEOPLE GET, counted through the family's helper: a start when a
+     board opens, an end when it is finished or left. progress() is read at
+     the end — by the finish, or by the helper on the way out of the page —
+     so an abandoned board still says how many of the eleven it had. Nothing
+     about the person; see shared/xi-plays.js. */
+  function playsProgress() {
+    return {
+      solved: found.size, elapsed: Math.round(elapsed || 0),
+      detail: { bonusFound: bonusFound, assisted: assisted, penaltyMinutes: penaltyMinutes },
+    };
+  }
+  function playsStart(kind, boardKey) {
+    if (!window.XIPlays) return;
+    window.XIPlays.start({ game: "wordsearch", mode: kind, boardKey: boardKey, total: 11 }, playsProgress);
+  }
+  function playsEnd(completed) {
+    if (window.XIPlays && window.XIPlays.active()) window.XIPlays.end(!!completed);
   }
 
   /* Said on the hero, where the player is already looking. Guarded because
@@ -1027,6 +1048,8 @@
   }
   function goToMenu() {
     if (mode === "daily" && startedAt && found.size < 11) saveDailyProgress();
+    /* Leaving a board mid-way is an abandon; after a finish this is nothing. */
+    playsEnd(false);
     clearInterval(timer); timer = null; startedAt = null;
     varPauseUntil = 0;
     uncover();

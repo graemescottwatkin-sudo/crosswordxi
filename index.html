@@ -60,16 +60,19 @@
 <meta property="og:image" content="https://www.thexigames.com/crossword/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23123B27'/%3E%3Ctext x='16' y='22' font-family='Arial Narrow,Arial' font-size='15' font-weight='700' fill='%23F2C94C' text-anchor='middle'%3EXI%3C/text%3E%3C/svg%3E">
+<!-- THE FAMILY SHELL. The hub carried a copy of the palette "straight from
+     xi-tokens", its own masthead and its own footer — a copy is a second
+     place to drift, and it had: the games moved to a shared bar and footer
+     and the front door kept the old ones. The shared tokens, chrome and
+     theme are what every page loads now; the hub keeps only what is its
+     own — the team sheet and the kit colours. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v8">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v8">
+<script src="shared/xi-theme.js?v=v8"></script>
 <style>
 :root{
-  /* Straight from xi-tokens: the hub must not invent a second palette. */
-  --paper:#F4F5F2; --card:#FFFFFF;
-  --ink:#182219; --ink-soft:#5A675D; --ink-faint:#8A968D;
-  --pitch:#1E6B45; --pitch-deep:#123B27;
-  --gold:#F2C94C; --gold-ink:#3A2D00;
-  --line:#D9DDD6;
-  --disp:"Barlow Condensed",-apple-system,"Arial Narrow",Arial,sans-serif;
-  --body:"Public Sans",-apple-system,"Segoe UI",Arial,sans-serif;
 
   /* Kit colours, by squad number rather than by game name.
 
@@ -97,18 +100,6 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-
-/* ---------- masthead ---------- */
-.masthead{border-bottom:1px solid var(--line);background:var(--card)}
-.masthead .wrap{display:flex;align-items:center;justify-content:space-between;
-  height:64px}
-.brand{font-family:var(--disp);font-weight:700;font-size:30px;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--ink);text-decoration:none;display:flex;
-  align-items:baseline;gap:.3em}
-.brand .xi{color:var(--pitch)}
-.masthead a.acct{font-family:var(--disp);font-size:15px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-soft);text-decoration:none}
-.masthead a.acct:hover{color:var(--pitch)}
 
 /* ---------- the team sheet ---------- */
 .sheet{background:var(--pitch-deep);color:#fff;padding:30px 0 34px}
@@ -193,33 +184,21 @@ body{
 .soon-card .nm span{display:block;font-family:var(--body);font-weight:400;
   font-size:12px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase}
 
-footer{margin-top:44px;border-top:1px solid var(--line);background:var(--card);
-  padding:22px 0 30px}
-footer .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;
-  font-size:13.5px;color:var(--ink-faint)}
-footer a{color:var(--ink-soft);text-decoration:none}
-footer a:hover{text-decoration:underline}
 
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:520px){
   .xi-strip{grid-template-columns:repeat(6,1fr);max-width:340px}
-  .masthead .wrap{height:56px}
-  .brand{font-size:25px}
 }
 </style>
 </head>
 <body>
 
-<header class="masthead">
-  <div class="wrap">
-    <a class="brand" href="/">The <span class="xi">XI</span> Games</a>
-    <!-- No Sign in link. It pointed at /account, which does not exist — the
-         front door's most prominent button led to the 404 page. Sign-in lives
-         inside the game until there is a hub-level account page; a link that
-         works from inside the game is better than one that 404s from here. -->
-  </div>
-</header>
+<!-- The shared bar, filled by shared/xi-chrome.js: the burger, the wordmark
+     and the drawer with the squad, the same on the front door as in every
+     game. Sign-in lives in the drawer, so the front door no longer points
+     at an account page that does not exist. -->
+<header class="xic-bar"></header>
 
 <section class="sheet">
   <div class="wrap">
@@ -381,18 +360,11 @@ footer a:hover{text-decoration:underline}
 
 </div>
 
-<footer>
-  <div class="wrap">
-    <span>The <strong>XI</strong> Games · unofficial football puzzles</span>
-    <!-- Absolute into the game's pages. /how-to-play and /privacy at the hub
-         root do not exist; these 404ed from the footer of an indexed front
-         page. Hub-level pages come with game two, when per-game how-to-play
-         stops scaling. -->
-    <a href="/crossword/how-to-play.html">How to play</a>
-    <a href="/crossword/answers/">Answers</a>
-    <a href="/crossword/privacy.html">Privacy</a>
-  </div>
-</footer>
+<!-- The shared footer, built by shared/xi-chrome.js from the one squad list
+     and the one page list, so the front door's footer and every game's are
+     the same footer. -->
+<footer class="xic-foot"></footer>
+<script src="shared/xi-chrome.js?v=v8"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without

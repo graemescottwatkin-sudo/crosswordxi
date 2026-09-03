@@ -102,10 +102,13 @@
      width:var(--tap) was invalid, not because it was styled small. Order
      matters — style.css comes after and still wins wherever the crossword
      genuinely differs. -->
-<link rel="stylesheet" href="../shared/xi-tokens.css?v=v7">
-<link rel="stylesheet" href="../shared/xi-landing.css?v=v7">
-<link rel="stylesheet" href="../shared/xi-chrome.css?v=v7">
-<link rel="stylesheet" href="css/style.css?v=v002b">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v8">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v8">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v8">
+<!-- The theme, stamped before first paint: light unless the player chose
+     dark, decided in one shared place for every page of the family. -->
+<script src="../shared/xi-theme.js?v=v8"></script>
+<link rel="stylesheet" href="css/style.css?v=v002c">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -177,6 +180,15 @@
     </div>
 
     <div class="admin-group">
+      <!-- Every game counts attempts through the same route now; the three
+           reports below take the game from here, and "all" is the family. -->
+      <label class="tb-label" for="adminGame">Game</label>
+      <select id="adminGame">
+        <option value="">All games</option>
+        <option value="crossword">Crossword XI</option>
+        <option value="wordsearch">Wordsearch XI</option>
+        <option value="scrambled">Scrambled XI</option>
+      </select>
       <button class="btn outline" id="adminPlays">How far people get</button>
       <button class="btn outline" id="adminChallenges">Challenges</button>
       <button class="btn outline" id="adminSources">Where players came from</button>
@@ -1094,7 +1106,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002b</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002c</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1113,10 +1125,11 @@
      aligned_test only grepped for the class, which is true of an element
      sealed inside a hidden container. -->
 <footer class="xic-foot"></footer>
-<script src="../shared/xi-clubs.js?v=v7"></script>
-<script src="../shared/xi-chrome.js?v=v7"></script>
-<script src="js/seasons.js?v=v002b"></script>
-<script src="js/engine.js?v=v002b"></script>
-<script src="js/game.js?v=v002b"></script>
+<script src="../shared/xi-clubs.js?v=v8"></script>
+<script src="../shared/xi-chrome.js?v=v8"></script>
+<script src="../shared/xi-plays.js?v=v8"></script>
+<script src="js/seasons.js?v=v002c"></script>
+<script src="js/engine.js?v=v002c"></script>
+<script src="js/game.js?v=v002c"></script>
 </body>
 </html>

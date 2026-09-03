@@ -18,107 +18,69 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- THE FAMILY SHELL. This page carried its own palette, its own header and
+     its own footer on the argument that a legal notice must not depend on
+     the game's assets; the price was a policy page that looked like a
+     different site. The shared tokens, chrome and theme are what every page
+     loads now, and they are cached the same way for everyone. Links stay
+     relative so the page runs unchanged wherever the site is served. -->
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v8">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v8">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v8">
+<script src="../shared/xi-theme.js?v=v8"></script>
 <style>
-/* Standalone on purpose. The policy has to render for somebody who arrived
-   with the game's stylesheet cached at an older build, or who never loads the
-   game at all — a legal notice that depends on the app's assets is a legal
-   notice that can fail to appear. Same fonts and palette, its own copy.
-
-   Links are relative, never root-relative: the whole site is built that way so
-   it runs unchanged at crossword.thexigames.com today and at
-   thexigames.com/crossword later. deploy_check enforces it, and caught this
-   page trying to use href="/". */
-:root{
-  --paper:#F4F5F2; --card:#FFFFFF; --ink:#182219; --ink-soft:#5A675D;
-  --ink-faint:#8A968D; --pitch:#1E6B45; --line:#DFE3DD; --pitch-deep:#123B27;
+/* What is this page's own: the reading column and the prose it holds. All
+   of it on the shared tokens; nothing here names a colour. */
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+.site-page{max-width:760px;margin:0 auto;padding:28px 20px 64px;line-height:1.65}
+.site-page h1{
+  font-family:var(--disp);font-weight:700;color:var(--ink);
+  font-size:34px;line-height:1.15;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em;
 }
-:root[data-theme="dark"]{
-  --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-  --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
+.site-page h2{font-family:var(--disp);font-weight:600;font-size:23px;margin:38px 0 10px;letter-spacing:.02em;color:var(--ink)}
+.site-page h3{font-size:16px;font-weight:700;margin:24px 0 8px}
+.site-page p{margin:0 0 14px}
+.site-page ul{margin:0 0 16px;padding-left:22px}
+.site-page li{margin-bottom:6px}
+.site-page a{color:var(--pitch-ink,var(--pitch))}
+.site-page .xi{
+  display:inline-block;background:var(--tint);color:var(--xi-ink);
+  padding:.06em .3em .1em;border-radius:.18em;line-height:1;transform:translateY(-.04em);
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#12160F; --card:#1B2118; --ink:#E6EAE2; --ink-soft:#9BA894;
-    --ink-faint:#75816F; --pitch:#4FB07C; --line:#2C3528; --pitch-deep:#123B27;
-  }
+.site-page code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+  background:var(--card);border:1px solid var(--line);
+  padding:1px 5px;border-radius:4px;word-break:break-word;
 }
-*{box-sizing:border-box}
-body{
-  margin:0; padding:0 20px 64px; background:var(--paper); color:var(--ink);
-  font-family:"Public Sans",system-ui,-apple-system,sans-serif;
-  font-size:16px; line-height:1.65; -webkit-text-size-adjust:100%;
+.site-page hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.site-page table{
+  width:100%;border-collapse:collapse;margin:0 0 20px;font-size:15px;
+  background:var(--card);border:1px solid var(--line);border-radius:6px;
+  overflow:hidden;display:block;overflow-x:auto;
 }
-.wrap{max-width:760px; margin:0 auto}
-header{
-  padding:26px 0 18px; margin-bottom:24px; border-bottom:1px solid var(--line);
-  display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;
+.site-page th,.site-page td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.site-page th{
+  font-family:var(--disp);font-weight:600;font-size:14px;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);white-space:nowrap;
 }
-.brand{
-  font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:24px;
-  text-transform:uppercase; letter-spacing:.05em; color:var(--pitch);
-  text-decoration:none;
-}
-header nav a{color:var(--ink-soft); text-decoration:none; font-size:14px}
-/* The mark, same as the games: a chip, not a colour. Colour alone could not
-   separate it from the word beside it — anything dark enough to read on paper
-   was too dark to stand out against the heading. */
-.xi{
-  display:inline-block;background:var(--pitch-deep, #123B27);color:#fff;
-  padding:.06em .3em .1em;border-radius:.18em;line-height:1;
-  transform:translateY(-.04em);
-}
-:root[data-theme="dark"] .xi{background:#fff;color:#123B27}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .xi{background:#fff;color:#123B27}
-}
-footer .xi{padding:.04em .22em .07em}
-header nav a:hover{color:var(--pitch); text-decoration:underline}
-h1{
-  font-family:"Barlow Condensed",sans-serif; font-weight:700;
-  font-size:34px; line-height:1.15; margin:0 0 6px; text-transform:uppercase;
-  letter-spacing:.02em;
-}
-h2{
-  font-family:"Barlow Condensed",sans-serif; font-weight:600; font-size:23px;
-  margin:38px 0 10px; letter-spacing:.02em;
-}
-h3{font-size:16px; font-weight:700; margin:24px 0 8px}
-p{margin:0 0 14px}
-ul{margin:0 0 16px; padding-left:22px}
-li{margin-bottom:6px}
-a{color:var(--pitch)}
-code{
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em;
-  background:var(--card); border:1px solid var(--line);
-  padding:1px 5px; border-radius:4px; word-break:break-word;
-}
-hr{border:0; border-top:1px solid var(--line); margin:34px 0}
-table{
-  width:100%; border-collapse:collapse; margin:0 0 20px; font-size:15px;
-  background:var(--card); border:1px solid var(--line); border-radius:6px;
-  overflow:hidden; display:block; overflow-x:auto;
-}
-th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
-th{
-  font-family:"Barlow Condensed",sans-serif; font-weight:600; font-size:14px;
-  text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
-  white-space:nowrap;
-}
-tbody tr:last-child td{border-bottom:0}
-footer{
-  margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
-  color:var(--ink-faint); font-size:13px;
-}
-footer a{color:var(--ink-faint)}
+.site-page tbody tr:last-child td{border-bottom:0}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <a class="brand" href="index.html">The <span class="xi">XI</span> Games</a>
-  <nav><a href="index.html">&larr; Back to the game</a></nav>
-</header>
-<main>
+<!-- The shared bar, filled by shared/xi-chrome.js, then the crossword's own
+     masthead: the same two rows every crossword page wears. -->
+<header class="xic-bar"></header>
+<header class="site-head"><div class="site-bar">
+  <a class="site-mast" href="index.html">Crossword <span class="site-xi">XI</span></a>
+  <nav class="site-nav">
+    <a class="site-navlink" href="index.html">Today</a>
+    <a class="site-navlink" href="clubs/">Clubs</a>
+    <a class="site-navlink" href="answers/">Answers</a>
+    <a class="site-navlink" href="how-to-play.html">How to play</a>
+  </nav>
+</div></header>
+<main class="site-page">
 <h1>Privacy Policy — The XI Games</h1>
 <p><strong>Last updated: 21 August 2026</strong></p>
 <!-- Released games only. This sentence named five unbuilt ones — and got
@@ -245,11 +207,8 @@ footer a{color:var(--ink-faint)}
 <hr>
 <hr>
 </main>
-<footer>
-  <p>The <span class="xi">XI</span> Games &middot; unofficial football word puzzles &middot;
-  <a href="index.html">crossword.thexigames.com</a></p>
-</footer>
-</div>
+<footer class="xic-foot"></footer>
+<script src="../shared/xi-chrome.js?v=v8"></script>
 <script>
 /* Follows the appearance you chose in the game, if you have chosen one. Read
    only — this page never writes the preference, so opening a legal notice

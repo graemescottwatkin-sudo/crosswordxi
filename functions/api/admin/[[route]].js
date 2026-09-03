@@ -12,6 +12,7 @@ import { json, bad } from "../../_lib/puzzle.js";
 import { hasDB, serverToday } from "../../_lib/db.js";
 import { currentUser, csrfOk, newId } from "../../_lib/auth.js";
 import { dailyNumber, dailyKey } from "../../_lib/daily.js";
+import { validGame } from "../../_lib/games.js";
 
 async function requireAdmin(request, env) {
   if (!hasDB(env)) return { error: bad("Accounts are not configured.", 503) };
@@ -176,12 +177,19 @@ export async function onRequest({ request, env, params }) {
     const asked = Number(url.searchParams.get("hours"));
     const hours = Number.isFinite(asked) && asked > 0 && asked <= 24 * 365
       ? Math.floor(asked) : 72;
+    /* WHICH GAME, or the whole family. Every game counts through the same
+       route now; ?game= narrows the funnel, absent means all of them, and a
+       name the server does not list is a 400 rather than an empty report
+       that looks like nobody played. */
+    const gameAsked = url.searchParams.get("game");
+    const game = gameAsked ? validGame(gameAsked) : null;
+    if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
-      `SELECT mode, daily_no, phase, solved, total, completed, elapsed_secs,
+      `SELECT game, board_key, mode, daily_no, phase, solved, total, completed, elapsed_secs,
               ended_at, theme_key, by_owner
          FROM plays
-        WHERE started_at > datetime('now', ?)
-        ORDER BY started_at DESC LIMIT 5000`).bind("-" + hours + " hours").all();
+        WHERE started_at > datetime('now', ?) AND (? IS NULL OR game = ?)
+        ORDER BY started_at DESC LIMIT 5000`).bind("-" + hours + " hours", game, game).all();
     const byDay = new Map();
     /* The owner's own testing, counted separately. Twenty passes over a layout
        is not twenty people, and while the site is being built most rows are
@@ -198,11 +206,17 @@ export async function onRequest({ request, env, params }) {
          played is the whole question: they are the ones passed between
          friends, so "Bolton #1 thirty times, #4 twice" is the answer worth
          being able to read. */
-      const key = r.mode === "daily" ? dailyKey(r.daily_no)
-                : r.mode === "theme" ? "theme:" + (r.theme_key || "unknown")
-                : "practice";
+      /* Grouped by game and board. The crossword's rows from before the
+         board_key column carry only their daily number or theme slug, so
+         those compose the key the old way; every newer row has its own. */
+      const g = r.game || "crossword";
+      const board = r.board_key
+        || (r.mode === "daily" ? dailyKey(r.daily_no)
+          : r.mode === "theme" ? "theme:" + (r.theme_key || "unknown")
+          : "practice");
+      const key = g + "/" + board;
       if (!byDay.has(key)) {
-        byDay.set(key, { key, mode: r.mode, dailyNo: r.daily_no, phase: r.phase,
+        byDay.set(key, { key, game: g, boardKey: board, mode: r.mode, dailyNo: r.daily_no, phase: r.phase,
                          themeKey: r.theme_key || null,
                          started: 0, finished: 0, times: [], stops: [] });
       }
@@ -218,7 +232,7 @@ export async function onRequest({ request, env, params }) {
       return s[Math.floor(s.length / 2)];
     };
     const days = [...byDay.values()].map((d) => ({
-      key: d.key, mode: d.mode, dailyNo: d.dailyNo, phase: d.phase,
+      key: d.key, game: d.game, boardKey: d.boardKey, mode: d.mode, dailyNo: d.dailyNo, phase: d.phase,
       themeKey: d.themeKey,
       started: d.started, finished: d.finished, total: d.total,
       medianSeconds: mid(d.times),
@@ -309,6 +323,10 @@ export async function onRequest({ request, env, params }) {
      are deliberately different questions, because somebody on the Arsenal board
      may have arrived from anywhere. */
   if (route === "sources" && request.method === "GET") {
+    /* One game or the family, the same as the funnel above. */
+    const gameAsked = new URL(request.url).searchParams.get("game");
+    const game = gameAsked ? validGame(gameAsked) : null;
+    if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
       `SELECT COALESCE(utm_source, '(direct)') AS source,
               COALESCE(utm_campaign, '') AS campaign,
@@ -319,10 +337,10 @@ export async function onRequest({ request, env, params }) {
               SUM(total) AS answers,
               AVG(elapsed_secs) AS avg_secs
          FROM plays
-        WHERE by_owner = 0
+        WHERE by_owner = 0 AND (? IS NULL OR game = ?)
         GROUP BY source, campaign, community
         ORDER BY started DESC
-        LIMIT 200`).all();
+        LIMIT 200`).bind(game, game).all();
     return json({ sources: (rows.results || []).map((r) => ({
       source: r.source, campaign: r.campaign, community: r.community,
       started: r.started, finished: r.finished || 0,
@@ -512,8 +530,14 @@ export async function onRequest({ request, env, params }) {
   }
 
   if (route === "plays.csv" && request.method === "GET") {
+    /* One game or the family; a Game column and the board's own key either
+       way, so a family export can be split in a spreadsheet and a one-game
+       export reads the same. */
+    const gameAsked = new URL(request.url).searchParams.get("game");
+    const game = gameAsked ? validGame(gameAsked) : null;
+    if (gameAsked && !game) return json({ error: "Unknown game." }, 400);
     const rows = await env.DB.prepare(
-      `SELECT started_at, ended_at, mode, daily_no, theme_key, phase,
+      `SELECT started_at, ended_at, game, board_key, mode, daily_no, theme_key, phase,
               play_no, solved, total, completed, elapsed_secs, checks,
               /* The split columns, not the legacy merged 'reveals'. A letter
                  costs +3' and an answer +14', so eleven of one and eleven of
@@ -526,9 +550,9 @@ export async function onRequest({ request, env, params }) {
               COALESCE(srv_reveal_answers, 0) AS reveal_answers,
               by_owner, utm_source, utm_medium, utm_campaign, utm_content,
               utm_term, referrer
-         FROM plays ORDER BY started_at DESC LIMIT 20000`).all();
+         FROM plays WHERE (? IS NULL OR game = ?) ORDER BY started_at DESC LIMIT 20000`).bind(game, game).all();
     const esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
-    const head = ["Started", "Ended", "Mode", "Board", "Reference", "Solved",
+    const head = ["Started", "Ended", "Game", "Board key", "Mode", "Board", "Reference", "Solved",
                   "Of", "Finished", "Seconds", "Checks",
                   "Reveal letters", "Reveal answers", "Owner test",
                   "Source", "Medium", "Campaign", "Content", "Term", "Referrer"];
@@ -537,7 +561,7 @@ export async function onRequest({ request, env, params }) {
       const board = r.mode === "daily" ? "#" + r.daily_no
                   : r.mode === "theme" ? (r.theme_key || "") : "practice";
       lines.push([
-        r.started_at, r.ended_at || "", r.mode, board,
+        r.started_at, r.ended_at || "", r.game || "crossword", r.board_key || "", r.mode, board,
         r.play_no ? String(r.play_no).padStart(6, "0") : "",
         r.solved, r.total, r.completed ? "yes" : "no",
         r.elapsed_secs, r.checks, r.reveal_letters, r.reveal_answers,
@@ -549,7 +573,7 @@ export async function onRequest({ request, env, params }) {
     return new Response(lines.join("\n"), {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="crosswordxi-plays-${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Content-Disposition": `attachment; filename="thexigames-plays${game ? "-" + game : ""}-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     });
   }

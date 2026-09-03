@@ -37,9 +37,17 @@ function render(path, url) {
 
 const cw = render("crossword/index.html", "https://www.thexigames.com/crossword/");
 const ws = render("wordsearch/index.html", "https://www.thexigames.com/wordsearch/");
+/* THE WHOLE SITE WEARS IT, not the games alone. The hub had its own
+   masthead and footer and the two static pages their own, so the front door
+   and a policy page read as different sites from the games they belong to. */
+const sc = render("scrambled/index.html", "https://www.thexigames.com/scrambled/");
+const hub = render("index.html", "https://www.thexigames.com/");
+const priv = render("crossword/privacy.html", "https://www.thexigames.com/crossword/privacy.html");
+const htp = render("crossword/how-to-play.html", "https://www.thexigames.com/crossword/how-to-play.html");
 
-console.log("Every game wears the same bar");
-for (const [name, doc] of [["crossword", cw], ["wordsearch", ws]]) {
+console.log("Every page wears the same bar");
+for (const [name, doc] of [["crossword", cw], ["wordsearch", ws], ["scrambled", sc],
+                           ["the hub", hub], ["privacy", priv], ["how to play", htp]]) {
   t(`${name}: the bar has a burger`, !!doc.querySelector(".xic-bar .xic-burger"));
   /* The wordmark goes home from EVERY view, including mid-board. This is the
      actual fix for being stranded on a puzzle. */

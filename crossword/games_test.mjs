@@ -56,7 +56,17 @@ t("a row with nothing to be unique by has no key, so it is skipped",
    day. Keying on when it was played would file it as a second board. */
 t("the key is the board's day, not the day it was played",
   entryKey("wordsearch", { day: "2026-08-26", playedAt: "2026-08-27" }) === "ws:2026-08-26");
-t("an unknown game composes no key at all", entryKey("scrambled", { dailyNo: 1 }) === null);
+/* THE THIRD GAME HAD NO KEY. This line used to read `entryKey("scrambled",
+   …) === null` under the name "an unknown game", which enshrined the fault:
+   Scrambled was a released game whose every pushed result migrate.js skipped
+   as keyless, while its client believed it had pushed. A Scrambled board is
+   addressed by its number in the daily ring. */
+t("a Scrambled row is keyed by its board number",
+  entryKey("scrambled", { no: 12 }) === "sc:12" && entryKey("scrambled", { no: "7" }) === "sc:7");
+t("and a Scrambled row with no number composes no key",
+  entryKey("scrambled", {}) === null && entryKey("scrambled", { no: 0 }) === null);
+t("a game the server does not list composes no key at all",
+  entryKey("tiddlywinks", { no: 1, dailyNo: 1, day: "2026-08-27" }) === null);
 
 console.log("\nThe day a row belongs to");
 /* The crossword's browser record calls it `date`, the word search's calls it
@@ -77,10 +87,21 @@ t("and a row carrying neither gives null rather than a broken string",
    filing its whole history under null. */
 t("every released game can produce a day from its own record shape",
   playedOn("crossword", { date: "2026-08-26" }) !== null &&
-  playedOn("wordsearch", { day: "2026-08-27" }) !== null);
+  playedOn("wordsearch", { day: "2026-08-27" }) !== null &&
+  playedOn("scrambled", { no: 1 }) !== null);
+/* A Scrambled row carries a number and no date; its day is the number's,
+   from the one epoch, so the account's history sorts it with the others. */
+t("a Scrambled row's day is its board number's day",
+  playedOn("scrambled", { no: 1 }) === "2026-08-26" && playedOn("scrambled", { no: 8 }) === "2026-09-02" &&
+  playedOn("scrambled", {}) === null);
 
 console.log("\nGame-specific facts go in detail, not in columns");t("the crossword adds no detail — its fields are already columns",
   detailOf("crossword", { dailyNo: 1 }) === null);
+t("a Scrambled row carries its help, its reveals and its title as JSON", (() => {
+  const d = JSON.parse(detailOf("scrambled", { no: 3, help: 9, revealed: 2, title: "Leicester 2016" }));
+  return d.help === 9 && d.revealed === 2 && d.title === "Leicester 2016" &&
+    JSON.parse(detailOf("scrambled", {})).help === 0;
+})());
 t("a word search carries its own facts as JSON", (() => {
   const d = JSON.parse(detailOf("wordsearch",
     { found_count: 11, bonus_found: true, minute: 42, puzzleId: "XIWS-0239" }));

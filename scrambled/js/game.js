@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001p";
+var BUILD = "v001q";
 
 (function () {
   "use strict";
@@ -259,6 +259,30 @@ var BUILD = "v001p";
     if (ticker) clearInterval(ticker);
     ticker = setInterval(tick, 500);
     tick();
+    playsStart();
+  }
+
+  /* HOW FAR PEOPLE GET, counted through the family's helper: a start when
+     the clock first runs on a board, an end at full time or on the way out
+     of the page. Guarded on active(), because the clock also restarts when
+     a hidden tab comes back and that is the same attempt. Nothing about the
+     person; see shared/xi-plays.js. */
+  function playsProgress() {
+    var ids = Object.keys(state.solved);
+    return {
+      solved: ids.length, elapsed: Math.round(state.elapsed || 0),
+      detail: {
+        help: state.help,
+        revealed: ids.filter(function (k) { return state.solved[k] && state.solved[k].how === "revealed"; }).length,
+      },
+    };
+  }
+  function playsStart() {
+    if (!window.XIPlays || window.XIPlays.active() || !state.board || state.over) return;
+    window.XIPlays.start({ game: "scrambled", mode: "daily", boardKey: "sc:" + state.board.no, total: 11 }, playsProgress);
+  }
+  function playsEnd(completed) {
+    if (window.XIPlays && window.XIPlays.active()) window.XIPlays.end(!!completed);
   }
 
   function stopClock() { if (ticker) { clearInterval(ticker); ticker = null; } }
@@ -656,6 +680,7 @@ var BUILD = "v001p";
     if (Object.keys(state.solved).length < state.board.slots.length) return;
     state.over = true;
     stopClock();
+    playsEnd(true);
     save();
     bankResult();
     showResults();
