@@ -20,7 +20,7 @@
 /* THE SHARED LAYER'S TAG, as every page carries it in its ?v=. One more
    place the tag is written; tools/aligned_test.mjs asserts it agrees with the
    pages, so it cannot fall behind them quietly. */
-export const SHARED_TAG = "v8";
+export const SHARED_TAG = "v9";
 
 /* What each game's masthead says and where its tabs go. The current tab is
    marked by path; a page with no game (a hub-level page) gets no masthead. */
@@ -34,6 +34,10 @@ const MAST = {
     name: "Wordsearch", home: "/wordsearch/",
     nav: [["Today", "/wordsearch/"], ["Themes", "/wordsearch/themes/"],
           ["Answers", "/wordsearch/answers/"], ["How to play", "/crossword/how-to-play"]],
+  },
+  hilo: {
+    name: "HiLo", home: "/hilo/",
+    nav: [["Today", "/hilo/"], ["Clubs", "/hilo/clubs/"], ["How to play", "/hilo/#how"]],
   },
 };
 

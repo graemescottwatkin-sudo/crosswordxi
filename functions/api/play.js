@@ -17,7 +17,7 @@ import { json, bad } from "../_lib/puzzle.js";
 import { hasDB } from "../_lib/db.js";
 import { newId, isAdmin} from "../_lib/auth.js";
 import { limited } from "../_lib/limit.js";
-import { validGame, DEFAULT_GAME } from "../_lib/games.js";
+import { validPlayGame, validMode, DEFAULT_GAME } from "../_lib/games.js";
 import { dailyKey } from "../_lib/daily.js";
 
 const int = (v, max = 100000) => {
@@ -65,18 +65,21 @@ export async function onRequestPost({ request, env }) {
 
   const playId = String(body.playId || "").slice(0, 60);
   if (!playId || playId.length < 8) return bad("No play id.");
-  /* Three modes, not two. Coercing everything that was not "practice" into
-     "daily" filed every themed board under practice, which is the one place
-     the number is least useful — a themed board is the thing designed to be
-     passed between friends. */
-  const mode = body.mode === "practice" ? "practice"
-             : body.mode === "theme" ? "theme"
-             : body.mode === "free" ? "free"
-             : "daily";
+  /* THE MODE, from the family's list rather than a chain ending in a default.
+     The chain this replaces coerced everything it did not recognise into
+     "daily": first that filed themed boards under practice, and after that
+     was fixed it quietly filed the word search's free boards as dailies too.
+     A mode the server does not know is now refused, on the same reasoning as
+     an unknown game — a wrong label is indistinguishable from a right one
+     once it is written, and a refusal is not. */
+  const mode = validMode(body.mode === undefined ? "daily" : body.mode);
+  if (!mode) return bad("Unknown mode.");
   /* WHICH GAME. Absent means the crossword, which is every row from before
      the column existed; anything else must be a game the server lists, and a
-     name it does not know is refused rather than filed under a default. */
-  const game = validGame(body.game === undefined ? DEFAULT_GAME : body.game);
+     name it does not know is refused rather than filed under a default.
+     BUILT, not released: counting a game before it launches is the point.
+     See validPlayGame. */
+  const game = validPlayGame(body.game === undefined ? DEFAULT_GAME : body.game);
   if (!game) return bad("Unknown game.");
   /* "man-united-3": the same slug the share link carries, so a row here joins
      to the link somebody actually sent. */

@@ -31,7 +31,7 @@
     { n: 7,  status: "On the drawing board" },
     { n: 8,  status: "On the drawing board" },
     { n: 9,  status: "Not yet signed" },
-    { n: 10, status: "Not yet signed" },
+    { n: 10, name: "HiLo XI",        href: "/hilo/" },
     { n: 11, status: "Not yet signed" }
   ];
 

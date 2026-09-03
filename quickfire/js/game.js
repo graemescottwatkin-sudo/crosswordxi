@@ -624,6 +624,7 @@ function start() {
       if (state.index >= questions.length) {
         state.completed = true;
         save();
+        playsEnd(true);
         showResults();
       } else {
         save();
@@ -866,8 +867,63 @@ function start() {
     });
   }
 
+  /* HOW FAR PEOPLE GET, through the family's helper, on the same two events
+     every other game sends: a start when a run kicks off and an end when the
+     eleventh question is answered or the page is left. QuickFire shipped
+     playable and completely uncounted — a run that 140 people opened could
+     not be told from one that 12 finished, which is the only question worth
+     asking about a game before it launches. Nothing about the person; see
+     shared/xi-plays.js. */
+  var runStart = 0;
+
+  /* The board in its own address, so a QuickFire row groups beside the other
+     games' rows rather than under a null. A challenge is addressed by the
+     fingerprint of the code that made it, which is what the players in that
+     challenge actually share. */
+  function playsBoardKey() {
+    if (challengeCode && board.isChallenge) {
+      return 'qf:c:' + Challenge.fingerprint(challengeCode);
+    }
+    return (board.mode === 'weekly' ? 'qf:w:' : 'qf:') + (board.date || 'x');
+  }
+
+  /* Three modes, and a challenge is its own — a run from a shared link is the
+     thing designed to be passed between friends, and filing it under daily
+     loses exactly the number that says whether sharing works. */
+  function playsMode() {
+    if (board.isChallenge) return 'challenge';
+    return board.mode === 'weekly' ? 'weekly' : 'daily';
+  }
+
+  function playsProgress() {
+    var solved = state.results.filter(function (r) { return r.solved; });
+    return {
+      solved: solved.length,
+      elapsed: runStart ? Math.round((Date.now() - runStart) / 1000) : 0,
+      detail: {
+        score: state.totalScore,
+        subs: state.subsUsed,
+        answered: state.results.length,
+      },
+    };
+  }
+
+  function playsStart() {
+    if (!window.XIPlays || !board) return;
+    runStart = Date.now();
+    window.XIPlays.start({
+      game: 'quickfire', mode: playsMode(), boardKey: playsBoardKey(),
+      total: questions.length,
+    }, playsProgress);
+  }
+
+  function playsEnd(completed) {
+    if (window.XIPlays && window.XIPlays.active()) window.XIPlays.end(!!completed);
+  }
+
   function begin() {
     show('screenGame');
+    playsStart();
     startQuestion(state.index);
   }
 

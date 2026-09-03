@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v8">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v8">
-<script src="shared/xi-theme.js?v=v8"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v9">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v9">
+<script src="shared/xi-theme.js?v=v9"></script>
 <style>
 :root{
 
@@ -91,6 +91,7 @@
   --kit-06:#D96C2C;      /* tangerine     */
   --kit-07:#5B4B8A;        /* purple        */
   --kit-08:#4C8C7A;         /* teal          */
+  --kit-10:#1F4E79;         /* navy — HiLo XI */
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -215,7 +216,7 @@ body{
       <span class="shirt soon" title="Not out yet">7</span>
       <span class="shirt soon" title="Not out yet">8</span>
       <span class="shirt soon" title="Not out yet">9</span>
-      <span class="shirt soon" title="Not out yet">10</span>
+      <a class="shirt live" id="shirt10" href="/hilo/" title="HiLo XI">10</a>
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
 
@@ -306,6 +307,22 @@ body{
         </div>
       </article>
 
+      <article class="game">
+        <div class="cap on-dark" style="background:var(--kit-10)">
+          <span class="num">10</span>
+          <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
+            <rect x="2" y="2" width="44" height="44" rx="3" stroke="#fff" stroke-width="2.5"/>
+            <path d="M14 30l10-12 10 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 36h20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+          </svg>
+          <h3>HiLo XI</h3>
+        </div>
+        <div class="body">
+          <p>One stat, eleven calls. Higher or lower, earlier or later, three substitutions.</p>
+          <a class="btn primary" href="/hilo/">Play today</a>
+        </div>
+      </article>
+
     </div>
   </section>
 
@@ -348,10 +365,6 @@ body{
         <span class="nm">Number nine<span>Not yet signed</span></span>
       </div>
       <div class="soon-card">
-        <span class="sq" style="background:#8A968D">10</span>
-        <span class="nm">Number ten<span>Not yet signed</span></span>
-      </div>
-      <div class="soon-card">
         <span class="sq" style="background:#8A968D">11</span>
         <span class="nm">Number eleven<span>Not yet signed</span></span>
       </div>
@@ -364,7 +377,7 @@ body{
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v8"></script>
+<script src="shared/xi-chrome.js?v=v9"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
@@ -447,6 +460,15 @@ body{
         var list = JSON.parse(localStorage.getItem("xisc.results") || "[]");
         if (list.some(function (r) { return r && r.no === day.today; })) {
           markDone("shirt3", "Scrambled XI"); played.push(3); settle();
+        }
+      }).catch(function () {});
+    fetch("/api/hilo/daily", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (day) {
+        if (!day || !day.day) return;
+        var list = JSON.parse(localStorage.getItem("xihl.results") || "[]");
+        if (list.some(function (r) { return r && r.day === day.day; })) {
+          markDone("shirt10", "HiLo XI"); played.push(10); settle();
         }
       }).catch(function () {});
   } catch (e) {}

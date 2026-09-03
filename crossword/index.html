@@ -74,12 +74,22 @@
      catches genuine boot errors could not tell that apart from one of ours.
      It also fired from 127.0.0.1 during the browser tests, where the request is
      cross-origin and fails noisily for no benefit.
-     So it is injected rather than declared, and only from the hostname it is
+     So it is injected rather than declared, and only from the hostnames it is
      meant to measure. Production is unchanged; everywhere else it simply never
-     exists. -->
+     exists.
+     The list matters. This guard once named crossword.thexigames.com alone.
+     When that host became a redirect to www.thexigames.com/crossword the
+     condition stopped being true anywhere a visitor actually lands, so the
+     beacon silently stopped loading on 2026-08-26.
+     Read the flatline carefully: the plays table fell on the same day, so the
+     traffic really did go, and this bug is not the reason the graph is empty.
+     What it cost is the ability to see a recovery — the next spike would have
+     gone unrecorded too. Any new production host has to be added here or it
+     goes unmeasured in exactly the same silent way. -->
 <script>
   (function () {
-    if (location.hostname !== "crossword.thexigames.com") return;
+    var HOSTS = ["www.thexigames.com", "thexigames.com", "crossword.thexigames.com"];
+    if (HOSTS.indexOf(location.hostname) === -1) return;
     var s = document.createElement("script");
     s.defer = true;
     s.src = "https://static.cloudflareinsights.com/beacon.min.js";
@@ -102,13 +112,13 @@
      width:var(--tap) was invalid, not because it was styled small. Order
      matters — style.css comes after and still wins wherever the crossword
      genuinely differs. -->
-<link rel="stylesheet" href="../shared/xi-tokens.css?v=v8">
-<link rel="stylesheet" href="../shared/xi-landing.css?v=v8">
-<link rel="stylesheet" href="../shared/xi-chrome.css?v=v8">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v9">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v9">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v9">
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
-<script src="../shared/xi-theme.js?v=v8"></script>
-<link rel="stylesheet" href="css/style.css?v=v002c">
+<script src="../shared/xi-theme.js?v=v9"></script>
+<link rel="stylesheet" href="css/style.css?v=v002d">
 </head>
 <body>
 <!-- The page's only H1, first thing in the body.
@@ -1106,7 +1116,7 @@
 
 <footer>
   <button id="statsBtn">My Season</button> &middot; <span id="streakLine"></span><br>
-  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002c</span> &middot;
+  Crossword <span class="xi">XI</span> by The <span class="xi">XI</span> Games &middot; unofficial word puzzle &middot; <span id="buildTag">v002d</span> &middot;
   <a href="privacy.html">privacy</a> &middot;
   <button id="skipToggle">skip filled: off</button> &middot;
   <button id="bankToggle">letter bank: on</button> &middot;
@@ -1125,11 +1135,11 @@
      aligned_test only grepped for the class, which is true of an element
      sealed inside a hidden container. -->
 <footer class="xic-foot"></footer>
-<script src="../shared/xi-clubs.js?v=v8"></script>
-<script src="../shared/xi-chrome.js?v=v8"></script>
-<script src="../shared/xi-plays.js?v=v8"></script>
-<script src="js/seasons.js?v=v002c"></script>
-<script src="js/engine.js?v=v002c"></script>
-<script src="js/game.js?v=v002c"></script>
+<script src="../shared/xi-clubs.js?v=v9"></script>
+<script src="../shared/xi-chrome.js?v=v9"></script>
+<script src="../shared/xi-plays.js?v=v9"></script>
+<script src="js/seasons.js?v=v002d"></script>
+<script src="js/engine.js?v=v002d"></script>
+<script src="js/game.js?v=v002d"></script>
 </body>
 </html>

@@ -116,6 +116,19 @@
 /scrambled/js/*
   Cache-Control: public, max-age=31536000, immutable
 
+# HiLo XI — the same three rules again, one pair per game.
+/hilo/
+  Cache-Control: no-store
+
+/hilo/index.html
+  Cache-Control: no-store
+
+/hilo/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/hilo/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # QuickFire XI — the same three rules again, one pair per game.
 /quickfire/
   Cache-Control: no-store

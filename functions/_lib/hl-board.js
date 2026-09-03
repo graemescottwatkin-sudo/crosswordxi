@@ -1,0 +1,177 @@
+/* hl-board.js — HiLo XI: the one place a stored board becomes a public
+ * payload, the rule for which board is today's, and the judge.
+ *
+ * THE SECRET IS THE VALUES. A board is twelve items in a fixed order; the
+ * player sees the first value and calls the eleven that follow. Every value
+ * after the first, and every row's source, stay on the server until that call
+ * is made — the browser is given names and context up front so it can draw
+ * the live pair, and one value per call, judged here. A board with its values
+ * in the payload would be a board with its answer key in the payload.
+ *
+ * TWO KINDS OF BOARD. A DAILY board is the calendar's for one day; the past
+ * is open (a missed day can be caught up as free play) and the future is
+ * shut, because opening it gives away everything. A CLUB board — a club's
+ * managers by year of appointment — is never in the calendar and is playable
+ * from the club's own page whenever it is in the bank.
+ *
+ * THE BANK COMES FROM D1 WHEN IT IS BOUND, AND FROM THE SAMPLE WHEN IT IS
+ * NOT — three boards that travel with the repository so a fresh clone, the
+ * suites and an unbound preview have something real to play. `source` rides
+ * in every payload so a live check can refuse a run that quietly fell back.
+ */
+import { HL_SAMPLE_BOARDS, HL_SAMPLE_SCHEDULE } from "./hl-sample.js";
+
+export function hasDB(env) { return !!(env && env.DB); }
+
+/* The server decides what day it is, in UTC. Never a date sent up. */
+export function todayKey(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+/* A club board is one whose category names a club's managers or head
+   coaches. The research side carries no club field, and a rule derived from
+   the category is one the importer, the pages and the play route all share. */
+const CLUB_CATEGORY = /^(.*\S)\s+(managers|head coaches)$/i;
+export function clubOf(board) {
+  const m = CLUB_CATEGORY.exec(String((board && board.category) || ""));
+  return m ? m[1] : null;
+}
+export function isClubBoard(board) { return clubOf(board) !== null; }
+export function clubSlug(name) {
+  return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+}
+
+/* ---- the bank ---- */
+export async function loadBank(env) {
+  if (!hasDB(env)) return { boards: HL_SAMPLE_BOARDS, schedule: HL_SAMPLE_SCHEDULE, source: "sample" };
+  try {
+    const b = await env.DB.prepare("SELECT payload FROM hl_board ORDER BY id").all();
+    const boards = (b.results || [])
+      .map((r) => { try { return JSON.parse(r.payload); } catch (e) { return null; } })
+      .filter(Boolean);
+    const s = await env.DB.prepare("SELECT day, board_id FROM hl_schedule ORDER BY day").all();
+    const schedule = {};
+    for (const r of s.results || []) schedule[r.day] = r.board_id;
+    /* An empty table is the un-imported state, not an empty bank. */
+    if (boards.length) return { boards, schedule, source: "d1" };
+  } catch (e) { /* table absent, or unreadable: the sample, said so */ }
+  return { boards: HL_SAMPLE_BOARDS, schedule: HL_SAMPLE_SCHEDULE, source: "sample" };
+}
+
+export function boardById(bank, id) {
+  return (bank.boards || []).find((b) => String(b.id) === String(id)) || null;
+}
+
+/* The day a daily board stands on, from the calendar; null for a club board
+   or a board the calendar never names. */
+export function dayOf(bank, id) {
+  const s = bank.schedule || {};
+  for (const day of Object.keys(s)) if (String(s[day]) === String(id)) return day;
+  return null;
+}
+
+/* Which boards may be played. A club board: always. A daily: only once its
+   day has come. Refused rather than explained — a refusal that says "that
+   is next Tuesday's" has already leaked what it guards. */
+export function released(bank, board, now) {
+  if (!board) return false;
+  if (isClubBoard(board)) return true;
+  const day = dayOf(bank, board.id);
+  return !!day && day <= todayKey(now);
+}
+
+/* ---- tokens ---- */
+/* hl:2026-09-03 is a day's board; hlb:398 is a board by id (a club board, or
+   a past daily played as free play). One spelling, parsed here and composed
+   here, so the routes cannot disagree about which board a call is for. */
+export const dayToken = (day) => "hl:" + day;
+export const boardToken = (id) => "hlb:" + id;
+export function boardForToken(bank, token, now) {
+  const s = String(token || "");
+  let m = /^hl:(\d{4}-\d{2}-\d{2})$/.exec(s);
+  if (m) {
+    if (m[1] > todayKey(now)) return null;
+    const id = (bank.schedule || {})[m[1]];
+    return id ? boardById(bank, id) : null;
+  }
+  m = /^hlb:([A-Za-z0-9_-]{1,40})$/.exec(s);
+  if (m) {
+    const b = boardById(bank, m[1]);
+    return released(bank, b, now) ? b : null;
+  }
+  return null;
+}
+
+/* ---- what leaves the server ---- */
+/* Twelve rows, but only the FIRST carries its value, and no row carries its
+   source: the rest is names and context so the page can draw the pair it is
+   asking about. detail rides only where it is display (a birth date for a
+   live age); nothing in it decides a call. */
+export function publicBoard(board, token) {
+  const rows = (board.chain || []).map((r, i) => ({
+    name: r.name,
+    context: r.context || "",
+    ...(i === 0 ? { value: r.value } : {}),
+    ...(r.detail && r.detail.birthDate ? { birthDate: r.detail.birthDate } : {}),
+    ...(r.precision ? { precision: r.precision } : {}),
+  }));
+  return {
+    token,
+    id: String(board.id),
+    category: board.category,
+    subtitle: board.subtitle,
+    unit: board.unit,
+    direction: board.direction || null,
+    valueClass: board.valueClass || null,
+    trueAsOf: board.trueAsOf || null,
+    sourceLine: board.sourceLine || null,
+    club: clubOf(board),
+    rows,
+  };
+}
+
+/* THE JUDGE. Call i (1..11) asks whether row i is higher than row i-1. The
+   answer, the row's value and its source come back together: the source is
+   the answers payload and is shown as the call settles, never before. */
+export function judge(board, index, call) {
+  const chain = board.chain || [];
+  const i = Number(index);
+  if (!Number.isInteger(i) || i < 1 || i >= chain.length) return null;
+  const c = String(call);
+  /* "none" is a call that ran out of clock: a wrong call by the rule, and
+     the row still has to reveal its value so the settled row can show it. */
+  if (c !== "higher" && c !== "lower" && c !== "none") return null;
+  const prev = Number(chain[i - 1].value), next = Number(chain[i].value);
+  const truth = next > prev ? "higher" : "lower";
+  const src = chain[i].source || {};
+  return {
+    index: i, right: c === truth, value: next,
+    source: { publisher: src.publisher || null, url: src.url || null, quote: src.quote || null },
+  };
+}
+
+/* ---- the catalogue: club boards by club, released dailies by day ---- */
+export function clubCatalog(bank) {
+  const byClub = new Map();
+  for (const b of bank.boards || []) {
+    const club = clubOf(b);
+    if (!club) continue;
+    const slug = clubSlug(club);
+    if (!slug) continue;
+    if (!byClub.has(slug)) byClub.set(slug, { slug, name: club, boards: [] });
+    byClub.get(slug).boards.push({ id: String(b.id), subtitle: b.subtitle, trueAsOf: b.trueAsOf || null });
+  }
+  for (const c of byClub.values()) c.boards.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return [...byClub.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/* Days already played, newest first, strictly before today, each with its
+   board's category — identity only, no values. */
+export function archive(bank, now) {
+  const today = todayKey(now);
+  const s = bank.schedule || {};
+  return Object.keys(s).filter((d) => d < today).sort().reverse().map((day) => {
+    const b = boardById(bank, s[day]);
+    return { day, id: String(s[day]), category: b ? b.category : null, subtitle: b ? b.subtitle : null };
+  }).filter((e) => e.category);
+}

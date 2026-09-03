@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import { readFileSync } from "node:fs";
 import { onRequestPost as play } from "../functions/api/play.js";
+import { validMode } from "../functions/_lib/games.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -123,8 +124,18 @@ t("a play id is per attempt, not per person", (() => {
 console.log("\nThemed boards are counted as themselves");
 {
   const src = fs.readFileSync(path.join(DIR, "../functions/api/play.js"), "utf8");
+  /* Asserted against the list the server actually consults, not the shape of
+     the code consulting it. This read `body.mode === "theme" ?` out of the
+     source, so it passed for exactly as long as the ternary chain it was
+     written against survived — and that chain was itself the bug: it ended in
+     "everything else is daily", which filed the word search's free boards as
+     dailies. Replacing it with an allowlist fixed the fault and failed this
+     test, which is the wrong way round for a test to behave. What matters is
+     that theme survives as itself and that an unknown mode is refused. */
   t("theme is a mode in its own right, not folded into practice",
-    /body\.mode === "theme" \? "theme"/.test(src));
+    validMode("theme") === "theme" && validMode("practice") === "practice");
+  t("and a mode the server does not know is refused, not filed under daily",
+    validMode("bonus") === null && validMode(undefined) === "daily");
   t("the board key is stored with the attempt",
     /theme_key/.test(src) && /themeKey/.test(src));
   t("and the key is validated rather than trusted", (() => {

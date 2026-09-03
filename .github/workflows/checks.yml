@@ -60,6 +60,14 @@ jobs:
           # no answer on an indexable page.
           node crossword/clubs_test.mjs
 
+      # Family-wide, so it runs before the per-game suites. QuickFire shipped
+      # playable and completely uncounted because nothing anywhere said that a
+      # built game must call the counter. This is the thing that says it, and
+      # it fails on a game that never starts a play, on a game the server
+      # would refuse, and on a mode that is not in MODES.
+      - name: Every built game counts plays
+        run: node tools/tracking_test.mjs
+
       - name: API
         run: |
           node crossword/functions_test.mjs
@@ -142,6 +150,17 @@ jobs:
           # produce. --check gates and writes nothing, so a board edited by
           # hand in functions/_lib/ shows up here rather than in production.
           node tools/build_scrambled.js --check
+          # HiLo XI, shirt 10, released. Its gate on the board shape and the
+          # judge, its API executed against the sample bank, its club pages,
+          # and one round played from kick off to full time through the real
+          # page and the real handlers.
+          node hilo/board_test.mjs
+          node hilo/api_test.mjs
+          node hilo/pages_test.mjs
+          node hilo/journey_test.mjs
+          # The sample must be what the sources produce; with no bank on the
+          # runner the committed sample is gated on its own.
+          node tools/import_hilo.js --check
 
       # node_modules must be gone for this one: it checks the package that
       # would actually be uploaded.
@@ -152,6 +171,7 @@ jobs:
           node wordsearch/deploy_check.mjs
           node scrambled/deploy_check.mjs
           node quickfire/deploy_check.mjs
+          node hilo/deploy_check.mjs
 
   render:
     name: Sixteen viewports, real browser

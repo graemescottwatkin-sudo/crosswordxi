@@ -954,7 +954,11 @@ server.listen(0, "127.0.0.1", async () => {
   t("and it does not run anywhere but the real site", (() => {
     /* Not in the test DOM, and not from 127.0.0.1 during the browser checks,
        where the request is cross-origin and fails noisily for no benefit. */
-    return /location\.hostname !== "crossword\.thexigames\.com"/.test(html) &&
+    /* The guard is a list of production hosts, not one host: when the game
+       moved under www.thexigames.com the single-host guard stopped being
+       true anywhere a visitor lands and the beacon went quiet unnoticed. */
+    return /HOSTS\.indexOf\(location\.hostname\) === -1\) return;/.test(html) &&
+      /"www\.thexigames\.com"/.test(html) &&
       !d.querySelector('script[src*="cloudflareinsights"]');
   })());
   t("it carries no cookie and no identifier of ours", (() => {
