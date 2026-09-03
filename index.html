@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v12">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v12">
-<script src="shared/xi-theme.js?v=v12"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v13">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v13">
+<script src="shared/xi-theme.js?v=v13"></script>
 <style>
 :root{
 
@@ -91,7 +91,7 @@
   --kit-06:#D96C2C;      /* tangerine     */
   --kit-07:#5B4B8A;        /* purple        */
   --kit-08:#4C8C7A;         /* teal          */
-  --kit-10:#1F4E79;         /* navy — HiLo XI */
+  --kit-09:#1F4E79;         /* navy — HiLo XI */
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -221,12 +221,12 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       <span class="shirt soon" title="Not out yet">6</span>
       <span class="shirt soon" title="Not out yet">7</span>
       <span class="shirt soon" title="Not out yet">8</span>
-      <span class="shirt soon" title="Not out yet">9</span>
-      <a class="shirt live" id="shirt10" href="/hilo/" title="HiLo XI">10</a>
+      <a class="shirt live" id="shirt9" href="/hilo/" title="HiLo XI">9</a>
+      <span class="shirt soon" title="Not out yet">10</span>
       <span class="shirt soon" title="Not out yet">11</span>
     </div>
 
-    <p class="played" id="playedLine"><span id="toSign">Nine</span> still to sign</p>
+    <p class="played" id="playedLine"><span id="toSign">Seven</span> still to sign</p>
   </div>
 </section>
 
@@ -314,8 +314,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       </article>
 
       <article class="game">
-        <div class="cap on-dark" style="background:var(--kit-10)">
-          <span class="num">10</span>
+        <div class="cap on-dark" style="background:var(--kit-09)">
+          <span class="num">9</span>
           <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
             <rect x="2" y="2" width="44" height="44" rx="3" stroke="#fff" stroke-width="2.5"/>
             <path d="M14 30l10-12 10 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -375,8 +375,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         <span class="nm">Number eight<span>On the drawing board</span></span>
       </div>
       <div class="soon-card">
-        <span class="sq" style="background:#8A968D">9</span>
-        <span class="nm">Number nine<span>Not yet signed</span></span>
+        <span class="sq" style="background:#8A968D">10</span>
+        <span class="nm">Number ten<span>Not yet signed</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:#8A968D">11</span>
@@ -391,7 +391,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v12"></script>
+<script src="shared/xi-chrome.js?v=v13"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
@@ -482,7 +482,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         if (!day || !day.day) return;
         var list = JSON.parse(localStorage.getItem("xihl.results") || "[]");
         if (list.some(function (r) { return r && r.day === day.day; })) {
-          markDone("shirt10", "HiLo XI"); played.push(10); settle();
+          markDone("shirt9", "HiLo XI"); played.push(9); settle();
         }
       }).catch(function () {});
   } catch (e) {}

@@ -4,7 +4,7 @@
  * family's (shared/xi-chrome.css); this sheet is the game view only: the
  * ladder of two rows, the call buttons, the per-call clock, the answers list
  * and the full-time card. Every colour is a shared token; the one value this
- * game owns is its kit, navy, which the hub gives shirt 10 too.
+ * game owns is its kit, navy, which the hub gives shirt 9 too.
  */
 :root{ --hl-kit:#1F4E79; --hl-kit-ink:#FFFFFF; }
 

@@ -120,6 +120,18 @@ Where facts live — extend these, never copy them:
 - Account sync failures: log via `accountNote()`, stay caught, never surface
   to the player. A transient session failure is NOT signed-out.
 
+## Shirt numbers
+
+- A new game takes the **next FREE number**, never one another game has
+  claimed. Free means "Not yet signed" — not "In build", not "On the drawing
+  board", both of which are a claim. HiLo XI launched on 10 because its build
+  brief said 10, while 9 was unsigned and 4 to 8 were all spoken for; it was
+  renumbered to 9 on 3 Sep 2026. The owner's rule, and the reorder is cheap:
+  the number lives in the squad list in `shared/xi-chrome.js`, and the hub
+  carries the strip, the card and its kit colour.
+- Kit colours follow the GAME, not the number — `--kit-NN` is defined for the
+  number a game actually wears.
+
 ## Content and safety rules
 
 - **An unreleased game is named NOWHERE in served markup** (HTML comments
