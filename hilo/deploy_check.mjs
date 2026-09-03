@@ -96,10 +96,20 @@ t("the production SQL is not in the tree, or is gitignored",
 t("the page holds no value but the first: the judge is the server's",
   /\/api\/hilo\/call/.test(js) && !/chain\b/.test(js.replace(/\/\*[\s\S]*?\*\//g, "")),
   "every call goes up to be marked");
-t("the sample module keeps every row's source on the server side only", (() => {
-  const lib = read("functions/_lib/hl-board.js");
-  return /export function publicBoard/.test(lib) && /i === 0 \? \{ value: r\.value \}/.test(lib);
-})(), "publicBoard hands over the first value and nothing behind it");
+/* EXECUTED, not pattern-matched. This read the source of publicBoard for
+   the shape of one line, and the day that line was rewritten to hand over
+   LESS — a hidden row as its name alone, after a context gave a call away
+   on the live page — the check went red against a stricter truth. A regex
+   cannot tell what a function returns; calling it can. */
+const { publicBoard } = await import("../functions/_lib/hl-board.js");
+const { HL_SAMPLE_BOARDS } = await import("../functions/_lib/hl-sample.js");
+t("publicBoard hands over the first row and, of every other row, the name alone", (() => {
+  const b = HL_SAMPLE_BOARDS[0];
+  const pub = publicBoard(b, "t");
+  return pub.rows.length === b.chain.length &&
+    pub.rows[0].value === b.chain[0].value &&
+    pub.rows.slice(1).every((r) => Object.keys(r).join() === "name");
+})(), "no value, context, birth date or precision behind the first");
 
 console.log("\nIt is part of the family");
 t("the page loads the shared tokens before the shared chrome", (() => {
