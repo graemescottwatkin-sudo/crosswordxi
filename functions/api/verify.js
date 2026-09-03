@@ -16,6 +16,7 @@
  * buys; this only ever says yes or no, so it cannot be used as a free one.
  */
 import { normalise, json, bad, solutionString } from "../_lib/puzzle.js";
+import { publicSource } from "../_lib/sources.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
 import { isAdmin } from "../_lib/auth.js";
@@ -65,6 +66,13 @@ export async function onRequestPost({ request, env }) {
   const answer = normalise(stored.puzzle.entries[idx].row.grid);
   const typed = normalise(String(guess || ""));
   if (typed.length !== answer.length) return json({ correct: false });
+  if (typed !== answer) return json({ correct: false });
 
-  return json({ correct: typed === answer });
+  /* THE CITATION, RELEASED ON SOLVE. This is the moment the entry becomes
+     known to the player, and it is the only moment a source may travel: one
+     row in seventeen has the answer inside its own URL, so a citation that
+     rode down with the board would give those away. Nothing about the verdict
+     changes; a source simply comes with a yes. publicSource decides what may
+     be shown at all — see functions/_lib/sources.js. */
+  return json({ correct: true, source: publicSource(stored.puzzle.entries[idx].row) });
 }

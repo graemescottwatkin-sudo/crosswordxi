@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002q";
+  var BUILD = "v002r";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -386,7 +386,12 @@
          that marks an entry solved as you type. Sending it to the paid endpoint
          is what made the server unable to tell the two apart. */
       jobs.push(api("/api/verify", { token: puzzleToken, entry: i, guess: text })
-        .then(function (r) { verified[i] = !!r.correct; setOffline(false); })
+        .then(function (r) {
+          verified[i] = !!r.correct;
+          /* The citation rides with the yes, and only with the yes. */
+          if (r.correct) noteSource(i, r.source);
+          setOffline(false);
+        })
         .catch(function (err) {
           delete verifySent[i];       // so it is asked again
           /* Only a request that never reached the server means offline. A
@@ -1209,6 +1214,7 @@
           ? themeLabel + " \u00B7 Crossword XI"
           : "Practice \u00B7 Crossword XI");
     letters = {}; wrong = {}; revealedEntries = {}; revealedCells = {}; revealAnswerCells = {};
+    sources = {};
     pauseCount = 0; pausedMs = 0; pauseStartedAt = null;
     subbedCells = {}; subsUsed = 0;
     checksUsed = 0; checkAllsUsed = 0; elapsed = 0; complete = false;
@@ -2166,6 +2172,36 @@
       "The grid is full, but " + sq + ", across " + wd + ". Check or reveal to find them.";
   }
 
+  /* WHERE A CLUE CAME FROM, once it is solved.
+
+     Sourcing is the standing rule of the bank and it has never been visible.
+     The citation is not in the board — around one row in seventeen has its
+     answer inside its own URL, so it cannot be — and arrives instead with the
+     verdict from /api/verify at the moment the entry is confirmed correct.
+     Kept by entry index and cleared with the board, like every other thing
+     that belongs to a board rather than to the game.
+
+     Not every solved clue will have one. The server shows a citation only for
+     publishers it is allowed to link to, so the mark simply is not there when
+     there is nothing to point at — see functions/_lib/sources.js. */
+  var sources = {};
+  function noteSource(idx, source) {
+    if (!source || !source.url || !source.name) return;
+    if (sources[idx]) return;
+    sources[idx] = source;
+    renderClues();
+    updateSelection();
+  }
+  function sourceLink(idx) {
+    var s = sources[idx];
+    if (!s || !verified[idx]) return "";
+    /* Opened away from the board: a player mid-clock should not lose the
+       grid to a Wikipedia page, and rel keeps the new tab from reaching
+       back into this one. */
+    return ' <a class="cl-src" href="' + escapeHtml(s.url) + '" target="_blank" rel="noopener noreferrer"' +
+      ' title="' + escapeHtml(s.name) + '" onclick="event.stopPropagation()">[source]</a>';
+  }
+
   /* ---------- Clue rendering ---------- */
   function renderClues() {
     var lists = { A: $("acrossList"), D: $("downList") };
@@ -2176,7 +2212,8 @@
       li.dataset.entry = i;
       li.innerHTML = '<span class="cl-num">' + e.num + '</span>' +
         '<span class="cl-text">' + escapeHtml(clueText(e.row)) +
-        ' <span class="cl-enum">' + escapeHtml(e.row.enum) + '</span></span>';
+        ' <span class="cl-enum">' + escapeHtml(e.row.enum) + '</span>' +
+        sourceLink(i) + '</span>';
       li.addEventListener("click", function () {
         cur = { entry: i, cell: firstEmptyCell(i) };
         updateSelection(); startTimer();
@@ -2257,6 +2294,16 @@
     var text = clueText(e.row);
     var el = $("ncText");
     el.textContent = text;
+    /* The citation on the card too, once this clue is solved. Appended after
+       the text is set, because scaleClue below measures textContent and a
+       link inside it would be measured as part of the clue. */
+    var link = sourceLink(cur.entry);
+    if (link) {
+      var holder = document.createElement("span");
+      holder.className = "nc-src";
+      holder.innerHTML = link;
+      el.appendChild(holder);
+    }
     /* Scale by how many LINES the clue will take, not how many characters it
        has. A 76-character clue is one line on a desktop card and three on a
        390px phone, so a fixed character threshold protects the wrong screen —
@@ -3757,6 +3804,7 @@
                                playId: playId })
       .then(function (r) {
         markWrongFromServer(idx, r.wrong || []);
+        if (r.correct) noteSource(idx, r.source);
         checksUsed++;
         helpActions.push("check");
         chargeHelp("check");

@@ -1123,6 +1123,17 @@ body.touch .osk{display:block}
   font-size:clamp(14px,calc(var(--osk-key) * .30),22px);
 }
 
+/* WHERE A CLUE CAME FROM. Small, and after the enumeration, because it is a
+   footnote on a clue rather than part of it — and it only exists once the
+   clue is solved, so it can never be read as a hint. */
+.cl-src,.nc-src a{
+  font-size:.82em;font-weight:600;letter-spacing:.01em;
+  color:var(--pitch-ink,var(--pitch));text-decoration:none;white-space:nowrap;
+}
+.cl-src:hover,.nc-src a:hover{text-decoration:underline;text-underline-offset:2px}
+.cl-src:focus-visible,.nc-src a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.nc-src{margin-left:6px}
+
 /* ============ COMPLETION ============ */
 .overlay{
   position:fixed;inset:0;background:rgba(18,34,25,.6);z-index:50;

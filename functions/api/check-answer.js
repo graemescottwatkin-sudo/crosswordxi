@@ -13,6 +13,7 @@
  * calling the API directly, and each guess would leak far more per attempt.
  */
 import { normalise, json, bad, solutionString } from "../_lib/puzzle.js";
+import { publicSource } from "../_lib/sources.js";
 import { tally } from "../_lib/tally.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
@@ -110,6 +111,9 @@ export async function onRequestPost({ request, env }) {
   const answer = normalise(puzzle.entries[idx].row.grid);
   const typed = asChars(guess, answer.length);
   const correct = typed.every((c, i) => c === answer[i]);
+  /* The same release as /api/verify: a solved entry is a solved entry
+     however the player got the verdict. */
+  const source = correct ? publicSource(puzzle.entries[idx].row) : null;
 
   /* A grid check is one press that happens to take eleven requests — the player
      is owed the positions of every wrong letter, and each entry is a separate
@@ -117,7 +121,7 @@ export async function onRequestPost({ request, env }) {
      of press it was, so this counts one grid check rather than eleven single
      ones. Charged at nine points, it was costing thirty-six. */
   await tally(env, playId, checkGrid ? "srv_check_alls" : "srv_checks");
-  if (!detail) return json({ correct });
+  if (!detail) return json({ correct, source });
 
   // Positions that are filled and wrong. A blank square is not "wrong" — it has
   // not been answered yet, and marking it would mislead.
@@ -125,5 +129,5 @@ export async function onRequestPost({ request, env }) {
   for (let i = 0; i < answer.length; i++) {
     if (typed[i] && typed[i] !== answer[i]) wrong.push(i);
   }
-  return json({ correct, wrong, length: answer.length });
+  return json({ correct, wrong, length: answer.length, source });
 }

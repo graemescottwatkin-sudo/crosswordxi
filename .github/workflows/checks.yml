@@ -44,6 +44,12 @@ jobs:
       - name: Names resolve
         run: node crossword/names_test.mjs
 
+      # A citation must not travel before the clue is solved, and a citation a
+      # player is shown is not the same thing as one the bank records. Both are
+      # server-side rules, so this runs with the rest of the offline suites.
+      - name: Citations
+        run: node crossword/sources_test.mjs
+
       # The generator suite needs the clue bank, which is not in the repository.
       # Skipped rather than failed: a suite that cannot run is not a suite that
       # found something.
