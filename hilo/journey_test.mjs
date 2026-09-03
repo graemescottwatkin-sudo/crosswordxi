@@ -163,6 +163,29 @@ if (playDay === today) {
 } else {
   t("a past day played as free play banks no row", (window.localStorage.getItem("xihl.results") || "[]") === "[]");
 }
+/* ---- a subtitle leads with the answer, not the small print ------------- */
+/* "The year he first took charge, caretaker spells included. A man with more
+   than one spell is dated by his first." is 111 characters and the first half
+   is the only part most people need before pressing Kick off. The rule that
+   settles the awkward cases still decides real boards, so it is kept and said
+   quietly rather than shortened away. */
+{
+  const parts = window.__hilo.subtitleParts;
+  const two = parts("The year he first took charge, caretaker spells included. A man with more than one spell is dated by his first.");
+  t("a two-sentence subtitle leads with what the number means",
+    two.lead === "The year he first took charge, caretaker spells included.", two.lead);
+  t("and keeps the rule that settles the awkward cases",
+    two.note === "A man with more than one spell is dated by his first.", two.note);
+  const one = parts("The year the club was founded, under whatever name it started with.");
+  t("a one-sentence subtitle is left whole, with nothing under it",
+    one.lead === "The year the club was founded, under whatever name it started with." && one.note === "");
+  /* A question mark is not a full stop: "Older or younger? The value is the
+     year he was born" is one thought and splitting it would strand the half
+     that answers the question. */
+  const q = parts("Older or younger? The value is the year he was born, and the reveal shows his age today.");
+  t("a question inside a subtitle does not split it", q.note === "", q.note);
+}
+
 t("no other game's keys were written", Object.keys(window.localStorage).every((k) => k.indexOf("xihl.") === 0 || k.indexOf("xi.") === 0));
 
 console.log(`\n${pass} passed, ${fail} failed`);

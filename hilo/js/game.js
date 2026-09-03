@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001j";
+var BUILD = "v001k";
 
 (function () {
   "use strict";
@@ -185,7 +185,9 @@ var BUILD = "v001j";
       return;
     }
     $("startTitle").textContent = todayBoard.category;
-    $("startSub").textContent = todayBoard.subtitle;
+    /* The hero says what the number means; the rule that settles the
+       awkward cases waits until the board is in front of you. */
+    $("startSub").textContent = subtitleParts(todayBoard.subtitle).lead;
     var had = todayResult();
     $("startState").textContent = had
       ? "Played " + DOT + " " + had.score + " pts " + DOT + " " + ({ W: "Win", D: "Draw", L: "Loss" }[had.result] || "")
@@ -228,6 +230,26 @@ var BUILD = "v001j";
     renderArchive();
     if (panel.scrollIntoView) panel.scrollIntoView({ block: "nearest" });
   }
+  /* WHAT THE BOARD IS, AND THE SMALL PRINT UNDER IT.
+
+     A subtitle is written as two sentences: what the number means, then the
+     rule that settles the awkward cases. "The year he first took charge,
+     caretaker spells included. A man with more than one spell is dated by his
+     first." — 111 characters, set as one block, and the first half is the
+     only part most people need before they press Kick off.
+
+     Split rather than shortened. The second sentence decides real boards and
+     throwing it away would leave a rule that only the author knows; it is
+     said quietly, under the line that answers the question. The data is not
+     touched: the bank still holds one subtitle, and this is a decision about
+     how to show it. */
+  function subtitleParts(sub) {
+    var s = String(sub || "").trim();
+    var cut = s.search(/\.\s+\S/);
+    if (cut === -1) return { lead: s, note: "" };
+    return { lead: s.slice(0, cut + 1), note: s.slice(cut + 1).trim() };
+  }
+
   function dayLabel(day) {
     var d = new Date(day + "T00:00:00Z");
     if (isNaN(d.getTime())) return day;
@@ -273,7 +295,12 @@ var BUILD = "v001j";
     drawBoard(freshRound(board, mode, meta));
     $("kickKicker").textContent = meta.kicker || "BOARD";
     $("kickTitle").textContent = board.category;
-    $("kickNote").textContent = board.subtitle + (mode === "free" ? " " + DOT + " Free play, no run at stake." : "");
+    /* The cover is where the whole of it belongs: it is the last thing read
+       before the clock starts, and the small print is small. */
+    var sp = subtitleParts(board.subtitle);
+    $("kickNote").textContent = sp.lead + (mode === "free" ? " " + DOT + " Free play, no run at stake." : "");
+    var fine = $("kickFine");
+    if (fine) fine.textContent = sp.note;
     $("kickCover").classList.remove("hidden");
     $("screenGame").classList.add("covered");
     show("screenGame");
@@ -315,7 +342,11 @@ var BUILD = "v001j";
     $("modeLabel").textContent = round.mode === "daily" ? "Today" : (round.kicker || "Free play");
     $("cat").innerHTML = "";
     var catText = document.createTextNode(b.category); $("cat").appendChild(catText);
-    var small = document.createElement("small"); small.textContent = b.subtitle; $("cat").appendChild(small);
+    /* On the board itself, only the lead: the clock is running and the rule
+       has already been read on the cover. */
+    var small = document.createElement("small");
+    small.textContent = subtitleParts(b.subtitle).lead;
+    $("cat").appendChild(small);
     $("srcLine").textContent = b.sourceLine || (b.trueAsOf ? "True as of " + b.trueAsOf + "." : "");
     var ladder = $("ladder"), sheet = $("sheet");
     ladder.innerHTML = ""; sheet.innerHTML = "";
@@ -649,7 +680,8 @@ var BUILD = "v001j";
   /* A test hook. The journey suite drives the page through its buttons; the
      one thing it cannot do is wait twelve real seconds per call, so the
      time-out is reachable by name. Nothing here is a second way to play. */
-  window.__hilo = { timeOut: timeOut, round: function () { return g; } };
+  window.__hilo = { timeOut: timeOut, round: function () { return g; },
+                    subtitleParts: subtitleParts };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

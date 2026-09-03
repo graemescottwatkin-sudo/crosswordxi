@@ -112,6 +112,8 @@
 .kickCover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--paper) 78%,transparent);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:3;border-radius:var(--r-lg,10px)}
 .kickCard{width:min(100%,360px);background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pitch);border-radius:8px;padding:14px 16px;box-shadow:var(--shadow-2);text-align:left}
 .kickTitle{font-family:var(--disp);font-weight:700;font-size:19px;letter-spacing:.02em;color:var(--ink);margin-top:2px}
+.kickFine{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--ink-faint);max-width:46ch}
+.kickFine:empty{display:none}
 .kickNote{font-size:13px;color:var(--ink-soft);margin-top:4px;line-height:1.4}
 .kickCard .kick{margin-top:12px;width:100%}
 .stage{position:relative}
