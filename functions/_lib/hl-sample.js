@@ -429,7 +429,7 @@ export const HL_SAMPLE_BOARDS = [
   "sourceLine": "Source: The FA's official England legend profiles (englandfootball.com), opened 2 September 2026."
  },
  {
-  "id": "296",
+  "id": "587",
   "category": "Real Madrid head coaches",
   "subtitle": "The year he first took charge, caretaker spells included. A coach with more than one spell is dated by his first.",
   "unit": "year",
@@ -442,6 +442,7 @@ export const HL_SAMPLE_BOARDS = [
     "context": "Left in 1974, came back in 1977, 1982 and 1985",
     "detail": {
      "spells": 4,
+     "sequence": 18,
      "renderedRange": "Luis Molowny 1973 - 1974",
      "clubRecordStart": "1974-01",
      "clubRecordEnd": "1974-05"
@@ -454,164 +455,12 @@ export const HL_SAMPLE_BOARDS = [
     }
    },
    {
-    "name": "Xabi Alonso",
-    "value": 2025,
-    "context": "In charge until 2026",
-    "detail": {
-     "spells": 1,
-     "renderedRange": "Xabi Alonso 2025 - 2026",
-     "clubRecordStart": "2025-06-01",
-     "clubRecordEnd": "2026-01-12"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Xabi Alonso 2025 - 2026",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Zinedine Zidane",
-    "value": 2016,
-    "context": "Left in 2018, came back in 2019",
-    "detail": {
-     "spells": 2,
-     "renderedRange": "Zinedine Zidane 2016 - 2018",
-     "clubRecordStart": "2016-01-04",
-     "clubRecordEnd": "2018-05-31"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Zinedine Zidane 2016 - 2018",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Julen Lopetegui",
-    "value": 2018,
-    "context": "In charge until 2018",
-    "detail": {
-     "spells": 1,
-     "renderedRange": "Julen Lopetegui 2018 - 2018",
-     "clubRecordStart": "2018-06-14",
-     "clubRecordEnd": "2018-10-28"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Julen Lopetegui 2018 - 2018",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Carlo Ancelotti",
-    "value": 2013,
-    "context": "Left in 2015, came back in 2021",
-    "detail": {
-     "spells": 2,
-     "renderedRange": "Carlo Ancelotti 2013 - 2015",
-     "clubRecordStart": "2013-06-25",
-     "clubRecordEnd": "2015-05-25"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Carlo Ancelotti 2013 - 2015",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Fabio Capello",
-    "value": 1996,
-    "context": "Left in 1997, came back in 2006",
-    "detail": {
-     "spells": 2,
-     "renderedRange": "Fabio Capello 1996 - 1997",
-     "clubRecordStart": "1996-07",
-     "clubRecordEnd": "1997-07"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Fabio Capello 1996 - 1997",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Vicente Del Bosque",
-    "value": 1994,
-    "context": "Left in 1994, came back in 1995 and 1999",
-    "detail": {
-     "spells": 3,
-     "renderedRange": "Vicente Del Bosque 1994 - 1994",
-     "clubRecordStart": "1994-03",
-     "clubRecordEnd": "1994-06"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Vicente Del Bosque 1994 - 1994",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Vanderlei Luxemburgo",
-    "value": 2004,
-    "context": "In charge until 2005",
-    "detail": {
-     "spells": 1,
-     "renderedRange": "Vanderlei Luxemburgo 2004 - 2005",
-     "clubRecordStart": "2004-12",
-     "clubRecordEnd": "2005-12"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Vanderlei Luxemburgo 2004 - 2005",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "Guus Hiddink",
-    "value": 1998,
-    "context": "In charge until 1999",
-    "detail": {
-     "spells": 1,
-     "renderedRange": "Guus Hiddink 1998 - 1999",
-     "clubRecordStart": "1998-06",
-     "clubRecordEnd": "1999-02"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Guus Hiddink 1998 - 1999",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
-    "name": "John Toshack",
-    "value": 1989,
-    "context": "Left in 1990, came back in 1999",
-    "detail": {
-     "spells": 2,
-     "renderedRange": "John Benjamin Toshack 1989 - 1990",
-     "clubRecordStart": "1989-07",
-     "clubRecordEnd": "1990-11"
-    },
-    "source": {
-     "publisher": "Real Madrid",
-     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "John Benjamin Toshack 1989 - 1990",
-     "accessed": "2026-09-02"
-    }
-   },
-   {
     "name": "Alfredo Di Stefano",
     "value": 1982,
     "context": "Left in 1984, came back in 1990",
     "detail": {
      "spells": 2,
+     "sequence": 21,
      "renderedRange": "Alfredo Di Stefano 1982 - 1984",
      "clubRecordStart": "1982-07",
      "clubRecordEnd": "1984-06"
@@ -624,19 +473,182 @@ export const HL_SAMPLE_BOARDS = [
     }
    },
    {
-    "name": "Manuel Pellegrini",
-    "value": 2009,
-    "context": "In charge until 2010",
+    "name": "Miljan Miljanic",
+    "value": 1974,
+    "context": "In charge until 1977",
     "detail": {
      "spells": 1,
-     "renderedRange": "Manuel Pellegrini 2009 - 2010",
-     "clubRecordStart": "2009-06-01",
-     "clubRecordEnd": "2010-05-26"
+     "sequence": 19,
+     "renderedRange": "Miljan Miljanic 1974 - 1977",
+     "clubRecordStart": "1974-07",
+     "clubRecordEnd": "1977-09"
     },
     "source": {
      "publisher": "Real Madrid",
      "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
-     "quote": "Manuel Pellegrini 2009 - 2010",
+     "quote": "Miljan Miljanic 1974 - 1977",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Amancio Amaro",
+    "value": 1984,
+    "context": "In charge until 1985",
+    "detail": {
+     "spells": 1,
+     "sequence": 22,
+     "renderedRange": "Amancio Amaro 1984 - 1985",
+     "clubRecordStart": "1984-06",
+     "clubRecordEnd": "1985-04"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Amancio Amaro 1984 - 1985",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Vujadin Boskov",
+    "value": 1979,
+    "context": "In charge until 1982",
+    "detail": {
+     "spells": 1,
+     "sequence": 20,
+     "renderedRange": "Vujadin Boskov 1979 - 1982",
+     "clubRecordStart": "1979-07",
+     "clubRecordEnd": "1982-03"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Vujadin Boskov 1979 - 1982",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Leo Beenhakker",
+    "value": 1986,
+    "context": "Left in 1989, came back in 1991",
+    "detail": {
+     "spells": 2,
+     "sequence": 23,
+     "renderedRange": "Leo Beenhakker 1986 - 1989",
+     "clubRecordStart": "1986-06",
+     "clubRecordEnd": "1989-06"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Leo Beenhakker 1986 - 1989",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Radomir Antic",
+    "value": 1991,
+    "context": "In charge until 1991",
+    "detail": {
+     "spells": 1,
+     "sequence": 25,
+     "renderedRange": "Radomir Antic 1991 - 1991",
+     "clubRecordStart": "1991-03",
+     "clubRecordEnd": "1992-01"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Radomir Antic 1991 - 1991",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Vicente Del Bosque",
+    "value": 1994,
+    "context": "Left in 1994, came back in 1995 and 1999",
+    "detail": {
+     "spells": 3,
+     "sequence": 28,
+     "renderedRange": "Vicente Del Bosque 1994 - 1994",
+     "clubRecordStart": "1994-03",
+     "clubRecordEnd": "1994-06"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Vicente Del Bosque 1994 - 1994",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Jupp Heynckes",
+    "value": 1997,
+    "context": "In charge until 1998",
+    "detail": {
+     "spells": 1,
+     "sequence": 31,
+     "renderedRange": "Josep Jupp Heynckes 1997 - 1998",
+     "clubRecordStart": "1997-07",
+     "clubRecordEnd": "1998-06"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Josep Jupp Heynckes 1997 - 1998",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Fabio Capello",
+    "value": 1996,
+    "context": "Left in 1997, came back in 2006",
+    "detail": {
+     "spells": 2,
+     "sequence": 30,
+     "renderedRange": "Fabio Capello 1996 - 1997",
+     "clubRecordStart": "1996-07",
+     "clubRecordEnd": "1997-07"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Fabio Capello 1996 - 1997",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Carlos Queiroz",
+    "value": 2003,
+    "context": "In charge until 2004",
+    "detail": {
+     "spells": 1,
+     "sequence": 33,
+     "renderedRange": "Carlos Queiroz 2003 - 2004",
+     "clubRecordStart": "2003-06",
+     "clubRecordEnd": "2004-06"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Carlos Queiroz 2003 - 2004",
+     "accessed": "2026-09-02"
+    }
+   },
+   {
+    "name": "Vanderlei Luxemburgo",
+    "value": 2004,
+    "context": "In charge until 2005",
+    "detail": {
+     "spells": 1,
+     "sequence": 36,
+     "renderedRange": "Vanderlei Luxemburgo 2004 - 2005",
+     "clubRecordStart": "2004-12",
+     "clubRecordEnd": "2005-12"
+    },
+    "source": {
+     "publisher": "Real Madrid",
+     "url": "https://www.realmadrid.com/en-US/the-club/history/football/first-team/coaches",
+     "quote": "Vanderlei Luxemburgo 2004 - 2005",
      "accessed": "2026-09-02"
     }
    }
@@ -645,7 +657,8 @@ export const HL_SAMPLE_BOARDS = [
    "higher": "Later",
    "lower": "Earlier"
   },
-  "sourceLine": "Source: Real Madrid official website (realmadrid.com), coaches page, opened 2 September 2026."
+  "sourceLine": "Source: Real Madrid official website (realmadrid.com), coaches page, opened 2 September 2026.",
+  "sequenceStep": 3
  }
 ];
 export const HL_SAMPLE_SCHEDULE = {
