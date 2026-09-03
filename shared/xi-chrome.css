@@ -272,6 +272,27 @@ a.xic-slot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; 
   line-height: 1.6;
 }
 
+/* The line somebody gets when they arrive at an old board from a link. Quiet
+   — it is a fact about the board, not a warning about a mistake — and it sits
+   directly under the bar so it is read before the board is. */
+.xic-aged {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 9px 16px; font-size: 13.5px; line-height: 1.45;
+  background: var(--tint); color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+.xic-aged-go {
+  color: var(--pitch-ink, var(--pitch)); font-weight: 600; text-decoration: none;
+  white-space: nowrap;
+}
+.xic-aged-go:hover { text-decoration: underline; text-underline-offset: 3px; }
+.xic-aged-x {
+  margin-left: auto; font: inherit; font-size: 17px; line-height: 1;
+  min-height: var(--tap); min-width: var(--tap);
+  border: 0; background: none; color: var(--ink-soft); cursor: pointer;
+}
+.xic-aged-x:hover { color: var(--ink); }
+
 /* ---- the account and the settings ----------------------------------------
    The crossword's sheet and menu, moved here so every game has them. The
    sheet is a card over a scrim; the menu is a small card under the button

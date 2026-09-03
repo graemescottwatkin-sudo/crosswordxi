@@ -15,7 +15,7 @@
  *   - no practice, no archive picker. One board a day, and the past reachable
  *     only by ?no=N, which the server checks against its own clock.
  */
-var BUILD = "v001x";
+var BUILD = "v001y";
 
 (function () {
   "use strict";
@@ -853,6 +853,11 @@ var BUILD = "v001x";
            count the archive and judge whether a run reaches today. Never
            computed here: the server decides what day it is. */
         state.todayNo = board.today || board.no;
+        /* Followed a link to an older board: say how old, once, and only
+           where the page was opened at one. */
+        if (permalinkKey() && window.XIChrome && XIChrome.permalink) {
+          XIChrome.permalink.aged("scrambled", (state.todayNo || 0) - (board.no || 0));
+        }
         $("startTitle").textContent = board.title;
         $("startPool").textContent = board.pool;
         $("startKicker").textContent = board.no === board.today

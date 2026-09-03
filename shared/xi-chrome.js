@@ -858,6 +858,32 @@
       history.replaceState(null, "", path + (location.search || "") + (location.hash || ""));
     } catch (e) { /* a browser that will not have it keeps the address it has */ }
   }
+  /* ARRIVING AT AN OLD BOARD FROM A LINK.
+     Somebody who picked a board out of the archive knows how old it is —
+     they were just looking at the list. Somebody who followed a link from a
+     thread posted last Tuesday does not, and the board gives no sign: it
+     plays exactly like today's. So a line, once, only when the page was
+     OPENED at a permalink, saying how old the board is and offering today's.
+     Not a toast: this is a fact about what you are looking at for as long as
+     you are looking at it, and a message that fades is one you can miss. */
+  function permaAged(game, days) {
+    if (!game || !(days > 0) || document.querySelector(".xic-aged")) return;
+    var bar = document.querySelector(".xic-bar");
+    if (!bar || !bar.parentNode) return;
+    var box = el("div", "xic-aged");
+    var says = days === 1 ? "yesterday's puzzle" : "a puzzle from " + days + " days ago";
+    box.innerHTML = '<span>You followed a link to ' + says +
+      '. It is yours to play, and it does not count towards a run.</span>';
+    var go = el("a", "xic-aged-go", "Play today's");
+    go.href = "/" + game + "/daily";
+    box.appendChild(go);
+    var x = btn("xic-aged-x", "&times;");
+    x.setAttribute("aria-label", "Dismiss");
+    x.addEventListener("click", function () { box.remove(); });
+    box.appendChild(x);
+    bar.parentNode.insertBefore(box, bar.nextSibling);
+  }
+
   function permaShow(game, key) {
     if (!game || !key) return;
     permaWrite("/" + game + "/daily/" + encodeURIComponent(key));
@@ -880,7 +906,7 @@
                known: function () { return acct.known; }, available: function () { return acct.accounts; },
                say: say, deviceCode: deviceCode },
     settings: { open: openPop, close: closePop, add: addSetting },
-    permalink: { read: permaRead, show: permaShow, clear: permaClear },
+    permalink: { read: permaRead, show: permaShow, clear: permaClear, aged: permaAged },
     records: { clear: clearRecords, prefixes: RECORD_PREFIXES, keep: RECORD_KEEP },
     addSetting: addSetting };
 })();

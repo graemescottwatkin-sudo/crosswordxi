@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002k";
+  var BUILD = "v002l";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -7220,7 +7220,11 @@
        is not restated here. */
     var perma = permalinkKey();
     if (perma && /^[0-9]+$/.test(perma)) {
-      chooseMode("daily", { kind: "daily", no: Number(perma) });
+      var pn = Number(perma);
+      chooseMode("daily", { kind: "daily", no: pn });
+      /* Only when the page was OPENED here. Picking a board out of the
+         calendar needs no telling: the list said which day it was. */
+      if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.aged("crossword", today() - pn);
       return;
     }
     /* Return to whatever was last being played. The old rule resumed practice

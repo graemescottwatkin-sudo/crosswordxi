@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001h";
+var BUILD = "v001i";
 
 (function () {
   "use strict";
@@ -634,6 +634,10 @@ var BUILD = "v001h";
       if (perma && /^\d{4}-\d{2}-\d{2}$/.test(perma)) {
         openDay(perma, perma === serverDay
           ? "TODAY" : "PREVIOUS PUZZLE " + DOT + " " + dayLabel(perma).toUpperCase());
+        if (window.XIChrome && XIChrome.permalink) {
+          XIChrome.permalink.aged("hilo",
+            Math.round((Date.parse(serverDay) - Date.parse(perma)) / 86400000));
+        }
       }
     }, function () {
       $("startState").textContent = "Could not reach the server — check your connection.";

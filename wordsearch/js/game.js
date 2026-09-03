@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002c";
+  var BUILD = "v002d";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -73,21 +73,11 @@
      unless the player chose otherwise, auto following the system, one
      resolver for every page of the family. This only shows the choice and
      asks the shared script to move on. */
-  function themeRead() {
-    return window.XITheme ? window.XITheme.get() : "light";
-  }
-  function themeApply() {
-    var v = themeRead();
-    var lab = $("mTheme"); if (lab) lab.textContent = v;
-    return v;
-  }
-  function themeCycle() {
-    if (window.XITheme) window.XITheme.cycle();
-    themeApply();
-  }
-  /* The chrome's settings row cycles the same theme; the label follows it. */
-  document.addEventListener("xi:theme", themeApply);
-  themeApply();
+  /* THE THEME IS THE FAMILY'S AND THIS GAME DOES NOT TOUCH IT. There was a
+     reader, an applier and a cycler here, feeding a label in a menu of this
+     game's own — a second control for a setting the bar already carries. The
+     menu is gone and so is all of this: shared/xi-theme.js decides the theme
+     and the chrome's Settings row is where it is changed, in every game. */
 
   /* ---- the daily record and the durable results ------------------------ */
   /* Two stores with two jobs. xiws.daily.<day> is today's board state and is
@@ -998,7 +988,11 @@
     }
     var entry = archiveDays.find(function (e) { return e.day === key; });
     if (!entry) { toast("That board is not available"); return; }
-    if (window.XIChrome && XIChrome.permalink) XIChrome.permalink.show("wordsearch", key);
+    if (window.XIChrome && XIChrome.permalink) {
+      XIChrome.permalink.show("wordsearch", key);
+      XIChrome.permalink.aged("wordsearch",
+        Math.round((Date.parse(serverDay) - Date.parse(key)) / 86400000));
+    }
     openBoard(entry, "PREVIOUS PUZZLE \u00b7 " + dayLabel(key).toUpperCase(),
       "Free play — only today's board keeps a run going.");
   }
@@ -1193,7 +1187,7 @@
   }
 
   /* ---- menus ----------------------------------------------------------- */
-  var MENUS = [["gameMenu","gameBtn"],["helpMenu","helpBtn"],["zoomMenu","zoomBtn"],["setMenu","setBtn"]];
+  var MENUS = [["gameMenu","gameBtn"],["helpMenu","helpBtn"],["zoomMenu","zoomBtn"]];
   function closeMenus(except) {
     MENUS.forEach(function (pair) {
       var m = $(pair[0]), b = $(pair[1]);
@@ -1282,7 +1276,12 @@
     $("gameBtn").onclick = function () { toggleMenu("gameMenu", "gameBtn"); };
     $("helpBtn").onclick = function () { toggleMenu("helpMenu", "helpBtn"); };
     $("zoomBtn").onclick = function () { toggleMenu("zoomMenu", "zoomBtn"); };
-    $("setBtn").onclick = function () { toggleMenu("setMenu", "setBtn"); };
+    /* The family's Settings, not a second one. */
+    $("setBtn").onclick = function (ev) {
+      ev.stopPropagation();
+      closeMenus();
+      if (window.XIChrome && XIChrome.settings) XIChrome.settings.open($("setBtn"));
+    };
     document.querySelectorAll("#gameMenu .menuRow").forEach(function (r) {
       r.onclick = function () {
         closeMenus();
@@ -1302,12 +1301,6 @@
         if (z === "in") { userZoomed = true; setZoom(cellPx() + ZOOM_STEP); }
         else if (z === "out") { userZoomed = true; setZoom(cellPx() - ZOOM_STEP); }
         else { userZoomed = false; setZoom(fitCell()); }
-      };
-    });
-    document.querySelectorAll("#setMenu .menuRow").forEach(function (r) {
-      r.onclick = function () {
-        if (r.dataset.set === "theme") { themeCycle(); return; }
-        closeMenus(); goToMenu();
       };
     });
     document.addEventListener("pointerdown", function (e) {

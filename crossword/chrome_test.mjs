@@ -342,5 +342,54 @@ console.log("\nClearing a record clears the family's, not one game's");
   })());
 }
 
+console.log("\nArriving at an old board from a link says so");
+/* Somebody who picked a board out of the archive knows how old it is. A
+   person following a link from a thread posted last Tuesday does not, and the
+   board plays exactly like today's. */
+{
+  const doc = render("hilo/index.html", "https://www.thexigames.com/hilo/daily/2026-08-30");
+  const win = doc.defaultView;
+  win.XIChrome.permalink.aged("hilo", 4);
+  const box = doc.querySelector(".xic-aged");
+  t("a board four days old says four days", !!box && /4 days ago/.test(box.textContent),
+    box ? box.textContent.trim().slice(0, 60) : "no banner");
+  t("and offers today's, by name and by link", (() => {
+    const go = box && box.querySelector(".xic-aged-go");
+    return !!go && go.getAttribute("href") === "/hilo/daily";
+  })());
+  t("it says the board does not count towards a run", /does not count/.test(box.textContent));
+  t("and it can be dismissed", (() => {
+    box.querySelector(".xic-aged-x").click();
+    return !doc.querySelector(".xic-aged");
+  })());
+  win.XIChrome.permalink.aged("hilo", 1);
+  t("yesterday's is said as yesterday, not as 1 days",
+    /yesterday/i.test(doc.querySelector(".xic-aged").textContent) &&
+    !/1 days/.test(doc.querySelector(".xic-aged").textContent));
+  win.XIChrome.permalink.aged("hilo", 3);
+  t("and it is said once, however many times it is asked for",
+    doc.querySelectorAll(".xic-aged").length === 1);
+  /* Today is not old, and nothing should appear for it. */
+  const fresh = render("hilo/index.html", "https://www.thexigames.com/hilo/daily/2026-09-03");
+  fresh.defaultView.XIChrome.permalink.aged("hilo", 0);
+  t("today's board says nothing at all", !fresh.querySelector(".xic-aged"));
+}
+
+console.log("\nOne settings menu, and it is the family's");
+/* The word search had a cog of its own with a Theme row in it, duplicating
+   the row in the bar's Settings — two controls for one setting on one page. */
+t("no game carries a settings menu of its own", (() => {
+  return ["crossword", "wordsearch", "scrambled", "hilo"].every((g) => {
+    const html = fs.readFileSync(`${g}/index.html`, "utf8").replace(/<!--[\s\S]*?-->/g, "");
+    return !/id="setMenu"/.test(html);
+  });
+})());
+t("and no game decides the theme for itself", (() => {
+  return ["wordsearch", "scrambled", "hilo"].every((g) => {
+    const js = fs.readFileSync(`${g}/js/game.js`, "utf8");
+    return !/function themeCycle|function themeApply/.test(js);
+  });
+})());
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
