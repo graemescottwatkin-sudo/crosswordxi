@@ -98,8 +98,13 @@ for (const [label, file] of [
   if (!fs.existsSync(file)) continue;
   /* Comments are not markup: an explanation of why a name was removed must be
      allowed to mention it, or the record of the fix cannot be kept next to it. */
-  const markup = fs.readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, "");
-  const found = UNRELEASED.filter((n) => markup.indexOf(n) > -1);
+  /* Case-insensitively, and with href and src values removed: "quickfire xi"
+     in lower case used to walk past a check called "names none", and the
+     route in to a game in testing is a path, not a name. */
+  const markup = fs.readFileSync(file, "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\b(?:href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  const found = UNRELEASED.filter((n) => new RegExp(n, "i").test(markup));
   t(`${label} names none`, found.length === 0, found.join(", "));
 }
 /* The count is derived from the squad rather than written down: hard-coding 9

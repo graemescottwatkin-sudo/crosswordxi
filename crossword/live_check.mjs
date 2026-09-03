@@ -140,8 +140,16 @@ console.log(`\n${SITE}\n`);
      has a bank and a squad-list slot. Career Path is now Transfer XI, and
      Player Chain was missing here while the word search listed it: one set,
      both games. */
+  /* Case-insensitively, and not counting the href of the route in. The old
+     test was html.includes(n): exact case, and it would have counted the
+     "/quickfire/" in the number-four card's link as the hub naming the game
+     while missing "quickfire xi" written out in lower case. What a reader
+     sees is still searched; where a link points is not. */
+  const hubClean = html
+    .replace(/\b(?:href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
   const leaked = ["QuickFire","Missing XI","Transfer XI",
-                  "Player Chain","Link XI","Odd One Out"].filter((n) => html.includes(n));
+                  "Player Chain","Link XI","Odd One Out"]
+    .filter((n) => new RegExp(n, "i").test(hubClean));
   t("and names no unreleased game", leaked.length === 0,
     leaked.length ? "leaked: " + leaked.join(", ") : "squad numbers only");
   /* Every link the hub's own markup carries must resolve. The first hub

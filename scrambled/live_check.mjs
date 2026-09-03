@@ -112,10 +112,27 @@ t("the sitemap lists it", (await map.text()).indexOf("/scrambled/</loc>") > -1);
 console.log("\nNo unreleased game is named anywhere it is served");
 const UNRELEASED = ["QuickFire", "Missing XI", "Transfer XI",
                     "Kit XI", "Manager XI", "Stadium XI"];
-const served = html.replace(/<!--[\s\S]*?-->/g, "");
-t("the game page names none of them",
-  UNRELEASED.every((n) => served.indexOf(n) === -1),
-  UNRELEASED.find((n) => served.indexOf(n) > -1) || "clean");
+/* HOW A NAME IS LOOKED FOR, and why it is not indexOf any more.
+
+   Case-insensitively: these matched "QuickFire" exactly, so "quickfire xi"
+   in a sentence would have walked straight past a check called "names no
+   unreleased game". A check whose name is broader than its behaviour is the
+   fault this project keeps a rule about.
+
+   And with href and src VALUES removed first, because a game in testing is
+   now reachable — the hub's number-four card and the drawer's slot both link
+   to /quickfire/, deliberately, and a path is not the page naming the game.
+   Everything a reader can actually see is still searched, including titles,
+   meta descriptions and link text. */
+function namesAny(markup, names) {
+  const clean = markup
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\b(?:href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  return names.filter((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(clean));
+}
+const servedLeaks = namesAny(html, UNRELEASED);
+t("the game page names none of them", servedLeaks.length === 0,
+  servedLeaks.join(", ") || "clean");
 
 console.log("\nHeaders");
 const head = await get("/api/scrambled/daily", { method: "HEAD" });

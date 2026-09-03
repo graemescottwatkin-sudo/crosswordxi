@@ -128,9 +128,26 @@ t("the shared chrome is referenced, not copied",
    Transfer XI. */
 const UNRELEASED = ["QuickFire", "Missing XI", "Transfer XI",
                     "Player Chain", "Link XI", "Odd One Out"];
+/* HOW A NAME IS LOOKED FOR, and why it is not indexOf any more.
+
+   Case-insensitively: these matched "QuickFire" exactly, so "quickfire xi"
+   in a sentence would have walked straight past a check called "names no
+   unreleased game". A check whose name is broader than its behaviour is the
+   fault this project keeps a rule about.
+
+   And with href and src VALUES removed first, because a game in testing is
+   now reachable — the hub's number-four card and the drawer's slot both link
+   to /quickfire/, deliberately, and a path is not the page naming the game.
+   Everything a reader can actually see is still searched, including titles,
+   meta descriptions and link text. */
+function namesAny(markup, names) {
+  const clean = markup
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\b(?:href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  return names.filter((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(clean));
+}
 function namesNone(label, markup) {
-  const clean = markup.replace(/<!--[\s\S]*?-->/g, "");
-  const found = UNRELEASED.filter((n) => clean.indexOf(n) > -1);
+  const found = namesAny(markup, UNRELEASED);
   t(label + " names no unreleased game", found.length === 0, found.join(", "));
 }
 namesNone("the game page", pageText);
