@@ -286,7 +286,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002v";
+  var BUILD = "v002w";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2231,21 +2231,82 @@
      publishers it is allowed to link to, so the mark simply is not there when
      there is nothing to point at — see functions/_lib/sources.js. */
   var sources = {};
+  /* A SOURCE IS ASKED FOR NOW, NOT HANDED OVER.
+     The verdict says only whether a citation EXISTS — { locked: true } — and
+     the link is fetched from /api/source when the player presses for it, by an
+     account, against a ceiling of fifty a day. The owner's rule: sharing
+     sources is fine, one account taking the lot is not.
+     Two shapes live in here, so the mark can tell them apart: { locked: true }
+     until it is opened, { name, url } after. */
   function noteSource(idx, source) {
-    if (!source || !source.url || !source.name) return;
-    if (sources[idx]) return;
-    sources[idx] = source;
+    if (!source) return;
+    if (sources[idx] && sources[idx].url) return;   // already opened; keep it
+    sources[idx] = source.url ? source : { locked: true };
     renderClues();
     updateSelection();
   }
   function sourceLink(idx) {
     var s = sources[idx];
     if (!s || !verified[idx]) return "";
-    /* Opened away from the board: a player mid-clock should not lose the
-       grid to a Wikipedia page, and rel keeps the new tab from reaching
-       back into this one. */
-    return ' <a class="cl-src" href="' + escapeHtml(s.url) + '" target="_blank" rel="noopener noreferrer"' +
-      ' title="' + escapeHtml(s.name) + '" onclick="event.stopPropagation()">[source]</a>';
+    if (s.url) {
+      /* Opened away from the board: a player mid-clock should not lose the
+         grid to a Wikipedia page, and rel keeps the new tab from reaching
+         back into this one. */
+      return ' <a class="cl-src" href="' + escapeHtml(s.url) + '" target="_blank" rel="noopener noreferrer"' +
+        ' title="' + escapeHtml(s.name) + '" onclick="event.stopPropagation()">[source]</a>';
+    }
+    /* A BUTTON, NOT A LINK, because there is nothing to point at yet. It says
+       what it will do rather than what it is — a player who is not registered
+       finds that out by pressing it, and is told plainly. */
+    var chrome = window.XIChrome && window.XIChrome.account;
+    var out = (chrome && chrome.user()) ? "[source]" : "[register for source]";
+    return ' <button type="button" class="cl-src cl-src-locked" data-src="' + idx + '">' +
+      out + "</button>";
+  }
+
+  /* The press. Sends the answer again, because that is what proves the clue
+     was solved — around one row in seventeen has its answer inside its own
+     URL, so an endpoint that took an entry number alone would be a way to read
+     those answers. Once it comes back the mark becomes an ordinary link and
+     the next press costs nothing. */
+  var sourceAsking = {};
+  function askSource(idx) {
+    if (sourceAsking[idx] || !puzzleToken) return;
+    var text = entryText(idx);
+    if (text === null) return;
+    var chrome = window.XIChrome && window.XIChrome.account;
+    if (chrome && chrome.available && !chrome.available() ) return;
+    if (chrome && !chrome.user()) {
+      /* Not signed in: the chrome owns the account sheet, so the button opens
+         the thing that can actually fix it rather than describing it. */
+      if (chrome.open) chrome.open();
+      else toast("Registering is free, and sources come with it.");
+      return;
+    }
+    sourceAsking[idx] = true;
+    /* Its own fetch rather than api(), for two reasons that both matter here:
+       this endpoint COUNTS a press, so it takes the family's CSRF header,
+       which api() does not send; and api() turns a refusal into a thrown
+       error, where a 401 and a 429 are the two answers this button most needs
+       to read. */
+    fetch("/api/source", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ token: puzzleToken, entry: idx, guess: text }),
+    })
+      .then(function (res) { return res.json().catch(function () { return {}; }); })
+      .then(function (r) {
+        if (r && r.source && r.source.url) {
+          sources[idx] = r.source;
+          renderClues(); updateSelection();
+          return;
+        }
+        if (r && r.needsAccount) { if (chrome && chrome.open) chrome.open(); return; }
+        if (r && r.capped) toast(r.error || "That is today's sources used up.");
+      })
+      .catch(function () { /* offline, or refused: the mark stays as it was */ })
+      .then(function () { delete sourceAsking[idx]; });
   }
 
   /* ---------- Clue rendering ---------- */
@@ -2260,7 +2321,13 @@
         '<span class="cl-text">' + escapeHtml(clueText(e.row)) +
         ' <span class="cl-enum">' + escapeHtml(e.row.enum) + '</span>' +
         sourceLink(i) + '</span>';
-      li.addEventListener("click", function () {
+      li.addEventListener("click", function (ev) {
+        /* The source button lives inside the clue, and the clue's own click
+           selects the entry and starts the clock. Pressing for a citation must
+           do neither — the anchor form already stops the bubble, so the button
+           form has to as well or asking for a source would move the cursor. */
+        var press = ev.target && ev.target.closest && ev.target.closest(".cl-src-locked");
+        if (press) { ev.stopPropagation(); askSource(Number(press.dataset.src)); return; }
         cur = { entry: i, cell: firstEmptyCell(i) };
         updateSelection(); startTimer();
       });

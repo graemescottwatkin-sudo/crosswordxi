@@ -128,11 +128,19 @@ console.log("\nA citation never travels before the clue is solved");
   first.prov = "VERIFIED FIRST-HAND";
 
   const right = await ask(answer);
-  t("a solved entry comes back with its citation",
+  /* THE VERDICT SAYS A CITATION EXISTS AND NOT WHAT IT IS. The link moved
+     behind an account on 4 Sep — sharing sources is fine, one account taking
+     the lot is not — so what rides with a yes is `{ locked: true }`, which is
+     what lets the page draw a register button on the rows that have one and
+     stay silent on the rows that do not. */
+  t("a solved entry is told a citation exists",
     right.status === 200 && right.body.correct === true &&
-    right.body.source && right.body.source.name === "Wikipedia" &&
-    right.body.source.url.includes("wikipedia.org"),
+    right.body.source && right.body.source.locked === true,
     JSON.stringify(right.body.source));
+  t("and the verdict carries neither the link nor the publisher",
+    !JSON.stringify(right.body).includes("wikipedia") &&
+    !JSON.stringify(right.body).includes("Wikipedia"),
+    JSON.stringify(right.body));
   /* The editorial provenance is not a player's business and does not travel. */
   t("and without the provenance note", !JSON.stringify(right.body).includes("VERIFIED"));
 
@@ -148,6 +156,142 @@ console.log("\nA citation never travels before the clue is solved");
   t("a bookmaker citation is withheld even from a solved entry",
     gambled.body.correct === true && gambled.body.source === null,
     JSON.stringify(gambled.body));
+
+  Object.assign(first, before);
+}
+
+/* ---- THE PRESS: an account, a ceiling, and a count ----------------------
+ *
+ * "i dont mind sharing sources but i dont want it mass requested by a single
+ * user." So the link is asked for at /api/source, by an account, fifty a day.
+ *
+ * The check that matters most is not the cap. It is that /api/source asks for
+ * the ANSWER again: one live row in seventeen has its answer inside its own
+ * URL, so an endpoint handing a citation over for an entry NUMBER would be a
+ * way to read those answers without solving anything — a worse leak than the
+ * one the allowlist exists to prevent, opened by the feature meant to protect
+ * sources. */
+console.log("\nAsking for a source");
+{
+  const { onRequestPost: source } = await import("../functions/api/source.js");
+  const { SOURCE_PRESSES_A_DAY } = await import("../functions/_lib/sources.js");
+  const { SAMPLE_PUZZLES } = await import("../functions/_lib/sample-puzzles.js");
+  const sample = SAMPLE_PUZZLES.practice[0];
+  const first = sample.puzzle.entries[0].row;
+  const answer = first.grid;
+  const before = { source: first.source, sourceName: first.sourceName };
+  first.source = ["https://en.wikipedia.org/wiki/Real_Madrid_CF"];
+  first.sourceName = "Wikipedia";
+
+  /* A database of one table, following the statement it is given: the count
+     has to come back out of the same rows the increment wrote, or a cap that
+     never counts would pass every check here. */
+  function memDB(user) {
+    const rows = new Map();
+    return {
+      _rows: rows,
+      prepare(sql) {
+        return { bind: (...a) => ({
+          first: async () => {
+            if (/FROM sessions/.test(sql)) return user;
+            if (/FROM source_press/.test(sql)) return rows.get(a[0] + "|" + a[1]) || null;
+            /* The board itself. A practice token resolves out of the sample
+               when there is no database at all, and this fake HAS one — so it
+               has to answer for the puzzle too, or every check below fails on
+               "Unknown puzzle" rather than on what it is testing. */
+            if (/FROM puzzles/.test(sql)) return { payload: JSON.stringify(sample) };
+            return null;
+          },
+          run: async () => {
+            if (/INSERT INTO source_press/.test(sql)) {
+              const k = a[0] + "|" + a[1];
+              const cur = rows.get(k);
+              /* The real statement increments ON CONFLICT. Modelled off the
+                 SQL rather than assumed, so a statement that stopped
+                 incrementing would show up here. */
+              if (!cur) rows.set(k, { user_id: a[0], day: a[1], presses: 1 });
+              else if (/DO UPDATE SET presses = presses \+ 1/.test(sql)) cur.presses += 1;
+            }
+            return {};
+          },
+          all: async () => ({ results: [] }),
+        }) };
+      },
+    };
+  }
+  /* THE SESSION IS A COOKIE, and currentUser reads it before it reads the
+     database — so a request without one is signed out however the fake would
+     have answered. Sent here, and the signed-out env simply has no session row
+     to find. */
+  const ask = async (env, guess, hdr) => {
+    const req = new Request("https://x/api/source", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: "cxi_session=s1",
+        ...(hdr === undefined ? { "X-XI-Games": "1" } : hdr),
+      },
+      body: JSON.stringify({ token: "practice:" + sample.rowId, entry: 0, guess }),
+    });
+    const res = await source({ request: req, env });
+    return { status: res.status, body: await res.json() };
+  };
+
+  const signedIn = { DB: memDB({ id: "u1", is_admin: 0 }) };
+  const signedOut = { DB: memDB(null) };
+
+  /* THE LEAK IT MUST NOT OPEN. */
+  const guessed = await ask(signedIn, "X".repeat(answer.length));
+  t("a wrong answer gets no citation, however signed in you are",
+    guessed.status === 200 && guessed.body.correct === false && !guessed.body.source,
+    JSON.stringify(guessed.body));
+  t("and a wrong answer is not charged a press",
+    signedIn.DB._rows.size === 0, signedIn.DB._rows.size + " rows written");
+
+  const out = await ask(signedOut, answer);
+  t("signed out is asked to register, and told nothing else",
+    out.status === 401 && out.body.needsAccount === true && !out.body.source &&
+    !JSON.stringify(out.body).includes("wikipedia"),
+    JSON.stringify(out.body));
+
+  const got = await ask(signedIn, answer);
+  t("an account that solved the clue is given the link",
+    got.status === 200 && got.body.source && got.body.source.url.includes("wikipedia.org") &&
+    got.body.source.name === "Wikipedia", JSON.stringify(got.body.source));
+  t("and the press is counted", got.body.used === 1 &&
+    [...signedIn.DB._rows.values()][0].presses === 1, JSON.stringify(got.body.used));
+
+  t("no CSRF header is refused", (await ask(signedIn, answer, {})).status === 403);
+
+  /* THE CEILING. Pressed to the limit and once past it. */
+  const capEnv = { DB: memDB({ id: "u2", is_admin: 0 }) };
+  let last;
+  for (let i = 0; i < SOURCE_PRESSES_A_DAY; i++) last = await ask(capEnv, answer);
+  t(`${SOURCE_PRESSES_A_DAY} presses are allowed, and the last one still works`,
+    last.status === 200 && !!last.body.source && last.body.used === SOURCE_PRESSES_A_DAY,
+    "used " + last.body.used);
+  const over = await ask(capEnv, answer);
+  t("the next one is refused, and carries no link",
+    over.status === 429 && over.body.capped === true && !over.body.source &&
+    !JSON.stringify(over.body).includes("wikipedia"),
+    JSON.stringify(over.body));
+  t("and the refusal names the ceiling so the player knows what happened",
+    String(over.body.error || "").includes(String(SOURCE_PRESSES_A_DAY)), over.body.error);
+  /* Read defensively so a missing row reports as a failed check rather than
+     throwing: a suite that crashes here hides every check after it, and one
+     sabotage found exactly that. */
+  const capRow = [...capEnv.DB._rows.values()][0];
+  t("a refused press is not counted either",
+    !!capRow && capRow.presses === SOURCE_PRESSES_A_DAY,
+    capRow ? capRow.presses + " counted" : "nothing counted at all");
+
+  /* A row the allowlist refuses costs nothing: there was never a link. */
+  first.source = ["https://news.bet365.com/en/article/x"];
+  first.sourceName = "bet365";
+  const none = { DB: memDB({ id: "u3", is_admin: 0 }) };
+  const gambled = await ask(none, answer);
+  t("a row with no showable citation spends no press",
+    gambled.status === 200 && gambled.body.source === null && none.DB._rows.size === 0);
 
   Object.assign(first, before);
 }

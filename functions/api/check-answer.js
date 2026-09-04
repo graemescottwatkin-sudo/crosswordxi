@@ -13,7 +13,7 @@
  * calling the API directly, and each guess would leak far more per attempt.
  */
 import { normalise, json, bad, solutionString } from "../_lib/puzzle.js";
-import { publicSource } from "../_lib/sources.js";
+import { lockedSource } from "../_lib/sources.js";
 import { tally } from "../_lib/tally.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
@@ -113,7 +113,7 @@ export async function onRequestPost({ request, env }) {
   const correct = typed.every((c, i) => c === answer[i]);
   /* The same release as /api/verify: a solved entry is a solved entry
      however the player got the verdict. */
-  const source = correct ? publicSource(puzzle.entries[idx].row) : null;
+  const source = correct ? lockedSource(puzzle.entries[idx].row) : null;
 
   /* A grid check is one press that happens to take eleven requests — the player
      is owed the positions of every wrong letter, and each entry is a separate

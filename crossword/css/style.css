@@ -1098,6 +1098,11 @@ tr.faroff{display:none}
 .cl-src:hover,.nc-src a:hover{text-decoration:underline;text-underline-offset:2px}
 .cl-src:focus-visible,.nc-src a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .nc-src{margin-left:6px}
+/* The unopened mark is a BUTTON, because there is nothing to point at until
+   an account asks for it. It has to read as the same footnote the link does,
+   so the browser's button chrome is taken off and the .cl-src rule above is
+   left to do the work. */
+button.cl-src{background:none;border:0;padding:0;font-family:inherit;cursor:pointer}
 
 /* ============ COMPLETION ============ */
 .overlay{

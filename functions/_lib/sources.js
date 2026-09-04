@@ -106,3 +106,62 @@ export function publicSource(row) {
   if (!urls.every(showableUrl)) return null;
   return { name, url: String(urls[0]) };
 }
+
+/* ---- BEHIND AN ACCOUNT, AND CAPPED ------------------------------------
+ *
+ * The owner's rule, in their words: "i dont mind sharing sources but i dont
+ * want it mass requested by a single user." So a citation is no longer
+ * something the page is handed on solve — it is something an ACCOUNT asks
+ * for, one press at a time, counted, with a ceiling of fifty a day.
+ *
+ * WHAT A SIGNED-OUT PLAYER IS TOLD. That a source EXISTS, and nothing else:
+ * no publisher, no host, no link. The publisher label alone would be harmless
+ * on almost every row and this is not a rule worth being almost right about —
+ * a name that happened to carry an answer would leak it to everyone, forever,
+ * and nobody would know. `locked` is the whole message.
+ *
+ * The number lives here beside the allowlist, because "how many sources may
+ * one account open" and "which sources may anyone see" are the same subject
+ * and drift apart the moment they are written in two files. */
+export const SOURCE_PRESSES_A_DAY = 50;
+
+/* What travels with a verdict when the asker may not have the link. Shaped so
+   the page can tell three states apart without guessing: no citation at all
+   (null), one it may show (name + url), and one it may not yet (locked). */
+export function lockedSource(row) {
+  return publicSource(row) ? { locked: true } : null;
+}
+
+/* The count for an account today, the ceiling, and whether it has room. Read
+   by the endpoint that hands a link over and by anything that wants to show a
+   player what they have left. Without a database there is no counting and so
+   no cap — the same rule the rest of the family keeps. */
+export async function pressesToday(env, userId, day) {
+  if (!env || !env.DB || !userId || !day) return 0;
+  try {
+    const row = await env.DB.prepare(
+      "SELECT presses FROM source_press WHERE user_id = ? AND day = ?")
+      .bind(String(userId), String(day)).first();
+    return Math.max(0, Number(row && row.presses) || 0);
+  } catch (e) { return 0; }
+}
+
+/* One press, counted. Returns what the account has used AFTER this one, or
+   null if it had none left — so the caller cannot hand over a link and forget
+   to count it, which is the shape of every rate limit that quietly does not.
+   The increment is ON CONFLICT rather than read-then-write: two presses
+   landing together must not both read 49 and both write 50. */
+export async function takePress(env, userId, day) {
+  if (!env || !env.DB || !userId || !day) return null;
+  const used = await pressesToday(env, userId, day);
+  if (used >= SOURCE_PRESSES_A_DAY) return null;
+  try {
+    await env.DB.prepare(
+      `INSERT INTO source_press (user_id, day, presses, last_at)
+            VALUES (?, ?, 1, datetime('now'))
+       ON CONFLICT(user_id, day)
+       DO UPDATE SET presses = presses + 1, last_at = datetime('now')`)
+      .bind(String(userId), String(day)).run();
+  } catch (e) { return null; }
+  return used + 1;
+}

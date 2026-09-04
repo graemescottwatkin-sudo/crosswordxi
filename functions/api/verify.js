@@ -16,7 +16,7 @@
  * buys; this only ever says yes or no, so it cannot be used as a free one.
  */
 import { normalise, json, bad, solutionString } from "../_lib/puzzle.js";
-import { publicSource } from "../_lib/sources.js";
+import { lockedSource } from "../_lib/sources.js";
 import { getPuzzleForToken } from "../_lib/db.js";
 import { playableDailyNo } from "../_lib/daily.js";
 import { isAdmin } from "../_lib/auth.js";
@@ -68,11 +68,16 @@ export async function onRequestPost({ request, env }) {
   if (typed.length !== answer.length) return json({ correct: false });
   if (typed !== answer) return json({ correct: false });
 
-  /* THE CITATION, RELEASED ON SOLVE. This is the moment the entry becomes
-     known to the player, and it is the only moment a source may travel: one
-     row in seventeen has the answer inside its own URL, so a citation that
-     rode down with the board would give those away. Nothing about the verdict
-     changes; a source simply comes with a yes. publicSource decides what may
-     be shown at all — see functions/_lib/sources.js. */
-  return json({ correct: true, source: publicSource(stored.puzzle.entries[idx].row) });
+  /* THAT A CITATION EXISTS, RELEASED ON SOLVE. The link itself is not here
+     any more: the owner's rule is that sources are shared but not mass
+     requested by one account, so a link is asked for at /api/source, by an
+     account, and counted against a daily ceiling. What travels with the
+     verdict is `{ locked: true }` or nothing, which is what lets the page
+     draw a register button on the rows that have one and stay silent on the
+     rows that do not.
+     Still released on solve and never with the board: one row in seventeen has
+     its answer inside its own URL, so a citation that rode down with the board
+     would give those away. /api/source asks for the answer again for exactly
+     that reason. */
+  return json({ correct: true, source: lockedSource(stored.puzzle.entries[idx].row) });
 }
