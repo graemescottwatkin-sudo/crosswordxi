@@ -46,15 +46,28 @@ any machine that has the bank. CI is unaffected — the runner has no bank.
 
 ## Queued
 
-### 11. One result a day, on the main tab
+### 11. One season, at the top level — and a live table in each game
 
-Today a W/D/L is a decomposition of ONE board's score: 114 points is 38 matches
-at 3 points a win, so a score resolves to a unique W/D/L split
-(`seasonRecord` / `seasonFromActions` in `crossword/js/engine.js`). That is the
-individual game's own season and it stays: **a single game is a single season —
-how many of the 114 points did you retain.**
+**There is ONE season and it belongs to the hub.** Decided 4 Sep, correcting an
+earlier reading of this item: a game does not have a season of its own.
 
-What is new is a result for the DAY, across the family, shown on the hub:
+**The 38-match strip comes out of every game.** Today the crossword turns one
+board's score into a fake 38-game record — 114 points is 38 matches at 3 a win,
+so any score resolves to a unique W/D/L split (`seasonRecord` /
+`seasonFromActions` in `crossword/js/engine.js`, the `#seasonPanel` strip in
+`crossword/index.html`, and about twenty other references). All of it goes. The
+word search already refused to do this and left the reason in a comment beside
+its share text — "v4.3 factorised one board's score into a fake 38-game strip;
+that is the fault Crossword's season rules retire, not a convention to keep."
+Scrambled and HiLo never had one.
+
+**What each game keeps instead is a live table for the board at play.** The
+crossword already has it: pick your club and the board's running score moves
+you up and down a real league table while you play (`#tablePanel`,
+`renderLeagueRows`). That is the per-game view, and it wants rolling out to the
+other three.
+
+**What is new is one result a DAY, across the family, on the hub:**
 
 | the day | result |
 |---|---|
@@ -69,11 +82,12 @@ completed.
 
 What has to be decided before this is built:
 
-- **Does the crossword keep its 38-match strip?** "Move it to the main tab"
-  reads as taking it out of the game; "the individual games are single seasons"
-  reads as leaving it. The strip IS the points-retained view, so the working
-  assumption is that it STAYS and the day result is a new, separate thing on
-  the hub. Confirm before anything is removed.
+- **What does each game's live table rank?** The crossword's ranks YOU against
+  a real league season by way of your chosen club. Rolling it out to the other
+  three is a straight lift if it stays that; it is a different feature if it is
+  meant to rank players against each other on the board at play, which is what
+  the challenge tables in item 6 do. Confirm which before building three of
+  them.
 - **When does a day settle?** A loss cannot be known until the day is over, so
   the result is provisional while the day runs and final at midnight UTC. The
   server decides what day it is (project law); nothing about this may be
