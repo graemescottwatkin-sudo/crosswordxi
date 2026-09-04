@@ -110,7 +110,10 @@ window.Response = Response;
 /* The shared play helper too, as the page loads it: the engine counts
    attempts through it, and a suite that left it out would prove nothing
    about the counting. */
-for (const f of ["shared/xi-plays.js", "scrambled/js/config.js", "scrambled/js/scoring.js", "scrambled/js/game.js"]) {
+/* The drawn keyboard is loaded too, because the page loads it: a name typed
+   on the keys has to reach the same place a name typed on a real keyboard
+   does, and leaving it out would test one of the two ways in. */
+for (const f of ["shared/xi-plays.js", "shared/xi-keys.js", "scrambled/js/config.js", "scrambled/js/scoring.js", "scrambled/js/game.js"]) {
   window.eval(fs.readFileSync(f, "utf8"));
 }
 
@@ -209,6 +212,210 @@ await type(ONE_NAME.toLowerCase());
 t("solving the same name twice does not solve a second tile",
   doc.querySelectorAll(".slot.solved").length === 2);
 
+/* ---- A FINISHED NAME SENDS ITSELF ---------------------------------------
+
+   Pressing Enter after typing a name you have already worked out asks
+   nothing. The page can tell without asking the server: it holds each slot's
+   scramble, so when the typed letters use a slot's letters up exactly, that
+   guess is the only one worth sending — and it is one that was going to be
+   sent anyway. This removes a keystroke, not a round trip.
+
+   MEASURED IN REQUESTS, NOT IN OUTCOMES. The first draft of this section
+   asserted that a partial name "sends nothing" by checking that nothing was
+   SOLVED — which is true whether or not a guess went up, because a partial
+   name is wrong either way. Six deliberate breakages walked straight through
+   it. What the rule is actually about is how many guesses reach the server,
+   so that is what is counted now.
+
+   Typed as a person types, one letter at a time through the input event, and
+   Enter is never pressed: the submit button is not touched anywhere below. */
+console.log("\n=== A finished name sends itself ===");
+const guesses = () => calls.filter((c) => c === "/api/scrambled/guess").length;
+const unsolvedTile = () => board.slots.find((s) => {
+  const el = doc.querySelector('.slot[data-slot="' + s.id + '"]');
+  return !el.classList.contains("solved") && !el.classList.contains("given");
+});
+const truthFor = (slot) => SC_BOARDS[0].slots.find((x) => x.id === slot.id);
+const lettersOf = (name) => name.toUpperCase().replace(/[^A-Z]/g, "");
+
+async function typeOut(text) {
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+  for (const ch of text.replace(/[^A-Za-z]/g, "")) {
+    $("answer").value += ch;
+    $("answer").dispatchEvent(new window.Event("input"));
+    await settle(2);
+  }
+  await settle(12);
+}
+{
+  const target = unsolvedTile();
+  const truth = truthFor(target);
+  const full = lettersOf(truth.name);
+
+  /* PART OF A NAME IS NOT A NAME. Every letter up to the last one leaves
+     letters unused, so nothing is sent — this is what stops the rule becoming
+     a request per keystroke, and it is counted rather than inferred. */
+  let sentBefore = guesses();
+  await typeOut(full.slice(0, -1));
+  t("typing all but the last letter sends no guess at all",
+    guesses() === sentBefore && $("answer").value !== "",
+    (guesses() - sentBefore) + " requests for " + (full.length - 1) + " keystrokes");
+
+  sentBefore = guesses();
+  const solvedBefore = doc.querySelectorAll(".slot.solved").length;
+  await typeOut(truth.name);
+  t("and the last letter sends exactly one, with no Enter pressed",
+    guesses() === sentBefore + 1, (guesses() - sentBefore) + " requests");
+  t("which solves the tile", doc.querySelectorAll(".slot.solved").length === solvedBefore + 1 &&
+    doc.querySelector('.slot[data-slot="' + target.id + '"]').classList.contains("solved"),
+    truth.name);
+  t("and the box is cleared, ready for the next one", $("answer").value === "");
+
+  /* A TILE ALREADY SOLVED IS NOT CONSIDERED AGAIN. Its letters are still on
+     the board; typing them a second time must go nowhere. */
+  sentBefore = guesses();
+  await typeOut(truth.name);
+  t("retyping a name already solved sends nothing",
+    guesses() === sentBefore, (guesses() - sentBefore) + " requests");
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+}
+{
+  /* ONE GUESS IN THE AIR AT A TIME. Auto-submit fires from a keystroke, so a
+     held key or a repeated event would send the same guess twice and be
+     answered twice. Both events are dispatched before anything is awaited, so
+     the second arrives while the first is still in flight — which is the only
+     moment the guard is doing anything. */
+  const target = unsolvedTile();
+  const truth = truthFor(target);
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+  $("answer").value = lettersOf(truth.name);
+  const sentBefore = guesses();
+  $("answer").dispatchEvent(new window.Event("input"));
+  $("answer").dispatchEvent(new window.Event("input"));
+  await settle(12);
+  t("a repeated keystroke does not send the same guess twice",
+    guesses() === sentBefore + 1, (guesses() - sentBefore) + " requests");
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+}
+{
+  /* THE DRAWN KEYBOARD TAKES THE SAME ROUTE. It is a different path into the
+     box — the shared keys append and repaint — and it must land in the same
+     place a real keyboard does. */
+  const target = unsolvedTile();
+  const truth = truthFor(target);
+  const keyFor = (ch) => [...doc.querySelectorAll(".osk-key")]
+    .find((k) => k.textContent === ch);
+  t("the shared keyboard is on the page", doc.querySelectorAll(".osk-key").length === 28,
+    doc.querySelectorAll(".osk-key").length + " keys");
+  const sentBefore = guesses();
+  const solvedBefore = doc.querySelectorAll(".slot.solved").length;
+  for (const ch of lettersOf(truth.name)) {
+    const k = keyFor(ch);
+    if (k) k.dispatchEvent(new window.Event("pointerdown", { bubbles: true, cancelable: true }));
+    await settle(2);
+  }
+  await settle(12);
+  t("a name typed on the drawn keys sends itself too, exactly once",
+    guesses() === sentBefore + 1 &&
+    doc.querySelectorAll(".slot.solved").length === solvedBefore + 1,
+    truth.name + " — " + (guesses() - sentBefore) + " requests");
+}
+{
+  /* AN ALIAS STILL NEEDS ENTER, and should: it is not an arrangement of the
+     letters on the tile, so nothing on this page can see that it is finished.
+     The rule is about letters running out, not about being right. */
+  const aliasSlot = board.slots.find((s) => {
+    const el = doc.querySelector('.slot[data-slot="' + s.id + '"]');
+    const truth = truthFor(s);
+    return truth && !el.classList.contains("solved") && !el.classList.contains("given") &&
+      (truth.aliases || []).some((a) => lettersOf(a).length !== lettersOf(truth.name).length);
+  });
+  t("the board has an alias longer or shorter than its name to check with",
+    !!aliasSlot);
+  if (aliasSlot) {
+    const truth = truthFor(aliasSlot);
+    const alias = truth.aliases.find((a) => lettersOf(a).length !== lettersOf(truth.name).length);
+    const sentBefore = guesses();
+    const solvedBefore = doc.querySelectorAll(".slot.solved").length;
+    await typeOut(alias);
+    t("an alias is not sent on its own, because its letters are not the tile's",
+      guesses() === sentBefore, alias + " — " + (guesses() - sentBefore) + " requests");
+    $("submit").dispatchEvent(new window.Event("click"));
+    await settle(12);
+    t("and pressing Enter still solves it",
+      doc.querySelectorAll(".slot.solved").length === solvedBefore + 1, alias);
+  }
+}
+{
+  /* THE HONEST COST. The letters of a name in the wrong order are still that
+     name's letters, so a shuffle is sent and answered. Nothing is lost — a
+     wrong guess costs nothing here — and the box keeps what was typed so it
+     can be rearranged rather than retyped. */
+  const target = unsolvedTile();
+  const truth = truthFor(target);
+  const letters = lettersOf(truth.name);
+  const shuffled = letters.slice(1) + letters[0];
+  if (shuffled !== letters) {
+    const sentBefore = guesses();
+    const solvedBefore = doc.querySelectorAll(".slot.solved").length;
+    await typeOut(shuffled);
+    t("the right letters in the wrong order are sent, and answered",
+      guesses() === sentBefore + 1 &&
+      doc.querySelectorAll(".slot.solved").length === solvedBefore &&
+      /Not on this board/.test($("feedback").textContent),
+      shuffled + " -> " + $("feedback").textContent);
+    t("and what was typed is left in the box to be rearranged",
+      lettersOf($("answer").value) === shuffled);
+  }
+  $("answer").value = "";
+  $("answer").dispatchEvent(new window.Event("input"));
+}
+{
+  /* PUNCTUATION IS NOT A LETTER. A scramble keeps the hyphen in
+     MAITLAND-NILES and the space in VAN DIJK; what is typed is stripped to
+     letters. So the rule asks whether any LETTER is left over, not whether
+     the remainder is empty — written the other way, no hyphenated or two-word
+     name would ever send itself. Those boards are not the one on screen, so
+     the page's own predicate is exercised on them directly: the predicate
+     itself, not the helper underneath it, because the line that decides this
+     is the one being checked. */
+  const usedUp = window.__scx.lettersUsedUp;
+  const punctuated = SC_BOARDS.flatMap((b) => b.slots)
+    .filter((s) => /[^A-Z]/.test(s.scramble));
+  t("the sample bank has names with punctuation to check against",
+    punctuated.length > 0, punctuated.map((s) => s.scramble).join(", "));
+  t("a fully typed punctuated name counts as finished",
+    punctuated.every((s) => usedUp(s.scramble, lettersOf(s.name))),
+    punctuated.map((s) => s.name).join(", "));
+  t("and one letter short does not",
+    punctuated.every((s) => !usedUp(s.scramble, lettersOf(s.name).slice(0, -1))));
+  /* And it is not simply saying yes to everything. */
+  t("nor do the letters of a different name",
+    punctuated.every((s) => !usedUp(s.scramble, "ZZZZ")));
+}
+{
+  /* A GUESS THAT NEVER LANDED MUST NOT LOCK THE BOX. The in-flight guard is
+     what stops one keystroke sending two guesses; if a dropped request left
+     it raised, every later guess would be refused in silence and the game
+     would look like it had stopped taking names. */
+  const target = unsolvedTile();
+  const truth = truthFor(target);
+  const real = ROUTES["/api/scrambled/guess"];
+  ROUTES["/api/scrambled/guess"] = () => { throw new Error("network down"); };
+  await typeOut(truth.name);
+  t("a guess that fails to reach the server says so", /did not reach/.test($("feedback").textContent),
+    $("feedback").textContent);
+  ROUTES["/api/scrambled/guess"] = real;
+  const solvedBefore = doc.querySelectorAll(".slot.solved").length;
+  await typeOut(truth.name);
+  t("and the next guess is still accepted, rather than refused in silence",
+    doc.querySelectorAll(".slot.solved").length === solvedBefore + 1, truth.name);
+}
+
 console.log("\n=== The bench ===");
 /* The pitch is rebuilt after every change, so an element captured once is
    detached a moment later. Hold the SLOT ID and re-query — the first draft of
@@ -294,11 +501,19 @@ t("and the rest of the bag is one letter shorter", (() => {
   return rest.length === pickedSlot.scramble.length - 1;
 })());
 
+/* Counted before, not written down. This asserted a solved count of 2, which
+   was how many happened to be solved by this point in the suite — so adding a
+   check anywhere above it turned it red for a reason that had nothing to do
+   with what it is about. What it means is that a name you bought does not
+   join the ones you worked out, and that reads the same however many of those
+   there are. */
+const solvedBeforeReveal = doc.querySelectorAll(".slot.solved").length;
 $("buyName").dispatchEvent(new window.Event("click"));
 await settle(12);
 t("revealing the name ends that slot", doc.querySelectorAll(".slot.given").length === 1);
 t("and it is marked given, not unravelled",
-  doc.querySelectorAll(".slot.solved").length === 2);
+  doc.querySelectorAll(".slot.solved").length === solvedBeforeReveal,
+  solvedBeforeReveal + " unravelled before it, and after");
 t("the bench closes behind it", $("benchRow").hidden);
 
 console.log("\n=== Full time ===");

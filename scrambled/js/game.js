@@ -893,15 +893,72 @@ var BUILD = "v002a";
     el.className = "feedback" + (tone ? " " + tone : "");
   }
 
+  /* A NAME THAT IS FINISHED SENDS ITSELF.
+   *
+   * Pressing Enter after typing a name you have already worked out is a step
+   * that asks nothing: the letters are the puzzle, and when they run out the
+   * answer is either right or it is an arrangement of the right letters.
+   *
+   * THE PAGE CAN TELL WITHOUT ASKING, and that is what makes this cheap. The
+   * browser holds no names — it never has — but it does hold each slot's
+   * scramble, and supplyFrom() already works out whether what is typed can be
+   * drawn from a slot's letters, because that is how a tile lights up as you
+   * type. When it comes back with nothing left over, every letter of that
+   * slot has been used exactly once: the guess is worth sending, and no other
+   * guess is. So this adds no request that was not going to be made — it
+   * removes a keystroke, not a round trip.
+   *
+   * What is left over may still be punctuation: a scramble keeps the hyphen
+   * in MAITLAND-NILES and the space in VAN DIJK, while what is typed is
+   * stripped to letters. So the test is that no LETTER is left, not that the
+   * remainder is empty — written the other way, no hyphenated name would ever
+   * send itself.
+   *
+   * An alias still needs Enter, and should: "NERY PUMPIDO" is not an
+   * arrangement of the letters of PUMPIDO, so nothing here can see that it is
+   * finished. The key stays, and every other route to submit is unchanged. */
+  /* The predicate itself, named and separate so it can be exercised on boards
+     that are not the one on screen — the punctuated names live on two of them
+     and the rule turns on exactly this line. */
+  function lettersUsedUp(scramble, typed) {
+    var rest = supplyFrom(scramble, typed);
+    return rest !== null && !/[A-Z]/.test(rest);
+  }
+
+  function finishedSlot() {
+    if (!state.board || state.over) return null;
+    var typed = ($("answer").value || "").toUpperCase().replace(/[^A-Z]/g, "");
+    /* Two letters is the shortest anything on a board could be; below that a
+       stray keystroke could exhaust some very short bag by accident. */
+    if (typed.length < 2) return null;
+    var hit = null;
+    (state.board.slots || []).forEach(function (slot) {
+      if (hit || state.solved[slot.id]) return;
+      if (lettersUsedUp(slot.scramble, typed)) hit = slot;
+    });
+    return hit;
+  }
+
+  function maybeAutoSubmit() {
+    if (finishedSlot()) submit();
+  }
+
+  /* One guess in the air at a time. Auto-submit fires from a keystroke, so
+     without this a fast typist landing the last letter twice — or a repeat
+     from a held key — would send the same guess twice and be answered twice. */
+  var sending = false;
+
   function submit() {
-    if (state.over) return;
+    if (state.over || sending) return;
     var typed = $("answer").value.trim();
     if (!typed) return;
+    sending = true;
     post("guess", {
       token: state.board.token,
       guess: typed,
       solved: Object.keys(state.solved)
     }).then(function (r) {
+      sending = false;
       if (r.error) return say(r.error, "bad");
       if (r.solvedId) {
         state.solved[r.solvedId] = { name: r.name, clubs: r.clubs, how: "solved" };
@@ -916,6 +973,13 @@ var BUILD = "v002a";
       } else {
         say("Not on this board \u2014 or not one you still need.", "bad");
       }
+    }).catch(function () {
+      /* A GUESS THAT NEVER LANDED MUST NOT LOCK THE BOX. Without this the
+         in-flight flag stays raised on a dropped request and every later
+         guess is refused in silence \u2014 the game would look like it had stopped
+         accepting names. */
+      sending = false;
+      say("That did not reach the server. Try again.", "bad");
     });
     $("answer").focus();
   }
@@ -1273,6 +1337,7 @@ var BUILD = "v002a";
     var box = $("answer");
     box.value += ch;
     paintTyped();
+    maybeAutoSubmit();
   }
   function keyBack() {
     var box = $("answer");
@@ -1293,7 +1358,13 @@ var BUILD = "v002a";
      tiles would always be one letter behind, and it misses paste and the
      backspace that empties the box. */
   $("answer").addEventListener("input", function () {
-    if (state.board && !state.over) paintTyped();
+    if (!state.board || state.over) return;
+    paintTyped();
+    /* The same rule for a real keyboard as for the drawn one: when the letters
+       of a slot are used up, the guess goes without waiting for Enter. Bound
+       to "input" rather than "keydown" so it also covers a paste and the
+       backspace that empties the box. */
+    maybeAutoSubmit();
   });
   $("buyHint").addEventListener("click", function () { buy("hint"); });
   $("buyLetter").addEventListener("click", function () { buy("letter"); });
@@ -1318,4 +1389,13 @@ var BUILD = "v002a";
      FIRST call was. */
 
   ownerTools();
+
+  /* A SEAM FOR THE SUITES, and nothing else. supplyFrom is the pure part of
+     the rule that decides when a typed name has used up a slot's letters, and
+     the interesting case — a scramble that keeps a hyphen or a space, while
+     what is typed is stripped to letters — belongs to boards the journey
+     suite does not have on screen. Exposed so it can be exercised on those
+     boards directly rather than left to a comment. The same seam HiLo keeps
+     for subtitleParts, and for the same reason. */
+  window.__scx = { supplyFrom: supplyFrom, lettersUsedUp: lettersUsedUp };
 })();
