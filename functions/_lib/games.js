@@ -84,7 +84,9 @@ export function validPlayGame(v) {
  *   daily      the board of the day, one attempt, the run at stake
  *   practice   the crossword's unnumbered boards
  *   theme      a themed crossword, the kind passed between friends
- *   free       a word search board chosen from the archive or the week
+ *   free       a board chosen rather than served: a word search from the
+ *              archive or the week, a Scrambled final out of the catalogue.
+ *              No run at stake, which is the whole of what it means.
  *   weekly     QuickFire's Last 7 Days board, which is not a daily
  *   challenge  a QuickFire run from a shared link, of either board
  */

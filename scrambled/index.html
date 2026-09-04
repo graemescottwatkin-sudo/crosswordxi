@@ -32,7 +32,7 @@
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
 <script src="../shared/xi-theme.js?v=v15"></script>
-<link rel="stylesheet" href="css/style.css?v=v001z">
+<link rel="stylesheet" href="css/style.css?v=v002">
 </head>
 <body>
 
@@ -135,13 +135,11 @@
           </svg>
         </button>
 
-        <!-- Iconic matches are built and not yet imported, so this says so
-             rather than opening onto nothing. The family already has a word
-             for that state and this is it. -->
-        <button class="home-choice col soon" id="homeThemed" disabled>
+        <button class="home-choice col" id="homeThemed">
           <span class="hc-kicker">ICONIC MATCHES</span>
-          <span class="hc-title">Famous XIs <span class="hc-soon">Soon</span></span>
-          <span class="hc-note">The sides that won the finals, as they lined up.</span>
+          <span class="hc-title">Famous XIs</span>
+          <span class="hc-note">Every final in the bank, both sides of each,
+            as they lined up. They do not count towards a run.</span>
           <span class="hc-state" id="homeThemedState"></span>
           <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
                stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -153,8 +151,8 @@
         <button class="home-choice col" id="homePrevious">
           <span class="hc-kicker">PREVIOUS BOARDS</span>
           <span class="hc-title" id="homePreviousCount">Every day so far</span>
-          <span class="hc-note">One more every day. Replay any of them &mdash;
-            only today&rsquo;s keeps a run going.</span>
+          <span class="hc-note">Pick a day from the calendar. Replay any of
+            them &mdash; only today&rsquo;s keeps a run going.</span>
           <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
                stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 5v4h4"/><path d="M3.5 9A9 9 0 1 1 4 15"/><path d="M12 8v4l3 2"/>
@@ -231,14 +229,62 @@
 
 </main>
 
+<!-- PREVIOUS BOARDS, as a month grid. The same shape the crossword uses, for
+     the same reason: a card that opened yesterday's board was one board with
+     a plural label, and nothing said which days had been played. -->
+<div class="sheet" id="archiveSheet">
+  <div class="sheet-card">
+    <h3>Previous boards</h3>
+    <div class="sheet-sub" id="archiveSub">Every board so far</div>
+
+    <div class="cal-head">
+      <button id="calPrev" type="button" aria-label="Previous month">&lsaquo;</button>
+      <div class="cal-month" id="calMonth">&mdash;</div>
+      <button id="calNext" type="button" aria-label="Next month">&rsaquo;</button>
+    </div>
+
+    <div class="cal-dow" aria-hidden="true">
+      <span>M</span><span>T</span><span>W</span><span>T</span>
+      <span>F</span><span>S</span><span>S</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="cal-key">
+      <span><i class="k done"></i>Played</span>
+      <span><i class="k open"></i>To play</span>
+      <span><i class="k none"></i>Not yet</span>
+    </div>
+
+    <button class="btn ghost sheet-close" id="archiveClose">Close</button>
+  </div>
+</div>
+
+<!-- THE FINALS. Every one in the bank, both XIs of each, grouped by
+     competition. Searched rather than paged: it is one list of five fields
+     and a box is less to learn than a pager. -->
+<div class="sheet" id="finalsSheet">
+  <div class="sheet-card">
+    <h3>Iconic matches</h3>
+    <div class="sheet-sub" id="finalsSub">Finals, both XIs of each</div>
+
+    <input class="fin-search" id="finalsInput" type="search" autocomplete="off"
+           placeholder="Search a club, a competition or a year"
+           aria-label="Search the finals">
+    <div class="fin-list" id="finalsList"></div>
+
+    <p class="sheet-note">These are not dailies and do not count towards a run.</p>
+    <button class="btn ghost sheet-close" id="finalsClose">Close</button>
+  </div>
+</div>
+
 <!-- THE SHARED FOOTER, AT TOP LEVEL. It carries the family disclaimer. -->
 <footer class="xic-foot"></footer>
 
 <script src="../shared/xi-clubs.js?v=v15"></script>
 <script src="../shared/xi-chrome.js?v=v15"></script>
 <script src="../shared/xi-plays.js?v=v15"></script>
-<script src="js/config.js?v=v001z"></script>
-<script src="js/scoring.js?v=v001z"></script>
-<script src="js/game.js?v=v001z"></script>
+<script src="js/config.js?v=v002"></script>
+<script src="js/scoring.js?v=v002"></script>
+<script src="js/game.js?v=v002"></script>
 </body>
 </html>

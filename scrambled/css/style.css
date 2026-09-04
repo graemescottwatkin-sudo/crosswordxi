@@ -450,3 +450,186 @@ html, body {
   overflow-wrap: break-word;
 }
 
+
+/* ---- SHEETS: PREVIOUS BOARDS, AND THE FINALS -------------------------------
+
+   A NOTE ON WHERE THIS LIVES. The crossword carries the same sheet and the
+   same month grid in its own stylesheet, so these rules now exist twice in the
+   family, which is the drift this project pays for everywhere else. The right
+   home is the shared layer beside the chrome. It is not moved here because
+   lifting it means bumping SHARED_TAG for all five games in the same breath as
+   a new feature, and a wide deploy and a new feature should not be one commit.
+   Recorded rather than left to be discovered. */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 34, 25, 0.6);
+  z-index: 55;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.sheet.show { display: flex; }
+.sheet-card {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  max-width: 520px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: auto;
+  padding: 22px 22px 20px;
+  border-top: 6px solid var(--pitch);
+}
+.sheet-card h3 {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pitch-ink);
+  border-bottom: 2px solid var(--pitch-deep);
+  padding-bottom: 4px;
+  margin: 0 0 8px;
+}
+.sheet-sub { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 16px; }
+.sheet-empty { color: var(--ink-soft); font-size: 13.5px; padding: 10px 0 14px; }
+.sheet-note { font-size: 11.5px; color: var(--ink-faint); margin-top: 14px; line-height: 1.45; }
+.sheet-close { width: 100%; margin-top: 14px; }
+
+/* ---- the month grid ---- */
+
+.cal-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; }
+.cal-head button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+.cal-head button[disabled] { opacity: 0.35; }
+.cal-month {
+  flex: 1;
+  text-align: center;
+  font-family: var(--disp);
+  font-size: 19px;
+  font-weight: 700;
+}
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ink);
+  min-height: 40px;
+  padding: 0;
+}
+.cal-cell.empty { border: 0; background: none; }
+/* Not released. A dot rather than a number: there is nothing there to choose,
+   and an empty square with a date on it reads as something you failed to do. */
+.cal-cell.none { border: 0; background: none; color: var(--ink-faint); }
+.cal-cell.none::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.cal-cell.none span { display: none; }
+.cal-cell.open { border-color: var(--pitch); color: var(--pitch); font-weight: 700; }
+.cal-cell.done { background: var(--pitch); border-color: var(--pitch); color: #fff; font-weight: 700; }
+.cal-cell.today { box-shadow: 0 0 0 2px var(--sel); }
+/* The date and the score are separate lines. Inline, a 24th with a score of
+   97 rendered as "2497". */
+.cal-cell span { display: block; line-height: 1.1; }
+.cal-cell b { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; opacity: 0.85; }
+.cal-key {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 14px 0 4px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+.cal-key span { display: flex; align-items: center; gap: 6px; }
+.cal-key .k {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--line);
+  display: inline-block;
+}
+.cal-key .k.done { background: var(--pitch); border-color: var(--pitch); }
+.cal-key .k.open { border-color: var(--pitch); }
+.cal-key .k.none { border: 0; background: var(--line); }
+
+/* ---- the finals list ----
+
+   Two lines per row: the side, which is what somebody is looking for, and the
+   fixture under it. One line with both ran to sixty characters and wrapped on
+   a phone, and a wrapped row in a list of five hundred is unreadable. */
+
+.fin-search {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.fin-list { max-height: 52vh; overflow: auto; }
+.fin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0 4px;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+}
+.fin-head i { font-style: normal; color: var(--ink-faint); font-size: 10px; }
+.fin-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.fin-row:hover { background: var(--paper); }
+.fin-side { display: block; font-weight: 600; font-size: 14.5px; }
+.fin-when { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }

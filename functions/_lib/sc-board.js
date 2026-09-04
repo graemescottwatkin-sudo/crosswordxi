@@ -94,9 +94,15 @@ export const scKey = (n) => "sc:" + n;
    THE ID IS NOT THE RING POSITION. Taking a board out shifts every later board
    in the rotation by a day, which is why proofing links address boards by id
    through the admin route and only the daily uses this. */
+/* THE FLAG, SAID ONCE. `daily: false` is what takes a board out of the
+   rotation, and two places now care: the ring, which must skip it, and the
+   finals catalogue, which is made of exactly the boards the ring skips.
+   Written twice they would disagree the first time the flag changed spelling. */
+export function outOfRotation(board) { return !!board && board.daily === false; }
+
 export function dailyRing(boards) {
   const all = boards && boards.length ? boards : SC_BOARDS;
-  const ring = all.filter((b) => b && b.daily !== false);
+  const ring = all.filter((b) => b && !outOfRotation(b));
   /* Every board excluded is a bank nobody can play a daily from. Falling back
      to the whole bank is the honest failure: a wrong board beats no game. */
   return ring.length ? ring : all;
@@ -143,7 +149,10 @@ export function playableTokenNo(token) {
 
 export function boardForToken(token, boards) {
   const no = playableTokenNo(token);
-  return typeof no === "number" ? boardForNumber(no, boards) : null;
+  if (typeof no === "number") return boardForNumber(no, boards);
+  /* A finals token resolves here rather than in guess.js and reveal.js, which
+     is the difference between one rule and two copies of it. */
+  return boardForIconicToken(token, boards);
 }
 
 /* THE OWNER'S PREVIEW TOKEN, which is a different thing from a play token.
@@ -168,7 +177,78 @@ export function boardForPreviewToken(token, boards) {
   return (boards || []).find((b) => Number(b.id) === id) || null;
 }
 
-export function publicBoard(board, no) {
+/* THE FINALS, WHICH ARE ADDRESSED BY ID AND OPEN TO EVERYONE.
+ *
+ * Five hundred and forty-three boards sit outside the daily rotation — every
+ * cup and play-off final in the bank, both XIs of each. They have been in the
+ * database since the import and no address reached them: the daily token names
+ * a ring position and the ring is exactly the boards these are not, so a third
+ * token shape was the only way in.
+ *
+ * WHY THIS ONE IS SAFE TO OPEN WHERE THE PREVIEW IS NOT. The preview token
+ * takes ANY board by id and therefore has to re-check the admin flag on every
+ * request — given away, it would hand over tomorrow's daily. This one resolves
+ * only boards out of the rotation, and a board out of the rotation is never
+ * served as a daily on any date. So there is no schedule for it to leak, and
+ * it needs no authority at all. The guard is the whole reason it can be
+ * public, which is why it is here and not in the endpoint: the play routes go
+ * through boardForToken and inherit it rather than restating it. */
+export const iconicKey = (id) => "sc:iconic:" + id;
+
+export function boardForIconicToken(token, boards) {
+  const m = /^sc:iconic:(\d+)$/.exec(String(token || ""));
+  if (!m) return null;
+  const id = Number(m[1]);
+  const board = (boards || []).find((b) => Number(b.id) === id) || null;
+  return outOfRotation(board) ? board : null;
+}
+
+/* WHAT A CATALOGUE ROW SAYS, and why each part of it is there.
+ *
+ * `title` is the fixture — "European Cup final, 1977". `side` is which of the
+ * two XIs this board is, taken from the pool line the start card already
+ * shows: without it the list carries "World Cup final, 1986" twice with
+ * nothing to choose between them. Together they are unique across all 543.
+ *
+ * `comp` and `year` are derived here rather than in the page, so the grouping
+ * is one statement rather than one per caller. A title that does not parse
+ * keeps its row and simply has no competition — it is a real board and being
+ * unable to file it is not a reason to hide it. */
+const FINAL_TITLE = /^(.+?) final, (\d{4})$/;
+const SIDE_IN_POOL = /^(.+?)(?:’s|'s) starting XI\b/;
+
+export function iconicRow(board) {
+  const title = String(board.title || "");
+  const t = FINAL_TITLE.exec(title);
+  const s = SIDE_IN_POOL.exec(String(board.pool || ""));
+  return {
+    id: board.id,
+    title,
+    side: s ? s[1] : null,
+    comp: t ? t[1] : null,
+    year: t ? Number(t[2]) : null,
+  };
+}
+
+/* Nothing but the five fields above: slots would put the whole bank in one
+   response, which is the fault the owner's list route already refused. */
+export function iconicList(boards) {
+  return (boards || []).filter(outOfRotation).map(iconicRow);
+}
+
+/* `no` is the board's place in the daily ring, or null for a board that has
+   no place in it. `token` is what the page must send back to play; it defaults
+   to the daily spelling, because that is what a numbered board is.
+ *
+ * THE DEFAULT USED TO BE THE ONLY OPTION, AND IT BROKE THE OWNER'S PREVIEW.
+ * The admin route passes previewKey(id) — and passed it as `no`, so the page
+ * was handed no: "sc:preview:1424" and token: "sc:sc:preview:1424", which
+ * matches neither token shape. The board loaded and every guess came back 403.
+ * The comment above previewKey describes fixing exactly this; the fix reached
+ * the caller and stopped one line short of here. Hence a token argument: a
+ * board that is not a daily says what to call it, rather than having a daily's
+ * name computed over the top of the one it was given. */
+export function publicBoard(board, no, token) {
   const slots = (board.slots || []).map((s) => ({
     id: s.id,
     band: s.band,          // which line of the formation this slot sits on
@@ -180,7 +260,7 @@ export function publicBoard(board, no) {
 
   return {
     no,
-    token: scKey(no),
+    token: token || scKey(no),
     title: board.title,
     pool: board.pool,            // the visible statement of what the XI is
     formation: board.formation,

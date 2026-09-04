@@ -141,8 +141,12 @@ export async function onRequest({ request, env, params }) {
     const board = (boards || []).find((b) => Number(b.id) === id);
     if (!board) return bad(`No board with id ${id}.`, 404);
     /* previewKey, not scKey: the play endpoints must be able to tell a
-       preview from a daily, and resolve it by id rather than ring position. */
-    return json({ ...publicBoard(board, previewKey(id)), id, source, preview: true });
+       preview from a daily, and resolve it by id rather than ring position.
+       Passed as the TOKEN, with no ring position at all — handing it in as
+       `no` left publicBoard to wrap it in a second "sc:" and the play routes
+       refused every guess. A board off the ring has no number; saying so is
+       the honest answer and the one the page can display. */
+    return json({ ...publicBoard(board, null, previewKey(id)), id, source, preview: true });
   }
   /* ---- Forget one day, so it can be played again ----
      Separate from clearing the record: this removes a single day's result so

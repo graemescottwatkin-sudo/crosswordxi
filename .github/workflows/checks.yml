@@ -148,6 +148,11 @@ jobs:
           # stub holds a board that exists nowhere else, so a handler quietly
           # still reading the module fails rather than passing on a match.
           node scrambled/d1_test.mjs
+          # The finals: 543 boards out of the daily rotation, opened to
+          # everyone by a token that needs no authority BECAUSE it resolves
+          # nothing in the rotation. That guard is what this suite is for —
+          # break it and the id space becomes a way to read the schedule.
+          node scrambled/iconic_test.mjs
           node scrambled/journey_test.mjs
           # Half time: free hints, fired by the clock and not by a click, so no
           # journey through the game ever reaches it. It was the only untested

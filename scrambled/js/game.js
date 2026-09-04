@@ -12,10 +12,10 @@
  *   - no server-trusted score. There is no play row, so the number on the Full
  *     Time card is assembled here and the card says so. "Unverified" is the
  *     truth rather than a number that looks authoritative and is not.
- *   - no practice, no archive picker. One board a day, and the past reachable
- *     only by ?no=N, which the server checks against its own clock.
+ *   - no practice. There is now an archive picker and a finals catalogue; what
+ *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v001z";
+var BUILD = "v002";
 
 (function () {
   "use strict";
@@ -29,6 +29,14 @@ var BUILD = "v001z";
   var PREFIX = "xisc.";
 
   var $ = function (id) { return document.getElementById(id); };
+
+  /* Wiring a control that is not on the page must not take the page down with
+     it — the same helper, and the same reasoning, as the crossword's. */
+  function on(id, evt, fn) {
+    var el = $(id);
+    if (!el) { console.warn("Missing element: " + id); return; }
+    el.addEventListener(evt, fn);
+  }
 
   var state = {
     board: null,
@@ -113,22 +121,230 @@ var BUILD = "v001z";
   function renderLanding() {
     var today = state.todayNo || 0;
     if (today > 0) {
-      var utc = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+      var utc = todayUTC();
       var pick = (Math.floor(utc / 604800000) % today) + 1;
       $("homeFeaturedName").textContent = "Board #" + pick;
       $("homeFeaturedState").textContent = "One of " + today + " released";
-      /* THE PERMALINK, not a query. Both of these reloaded the page with
-         ?no=, which works and leaves an address that says nothing about what
-         it opens. The permalink is the same board at an address that does. */
-      $("homeFeatured").onclick = function () { location.href = "/scrambled/daily/" + pick; };
-      $("homePreviousCount").textContent = today + " boards so far";
-      $("homePrevious").onclick = function () {
-        location.href = "/scrambled/daily/" + Math.max(1, today - 1);
+      /* ONE NAMED BOARD, SO THE CLICK IS THE ANSWER. This reloaded the page at
+         the board's permalink, which opened its start card and asked to be
+         clicked again — the same two steps as the daily, for a card that has
+         already made the choice. It opens and kicks off. */
+      $("homeFeatured").onclick = function () {
+        openBoard({ kind: "daily", no: pick }, { play: true });
       };
+      $("homePreviousCount").textContent = today + " boards so far";
     }
     renderForm();
     fillClubs();
   }
+
+  /* ---- previous boards, as a calendar -----------------------------------
+
+     This card opened yesterday's board. That is not an archive, it is one
+     board with a plural label: everything before yesterday was unreachable
+     and nothing said which days had been played. The crossword answered this
+     with a month grid and the same answer belongs here.
+
+     THE DATES ARE DERIVED, NOT STORED A SECOND TIME. Board #N ran (today - N)
+     days before today, and the server said what today is — so there is no
+     epoch written down here to drift from the one the server keeps. UTC
+     throughout, because the server decides what day it is. */
+  var DAY_MS = 86400000;
+  var calMonth = null;   // {y, m} of the month on screen, in UTC
+
+  function todayUTC() {
+    var n = new Date();
+    return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+  }
+  function dateForNo(no) { return new Date(todayUTC() - ((state.todayNo || 0) - no) * DAY_MS); }
+  function noForDate(ms) { return (state.todayNo || 0) - Math.round((todayUTC() - ms) / DAY_MS); }
+
+  function openArchive() {
+    calMonth = null;
+    renderCalendar();
+    $("archiveSheet").classList.add("show");
+  }
+  function closeArchive() { $("archiveSheet").classList.remove("show"); }
+
+  function stepCalendar(by) {
+    var d = calMonth || monthOf(dateForNo(state.todayNo || 1));
+    var n = new Date(Date.UTC(d.y, d.m + by, 1));
+    calMonth = { y: n.getUTCFullYear(), m: n.getUTCMonth() };
+    renderCalendar();
+  }
+  function monthOf(d) { return { y: d.getUTCFullYear(), m: d.getUTCMonth() }; }
+
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"];
+
+  function renderCalendar() {
+    var grid = $("calGrid");
+    if (!grid) return;
+    var today = state.todayNo || 0;
+    var first = calMonth || monthOf(dateForNo(today || 1));
+    calMonth = first;
+
+    var played = {};
+    readResults().forEach(function (r) {
+      if (r && typeof r.no === "number") played[r.no] = r;
+    });
+
+    $("calMonth").textContent = MONTHS[first.m] + " " + first.y;
+
+    /* Monday first: this is a football game and the week starts on Monday
+       everywhere it is played. getUTCDay() puts Sunday at 0, hence the shift. */
+    var firstMs = Date.UTC(first.y, first.m, 1);
+    var lead = (new Date(firstMs).getUTCDay() + 6) % 7;
+    var days = new Date(Date.UTC(first.y, first.m + 1, 0)).getUTCDate();
+
+    var out = [], i;
+    for (i = 0; i < lead; i++) out.push('<div class="cal-cell empty"></div>');
+    for (i = 1; i <= days; i++) {
+      var no = noForDate(Date.UTC(first.y, first.m, i));
+      var cls = "cal-cell", body = "";
+      if (no < 1 || no > today) {
+        cls += " none";
+      } else if (played[no]) {
+        cls += " done";
+        /* On its own line under the date: rendered inline, "24" with a score
+           of 97 read as "2497". */
+        body = '<b class="cal-score">' +
+          (played[no].score != null ? played[no].score : "✓") + "</b>";
+      } else if (no === today) {
+        /* Today is the hero on the landing screen, not something missed — the
+           day is not over. Marked so it can be seen and tapped. */
+        cls += " today open";
+      } else {
+        cls += " open";
+      }
+      out.push('<button type="button" class="' + cls + '" data-no="' +
+        (no >= 1 && no <= today ? no : "") + '"><span>' + i + "</span>" + body + "</button>");
+    }
+    grid.innerHTML = out.join("");
+
+    /* Never past the month today falls in, and never before the first board:
+       an arrow that does nothing is worse than one that is plainly off. */
+    var thisMonth = monthOf(dateForNo(today || 1));
+    var firstEver = monthOf(dateForNo(1));
+    $("calNext").disabled = first.y > thisMonth.y ||
+      (first.y === thisMonth.y && first.m >= thisMonth.m);
+    $("calPrev").disabled = first.y < firstEver.y ||
+      (first.y === firstEver.y && first.m <= firstEver.m);
+
+    var left = 0;
+    for (i = today - 1; i >= 1; i--) if (!played[i]) left++;
+    $("archiveSub").textContent = left === 0
+      ? "You have played every board so far."
+      : left + (left === 1 ? " board" : " boards") + " left to play";
+  }
+
+  /* Delegated: the grid is rebuilt on every render, so a handler per cell
+     would have to be rebound each time. */
+  on("calGrid", "click", function (ev) {
+    var cell = ev.target.closest ? ev.target.closest(".cal-cell") : null;
+    if (!cell || cell.classList.contains("none") || cell.classList.contains("empty")) return;
+    var no = Number(cell.getAttribute("data-no"));
+    if (!no) return;
+    closeArchive();
+    openBoard({ kind: "daily", no: no });
+  });
+
+  /* ---- the finals ------------------------------------------------------
+
+     Five hundred and forty-three boards — every cup and play-off final in the
+     bank, both XIs of each — have been in the database since the import with
+     no way to reach them, because the daily token names a position in a ring
+     these boards are deliberately outside. The card said "Soon" and the note
+     beside it said they were "not yet imported", which stopped being true a
+     long time before anybody noticed.
+
+     Fetched once and kept: it is one list of five fields, and re-fetching it
+     every time the sheet opens would be a request per browse. */
+  var finals = null;
+  var finalsFilter = "";
+
+  function openFinals() {
+    $("finalsSheet").classList.add("show");
+    var box = $("finalsInput");
+    if (box) box.focus({ preventScroll: true });
+    if (finals) { renderFinals(); return; }
+    $("finalsList").innerHTML = '<div class="sheet-empty">Reading the list…</div>';
+    fetch("/api/scrambled/iconic", {
+      headers: { "X-XI-Games": "1" }, credentials: "same-origin"
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        finals = (d && d.boards) || [];
+        renderFinals();
+      })
+      .catch(function () {
+        $("finalsList").innerHTML =
+          '<div class="sheet-empty">Could not reach the list. Try again in a moment.</div>';
+      });
+  }
+  function closeFinals() { $("finalsSheet").classList.remove("show"); }
+
+  /* Matched on everything a row shows, so what is on screen is what is being
+     searched: "1999" finds the year, "Liverpool" the side, "FA Cup" the
+     competition. Nothing clever — a list this size does not need it. */
+  function finalsMatch(row, needle) {
+    if (!needle) return true;
+    return ((row.title || "") + " " + (row.side || "")).toLowerCase().indexOf(needle) !== -1;
+  }
+
+  function renderFinals() {
+    var list = $("finalsList");
+    if (!list) return;
+    var needle = finalsFilter.trim().toLowerCase();
+    var rows = (finals || []).filter(function (r) { return finalsMatch(r, needle); });
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="sheet-empty">Nothing matches &ldquo;' +
+        esc(finalsFilter) + "&rdquo;.</div>";
+      $("finalsSub").textContent = (finals || []).length + " finals";
+      return;
+    }
+
+    /* Grouped by competition and newest first inside it, which is the order
+       somebody looking for a final they remember will look in. A board whose
+       title does not parse keeps its place under a heading that says so
+       rather than being dropped: it is a real board. */
+    var groups = {}, order = [];
+    rows.forEach(function (r) {
+      var key = r.comp || "Other finals";
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(r);
+    });
+    order.sort(function (a, b) { return groups[b].length - groups[a].length; });
+
+    var out = [];
+    order.forEach(function (key) {
+      out.push('<div class="fin-head">' + esc(key) + " <i>" + groups[key].length + "</i></div>");
+      groups[key]
+        .sort(function (a, b) { return (b.year || 0) - (a.year || 0); })
+        .forEach(function (r) {
+          out.push('<button type="button" class="fin-row" data-id="' + r.id + '">' +
+            '<span class="fin-side">' + esc(r.side || r.title) + "</span>" +
+            '<span class="fin-when">' + esc(r.title) + "</span></button>");
+        });
+    });
+    list.innerHTML = out.join("");
+    $("finalsSub").textContent = needle
+      ? rows.length + " of " + (finals || []).length + " finals"
+      : rows.length + " finals, both XIs of each";
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  on("finalsList", "click", function (ev) {
+    var row = ev.target.closest ? ev.target.closest(".fin-row") : null;
+    if (!row) return;
+    closeFinals();
+    openBoard({ kind: "iconic", id: row.getAttribute("data-id") });
+  });
 
   /* ---- the durable record ---------------------------------------------
 
@@ -239,8 +455,16 @@ var BUILD = "v001z";
 
   /* ---- storage ---------------------------------------------------------- */
 
+  /* ONE KEY PER BOARD, AND A BOARD IS NOT ALWAYS A NUMBER. A final has no
+     place in the ring, so it has no number to key on and its id is used
+     instead — prefixed, because id 12 and board #12 are different boards and
+     an unprefixed key would have them share a save. */
   function storeKey() {
-    return PREFIX + CFG.STORAGE_KEY + "." + (state.board ? state.board.no : "0");
+    var b = state.board;
+    if (!b) return PREFIX + CFG.STORAGE_KEY + ".0";
+    if (b.iconic) return PREFIX + CFG.STORAGE_KEY + ".f" + b.id;
+    if (b.preview) return PREFIX + CFG.STORAGE_KEY + ".p" + b.id;
+    return PREFIX + CFG.STORAGE_KEY + "." + b.no;
   }
 
   function save() {
@@ -290,7 +514,16 @@ var BUILD = "v001z";
   }
   function playsStart() {
     if (!window.XIPlays || window.XIPlays.active() || !state.board || state.over) return;
-    window.XIPlays.start({ game: "scrambled", mode: "daily", boardKey: "sc:" + state.board.no, total: 11 }, playsProgress);
+    /* The board's own token IS its key — the thing the server already uses to
+       name this board — rather than a second spelling built here. And a board
+       off the ring is mode "free", which is what the family calls a board that
+       was chosen rather than served: no run at stake. */
+    window.XIPlays.start({
+      game: "scrambled",
+      mode: state.board.no == null ? "free" : "daily",
+      boardKey: state.board.token,
+      total: 11,
+    }, playsProgress);
   }
   function playsEnd(completed) {
     if (window.XIPlays && window.XIPlays.active()) window.XIPlays.end(!!completed);
@@ -701,6 +934,12 @@ var BUILD = "v001z";
      a player who closes the tab on the Full Time screen still keeps it. */
   function bankResult() {
     if (!state.board) return;
+    /* A RESULT IS A NUMBERED BOARD. A run here is consecutive board numbers,
+       so a board with no number cannot be part of one — and recording it
+       under `no: null` would put a row in the record that every reader of the
+       record has to remember to skip. The finals are played for their own
+       sake; the card still shows the score. */
+    if (state.board.no == null) return;
     var res = SCORING.computeScore(state.elapsed, state.help);
     recordResult({
       no: state.board.no,
@@ -762,7 +1001,7 @@ var BUILD = "v001z";
       return (state.solved[s.id] || {}).how === "solved";
     }).length;
     $("shareText").value =
-      "Scrambled XI #" + state.board.no + "\n" +
+      (state.board.no == null ? "Scrambled XI" : "Scrambled XI #" + state.board.no) + "\n" +
       state.board.title + "\n" +
       solvedCount + " of 11 unravelled, " + (11 - solvedCount) + " given\n" +
       res.score + "/" + SCORING.MAX_SCORE + " in " + mins + "m " + secs + "s\n" +
@@ -827,22 +1066,67 @@ var BUILD = "v001z";
     return window.XIChrome && window.XIChrome.permalink ? window.XIChrome.permalink.read() : null;
   }
 
-  function boot() {
-    /* ?id= is the OWNER's address — any board, through the admin route, which
-       re-checks the flag server-side. ?no= stays the public one: a position in
-       the daily ring, past and today only. A signed-out visitor sending ?id=
-       gets a 401 from that route and the start card says so, which is the
-       honest failure rather than a silent fall back to today's board. */
+  /* WHICH BOARD THE PAGE IS AFTER, as one value rather than as a chain of
+     conditions read again at every point that needs it. Four routes reach a
+     board and they are not variations on one address:
+
+       daily     a position in the ring, today or behind it, run at stake
+       iconic    a final, addressed by board id, out of the rotation entirely
+       preview   the OWNER's address for any board, re-checked server-side
+       (and a signed-out visitor sending ?id= gets a 401 from that route and
+       the start card says so, which is the honest failure rather than a
+       silent fall back to today's board.)
+
+     ?iconic= rather than a permalink, and it is worth saying why: the
+     permalink shape is /scrambled/daily/<board number>, and a final's id is
+     1424. In four years the ring reaches 1424 and the same address would mean
+     two different boards. A final is not a daily and does not get a daily's
+     address. */
+  function askFromUrl() {
     var params = new URLSearchParams(location.search);
+    var iconic = params.get("iconic");
+    if (iconic) return { kind: "iconic", id: iconic };
+    var byId = params.get("id");
+    if (byId) return { kind: "preview", id: byId };
     /* The permalink is the same question ?no= asks, in the path: one URL, one
        board, forever. It wins over ?no= because it is the address the visitor
        actually came to. */
-    var asked = permalinkKey() || params.get("no");
-    var byId = params.get("id");
-    var url = byId
-      ? "/api/admin/scrambled?id=" + encodeURIComponent(byId)
-      : "/api/scrambled/daily" + (asked ? "?no=" + encodeURIComponent(asked) : "");
-    fetch(url, {
+    var asked = permalinkKey();
+    return { kind: "daily", no: Number(asked || params.get("no")) || null,
+             fromLink: !!asked };
+  }
+
+  function askUrl(ask) {
+    if (ask.kind === "iconic") {
+      return "/api/scrambled/iconic?id=" + encodeURIComponent(ask.id);
+    }
+    if (ask.kind === "preview") {
+      return "/api/admin/scrambled?id=" + encodeURIComponent(ask.id);
+    }
+    return "/api/scrambled/daily" + (ask.no ? "?no=" + encodeURIComponent(ask.no) : "");
+  }
+
+  /* EVERYTHING A BOARD OWNS, PUT BACK. Opening a second board in the same
+     page is new — until the catalogue existed the only way to change board
+     was to reload — and every field below belonged to the board that was
+     open. Left behind, the finals card would have opened on the daily's
+     solved names and its clock. */
+  function forgetBoard() {
+    stopClock();
+    playsEnd(false);
+    state.solved = {}; state.hints = {}; state.letters = {};
+    state.hintsRevealed = false; state.help = 0;
+    state.startedAt = null; state.elapsed = 0;
+    state.picked = null; state.teamTalkDone = false; state.over = false;
+  }
+
+  /* Opens a board and draws its start card. `play` starts the clock straight
+     away, for the places that name one board rather than offering a choice —
+     the board of the week is a pick, not a menu, so the pick IS the answer. */
+  function openBoard(ask, opts) {
+    var play = !!(opts && opts.play);
+    forgetBoard();
+    return fetch(askUrl(ask), {
       headers: { "X-XI-Games": "1" }, credentials: "same-origin"
     })
       .then(function (r) { return r.json(); })
@@ -851,17 +1135,19 @@ var BUILD = "v001z";
         state.board = board;
         /* What day it is according to the SERVER, kept so the landing can
            count the archive and judge whether a run reaches today. Never
-           computed here: the server decides what day it is. */
-        state.todayNo = board.today || board.no;
+           computed here: the server decides what day it is. A board off the
+           ring carries no `today`, so the count already established stands. */
+        if (board.today) state.todayNo = board.today;
         /* Followed a link to an older board: say how old, once, and only
-           where the page was opened at one. */
-        if (permalinkKey() && window.XIChrome && window.XIChrome.permalink) {
+           where the page was OPENED at one. Somebody who just picked a board
+           out of the calendar was looking at its date a second ago. */
+        if (ask.fromLink && window.XIChrome && window.XIChrome.permalink) {
           window.XIChrome.permalink.aged("scrambled", (state.todayNo || 0) - (board.no || 0));
         }
+        address(board);
         $("startTitle").textContent = board.title;
         $("startPool").textContent = board.pool;
-        $("startKicker").textContent = board.no === board.today
-          ? "TODAY" : "BOARD #" + board.no;
+        $("startKicker").textContent = startKicker(board);
         /* SHORT, because hc-state is a status line and not a paragraph. The
            full explanation of the clock and the team talk belongs on How to
            play; here it was three lines of small caps across the hero. */
@@ -881,8 +1167,8 @@ var BUILD = "v001z";
         }
         renderLanding();
         syncAccount();
-        show(state.over ? "screenResults" : "screenStart");
-        if (state.over) { drawPitch(); showResults(); }
+        if (state.over) { show("screenResults"); drawPitch(); showResults(); return; }
+        if (play) kickOff(); else show("screenStart");
       })
       .catch(function () {
         $("screenLoading").querySelector(".pmLede").textContent =
@@ -890,14 +1176,74 @@ var BUILD = "v001z";
       });
   }
 
+  /* WHAT THE START CARD CALLS THIS BOARD. Three kinds of board and one line to
+     name them: a final says which final, because "BOARD #null" is what it said
+     while the number belonged to a ring this board is not in. */
+  function startKicker(board) {
+    if (board.iconic) return "ICONIC MATCH";
+    if (board.preview) return "PREVIEW · BOARD " + board.id;
+    return board.no === board.today ? "TODAY" : "BOARD #" + board.no;
+  }
+
+  /* THE ADDRESS SAYS WHICH BOARD IS OPEN, so it can be copied and come back
+     to the same one. A daily gets the family's permalink; a final gets a
+     query, for the reason askFromUrl sets out.
+
+     The other spelling is cleared each time, and that is the point rather
+     than tidiness: going from a final to a daily and leaving ?iconic= behind
+     would give an address that reloads as the final. The owner's ?id= is left
+     alone — it is their address for this page and the owner bar reads it. */
+  function address(board) {
+    if (board.preview) return;
+    try {
+      history.replaceState(null, "",
+        (board.iconic ? "/scrambled/?iconic=" + encodeURIComponent(board.id)
+                      : location.pathname) + location.hash);
+    } catch (e) { /* a browser that will not have it keeps the address it has */ }
+    var perma = window.XIChrome && window.XIChrome.permalink;
+    if (!perma || board.iconic || board.no == null) return;
+    if (board.no !== state.todayNo) perma.show("scrambled", board.no);
+    else perma.clear("scrambled");
+  }
+
+  function boot() { openBoard(askFromUrl()); }
+
   /* The hero IS the kick off now: one control that says what it opens,
-     rather than a card with a button under it. */
-  $("homeDaily").addEventListener("click", function () {
+     rather than a card with a button under it. Named, because openBoard also
+     kicks off — a board that was chosen by name rather than picked from a
+     list has already been decided on, and a second click to confirm it is a
+     click that asks nothing. */
+  function kickOff() {
+    if (!state.board) return;
     $("poolLine").textContent = state.board.pool;
     show("screenGame");
     drawPitch();
     startClock();
     $("answer").focus({ preventScroll: true });
+  }
+  $("homeDaily").addEventListener("click", kickOff);
+
+  /* The two sheets. Bound once, here, rather than rebound by renderLanding
+     each time a board opens — a handler added on every render is a handler
+     that fires as many times as the page has loaded a board. */
+  on("homePrevious", "click", openArchive);
+  on("archiveClose", "click", closeArchive);
+  on("calPrev", "click", function () { stepCalendar(-1); });
+  on("calNext", "click", function () { stepCalendar(1); });
+  on("homeThemed", "click", openFinals);
+  /* The header nav drives the controls that already do these jobs, the same
+     way the crossword's does. Both of these were in the markup and wired to
+     nothing: "Matches" has been a button that does not react since the landing
+     was built, because there was nothing yet for it to open. */
+  on("navClubs", "click", openFinals);
+  on("navToday", "click", function () {
+    if (state.board && state.board.no === state.todayNo) { show("screenStart"); return; }
+    openBoard({ kind: "daily" });
+  });
+  on("finalsClose", "click", closeFinals);
+  on("finalsInput", "input", function (ev) {
+    finalsFilter = ev.target.value || "";
+    renderFinals();
   });
 
   $("submit").addEventListener("click", submit);
