@@ -269,6 +269,18 @@ console.log("\nBoth games ask for it, and neither keeps a copy");
     t(`${game} does not restate how a key is sized`,
       !/^\.osk-key\s*\{/m.test(gameCss) && !gameCss.includes("--osk-key:"),
       "overrides of .osk for its own layout are fine; the keys are not its own");
+    /* AND IT SURVIVES THE KEYBOARD NOT LOADING. The suites serve a game on its
+       own, with no shared/ to fetch, and in production a script can be lost to
+       a bad network. Every other reach into the shared layer from these files
+       is guarded; this one was not, and an unguarded call took the whole of
+       the crossword's game.js down on boot the first time a suite ran without
+       it. Checked by position rather than by counting mentions: the guard has
+       to come before the first use, or it is not guarding anything. */
+    const guard = js.indexOf("if (window.XIKeys)");
+    const firstUse = js.indexOf("window.XIKeys.");
+    t(`${game} still boots when the shared keyboard does not load`,
+      guard > -1 && firstUse > guard,
+      guard === -1 ? "no guard at all" : `guard at ${guard}, first use at ${firstUse}`);
   }
 }
 

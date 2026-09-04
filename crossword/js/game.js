@@ -3765,11 +3765,21 @@
      No enter key here. Enter steps to the next clue on this board, and a
      keyboard key that moves you off the clue you are typing is not what
      anybody reaches for. */
-  window.XIKeys.markTouch();
-  window.XIKeys.build($("osk"), {
-    letter: function (ch) { typeLetter(ch); startTimer(); },
-    back: function () { backspace(); },
-  });
+  /* GUARDED, like every other reach into the shared layer from this file.
+     The suites serve this game on its own, with no shared/ to load, and in
+     production a script can be lost to a bad network — either way the game
+     must still be playable with a real keyboard rather than dying on boot.
+     Unguarded, this took the whole of game.js down with it the first time a
+     suite ran without the shared layer. */
+  if (window.XIKeys) {
+    window.XIKeys.markTouch();
+    window.XIKeys.build($("osk"), {
+      letter: function (ch) { typeLetter(ch); startTimer(); },
+      back: function () { backspace(); },
+    });
+  } else {
+    console.warn("shared/xi-keys.js did not load: no on-screen keyboard");
+  }
 
   /* ---------- Check (selected answer, -3 pts) ---------- */
   /* Which letters are wrong is what Check costs three points for, so it is
