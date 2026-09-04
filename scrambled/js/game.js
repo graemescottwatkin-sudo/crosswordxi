@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002b";
+var BUILD = "v002c";
 
 (function () {
   "use strict";
@@ -159,6 +159,30 @@ var BUILD = "v002b";
   function dateForNo(no) { return new Date(todayUTC() - ((state.todayNo || 0) - no) * DAY_MS); }
   function noForDate(ms) { return (state.todayNo || 0) - Math.round((todayUTC() - ms) / DAY_MS); }
 
+  /* WHICH DAYS ARE BEHIND THE LOCK. The window comes down with the board —
+     the server owns the rule and the page only draws it — and a signed-in
+     player has no locked days at all. Defaults to open when the page has not
+     been told: drawing padlocks over a rule the page has not heard of would
+     be inventing one. */
+  function freeDays() {
+    var n = state.board && state.board.freeArchiveDays;
+    return typeof n === "number" ? n : null;
+  }
+  function signedIn() {
+    return !!(window.XIChrome && window.XIChrome.account &&
+      window.XIChrome.account.user());
+  }
+  function locked(no) {
+    var free = freeDays();
+    if (free === null || signedIn()) return false;
+    /* Accounts have to be on offer for a lock to mean anything, which is the
+       same condition the server keeps. The chrome knows: it hides Sign in
+       when there is nowhere to sign in to. */
+    if (window.XIChrome && window.XIChrome.account &&
+        window.XIChrome.account.available && !window.XIChrome.account.available()) return false;
+    return (state.todayNo || 0) - no > free;
+  }
+
   function openArchive() {
     calMonth = null;
     renderCalendar();
@@ -214,6 +238,11 @@ var BUILD = "v002b";
         /* Today is the hero on the landing screen, not something missed — the
            day is not over. Marked so it can be seen and tapped. */
         cls += " today open";
+      } else if (locked(no)) {
+        /* Beyond the free window and nobody signed in. Shown rather than
+           hidden: what is behind the lock is the reason to register, and a
+           day that simply vanished would say nothing at all. */
+        cls += " locked";
       } else {
         cls += " open";
       }
@@ -245,6 +274,18 @@ var BUILD = "v002b";
     if (!cell || cell.classList.contains("none") || cell.classList.contains("empty")) return;
     var no = Number(cell.getAttribute("data-no"));
     if (!no) return;
+    /* A locked day is asked for, not fetched. The server would refuse it
+       anyway; asking here means the answer arrives without a round trip and
+       without the page having to unpick a refusal. */
+    if (cell.classList.contains("locked")) {
+      closeArchive();
+      if (window.XIChrome && window.XIChrome.archive) {
+        window.XIChrome.archive.askToRegister(
+          "The last " + freeDays() + " days are free for everyone. " +
+          "Sign in to play the whole archive.");
+      }
+      return;
+    }
     closeArchive();
     openBoard({ kind: "daily", no: no });
   });
@@ -1200,6 +1241,24 @@ var BUILD = "v002b";
     })
       .then(function (r) { return r.json(); })
       .then(function (board) {
+        /* A BOARD THAT NEEDS AN ACCOUNT IS NOT AN ERROR, it is an invitation.
+           Reached by following a link to an old board, since the calendar
+           marks the locked days and does not send you here. The sheet is
+           opened with the reason in it, and — because a page showing nothing
+           is a dead end — today's board is loaded behind it, so there is
+           something to play either way. */
+        if (board.needsAccount) {
+          if (window.XIChrome && window.XIChrome.archive) {
+            window.XIChrome.archive.askToRegister(board.error);
+          }
+          if (ask.kind !== "daily" || ask.no) {
+            if (window.XIChrome && window.XIChrome.permalink) {
+              window.XIChrome.permalink.clear("scrambled");
+            }
+            openBoard({ kind: "daily" });
+          }
+          return;
+        }
         if (board.error) { say(board.error, "bad"); return; }
         state.board = board;
         /* What day it is according to the SERVER, kept so the landing can

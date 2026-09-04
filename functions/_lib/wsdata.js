@@ -49,6 +49,30 @@ export async function firstScheduledDay(env, id) {
   return row && row.d ? row.d : null;
 }
 
+/* The most recent day this board WAS the daily, on or before today, or null
+   if it has never had one.
+ *
+ * Not firstScheduledDay. That one answers "may this be shown at all", where
+ * the first appearance is the right question — a board is a secret until its
+ * first day. This answers "how old is this to a player", and a board that ran
+ * again last Tuesday is a week old however long ago it debuted. Asking the
+ * first day for the age would lock a board that is currently in rotation.
+ *
+ * A board that has never been scheduled has no age. That is not a gap: the
+ * free-play catalogue is a catalogue, not a set of back issues, and it is not
+ * what the archive gate is about. */
+export async function lastScheduledDay(env, id, now) {
+  const today = utcDayKey(now);
+  if (!hasDB(env)) {
+    const first = sampleFirstDay(id);
+    return first && first <= today ? first : null;
+  }
+  const row = await env.DB.prepare(
+    `SELECT MAX(day) AS d FROM ws_schedule WHERE puzzle_id = ? AND day <= ?`)
+    .bind(id, today).first();
+  return row && row.d ? row.d : null;
+}
+
 export async function boardById(env, id) {
   if (!hasDB(env)) {
     return SAMPLE_PUZZLES.find((p) => p.id === id) || null;

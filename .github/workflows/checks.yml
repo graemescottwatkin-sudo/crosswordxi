@@ -151,6 +151,12 @@ jobs:
           # The boards come from D1, and the module is only the fallback. The
           # stub holds a board that exists nowhere else, so a handler quietly
           # still reading the module fails rather than passing on a match.
+          # The archive gate, across all four games: today and the week behind
+          # it are free, older boards ask the player to register. Four games
+          # name a board four different ways and this asserts they are four
+          # doors onto ONE rule — a gate three games keep is a gate with a way
+          # round it, and the way round is the one people find.
+          node tools/gating_test.mjs
           node scrambled/d1_test.mjs
           # The finals: 543 boards out of the daily rotation, opened to
           # everyone by a token that needs no authority BECAUSE it resolves

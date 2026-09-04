@@ -10,6 +10,7 @@ import {
   publicBoard, boardForNumber, scKey, json, bad, loadBoards, playableTokenNo,
 } from "../../_lib/sc-board.js";
 import { dailyNumber } from "../../_lib/daily.js";
+import { mayOpenArchive, archiveRefusal, FREE_ARCHIVE_DAYS } from "../../_lib/archive.js";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -28,13 +29,25 @@ export async function onRequestGet({ request, env }) {
      none of them. */
   if (playableTokenNo(scKey(no)) === false) return bad("That board is not out yet.", 403);
 
+  /* And how far back it is. A board number is a day here, the same as the
+     crossword's, so the distance is subtraction. The finals are not asked
+     this at all — they are a catalogue rather than a back issue, and they
+     come through /api/scrambled/iconic. */
+  if (!(await mayOpenArchive(request, env, today - no))) {
+    return json(archiveRefusal(today - no), 401);
+  }
+
   /* D1 when bound, the generated module when not. `source` rides in the
      payload so a live_check can refuse a run that quietly fell back. */
   const { boards, source } = await loadBoards(env);
   const board = boardForNumber(no, boards);
   if (!board) return bad("No board.", 404);
 
-  return json({ ...publicBoard(board, no), today, token: scKey(no), source });
+  return json({
+    ...publicBoard(board, no), today, token: scKey(no), source,
+    /* For the calendar's locked days; the rule stays here, the page draws it. */
+    freeArchiveDays: FREE_ARCHIVE_DAYS,
+  });
 }
 
 export async function onRequestHead(ctx) {

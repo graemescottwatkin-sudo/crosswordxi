@@ -177,3 +177,8 @@ a.home-choice{text-decoration:none;color:inherit}
    other line in it already uses it — this one was written to the wrong
    surface, and only looking at it showed that. */
 .home-choice.hero .hc-fine { color: var(--on-pitch-soft); opacity: .85; }
+
+/* A DAY BEHIND THE FREE WINDOW. Shown rather than hidden: what is behind the
+   lock is the reason to register, and a row that vanished would say nothing. */
+.arch-row.locked{opacity:.62}
+.arch-row.locked .arch-state::after{content:" 🔒"}

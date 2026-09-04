@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002e";
+  var BUILD = "v002f";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -344,8 +344,21 @@
   function api(path) {
     return fetch("/api/wordsearch/" + path, { headers: { "Accept": "application/json" } })
       .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
+        if (r.ok) return r.json();
+        /* THE SERVER'S OWN WORDS, AND ITS STATUS. This threw "HTTP 401" and
+           dropped the body, so a refusal that explains itself — an old board
+           asking the player to register — arrived as a number the page could
+           only report. Both are carried now: the status is what the page
+           branches on, the message is what a person reads. */
+        return r.json().then(function (j) {
+          var e = new Error((j && j.error) || ("HTTP " + r.status));
+          e.status = r.status;
+          throw e;
+        }, function () {
+          var e = new Error("HTTP " + r.status);
+          e.status = r.status;
+          throw e;
+        });
       });
   }
 
@@ -950,7 +963,18 @@
         (r.puzzle.category ? r.puzzle.category + " · free play, no run at stake" : "Free play, no run at stake");
       $("gameApp").classList.add("covered");
       $("kickCover").classList.remove("hidden");
-    }, function () { toast("Board unavailable"); });
+    }, function (err) {
+      /* A BOARD THAT NEEDS AN ACCOUNT IS NOT A FAILURE. The archive marks the
+         locked days and asks before fetching, so this is the other door: a
+         link to an old day. The sheet carries the reason and is a thing to
+         act on, where a toast is a thing to miss. */
+      if (err && err.status === 401 && window.XIChrome && window.XIChrome.archive) {
+        window.XIChrome.archive.askToRegister(err.message);
+        if (window.XIChrome.permalink) window.XIChrome.permalink.clear("wordsearch");
+        return;
+      }
+      toast("Board unavailable");
+    });
   }
   function uncover() {
     pending = null;
@@ -1127,6 +1151,22 @@
     return d.toLocaleDateString("en-GB",
       { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
   }
+  /* HOW FAR BACK THE ARCHIVE IS OPEN WITHOUT AN ACCOUNT. Carried down with
+     the daily — the server owns the rule, the page only draws it — and no
+     locks at all until a payload has said so: padlocks over a rule the page
+     has not heard of would be a rule this page invented. */
+  var freeArchiveDays = null;
+  function archiveLocked(day) {
+    if (freeArchiveDays == null || !serverDay) return false;
+    var chrome = window.XIChrome && window.XIChrome.account;
+    if (!chrome) return false;
+    if (chrome.user()) return false;
+    if (chrome.available && !chrome.available()) return false;
+    var back = Math.round(
+      (Date.parse(serverDay + "T00:00:00Z") - Date.parse(day + "T00:00:00Z")) / 86400000);
+    return back > freeArchiveDays;
+  }
+
   function renderArchive() {
     var list = $("archiveList");
     if (!list || !archiveDays) return;
@@ -1148,7 +1188,8 @@
       var li = document.createElement("li");
       var b = document.createElement("button");
       b.type = "button";
-      b.className = "arch-row" + (rec ? " done" : "");
+      b.className = "arch-row" + (rec ? " done" : "") +
+        (archiveLocked(e.day) ? " locked" : "");
       b.setAttribute("data-id", e.id);
       b.setAttribute("data-day", e.day);
       var day = document.createElement("span"); day.className = "arch-day";
@@ -1260,6 +1301,17 @@
       var day = row.getAttribute("data-day");
       var entry = (archiveDays || []).find(function (e) { return e.day === day; });
       if (!entry) return;
+      /* A locked day is asked for, not fetched. The server would refuse it
+         anyway, so the answer arrives without a round trip and without this
+         page having to unpick a refusal. */
+      if (row.classList.contains("locked")) {
+        if (window.XIChrome && window.XIChrome.archive) {
+          window.XIChrome.archive.askToRegister(
+            "The last " + freeArchiveDays + " days are free for everyone. " +
+            "Sign in to play the whole archive.");
+        }
+        return;
+      }
       /* Opened from the list: the address says which day, so it can be
          copied out of the bar or shared from the browser's own menu. */
       if (window.XIChrome && window.XIChrome.permalink) window.XIChrome.permalink.show("wordsearch", day);
@@ -1320,6 +1372,7 @@
        the browser. Neither response contains a schedule. */
     api("daily").then(function (r) {
       serverDay = r.day; window.__daily = r.puzzle;
+      if (typeof r.freeArchiveDays === "number") freeArchiveDays = r.freeArchiveDays;
       tryPermalink();
       /* The hero says whether there is one, where the mode tile used to. */
       setDailyState(r.puzzle ? "" : "No Daily scheduled today — the themes are open.");

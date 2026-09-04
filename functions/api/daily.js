@@ -10,6 +10,7 @@
 import { publicPuzzle, json, bad } from "../_lib/puzzle.js";
 import { getDailyPuzzle, makeToken } from "../_lib/db.js";
 import { dailyNumber, ANSWERS_AFTER_DAYS } from "../_lib/daily.js";
+import { mayOpenArchive, archiveRefusal, FREE_ARCHIVE_DAYS } from "../_lib/archive.js";
 
 export async function onRequestGet({ request, env }) {
   /* ?no= asks for an earlier board. Without it you get today's.
@@ -37,7 +38,16 @@ export async function onRequestGet({ request, env }) {
      than one that ignores a parameter it cannot read. */
   try { asked = Number(new URL(request.url).searchParams.get("no")); } catch (e) {}
   const wanted = Number.isFinite(asked) && asked > 0 ? Math.floor(asked) : dailyNumber();
-  const no = Math.min(Math.max(1, wanted), dailyNumber());
+  const today = dailyNumber();
+  const no = Math.min(Math.max(1, wanted), today);
+
+  /* HOW FAR BACK IS THIS. Board numbers ARE days here — #1 is the epoch and
+     each one after it is a day later — so the distance is subtraction, and no
+     date arithmetic is needed to ask the shared question. */
+  if (!(await mayOpenArchive(request, env, today - no))) {
+    return json(archiveRefusal(today - no), 401);
+  }
+
   const stored = await getDailyPuzzle(env, no);
   if (!stored) {
     return bad("No daily puzzle is stored for #" + no +
@@ -53,6 +63,12 @@ export async function onRequestGet({ request, env }) {
        changes. The server remains the only place the rule LIVES;
        the client only displays it. */
     answersAfter: ANSWERS_AFTER_DAYS,
+    /* How far back the archive is open without an account, sent for the same
+       reason as answersAfter and on the same terms: the calendar needs the
+       number to mark which days are locked, and a copy of it in game.js
+       would be a second seven to keep in step. The rule LIVES on the server
+       — the page only draws it. */
+    freeArchiveDays: FREE_ARCHIVE_DAYS,
     token: makeToken("daily", no),
     puzzle: publicPuzzle(stored.puzzle),
   });

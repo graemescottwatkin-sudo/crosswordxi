@@ -2731,3 +2731,10 @@ body.home-showing .tbar{visibility:hidden}
   position:absolute;right:6px;top:4px;background:none;border:1px solid var(--on-pitch);
   color:var(--on-pitch);border-radius:var(--r-xs);cursor:pointer;
 }
+
+/* A DAY BEHIND THE FREE WINDOW. Shown rather than hidden: what is behind the
+   lock is the reason to register, and a day that vanished from the grid would
+   say nothing at all. */
+.cal-cell.locked{border-style:dashed;border-color:var(--line);color:var(--ink-faint)}
+.cal-cell.locked::after{content:"🔒";font-size:8px;line-height:1;margin-top:2px;opacity:.75}
+.cal-key .k.locked{border-style:dashed;background:none}

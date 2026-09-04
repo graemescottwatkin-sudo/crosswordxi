@@ -678,3 +678,21 @@ body.touch.playing .entry {
 body.touch.playing #screenGame {
   padding-bottom: calc(var(--osk-block) + var(--osk-h) + 24px);
 }
+
+/* A DAY BEHIND THE LOCK. Shown rather than hidden: what is behind it is the
+   reason to register, and a day that simply vanished from the grid would say
+   nothing at all. Quieter than an open day and plainly not a button that
+   plays — the padlock is the whole message. */
+.cal-cell.locked {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--ink-faint);
+}
+.cal-cell.locked::after {
+  content: "🔒";
+  font-size: 8px;
+  line-height: 1;
+  margin-top: 2px;
+  opacity: .75;
+}
+.cal-key .k.locked { border-style: dashed; background: none; }

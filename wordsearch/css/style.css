@@ -217,3 +217,8 @@ a.home-choice{text-decoration:none;color:inherit}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* A DAY BEHIND THE FREE WINDOW. Shown rather than hidden: what is behind the
+   lock is the reason to register, and a row that vanished would say nothing. */
+.arch-row.locked{opacity:.62}
+.arch-row.locked .arch-state::after{content:" 🔒"}

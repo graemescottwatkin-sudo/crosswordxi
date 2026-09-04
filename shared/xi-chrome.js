@@ -366,8 +366,7 @@
         '<h3 id="xicAcctTitle">Your account</h3>' +
         '<div class="xic-sub">Playing as a guest on this device</div>' +
         '<div class="xic-out">' +
-          '<p class="xic-why">Create a free account to keep your form, streaks and results ' +
-            'across devices and across every XI game. Your progress on this device comes with you.</p>' +
+          '<p class="xic-why">' + WHY_DEFAULT + '</p>' +
           '<div class="xic-gsi"></div>' +
           '<p class="xic-small xic-unavail" hidden>Sign-in is not switched on for this site yet.</p>' +
           /* Two controls, not one prompt. The device that has the progress
@@ -402,7 +401,16 @@
           '</div>' +
           '<div class="xic-small xic-msg" aria-live="polite"></div>' +
         '</div>' +
-        '<p class="xic-small">Signing in is optional. Every game works without an account.</p>' +
+        /* TRUE AFTER THE ARCHIVE GATE, not before it. This read "Signing in
+           is optional. Every game works without an account," which stopped
+           being the whole truth the day the archive beyond a week started
+           asking for one. Every game still PLAYS without an account — today
+           and the week behind it — and the line now says what an account
+           adds rather than implying it adds nothing. The window itself is not
+           named here: the number lives on the server and the page that draws
+           it is told, so a copy in the chrome would be a second window. */
+        '<p class="xic-small">Signing in is optional &mdash; every game plays without an ' +
+          'account. An account opens the older archive and keeps your results across devices.</p>' +
         '<button type="button" class="xic-btn outline xic-sheet-close" id="xicAcctClose">Close</button>' +
       '</div>';
     sheet.addEventListener("click", function (ev) { if (ev.target === sheet) closeSheet(); });
@@ -417,8 +425,23 @@
     document.body.appendChild(sheet);
   }
 
+  /* WHY THE SHEET IS OPEN. Usually nobody has asked — somebody pressed
+     Account — and this is the standing case for having one. When something
+     sent them here, that reason goes first and this follows it, so the line
+     reads as an answer rather than as an advert. Restored on every open, or
+     a reason given once would still be on screen a week later. */
+  var WHY_DEFAULT = "Create a free account to keep your form, streaks and " +
+    "results across devices and across every XI game. Your progress on this " +
+    "device comes with you.";
+  function setWhy(reason) {
+    if (!sheet) return;
+    var el = sheet.querySelector(".xic-why");
+    if (el) el.textContent = reason ? reason + " " + WHY_DEFAULT : WHY_DEFAULT;
+  }
+
   function openSheet(from) {
     if (!sheet) buildSheet();
+    setWhy(null);
     sheetOpener = from || null;
     close();
     closePop();
@@ -902,6 +925,25 @@
      which is how a game reports what it carried over after a sign-in. */
   window.XIChrome = { init: init, squad: SQUAD, pages: PAGES, close: close,
     formChips: formChips, formBand: band, FORM_LENGTH: FORM_LENGTH,
+    /* A BOARD THE PLAYER HAS TO REGISTER FOR, asked for once and answered the
+       same way in every game. The archive is open for today and the week
+       behind it; older boards need an account — see functions/_lib/archive.js,
+       which is where the rule lives and the only place it is enforced.
+
+       The sheet rather than a toast: this is a thing to DO, not a thing to
+       notice, and the sheet is where signing in happens. The reason goes in
+       the sheet's own message line so it reads as an invitation rather than
+       an error somebody has to interpret. */
+    archive: {
+      askToRegister: function (reason) {
+        openSheet();
+        /* Into .xic-why, at the top, and NOT through say(): that writes to a
+           line inside the signed-in half of the sheet, which is hidden for
+           precisely the people this is shown to. The reason was being set on
+           an element nobody could see. */
+        setWhy(reason || "Sign in to play the full archive.");
+      },
+    },
     account: { open: openSheet, close: closeSheet, user: function () { return acct.user; },
                known: function () { return acct.known; }, available: function () { return acct.accounts; },
                say: say, deviceCode: deviceCode },

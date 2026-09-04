@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001l";
+var BUILD = "v001m";
 
 (function () {
   "use strict";
@@ -131,7 +131,17 @@ var BUILD = "v001l";
   /* ---- the landing ----------------------------------------------------- */
   function api(path) {
     return fetch("/api/hilo/" + path, { headers: { Accept: "application/json" } })
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || String(r.status)); return j; }); });
+      .then(function (r) {
+        return r.json().then(function (j) {
+          if (r.ok) return j;
+          /* The status rides with the message: the page branches on the code
+             and shows the sentence, rather than matching on wording that will
+             change the first time somebody edits it. */
+          var e = new Error(j.error || String(r.status));
+          e.status = r.status;
+          throw e;
+        });
+      });
   }
   function renderForm() {
     var el = $("homeRun"), title = $("homeRunTitle");
@@ -265,6 +275,22 @@ var BUILD = "v001l";
     if (isNaN(d.getTime())) return day;
     return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
   }
+  /* HOW FAR BACK THE ARCHIVE IS OPEN WITHOUT AN ACCOUNT. Carried down with
+     the board — the server owns the rule, the page only draws it — and no
+     locks at all until a payload has said so: drawing padlocks over a rule
+     the page has not heard of would be inventing one. */
+  var freeArchiveDays = null;
+  function archiveLocked(day) {
+    if (freeArchiveDays == null || !serverDay) return false;
+    var chrome = window.XIChrome && window.XIChrome.account;
+    if (!chrome) return false;
+    if (chrome.user()) return false;
+    if (chrome.available && !chrome.available()) return false;
+    var back = Math.round(
+      (Date.parse(serverDay + "T00:00:00Z") - Date.parse(day + "T00:00:00Z")) / 86400000);
+    return back > freeArchiveDays;
+  }
+
   function renderArchive() {
     var list = $("archiveList");
     if (!list || !archiveDays) return;
@@ -281,7 +307,7 @@ var BUILD = "v001l";
       var rec = played[e.day]; if (!rec) left++;
       var li = document.createElement("li");
       var b = document.createElement("button"); b.type = "button";
-      b.className = "arch-row" + (rec ? " done" : "");
+      b.className = "arch-row" + (rec ? " done" : "") + (archiveLocked(e.day) ? " locked" : "");
       b.setAttribute("data-day", e.day);
       var day = document.createElement("span"); day.className = "arch-day"; day.textContent = dayLabel(e.day);
       var theme = document.createElement("span"); theme.className = "arch-theme"; theme.textContent = e.category;
@@ -317,6 +343,7 @@ var BUILD = "v001l";
   }
   function openDay(day, kicker) {
     api("daily?day=" + encodeURIComponent(day)).then(function (r) {
+      if (typeof r.freeArchiveDays === "number") freeArchiveDays = r.freeArchiveDays;
       if (!r.board) { toast("No board that day"); return; }
       coverBoard(r.board, day === serverDay ? "daily" : "free", { day: day === serverDay ? day : null, kicker: kicker });
       /* The address follows the board, and today's keeps the plain one. */
@@ -324,7 +351,18 @@ var BUILD = "v001l";
         if (day === serverDay) window.XIChrome.permalink.clear("hilo");
         else window.XIChrome.permalink.show("hilo", day);
       }
-    }, function () { toast("Board unavailable"); });
+    }, function (err) {
+      /* A BOARD THAT NEEDS AN ACCOUNT IS NOT A FAILURE. Reached by following
+         a link to an old day, since the archive marks the locked ones and
+         does not send you here. The sheet carries the reason and is a thing
+         to act on, where a toast is a thing to miss. */
+      if (err && err.status === 401 && window.XIChrome && window.XIChrome.archive) {
+        window.XIChrome.archive.askToRegister(err.message);
+        if (window.XIChrome.permalink) window.XIChrome.permalink.clear("hilo");
+        return;
+      }
+      toast("Board unavailable");
+    });
   }
   function openBoard(id, kicker) {
     api("board?id=" + encodeURIComponent(id)).then(function (r) {
@@ -645,6 +683,14 @@ var BUILD = "v001l";
       var row = ev.target.closest ? ev.target.closest(".arch-row") : null;
       if (!row) return;
       var day = row.getAttribute("data-day");
+      if (row.classList.contains("locked")) {
+        if (window.XIChrome && window.XIChrome.archive) {
+          window.XIChrome.archive.askToRegister(
+            "The last " + freeArchiveDays + " days are free for everyone. " +
+            "Sign in to play the whole archive.");
+        }
+        return;
+      }
       openDay(day, "PREVIOUS PUZZLE " + DOT + " " + dayLabel(day).toUpperCase());
     };
     $("kickBtn").onclick = kickOff;

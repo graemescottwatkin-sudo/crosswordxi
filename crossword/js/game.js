@@ -192,6 +192,35 @@
       today() - no > answersAfterDays;
   }
 
+  /* HOW FAR BACK THE ARCHIVE IS OPEN WITHOUT AN ACCOUNT. Stashed and read the
+     same way as the answers window above, and for the same reasons: the rule
+     lives on the server, this only decides whether to draw a padlock, and
+     until a payload has ever been seen nothing is drawn — showing no locks is
+     honest, guessing at them is not.
+
+     A DIFFERENT SEVEN FROM THE ONE ABOVE. They agree today and they are not
+     the same decision: one says when answers may be published, this says when
+     a board starts needing an account. Kept apart here exactly as they are
+     kept apart on the server. */
+  var FREE_ARCHIVE_KEY = "fcw.freeArchiveDays";
+  var freeArchiveDays = (function () {
+    try {
+      var v = parseInt(localStorage.getItem(FREE_ARCHIVE_KEY), 10);
+      return isNaN(v) ? null : v;
+    } catch (e) { return null; }
+  })();
+  function archiveLocked(no) {
+    if (freeArchiveDays == null || typeof no !== "number") return false;
+    var chrome = window.XIChrome && window.XIChrome.account;
+    if (!chrome) return false;
+    /* Signed in: nothing is locked. And where accounts are not on offer at
+       all there is nothing to sign in to, which is the same condition the
+       server keeps — a lock with no key is worse than no lock. */
+    if (chrome.user()) return false;
+    if (chrome.available && !chrome.available()) return false;
+    return today() - no > freeArchiveDays;
+  }
+
   function adoptServerBoard(no) {
     board = Object.freeze({
       kind: "daily", no: no, theme: null,
@@ -257,7 +286,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002t";
+  var BUILD = "v002u";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -1044,6 +1073,11 @@
         answersAfterDays = res.answersAfter;
         try { localStorage.setItem(ANSWERS_AFTER_KEY, String(res.answersAfter)); } catch (e) {}
       }
+      /* The archive window, carried and kept the same way. */
+      if (res.mode === "daily" && typeof res.freeArchiveDays === "number") {
+        freeArchiveDays = res.freeArchiveDays;
+        try { localStorage.setItem(FREE_ARCHIVE_KEY, String(res.freeArchiveDays)); } catch (e) {}
+      }
       if (res.mode === "daily" && res.dailyNo && res.dailyNo !== board.no) {
         /* Different number back means the server clamped ours — a clock
            ahead of the host's, which every UK summer night is between
@@ -1132,6 +1166,18 @@
       finishBuild(restore);
     }).catch(function (err) {
       showLoading(false);
+      /* A BOARD THAT NEEDS AN ACCOUNT IS NOT A LOAD FAILURE. The calendar
+         marks the locked days and asks before fetching, so this is the other
+         door: a link to an old board, or a saved board that has aged past the
+         window while it sat in this browser. The sheet carries the reason and
+         is the thing to act on; showLoadError would put "could not get the
+         puzzle" on screen, which is both wrong and a dead end. */
+      if (err && err.status === 401 && window.XIChrome && window.XIChrome.archive) {
+        window.XIChrome.archive.askToRegister(err.message);
+        if (window.XIChrome.permalink) window.XIChrome.permalink.clear("crossword");
+        showHome();
+        return;
+      }
       showLoadError(err);
     });
   }
@@ -7173,6 +7219,10 @@
            so it can be seen and tapped, but not counted as something missed —
            the day is not over. */
         cls += " today open";
+      } else if (archiveLocked(no)) {
+        /* Behind the free window and nobody signed in. Shown rather than
+           hidden: what is behind the lock is the reason to register. */
+        cls += " locked";
       } else {
         cls += " open";
       }
@@ -7211,6 +7261,17 @@
     var no = Number(cell.getAttribute("data-no"));
     if (!no) return;
     $("archiveSheet").classList.remove("show");
+    /* A locked day is asked for rather than fetched: the server would refuse
+       it anyway, so the answer arrives without a round trip and without this
+       page having to unpick a refusal mid-boot. */
+    if (cell.classList.contains("locked")) {
+      if (window.XIChrome && window.XIChrome.archive) {
+        window.XIChrome.archive.askToRegister(
+          "The last " + freeArchiveDays + " days are free for everyone. " +
+          "Sign in to play the whole archive.");
+      }
+      return;
+    }
     chooseMode("daily", { kind: "daily", no: no});
   });
 
