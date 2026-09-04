@@ -28,7 +28,12 @@ const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`);
 /* Eighteen assertions run with --expect; without it the tag is reported and
    not judged, so seventeen is the honest floor. Set to the exact count it
    would flap the first time somebody ran this without --expect. */
-const MIN_ASSERTIONS = 17;
+/* TWENTY-EIGHT run with --expect; the tag assertion is the one that
+   legitimately skips without it, so twenty-seven is the honest floor. It said
+   seventeen for a run of twenty-six — eleven below, which could not refuse a
+   block going quiet, and that is the floor's whole job. Reviewed on 4 Sep when
+   two assertions were added, rather than raised by reflex. */
+const MIN_ASSERTIONS = 27;
 let finished = false;
 const done = () => {
   if (!finished) {
@@ -77,6 +82,22 @@ const board = await daily.json();
 t("the daily endpoint answers", daily.status === 200, String(daily.status));
 t("it serves a board with eleven slots", (board.slots || []).length === 11,
   `board #${board.no}, ${(board.slots || []).length} slots`);
+
+/* AND THE SLOTS CARRY THE LETTERS. The same blind spot Vowels XI fell into on
+   its launch day: the bank in production had been imported before the second
+   cypher existed, so eleven slots arrived with nothing on them and a check
+   reading "a board with eleven slots" passed it. Eleven of anything satisfied
+   that. Added here at the same time because this game would have failed the
+   same way for the same reason. */
+t("and every slot carries its scramble and its enumeration",
+  (board.slots || []).length > 0 &&
+  (board.slots || []).every((s) => typeof s.scramble === "string" && s.scramble.length > 0 &&
+    Array.isArray(s.len) && s.len.length > 0),
+  (board.slots || []).filter((s) => s.scramble).length + " of " +
+    (board.slots || []).length + " — e.g. " + ((board.slots || [])[0] || {}).scramble);
+t("and no slot carries the other cypher's blanks",
+  (board.slots || []).every((s) => s.cy === undefined),
+  "one cypher per payload, never both");
 t("the board says what its hint sells", !!board.hintLabel, board.hintLabel);
 
 console.log("\nWhat the browser is NOT given");

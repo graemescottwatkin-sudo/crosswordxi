@@ -25,7 +25,7 @@ const t = (n, ok, d) => {
 };
 const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`); };
 
-/* TWENTY-SEVEN run with --expect. Without it the tag is reported rather than
+/* THIRTY run with --expect. Without it the tag is reported rather than
    judged, which is the one assertion that can legitimately skip, so twenty-six
    is the honest floor — the exact count would flap the first time somebody ran
    this without --expect.
@@ -33,7 +33,7 @@ const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`);
    seventeen, which was that file's honest floor and is not this one's. A floor
    five below the run cannot refuse a block that goes quiet, which is the whole
    job it has. */
-const MIN_ASSERTIONS = 26;
+const MIN_ASSERTIONS = 29;
 let finished = false;
 const done = () => {
   if (!finished) {
@@ -94,6 +94,29 @@ const board = await daily.json();
 t("the daily endpoint answers", daily.status === 200, String(daily.status));
 t("it serves a board with eleven slots", (board.slots || []).length === 11,
   `board #${board.no}, ${(board.slots || []).length} slots`);
+
+/* AND THE SLOTS CARRY THE LETTERS THIS GAME IS MADE OF.
+ *
+ * This game launched serving eleven slots with nothing on them. The bank in
+ * production had been imported before the consonant cypher existed, so not one
+ * board carried the blanked name — the API said `cypher: "consonants"`, the
+ * eleven slots were there, and every tile was empty. This file passed it.
+ *
+ * "A board with eleven slots" was a check whose name was broader than its
+ * behaviour: eleven of anything satisfied it. The letters ARE the game. */
+t("and every slot carries its blanked name, which is the game",
+  (board.slots || []).length > 0 && (board.slots || []).every((s) => typeof s.cy === "string" && s.cy.length > 0),
+  (board.slots || []).filter((s) => s.cy).length + " of " +
+    (board.slots || []).length + " — e.g. " + ((board.slots || [])[0] || {}).cy);
+/* And not the OTHER game's cypher. Each mode's difficulty is the other's
+   giveaway: a scramble beside the blanks hands over the enumeration. */
+t("and no slot carries the anagram's scramble or enumeration",
+  (board.slots || []).every((s) => s.scramble === undefined && s.len === undefined),
+  "one cypher per payload, never both");
+t("a blanked name is the name with vowels gone, not a mask of the same width",
+  (board.slots || []).some((s) => /[A-Z]/.test(s.cy || "")) &&
+  (board.slots || []).every((s) => /^[A-Z_'\- ]+$/.test(s.cy || "")),
+  "consonants kept, vowels underscored");
 t("the board says what its hint sells", !!board.hintLabel, board.hintLabel);
 
 console.log("\nWhat the browser is NOT given");
