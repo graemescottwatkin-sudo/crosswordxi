@@ -12,6 +12,29 @@
        different amounts of real time. Eleven anagrams is quicker than a
        crossword and slower than a word search. */
     MATCH_CLOCK_REAL_SECONDS: 900,
+
+    /* THE ANAGRAM CLOCK, AND THE THING MATCH_CLOCK IS SET BACK TO.
+       MATCH_CLOCK_REAL_SECONDS is the clock of the board IN PLAY: scoring.js
+       reads it, and the page assigns it every time a board opens. That means
+       it cannot also be the anagram's constant — written over once by a
+       consonant board it would never come back, and since a board can now be
+       opened without reloading the page, the next anagram board would be
+       played on the consonant clock and scored on it. Two names, so one of
+       them can be current and the other can be true. */
+    ANAGRAM_CLOCK_REAL_SECONDS: 900,
+
+    /* THE CONSONANT BOARD'S CLOCK. Ninety match minutes in five real ones:
+       the same board and the same curve, read rather than unscrambled, and
+       reading eleven names is quicker than solving eleven anagrams. Applied
+       over MATCH_CLOCK_REAL_SECONDS at boot, when the payload says which
+       cypher it gave, so scoring.js still takes the number from one place. */
+    CONSONANT_CLOCK_REAL_SECONDS: 300,
+
+    /* Filling in one blank, priced at the anagram's revealed letter. A match
+       minute buys the same points in both games, and the family rule is that
+       a point costs the same everywhere; the shorter clock already makes help
+       dearer in real seconds without charging more for it. */
+    REVEAL_VOWEL_COST: 2,
     PAUSE_ON_TAB_HIDDEN: true,
 
     /* --- The bench: help a player asks for and pays for ---------------

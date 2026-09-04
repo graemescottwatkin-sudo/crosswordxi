@@ -8,6 +8,7 @@
 */
 import {
   publicBoard, boardForNumber, scKey, json, bad, loadBoards, playableTokenNo,
+  consonantsPublic,
 } from "../../_lib/sc-board.js";
 import { dailyNumber } from "../../_lib/daily.js";
 import { mayOpenArchive, archiveRefusal, FREE_ARCHIVE_DAYS } from "../../_lib/archive.js";
@@ -40,11 +41,25 @@ export async function onRequestGet({ request, env }) {
   /* D1 when bound, the generated module when not. `source` rides in the
      payload so a live_check can refuse a run that quietly fell back. */
   const { boards, source } = await loadBoards(env);
-  const board = boardForNumber(no, boards);
+  /* THE CONSONANT DAILY, ASKED FOR WITH ?cy=1 AND NOT PUBLIC YET.
+     While consonantsPublic() is false it is served only to a signed-in admin,
+     re-checked against the database on THIS request — a query string is not
+     authority. The refusal is the 403 an unreleased board already gets, and
+     says the same thing, because that is what it is. */
+  let mode = null;
+  if (url.searchParams.get("cy") === "1") {
+    if (!consonantsPublic()) {
+      const { isAdmin } = await import("../../_lib/auth.js");
+      if (!(await isAdmin(request, env))) return bad("That board is not out yet.", 403);
+    }
+    mode = "consonants";
+  }
+
+  const board = boardForNumber(no, boards, mode);
   if (!board) return bad("No board.", 404);
 
   return json({
-    ...publicBoard(board, no), today, token: scKey(no), source,
+    ...publicBoard(board, no, scKey(no, mode)), today, token: scKey(no, mode), source,
     /* For the calendar's locked days; the rule stays here, the page draws it. */
     freeArchiveDays: FREE_ARCHIVE_DAYS,
   });

@@ -157,6 +157,12 @@ jobs:
           # doors onto ONE rule — a gate three games keep is a gate with a way
           # round it, and the way round is the one people find.
           node tools/gating_test.mjs
+          # The consonant cypher: the same stored board shown a second way,
+          # hidden behind CONSONANTS_PUBLIC while it is unfinished. It PLAYS
+          # the page as well as testing the server, because the payload sends
+          # different fields in that cypher and a suite that only asked the
+          # server was green while eight client sites threw.
+          node scrambled/consonant_test.mjs
           node scrambled/d1_test.mjs
           # The finals: 543 boards out of the daily rotation, opened to
           # everyone by a token that needs no authority BECAUSE it resolves

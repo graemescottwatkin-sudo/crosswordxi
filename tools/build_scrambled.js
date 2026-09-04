@@ -400,6 +400,12 @@ export function gate(src, shape) {
   const problems = [];
   const xi = Array.isArray(src.xi) ? src.xi : [];
 
+  /* THE SECOND CYPHER IS GATED WITH THE FIRST. A board is stored once and
+     shown two ways, so a board that cannot be shown both ways is not a
+     board. Catching it here rather than at serve time is the whole reason
+     the cypher is derived at build. */
+  problems.push(...consonantProblems(xi));
+
   if (shape.error) problems.push(shape.error);
   if (xi.length !== 11) {
     problems.push(`${xi.length} players — an XI has eleven, and that is the whole product`);
@@ -606,6 +612,95 @@ export function gate(src, shape) {
 
 /* Where a player stood THAT NIGHT, from the league's formation record — a
    wider set than the Daily's usual roles, and only ever these. */
+
+/* ---- THE CONSONANT CYPHER -------------------------------------------------
+ * A second way to show the same board. The anagram shuffles a name's letters;
+ * this leaves every letter where it is and blanks the vowels. SCHMEICHEL
+ * reads SCHM__CH_L, O'SHEA reads _'SH__, VAN DIJK reads V_N D_JK. Y stays,
+ * and so do spaces, apostrophes and hyphens.
+ *
+ * WHY THE BLANK RATHER THAN A BARE CONSONANT STRING. SH anchors to nothing.
+ * _'SH__ anchors to a length and a shape, so a name that comes to mind is
+ * confirmed or rejected at a glance instead of dithered over. Measured across
+ * the bank, 94% of tiles blank to a form no other surname in the bank shares:
+ * that is what makes the tile an anchor rather than a riddle.
+ *
+ * DERIVED HERE AND STORED, for the two reasons the scramble is: every player
+ * must see the same board, and the gate must run before anything is stored.
+ */
+export const CY_VOWELS = /[AEIOU]/g;
+
+export function blankVowels(name) {
+  return String(name || "").toUpperCase().trim().replace(/\s+/g, " ").replace(CY_VOWELS, "_");
+}
+
+/* The cypher for a WHOLE ELEVEN, because two of its rules cannot be applied to
+   a name on its own.
+
+   A NAME WITH NO VOWELS blanks to itself: BLYTH, HYND, PRYTZ and TYLL, four in
+   the bank. It cannot be hidden, and dropping the player would break the
+   eleven, so the tile is marked `presolved` and starts on the team sheet. It
+   counts as solved and never as given: the player was not helped, the cypher
+   simply had nothing to take away.
+
+   TWO NAMES THAT BLANK ALIKE cannot be told apart — ANDERSON and ANDERSEN are
+   both _ND_RS_N. Every side with a fuller display name widens to it, which is
+   the answer the letter-bag rule already gives the anagram. One case in the
+   951 boards that build today. */
+export function consonantCyphers(xi) {
+  const slots = (xi || []).map((p) => {
+    const name = String(p.name || "").toUpperCase();
+    const display = String(p.display || "").toUpperCase();
+    const wider = display && normalise(display) !== normalise(name) ? display : null;
+    return { wider, basis: name, cyOf: "name" };
+  });
+
+  const groups = new Map();
+  for (const s of slots) {
+    const key = blankVowels(s.basis);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  }
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    for (const s of group) {
+      if (!s.wider) continue;
+      s.basis = s.wider;
+      s.cyOf = "display";
+    }
+  }
+
+  return slots.map((s) => {
+    const cy = blankVowels(s.basis);
+    const flat = String(s.basis).toUpperCase().trim().replace(/\s+/g, " ");
+    return { cy, cyOf: s.cyOf, ...(cy === flat ? { presolved: true } : {}) };
+  });
+}
+
+/* What the gate refuses. Everything else about this cypher is derived, so
+   there are only two ways for a board to be unbuildable in it. */
+export function consonantProblems(xi) {
+  const problems = [];
+  const list = Array.isArray(xi) ? xi : [];
+  const cys = consonantCyphers(list);
+  const seen = new Map();
+  cys.forEach((c, i) => {
+    const where = `player ${i + 1} ("${list[i].name}")`;
+    /* No consonants at all is a tile of blanks: nothing to hold on to, and no
+       widening fixes it, because the forename is not the answer. */
+    if (!normalise(list[i].name).replace(CY_VOWELS, "").length) {
+      problems.push(`${where}: no consonants — its consonant tile would be blanks`);
+    }
+    if (seen.has(c.cy)) {
+      problems.push(
+        `${where}: blanks to ${c.cy}, the same as player ${seen.get(c.cy) + 1} ` +
+        `("${list[seen.get(c.cy)].name}") — two consonant tiles cannot be told ` +
+        `apart. Author both with forenames.`);
+    } else seen.set(c.cy, i);
+  });
+  return problems;
+}
+
 export const LAST2_POS = ["GK", "LB", "CB", "RB", "LWB", "RWB", "CM", "DM", "AM", "LM", "RM", "LW", "RW", "ST"];
 
 /* ---- Build ---------------------------------------------------------------- */
@@ -640,6 +735,10 @@ export function build(src, file, pkg) {
   const bands = shape.bands;
   const slotBand = [];
   bands.forEach((b) => { for (let j = 0; j < b.size; j++) slotBand.push({ band: b.id, i: j, of: b.size }); });
+
+  /* Derived for the eleven at once: a collision is a fact about the board,
+     not about a name, so it cannot be decided a slot at a time. */
+  const cyphers = consonantCyphers(src.xi);
 
   const slots = src.xi.map((p, i) => {
     const letters = normalise(p.name);
@@ -712,6 +811,11 @@ export function build(src, file, pkg) {
       difficulty,
       target,
       len: enumerationOf(p.name),
+      /* THE CONSONANT CYPHER, beside the scramble rather than instead of it:
+         one stored row, two ways to show the board. `cyOf` says which name it
+         was built from, because a collision widens the tile to the full name
+         and a bought blank has to be filled from the string on screen. */
+      ...cyphers[i],
     };
   });
 

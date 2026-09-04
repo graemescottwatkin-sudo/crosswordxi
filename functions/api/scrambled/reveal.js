@@ -65,6 +65,25 @@ export async function onRequestPost({ request, env }) {
   /* Below here a slot is the subject of the purchase, not a label on it. */
   if (!slot) return bad("Unknown slot.", 404);
 
+  if (kind === "vowel") {
+    /* THE CONSONANT BOARD'S CHEAP HELP, which the anagram has no use for. Its
+       tile is a row of blanks, so filling one in is what a revealed letter is
+       to the anagram, at the same price.
+
+       FILLED FROM THE STRING THE PLAYER IS LOOKING AT. Where a collision
+       widened the tile to the full name, the blanks are the full name's;
+       indexing into the surname would return a letter from another word. */
+    const basis = String((slot.cyOf === "display" ? slot.display : slot.name) || "")
+      .toUpperCase().trim().replace(/\s+/g, " ");
+    const spots = [];
+    for (let i = 0; i < basis.length; i++) if ("AEIOU".includes(basis[i])) spots.push(i);
+    const had = Math.max(0, Math.min(spots.length, Number(body.known) || 0));
+    /* Never the last one. A vowel reveal that completes the name is a name
+       reveal at the cheaper price — the rule the letter reveal already keeps. */
+    if (had >= spots.length - 1) return json({ kind, slotId: slot.id, index: null, letter: null });
+    return json({ kind, slotId: slot.id, index: spots[had], letter: basis[spots[had]] });
+  }
+
   if (kind === "letter") {
     const letters = normalise(slot.name);
     const known = Math.max(0, Math.min(letters.length, Number(body.known) || 0));

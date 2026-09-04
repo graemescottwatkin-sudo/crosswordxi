@@ -98,7 +98,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           8
-        ]
+        ],
+        "cy": "P_TR_C__",
+        "cyOf": "name"
       },
       {
         "id": "s2",
@@ -215,7 +217,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "S__R_S",
+        "cyOf": "name"
       },
       {
         "id": "s3",
@@ -297,7 +301,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "C_LL_NS",
+        "cyOf": "name"
       },
       {
         "id": "s4",
@@ -379,7 +385,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           8
-        ]
+        ],
+        "cy": "_V_N_V_C",
+        "cyOf": "name"
       },
       {
         "id": "s5",
@@ -440,7 +448,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "C_L_M_N",
+        "cyOf": "name"
       },
       {
         "id": "s6",
@@ -571,7 +581,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "H__L_TT",
+        "cyOf": "name"
       },
       {
         "id": "s7",
@@ -632,7 +644,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "J_N_LT",
+        "cyOf": "name"
       },
       {
         "id": "s8",
@@ -700,7 +714,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "K__N_",
+        "cyOf": "name"
       },
       {
         "id": "s9",
@@ -782,7 +798,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "B_RL_Y",
+        "cyOf": "name"
       },
       {
         "id": "s10",
@@ -913,7 +931,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "H_RTS_N",
+        "cyOf": "name"
       },
       {
         "id": "s11",
@@ -1058,7 +1078,9 @@ export const SC_BOARDS = [
         "target": 0,
         "len": [
           4
-        ]
+        ],
+        "cy": "_NGS",
+        "cyOf": "name"
       }
     ]
   },
@@ -1217,7 +1239,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           8
-        ]
+        ],
+        "cy": "M_RT_N_Z",
+        "cyOf": "name"
       },
       {
         "id": "s2",
@@ -1306,7 +1330,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "WH_TL_W",
+        "cyOf": "name"
       },
       {
         "id": "s3",
@@ -1437,7 +1463,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           8
-        ]
+        ],
+        "cy": "L_N_GH_N",
+        "cyOf": "name"
       },
       {
         "id": "s4",
@@ -1498,7 +1526,9 @@ export const SC_BOARDS = [
         "target": 5,
         "len": [
           9
-        ]
+        ],
+        "cy": "SCH_NDL_R",
+        "cyOf": "name"
       },
       {
         "id": "s5",
@@ -1566,7 +1596,9 @@ export const SC_BOARDS = [
         "target": 0,
         "len": [
           4
-        ]
+        ],
+        "cy": "C_RR",
+        "cyOf": "name"
       },
       {
         "id": "s6",
@@ -1655,7 +1687,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "FL_M_N_",
+        "cyOf": "name"
       },
       {
         "id": "s7",
@@ -1751,7 +1785,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "SP__D",
+        "cyOf": "name"
       },
       {
         "id": "s8",
@@ -1833,7 +1869,9 @@ export const SC_BOARDS = [
         "target": 0,
         "len": [
           4
-        ]
+        ],
+        "cy": "_Z_L",
+        "cyOf": "name"
       },
       {
         "id": "s9",
@@ -1943,7 +1981,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "M_RPHY",
+        "cyOf": "name"
       },
       {
         "id": "s10",
@@ -2067,7 +2107,9 @@ export const SC_BOARDS = [
         "target": 0,
         "len": [
           4
-        ]
+        ],
+        "cy": "S_H_",
+        "cyOf": "name"
       },
       {
         "id": "s11",
@@ -2275,7 +2317,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "P_NN_NT",
+        "cyOf": "name"
       }
     ]
   },
@@ -2399,7 +2443,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "FR__D_L",
+        "cyOf": "name"
       },
       {
         "id": "s2",
@@ -2453,7 +2499,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "B__N_S",
+        "cyOf": "name"
       },
       {
         "id": "s3",
@@ -2577,7 +2625,9 @@ export const SC_BOARDS = [
         "target": 0,
         "len": [
           4
-        ]
+        ],
+        "cy": "C__K",
+        "cyOf": "name"
       },
       {
         "id": "s4",
@@ -2687,7 +2737,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "SC_M_C_",
+        "cyOf": "name"
       },
       {
         "id": "s5",
@@ -2784,7 +2836,9 @@ export const SC_BOARDS = [
         "len": [
           8,
           5
-        ]
+        ],
+        "cy": "M__TL_ND-N_L_S",
+        "cyOf": "name"
       },
       {
         "id": "s6",
@@ -2859,7 +2913,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "_L_NS_",
+        "cyOf": "name"
       },
       {
         "id": "s7",
@@ -2976,7 +3032,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           8
-        ]
+        ],
+        "cy": "H__L_H_N",
+        "cyOf": "name"
       },
       {
         "id": "s8",
@@ -3135,7 +3193,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "J_N_S",
+        "cyOf": "name"
       },
       {
         "id": "s9",
@@ -3259,7 +3319,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "M_RT_",
+        "cyOf": "name"
       },
       {
         "id": "s10",
@@ -3369,7 +3431,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "WR_GHT",
+        "cyOf": "name"
       },
       {
         "id": "s11",
@@ -3514,7 +3578,9 @@ export const SC_BOARDS = [
         "target": 5,
         "len": [
           9
-        ]
+        ],
+        "cy": "SN_DGR_SS",
+        "cyOf": "name"
       }
     ]
   },
@@ -3596,7 +3662,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "SP_R_N_",
+        "cyOf": "name"
       },
       {
         "id": "s2",
@@ -3699,7 +3767,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           6
-        ]
+        ],
+        "cy": "_L_NS_",
+        "cyOf": "name"
       },
       {
         "id": "s3",
@@ -3802,7 +3872,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "P__T_RS",
+        "cyOf": "name"
       },
       {
         "id": "s4",
@@ -3871,7 +3943,9 @@ export const SC_BOARDS = [
         "len": [
           3,
           4
-        ]
+        ],
+        "cy": "V_N D_JK",
+        "cyOf": "name"
       },
       {
         "id": "s5",
@@ -3967,7 +4041,9 @@ export const SC_BOARDS = [
         "target": 3,
         "len": [
           7
-        ]
+        ],
+        "cy": "P_ST_N_",
+        "cyOf": "name"
       },
       {
         "id": "s6",
@@ -4042,7 +4118,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "P_GB_",
+        "cyOf": "name"
       },
       {
         "id": "s7",
@@ -4138,7 +4216,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "C_NH_",
+        "cyOf": "name"
       },
       {
         "id": "s8",
@@ -4192,7 +4272,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "ND_D_",
+        "cyOf": "name"
       },
       {
         "id": "s9",
@@ -4309,7 +4391,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "_MP_Y",
+        "cyOf": "name"
       },
       {
         "id": "s10",
@@ -4426,7 +4510,9 @@ export const SC_BOARDS = [
         "target": 6,
         "len": [
           10
-        ]
+        ],
+        "cy": "_D_MW_NG__",
+        "cyOf": "name"
       },
       {
         "id": "s11",
@@ -4487,7 +4573,9 @@ export const SC_BOARDS = [
         "target": 2,
         "len": [
           5
-        ]
+        ],
+        "cy": "B_W_N",
+        "cyOf": "name"
       }
     ]
   }

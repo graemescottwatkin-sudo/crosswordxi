@@ -78,7 +78,15 @@ export async function loadLast2(env) {
    a key is built in one file and read in another. Crossword XI uses `daily:`
    and the word search uses `ws:`; a third game inventing a fourth spelling of
    "which board" is how they end up disagreeing. */
-export const scKey = (n) => "sc:" + n;
+export const scKey = (n, mode) => "sc:" + (mode === "consonants" ? "c:" : "") + n;
+
+/* WHICH CYPHER A TOKEN ASKS FOR, for the daily and the finals alike.
+   Anything unrecognised is the anagram, which is what every token issued
+   before this existed meant — so a token already sitting in somebody's
+   localStorage still means what it meant when it was written. */
+export function tokenCypher(token) {
+  return /^sc:(?:iconic:)?c:\d+$/.test(String(token || "")) ? "consonants" : "anagram";
+}
 
 /* THE DAILY RING IS THE ELIGIBLE BOARDS, NOT THE WHOLE BANK.
    Not every board belongs in a daily. Some are simply too hard to be anyone's
@@ -110,10 +118,18 @@ export function dailyRing(boards) {
 
 /* Which board is board number N. The bank is a ring: with a small bank the
    rotation repeats, and it repeats visibly rather than pretending not to. */
-export function boardForNumber(n, boards) {
+export function boardForNumber(n, boards, mode) {
   const ring = dailyRing(boards);
   if (!Number.isInteger(n) || n < 1 || !ring.length) return null;
-  return ring[(n - 1) % ring.length];
+  /* HALF A TURN AWAY, so the two games never show one eleven on one day and
+     a board's turn in the other game is half a year off. It cannot collide,
+     because it collides only where the offset is zero — which is why this is
+     an offset and not a stride: a stride of 457 is fine on 911 boards and
+     collides on EVERY day at 912, and the ring length is not ours to fix.
+     An offset of one would satisfy the rule and break the spirit of it:
+     tomorrow's board would be today's, in the other cypher. */
+  const turn = mode === "consonants" ? Math.floor(ring.length / 2) : 0;
+  return ring[(n - 1 + turn) % ring.length];
 }
 
 /* TEST MODE — THE WHOLE BANK IS PLAYABLE, AND THIS MUST BE FLIPPED BEFORE
@@ -130,13 +146,26 @@ export function boardForNumber(n, boards) {
    board_test so it cannot be left true by accident the day this game ships. */
 const OPEN_ARCHIVE = false;
 
+/* WHETHER THE CONSONANT BOARDS ARE PUBLIC, AND THEY ARE NOT YET.
+   False does not mean absent: they build, they store and they serve — but
+   only to a signed-in admin, so the owner can test on the live site while
+   nobody else can reach it. Same shape as the preview token: a mode is not
+   authority, and the routes re-check the admin flag on the request.
+   Named rather than hidden in a condition so it is greppable, and asserted
+   by the suite so it cannot be flipped by accident — exactly as OPEN_ARCHIVE
+   above, which is the fault this pattern was invented for. */
+const CONSONANTS_PUBLIC = false;
+export function consonantsPublic() { return CONSONANTS_PUBLIC; }
+
 /* Any board up to today, never one after it. The past is open — somebody
    arriving in November must be able to catch up a missed day — and the future
    is shut, because opening it gives away everything. The SERVER decides what
    day it is; a number sent up from a browser is a number off a clock the
    player controls. */
 export function playableTokenNo(token) {
-  const m = /^sc:(\d+)$/.exec(String(token || ""));
+  /* The optional c: says which cypher. It does not change WHICH DAY, and it
+     must not change when a board becomes playable: one rule, one place. */
+  const m = /^sc:(?:c:)?(\d+)$/.exec(String(token || ""));
   if (!m) return null;
   const asked = Number(m[1]);
   if (asked < 1) return false;
@@ -149,7 +178,11 @@ export function playableTokenNo(token) {
 
 export function boardForToken(token, boards) {
   const no = playableTokenNo(token);
-  if (typeof no === "number") return boardForNumber(no, boards);
+  /* WITH THE TOKEN'S OWN CYPHER. Without this a consonant token would mark a
+     guess against the anagram's board for that day, which is a different
+     eleven — the tile on screen and the answer being checked would not be
+     the same board. */
+  if (typeof no === "number") return boardForNumber(no, boards, tokenCypher(token));
   /* A finals token resolves here rather than in guess.js and reveal.js, which
      is the difference between one rule and two copies of it. */
   return boardForIconicToken(token, boards);
@@ -193,10 +226,10 @@ export function boardForPreviewToken(token, boards) {
  * it needs no authority at all. The guard is the whole reason it can be
  * public, which is why it is here and not in the endpoint: the play routes go
  * through boardForToken and inherit it rather than restating it. */
-export const iconicKey = (id) => "sc:iconic:" + id;
+export const iconicKey = (id, mode) => "sc:iconic:" + (mode === "consonants" ? "c:" : "") + id;
 
 export function boardForIconicToken(token, boards) {
-  const m = /^sc:iconic:(\d+)$/.exec(String(token || ""));
+  const m = /^sc:iconic:(?:c:)?(\d+)$/.exec(String(token || ""));
   if (!m) return null;
   const id = Number(m[1]);
   const board = (boards || []).find((b) => Number(b.id) === id) || null;
@@ -249,18 +282,36 @@ export function iconicList(boards) {
  * board that is not a daily says what to call it, rather than having a daily's
  * name computed over the top of the one it was given. */
 export function publicBoard(board, no, token) {
+  /* WHICH CYPHER, READ OFF THE TOKEN IT WAS ASKED WITH. The token already
+     says which board and which way; a separate argument would be one fact in
+     two places, and this file carries three comments about that fault. */
+  const consonants = tokenCypher(token || scKey(no)) === "consonants";
+  /* ONE CYPHER PER PAYLOAD, NEVER BOTH. The scramble beside the blanks would
+     hand a consonant player the enumeration and an anagram player the vowel
+     positions: each mode's difficulty is the other's giveaway. */
   const slots = (board.slots || []).map((s) => ({
     id: s.id,
     band: s.band,          // which line of the formation this slot sits on
     x: s.x,                // where along that line, 0..1
     pos: s.pos,            // GK / RB / CM / ST — shown, and part of the puzzle
-    scramble: s.scramble,  // the letters, which are the point
-    len: s.len,            // word lengths, e.g. [3, 4] for VAN DIJK
+    ...(consonants ? {
+      cy: s.cy,            // the name with its vowels blanked, which is the point
+      /* A NO-VOWEL NAME RIDES DOWN IN FULL, because its cypher IS the name and
+         no arrangement of this game hides it. Said out loud rather than
+         leaked: the tile starts solved and the client is told so. */
+      ...(s.presolved ? { presolved: true, name: revealName(s) } : {}),
+    } : {
+      scramble: s.scramble,  // the letters, which are the point
+      len: s.len,            // word lengths, e.g. [3, 4] for VAN DIJK
+    }),
   }));
 
   return {
     no,
     token: token || scKey(no),
+    /* WHICH CYPHER THIS IS, said by the server. The client reads this and
+       never parses the token it was handed. */
+    cypher: consonants ? "consonants" : "anagram",
     title: board.title,
     pool: board.pool,            // the visible statement of what the XI is
     formation: board.formation,

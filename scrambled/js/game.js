@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002c";
+var BUILD = "v002d";
 
 (function () {
   "use strict";
@@ -43,6 +43,12 @@ var BUILD = "v002c";
     solved: {},        // slotId -> { name, how: "solved" | "revealed" }
     hints: {},         // slotId -> the hint value, once bought or given
     letters: {},       // slotId -> string of leading letters revealed
+    /* slotId -> { position in the name: the vowel there }. A DIFFERENT SHAPE
+       FROM letters, on purpose. The anagram's revealed letters come off the
+       front in order, so a string says everything. A consonant board's blanks
+       are scattered through the name and the server answers with the index it
+       filled, so the position is half the fact. */
+    vowels: {},
     help: 0,           // points spent off the bench
     startedAt: null,
     elapsed: 0,
@@ -503,15 +509,22 @@ var BUILD = "v002c";
   function storeKey() {
     var b = state.board;
     if (!b) return PREFIX + CFG.STORAGE_KEY + ".0";
-    if (b.iconic) return PREFIX + CFG.STORAGE_KEY + ".f" + b.id;
-    if (b.preview) return PREFIX + CFG.STORAGE_KEY + ".p" + b.id;
-    return PREFIX + CFG.STORAGE_KEY + "." + b.no;
+    /* THE CYPHER IS PART OF WHICH BOARD THIS IS. The consonant ring is
+       walked half a turn from the anagram one, so consonant #10 and anagram
+       #10 are not one board in two costumes — they are two different elevens,
+       and without this they shared one save and overwrote each other. It bites
+       the finals too, where the id is the same and only the cypher differs. */
+    var cy = b.cypher === "consonants" ? "c" : "";
+    if (b.iconic) return PREFIX + CFG.STORAGE_KEY + "." + cy + "f" + b.id;
+    if (b.preview) return PREFIX + CFG.STORAGE_KEY + "." + cy + "p" + b.id;
+    return PREFIX + CFG.STORAGE_KEY + "." + cy + b.no;
   }
 
   function save() {
     try {
       localStorage.setItem(storeKey(), JSON.stringify({
         solved: state.solved, hints: state.hints, letters: state.letters,
+        vowels: state.vowels,
         hintsRevealed: state.hintsRevealed,
         help: state.help, elapsed: state.elapsed, over: state.over
       }));
@@ -603,6 +616,15 @@ var BUILD = "v002c";
        to unscramble. */
     if (got) return String(got.name).toUpperCase();
     var known = state.letters[slot.id] || "";
+    /* THE CONSONANT TILE IS ALREADY IN ORDER, so there is no bag to lift a
+       letter out of and nothing to reassemble: it reads as it stands, with
+       any blank the player has bought filled in.
+
+       IT USED TO RETURN slot.cy AND STOP, which meant a bought vowel changed
+       nothing on screen: the bench took the points and the tile was identical.
+       Found by playing it, which is the only way it could have been found —
+       every suite in this game was green. */
+    if (bagless()) return cyWith(slot);
     if (!known) return slot.scramble;
     /* Revealed letters sit in front, in order, and the rest of the bag follows
        — so a bought letter is visibly worth something without turning the tile
@@ -634,6 +656,71 @@ var BUILD = "v002c";
     return pool.join("");
   }
 
+  /* ---- WHICH CYPHER, AND WHAT THAT MEANS FOR THE BAG ------------------
+
+     A consonant board has no bag. The tile is the name with its vowels
+     blanked — SCHM__CH_L — already in order, so there is nothing to draw a
+     letter out of and nothing to reassemble. Every piece of bag arithmetic
+     below is not merely different on such a board, it is meaningless: the
+     server sends `cy` and sends neither `scramble` nor `len`, because one
+     cypher's difficulty is the other's giveaway.
+
+     Asked through one predicate rather than tested in each place. Ten sites
+     read those two fields; a guard written at each is nine chances to miss
+     one, and the first draft of this change missed eight. */
+  function bagless() {
+    return !!(state.board && state.board.cypher === "consonants");
+  }
+
+  /* The tile as it stands: the blanked name with every vowel the player has
+     bought written into the position the server said it belonged in. The
+     server indexes into the same string cy was blanked from, so the positions
+     line up without the page having to work anything out. */
+  function cyWith(slot) {
+    var base = String((slot && slot.cy) || "");
+    var got = state.vowels[slot.id];
+    if (!got) return base;
+    var out = base.split("");
+    Object.keys(got).forEach(function (i) {
+      var at = Number(i);
+      if (at >= 0 && at < out.length) out[at] = got[i];
+    });
+    return out.join("");
+  }
+
+  /* The blanked name, reduced to the letters and blanks that carry meaning:
+     the apostrophe in _'SH__ and the spaces in V_N D_R S_R are punctuation a
+     player does not type, and the answer box strips them too. */
+  function cyPattern(slot) {
+    return String((slot && slot.cy) || "").toUpperCase().replace(/[^A-Z_]/g, "");
+  }
+
+  /* COULD THIS TILE BE WHAT IS BEING TYPED — the consonant board's answer to
+     the same question the bag answers on an anagram board. A blank takes any
+     letter; a consonant must match. Compared as a PREFIX, so tiles light up
+     and drop away as the name is typed, which is what the bag does. */
+  function cyCouldBe(slot, typed) {
+    var p = cyPattern(slot);
+    if (!p || typed.length > p.length) return false;
+    for (var i = 0; i < typed.length; i++) {
+      if (p[i] !== "_" && p[i] !== typed[i]) return false;
+    }
+    return true;
+  }
+
+  /* THE WORD LENGTHS, WHEREVER THEY COME FROM. The anagram board is sent
+     them; the consonant board is not, and does not need to be — its tile
+     shows its own shape, so the lengths are derived from the blanks rather
+     than sent a second time. Four places want this fact and none of them
+     should care which cypher it came from. */
+  function lenOf(slot) {
+    if (slot && slot.len) return slot.len;
+    var words = String((slot && slot.cy) || "").toUpperCase().split(/\s+/)
+      .map(function (w) { return w.replace(/[^A-Z_]/g, "").length; })
+      .filter(function (n) { return n > 0; });
+    return words.length ? words : null;
+  }
+
   function remainingBag(slot, known) {
     var pool = slot.scramble.split("");
     known.split("").forEach(function (ch) {
@@ -657,6 +744,16 @@ var BUILD = "v002c";
       if (!letters) return;
       /* A solved tile shows its name and takes no further part. */
       if (state.solved[slot.id]) { if (lifted) lifted.textContent = ""; return; }
+      /* THE SAME QUESTION, ASKED THE WAY THIS CYPHER CAN ANSWER IT. There is
+         no bag to lift letters out of, so the tile keeps its blanks and only
+         says whether it could still be the name being typed. */
+      if (bagless()) {
+        var could = typed ? cyCouldBe(slot, typed) : false;
+        if (lifted) lifted.textContent = "";
+        el.classList.toggle("could", could);
+        letters.textContent = tileText(slot);
+        return;
+      }
       var rest = typed ? supplyFrom(slot.scramble, typed) : null;
       if (rest === null) {
         if (lifted) lifted.textContent = "";
@@ -685,11 +782,21 @@ var BUILD = "v002c";
     var slot = id && state.board ? slotOf(id) : null;
     if (!slot || state.solved[id]) { echo.hidden = true; return; }
     var typed = ($("answer").value || "").toUpperCase().replace(/[^A-Z]/g, "");
-    var rest = typed ? supplyFrom(slot.scramble, typed) : null;
     $("echoPos").textContent = slot.pos;
+    if (bagless()) {
+      /* The blanked name, whole, with nothing lifted out of it and no
+         enumeration under it: the pattern already shows its own length, and
+         printing it again is the same fact twice. */
+      $("echoLifted").textContent = "";
+      $("echoLetters").textContent = tileText(slot);
+      $("echoEnum").textContent = "";
+      echo.hidden = false;
+      return;
+    }
+    var rest = typed ? supplyFrom(slot.scramble, typed) : null;
     $("echoLifted").textContent = rest === null ? "" : typed;
     $("echoLetters").textContent = rest === null ? tileText(slot) : rest;
-    $("echoEnum").textContent = "(" + slot.len.join(",") + ")";
+    $("echoEnum").textContent = "(" + lenOf(slot).join(",") + ")";
     echo.hidden = false;
   }
 
@@ -731,10 +838,13 @@ var BUILD = "v002c";
       letters.textContent = tileText(slot);
       el.appendChild(letters);
 
-      if (!got) {
+      /* The enumeration is the anagram's and only the anagram's: a blanked
+         tile already shows its own length, so printing it underneath would
+         be the same fact twice. */
+      if (!got && !bagless()) {
         var en = document.createElement("span");
         en.className = "enum";
-        en.textContent = "(" + slot.len.join(",") + ")";
+        en.textContent = "(" + lenOf(slot).join(",") + ")";
         el.appendChild(en);
       }
 
@@ -767,7 +877,9 @@ var BUILD = "v002c";
                   return c.apps ? c.club + ", " + c.apps + " appearances" : c.club;
                 }).join("; ")
               : "")
-          : "scrambled, " + slot.len.join(" and ") + " letters"));
+          : (bagless()
+              ? "blanked, " + lenOf(slot).join(" and ") + " letters"
+              : "scrambled, " + lenOf(slot).join(" and ") + " letters")));
       el.addEventListener("click", function () { pick(slot.id); });
       pitch.appendChild(el);
     });
@@ -803,9 +915,17 @@ var BUILD = "v002c";
     var id = state.picked;
     if (!id) return;
     var slot = slotOf(id);
-    var lettersKnown = (state.letters[id] || "").length;
-    var nameLength = slot.len.reduce(function (a, b) { return a + b; }, 0);
-    $("benchFor").textContent = "Bench \u2014 " + slot.pos + ", (" + slot.len.join(",") + ")";
+    /* WHAT THIS BOARD SELLS OFF THE SECOND BUTTON. An anagram sells the next
+       letter off the front of the name; a consonant board's letters are all on
+       the tile already and what it can sell is a blank filled in. Same button,
+       same price, different thing — so the face, the cost and the count of
+       what is left all have to follow the cypher rather than assume one. */
+    var sellsVowel = bagless();
+    var vowelsKnown = Object.keys(state.vowels[id] || {}).length;
+    var lettersKnown = sellsVowel ? vowelsKnown : (state.letters[id] || "").length;
+    var slotLen = lenOf(slot) || [0];
+    var nameLength = slotLen.reduce(function (a, b) { return a + b; }, 0);
+    $("benchFor").textContent = "Bench \u2014 " + slot.pos + ", (" + slotLen.join(",") + ")";
     /* A BOARD THAT SELLS NOTHING OFFERS NOTHING. hintLabel is null when the
        bench has no hint to sell \u2014 a board declaring "none", or a last-two
        board whose hint is the fixture on its start card \u2014 and a button that
@@ -815,7 +935,11 @@ var BUILD = "v002c";
     $("hintLabel").textContent = state.board.hintLabel || "";
     $("buyHint").hidden = !sells;
     $("hintCost").textContent = "\u2212" + CFG.REVEAL_HINT_COST;
-    $("letterCost").textContent = "\u2212" + CFG.REVEAL_LETTER_COST;
+    if ($("letterLabel")) {
+      $("letterLabel").textContent = sellsVowel ? "Reveal a vowel" : "Reveal a letter";
+    }
+    $("letterCost").textContent = "\u2212" +
+      (sellsVowel ? CFG.REVEAL_VOWEL_COST : CFG.REVEAL_LETTER_COST);
     $("nameCost").textContent = "\u2212" + CFG.REVEAL_NAME_COST;
     $("buyHint").disabled = !sells || state.hintsRevealed;
     /* PROMINENTLY FOR THE ONE SELECTED. Every tile carries its career once the
@@ -830,7 +954,14 @@ var BUILD = "v002c";
     /* The last letter is never for sale: a letter reveal that completes the
        name is a name reveal at the cheaper price. The server refuses it; the
        button has to say so rather than take the click and return nothing. */
-    $("buyLetter").disabled = lettersKnown >= nameLength - 1;
+    /* The last one is never for sale: a reveal that completes the name is a
+       name reveal at the cheaper price. The server refuses it, and the button
+       has to say so rather than take the click and return nothing. On a
+       consonant board what is countable is the blanks, not the letters. */
+    var forSale = sellsVowel
+      ? (String(slot.cy || "").match(/_/g) || []).length
+      : nameLength;
+    $("buyLetter").disabled = lettersKnown >= forSale - 1;
     $("benchRow").hidden = false;
   }
 
@@ -853,7 +984,13 @@ var BUILD = "v002c";
     if (!id || state.solved[id]) return;
     post("reveal", {
       token: state.board.token, slotId: id, kind: kind,
-      known: (state.letters[id] || "").length
+      /* How many of THIS kind of help the slot has already had. The letter
+         reveal counts letters off the front; the vowel reveal counts blanks
+         already filled. Sending the wrong one asks the server for a position
+         the player already has. */
+      known: kind === "vowel"
+        ? Object.keys(state.vowels[id] || {}).length
+        : (state.letters[id] || "").length
     }).then(function (r) {
       if (r.error) return say(r.error, "bad");
       if (kind === "hint") {
@@ -869,6 +1006,11 @@ var BUILD = "v002c";
         if (r.index === null) return say("Nothing left to give away there.", "");
         state.letters[id] = (state.letters[id] || "") + r.letter;
         state.help += CFG.REVEAL_LETTER_COST;
+      } else if (kind === "vowel") {
+        if (r.index === null) return say("Nothing left to give away there.", "");
+        state.vowels[id] = state.vowels[id] || {};
+        state.vowels[id][r.index] = r.letter;
+        state.help += CFG.REVEAL_VOWEL_COST;
       } else if (kind === "name") {
         state.solved[id] = { name: r.name, clubs: r.clubs, how: "revealed" };
         state.help += CFG.REVEAL_NAME_COST;
@@ -975,6 +1117,14 @@ var BUILD = "v002c";
     var hit = null;
     (state.board.slots || []).forEach(function (slot) {
       if (hit || state.solved[slot.id]) return;
+      /* THE CONSONANT BOARD'S VERSION OF THE SAME RULE. There is no bag to
+         use up; what is complete is a name that fills the pattern — every
+         blank taken and every consonant matched. Same property: it is the
+         only guess worth sending, and it was going to be sent anyway. */
+      if (bagless()) {
+        if (typed.length === cyPattern(slot).length && cyCouldBe(slot, typed)) hit = slot;
+        return;
+      }
       if (lettersUsedUp(slot.scramble, typed)) hit = slot;
     });
     return hit;
@@ -1102,13 +1252,23 @@ var BUILD = "v002c";
       "browser, so it is not a verified time.";
     body.appendChild(note);
 
-    var solvedCount = state.board.slots.filter(function (s) {
-      return (state.solved[s.id] || {}).how === "solved";
-    }).length;
+    /* UNRAVELLED MEANS UNRAVELLED. A tile that arrived free was not solved
+       and was not bought, so it is neither — counted separately and named,
+       rather than folded into "given" and claimed as either. Written for N
+       even though no board has more than one today, and printed only when
+       there is one, so an anagram share reads exactly as it always did. */
+    var solvedCount = 0, freeCount = 0;
+    state.board.slots.forEach(function (s) {
+      var how = (state.solved[s.id] || {}).how;
+      if (how === "solved") solvedCount++;
+      else if (how === "free") freeCount++;
+    });
+    var givenCount = state.board.slots.length - solvedCount - freeCount;
     $("shareText").value =
       (state.board.no == null ? "Scrambled XI" : "Scrambled XI #" + state.board.no) + "\n" +
       state.board.title + "\n" +
-      solvedCount + " of 11 unravelled, " + (11 - solvedCount) + " given\n" +
+      solvedCount + " of 11 unravelled, " + givenCount + " given" +
+      (freeCount ? ", " + freeCount + " free" : "") + "\n" +
       res.score + "/" + SCORING.MAX_SCORE + " in " + mins + "m " + secs + "s\n" +
       "thexigames.com/scrambled/";
 
@@ -1194,26 +1354,37 @@ var BUILD = "v002c";
      address. */
   function askFromUrl() {
     var params = new URLSearchParams(location.search);
+    /* ?cy=1 asks for the consonant cypher. It rides on the ask rather than
+       being read a second time in askUrl: one question, answered once. The
+       SERVER decides whether the asker may have it. */
+    var cy = params.get("cy") === "1";
     var iconic = params.get("iconic");
-    if (iconic) return { kind: "iconic", id: iconic };
+    if (iconic) return { kind: "iconic", id: iconic, cy: cy };
     var byId = params.get("id");
-    if (byId) return { kind: "preview", id: byId };
+    if (byId) return { kind: "preview", id: byId, cy: cy };
     /* The permalink is the same question ?no= asks, in the path: one URL, one
        board, forever. It wins over ?no= because it is the address the visitor
        actually came to. */
     var asked = permalinkKey();
     return { kind: "daily", no: Number(asked || params.get("no")) || null,
-             fromLink: !!asked };
+             fromLink: !!asked, cy: cy };
   }
 
   function askUrl(ask) {
+    /* THE PREVIEW ROUTE DOES NOT CARRY THE CYPHER YET, so ?id= stays the
+       anagram. Left alone rather than half-wired: an address that accepts a
+       parameter it ignores is worse than one that does not take it. */
+    var withCy = function (base) {
+      if (!ask.cy) return base;
+      return base + (base.indexOf("?") > -1 ? "&" : "?") + "cy=1";
+    };
     if (ask.kind === "iconic") {
-      return "/api/scrambled/iconic?id=" + encodeURIComponent(ask.id);
+      return withCy("/api/scrambled/iconic?id=" + encodeURIComponent(ask.id));
     }
     if (ask.kind === "preview") {
       return "/api/admin/scrambled?id=" + encodeURIComponent(ask.id);
     }
-    return "/api/scrambled/daily" + (ask.no ? "?no=" + encodeURIComponent(ask.no) : "");
+    return withCy("/api/scrambled/daily" + (ask.no ? "?no=" + encodeURIComponent(ask.no) : ""));
   }
 
   /* EVERYTHING A BOARD OWNS, PUT BACK. Opening a second board in the same
@@ -1224,7 +1395,7 @@ var BUILD = "v002c";
   function forgetBoard() {
     stopClock();
     playsEnd(false);
-    state.solved = {}; state.hints = {}; state.letters = {};
+    state.solved = {}; state.hints = {}; state.letters = {}; state.vowels = {};
     state.hintsRevealed = false; state.help = 0;
     state.startedAt = null; state.elapsed = 0;
     state.picked = null; state.teamTalkDone = false; state.over = false;
@@ -1261,6 +1432,19 @@ var BUILD = "v002c";
         }
         if (board.error) { say(board.error, "bad"); return; }
         state.board = board;
+        /* THE CLOCK IS THE BOARD'S, NOT THE GAME'S. The payload says which
+           cypher it gave and the per-game half of scoring follows it, so
+           scoring.js still reads one number from one place. */
+        /* ASSIGNED ON EVERY BOARD, NOT ONLY ON A CONSONANT ONE. This set
+           MATCH_CLOCK only when the cypher was consonants, which was correct
+           exactly once: a board opens without reloading the page now — the
+           calendar and the finals picker both do it in place — so the next
+           anagram board was played and SCORED on the 300-second clock. Set
+           both ways from constants that are never written, and it cannot
+           leak in either direction. */
+        CFG.MATCH_CLOCK_REAL_SECONDS = board.cypher === "consonants"
+          ? CFG.CONSONANT_CLOCK_REAL_SECONDS
+          : CFG.ANAGRAM_CLOCK_REAL_SECONDS;
         /* What day it is according to the SERVER, kept so the landing can
            count the archive and judge whether a run reaches today. Never
            computed here: the server decides what day it is. A board off the
@@ -1289,10 +1473,23 @@ var BUILD = "v002c";
           state.hints = saved.hints || {};
           state.hintsRevealed = !!saved.hintsRevealed;
           state.letters = saved.letters || {};
+          state.vowels = saved.vowels || {};
           state.help = saved.help || 0;
           state.elapsed = saved.elapsed || 0;
           state.over = !!saved.over;
         }
+        /* A NAME WITH NO VOWELS ARRIVES DONE. Its cypher IS the name — no
+           arrangement of this game hides it — so it goes on the team sheet at
+           kick-off. Marked "free" rather than "solved": the player is not
+           CHARGED for it, which is what the first draft meant, but neither did
+           they unravel it, and the share counts what was unravelled. After the
+           restore, or a resumed board would lose them when state.solved is
+           replaced wholesale. */
+        (board.slots || []).forEach(function (s) {
+          if (s.presolved && !state.solved[s.id]) {
+            state.solved[s.id] = { name: s.name, how: "free" };
+          }
+        });
         renderLanding();
         syncAccount();
         if (state.over) { show("screenResults"); drawPitch(); showResults(); return; }
@@ -1324,9 +1521,19 @@ var BUILD = "v002c";
   function address(board) {
     if (board.preview) return;
     try {
+      /* THE CYPHER IS PART OF WHICH BOARD THIS IS, so it belongs in the
+         address. This cleared the query wholesale to drop a stale ?iconic=,
+         and once a second cypher existed it dropped ?cy= with it: you asked
+         for a consonant board, played one, and the address said /scrambled/ —
+         so a reload, a copied link and the back button all handed back the
+         anagram. Built from what the board IS rather than from what the query
+         happened to say, so each spelling is present exactly when it is true. */
+      var q = [];
+      if (board.iconic) q.push("iconic=" + encodeURIComponent(board.id));
+      if (board.cypher === "consonants") q.push("cy=1");
       history.replaceState(null, "",
-        (board.iconic ? "/scrambled/?iconic=" + encodeURIComponent(board.id)
-                      : location.pathname) + location.hash);
+        (board.iconic ? "/scrambled/" : location.pathname) +
+        (q.length ? "?" + q.join("&") : "") + location.hash);
     } catch (e) { /* a browser that will not have it keeps the address it has */ }
     var perma = window.XIChrome && window.XIChrome.permalink;
     if (!perma || board.iconic || board.no == null) return;
@@ -1426,7 +1633,14 @@ var BUILD = "v002c";
     maybeAutoSubmit();
   });
   $("buyHint").addEventListener("click", function () { buy("hint"); });
-  $("buyLetter").addEventListener("click", function () { buy("letter"); });
+  /* ONE BUTTON, TWO THINGS TO SELL. An anagram board sells the next letter
+     off the front; a consonant board's letters are already on the tile and
+     what it can sell is a blank filled in. Same control, same price, and the
+     face says which — a button that reads "Reveal a letter" and fills in a
+     vowel is a button that lied. */
+  $("buyLetter").addEventListener("click", function () {
+    buy(bagless() ? "vowel" : "letter");
+  });
   $("buyName").addEventListener("click", function () { buy("name"); });
   $("benchClose").addEventListener("click", function () {
     state.picked = null; hideBench(); drawPitch(); paintEcho();

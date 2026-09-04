@@ -15,11 +15,23 @@
 */
 import {
   json, bad, loadBoards, iconicList, publicBoard, iconicKey, boardForIconicToken,
+  consonantsPublic,
 } from "../../_lib/sc-board.js";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const { boards, source } = await loadBoards(env);
+
+  /* Gated exactly as the daily is, and for the same reason: two doors to one
+     bank, and a mode open at one of them is open. */
+  let mode = null;
+  if (url.searchParams.get("cy") === "1") {
+    if (!consonantsPublic()) {
+      const { isAdmin } = await import("../../_lib/auth.js");
+      if (!(await isAdmin(request, env))) return bad("Those boards are not out yet.", 403);
+    }
+    mode = "consonants";
+  }
 
   const asked = url.searchParams.get("id");
   if (asked !== null) {
@@ -29,7 +41,7 @@ export async function onRequestGet({ request, env }) {
        let the id space be walked to find where the rotation ends. */
     if (!board) return bad("That board is not one of the finals.", 404);
     return json({
-      ...publicBoard(board, null, iconicKey(board.id)),
+      ...publicBoard(board, null, iconicKey(board.id, mode)),
       id: board.id, iconic: true, source,
     });
   }
