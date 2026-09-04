@@ -28,20 +28,6 @@ hidden behind `CONSONANTS_PUBLIC = false` in `scrambled/js/config.js`. Launch
 takes the flag off, a shirt number (the next free one, taken AT launch), and a
 row in `tools/aligned_test.mjs`. Nothing else is blocking.
 
-**HiLo's 274 club subtitles.** Found 4 Sep. Every live HiLo board was written
-by the re-import at 10:11 that day; 274 source files under `../Other/HiLoXI`
-were rewritten at 11:44, an hour later, replacing each club board's descriptive
-subtitle with a bare label — board 587 went from "The year he first took
-charge, caretaker spells included…" to "Manager appointed". The 89 daily boards
-are untouched and match live exactly. The old wording survives in the research
-side's `preview/*.html`, so it was an edit to the board JSONs, not a generator
-change. Live still shows the descriptive line.
-
-Until this is settled: do NOT apply `data/hl-production.sql` (it is regenerated
-from the new sources), and `functions/_lib/hl-sample.js` is deliberately left
-matching production, which makes `node tools/import_hilo.js --check` refuse on
-any machine that has the bank. CI is unaffected — the runner has no bank.
-
 ---
 
 ## Queued
@@ -213,6 +199,13 @@ Debt recorded in `scrambled/css/style.css`.
 
 ## Shipped
 
+- **HiLo's club boards, re-imported** — hilo v001q and v001r, 4 Sep. The owner
+  shortened all 274 club subtitles and took the as-at date out of them, so the
+  club page now carries the date once at the top and one rule per family; the
+  importer refuses a club board with no `trueAsOf`; a row is a set of boards
+  rather than one board, so no label is written twice; and the server stopped
+  printing a row's source quote when that quote is a slice of JSON, which it is
+  for every board sourced from the league's data endpoint.
 - **5b. Scrambled's score, server-side** — scrambled v002g, migration 029,
   4 Sep. The server owns the clock and counts the board's own slots.
 - **5a. HiLo's score, server-side** — hilo v001p, migration 028, 4 Sep.
