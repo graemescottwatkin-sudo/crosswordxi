@@ -99,7 +99,37 @@ await settle(10);
 
 console.log("\n=== Kick off ===");
 t("the ladder is up", shown("screenGame") && !shown("screenStart"));
-t("it names the category and the subtitle", $("cat").textContent.includes(board.category) && $("cat").textContent.includes(board.subtitle));
+/* THE BOARD CARRIES THE CATEGORY AND THE LEAD SENTENCE, NOT THE WHOLE
+   SUBTITLE. A subtitle is written as two sentences — what the number means,
+   then the rule that settles the awkward cases — and the rule is read on the
+   cover before the clock starts, not over the top of a running board.
+
+   This check asked for the whole subtitle here, and passed for a week because
+   every board it met had a one-sentence subtitle. The first two-sentence board
+   to come round turned it red, on a day nothing had changed. A check that only
+   holds for some of the data is a check that will go off at a time of the
+   data's choosing. */
+const lead = board.subtitle.split(/\.\s+(?=\S)/)[0] + ".";
+t("the board names the category and the lead sentence",
+  $("cat").textContent.includes(board.category) && $("cat").textContent.includes(lead),
+  JSON.stringify($("cat").textContent));
+/* AND THE RULE WAS READABLE BEFORE THE CLOCK STARTED, on whichever cover this
+   path uses: the kick cover for a board opened from the archive or the clubs,
+   and the hero itself for the daily, which calls startRound directly and never
+   raises a cover at all. That last case is why this check exists — the rule
+   was written to the cover only, so on the board most people play it appeared
+   nowhere, and the two comments explaining where it lived contradicted each
+   other. Whichever door was used, it must be somewhere and it must not be over
+   the top of a running board. */
+{
+  const rule = board.subtitle === lead ? "" : board.subtitle.slice(lead.length).trim();
+  const shownAs = [$("kickFine").textContent, $("startFine") ? $("startFine").textContent : ""];
+  t("and the rule that settles the awkward cases was readable before kick off",
+    rule === "" ? shownAs.every((s) => s === "") : shownAs.includes(rule),
+    JSON.stringify(rule) + " shown as " + JSON.stringify(shownAs));
+  t("and it is not written over a board with the clock running",
+    rule === "" || !$("cat").textContent.includes(rule));
+}
 t("the first pair shows the known value on the left and a question mark on the right",
   $("left").querySelector(".val").textContent === String(board.chain[0].value) && $("right").querySelector(".val").textContent === "?");
 t("the question names the subject and the reference",
@@ -107,8 +137,35 @@ t("the question names the subject and the reference",
 t("the button faces carry the reference", $("higher").textContent.includes("than " + board.chain[0].value));
 t("a play was started under this game's name", plays.length === 1 && plays[0].event === "start" && plays[0].game === "hilo" && plays[0].total === 11,
   JSON.stringify(plays[0] || null));
-t("no value beyond the first is anywhere on the page",
-  board.chain.slice(1).every((r) => !doc.body.textContent.includes(String(r.value))));
+/* WHOLE NUMBERS AS THEY ARE WRITTEN, NOT A SUBSTRING SCAN OF THE PAGE.
+   This read doc.body.textContent and asked whether each value appeared in it
+   anywhere. textContent runs every element's text together, so the ladder —
+   eleven rungs numbered 1 to 11 — reads as "1234567891011", and a board whose
+   second value was 78 was reported as leaking it. Nothing had leaked; rung 7
+   sat next to rung 8.
+
+   Read node by node it is still the whole page, so a value rendered anywhere
+   is still caught; what it no longer does is invent a number out of two that
+   happen to be adjacent. The ladder is left out because its text IS the
+   numbers 1 to 11 and nothing else — a board whose value is 7 would otherwise
+   be reported by the rung. */
+const numbersOnPage = () => {
+  const found = new Set();
+  const ladder = $("ladder");
+  const walk = doc.createTreeWalker(doc.body, window.NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (ladder && ladder.contains(n)) continue;
+    (String(n.nodeValue).match(/\d+/g) || []).forEach((d) => found.add(d));
+  }
+  return found;
+};
+{
+  const onPage = numbersOnPage();
+  const leaked = board.chain.slice(1).filter((r) => onPage.has(String(r.value)));
+  t("no value beyond the first is anywhere on the page",
+    leaked.length === 0,
+    leaked.map((r) => r.name + "=" + r.value).join(", ") || "none of the ten");
+}
 
 console.log("\n=== The calls ===");
 /* Ten right calls, then one timed out: the engine's clock cannot be waited on

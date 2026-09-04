@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001k";
+var BUILD = "v001l";
 
 (function () {
   "use strict";
@@ -185,9 +185,19 @@ var BUILD = "v001k";
       return;
     }
     $("startTitle").textContent = todayBoard.category;
-    /* The hero says what the number means; the rule that settles the
-       awkward cases waits until the board is in front of you. */
-    $("startSub").textContent = subtitleParts(todayBoard.subtitle).lead;
+    /* The hero says what the number means, then the rule that settles the
+       awkward cases, quietly, under it.
+
+       The rule used to be left to the cover, which every board gets EXCEPT
+       this one: the daily hero calls startRound directly, so the cover never
+       appears and the second sentence was shown nowhere at all. It decides
+       real boards — "Retired players only, so nothing moves" is the answer to
+       the first question anyone asks — and a rule only the author knows is
+       not a rule. Said here, before the clock, which is what the cover is
+       for on every other path. */
+    var sp = subtitleParts(todayBoard.subtitle);
+    $("startSub").textContent = sp.lead;
+    if ($("startFine")) $("startFine").textContent = sp.note;
     var had = todayResult();
     $("startState").textContent = had
       ? "Played " + DOT + " " + had.score + " pts " + DOT + " " + ({ W: "Win", D: "Draw", L: "Loss" }[had.result] || "")

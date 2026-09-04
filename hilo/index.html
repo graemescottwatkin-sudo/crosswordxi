@@ -32,7 +32,7 @@
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
 <script src="../shared/xi-theme.js?v=v15"></script>
-<link rel="stylesheet" href="css/style.css?v=v001k">
+<link rel="stylesheet" href="css/style.css?v=v001l">
 </head>
 <body>
 
@@ -76,6 +76,11 @@
             <span class="hc-kicker" id="startKicker">TODAY</span>
             <span class="hc-title" id="startTitle">Today&rsquo;s board</span>
             <span class="hc-note" id="startSub">Twelve names, eleven calls, a clock on every one.</span>
+            <!-- The rule that settles the awkward cases. The hero IS the
+                 daily's cover — it starts the round with no cover in between —
+                 so this is where the second sentence has to be readable, the
+                 same way kickFine carries it for every other board. -->
+            <span class="hc-fine" id="startFine"></span>
             <span class="hc-state" id="startState"></span>
             <span class="hc-cta">Kick off</span>
           </button>
@@ -249,7 +254,7 @@
 <script src="../shared/xi-clubs.js?v=v15"></script>
 <script src="../shared/xi-chrome.js?v=v15"></script>
 <script src="../shared/xi-plays.js?v=v15"></script>
-<script src="js/scoring.js?v=v001k"></script>
-<script src="js/game.js?v=v001k"></script>
+<script src="js/scoring.js?v=v001l"></script>
+<script src="js/game.js?v=v001l"></script>
 </body>
 </html>

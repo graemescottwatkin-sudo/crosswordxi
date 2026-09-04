@@ -157,3 +157,23 @@ a.home-choice{text-decoration:none;color:inherit}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-family:var(--disp);letter-spacing:.1em;text-transform:uppercase;font-size:14px;opacity:0;transition:opacity var(--t-base) var(--ease);pointer-events:none;z-index:20}
 .toast.on{opacity:1}
 .legal{font-size:11px;color:var(--ink-faint);margin:16px 0 0;line-height:1.5}
+
+/* The rule that settles the awkward cases, on the daily hero. The same
+   quiet weight the cover gives it — this is the daily's cover, since the
+   hero starts the round with no cover in between — and it collapses when a
+   board's subtitle is one sentence and there is no rule to say. */
+.hc-fine {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-faint);
+  max-width: 46ch;
+}
+.hc-fine:empty { display: none; }
+/* ON GREEN, NOT ON PAPER. --ink-faint is the family's quiet ink for the
+   page's paper; on the pitch-green hero it renders as dark green on green and
+   cannot be read at all. The hero has its own token for quiet text and every
+   other line in it already uses it — this one was written to the wrong
+   surface, and only looking at it showed that. */
+.home-choice.hero .hc-fine { color: var(--on-pitch-soft); opacity: .85; }
