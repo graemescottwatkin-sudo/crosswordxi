@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v001a";
+var BUILD = "v001b";
 
 (function () {
   "use strict";
@@ -1447,7 +1447,7 @@ var BUILD = "v001a";
        anagram. Left alone rather than half-wired: an address that accepts a
        parameter it ignores is worse than one that does not take it. */
     var withCy = function (base) {
-      if (!ask.cy) return base;
+      /* generated: unconditional — the cypher is the game, not the ask */
       return base + (base.indexOf("?") > -1 ? "&" : "?") + "cy=1";
     };
     if (ask.kind === "iconic") {

@@ -68,6 +68,48 @@ console.log("\n=== It says which game it is, everywhere a reader looks ===");
     "not a wording slip: the wrong game's history on the page and in the sync");
 }
 
+console.log("\n=== Every way into a board asks for THIS cypher ===");
+/* THE FAULT THIS IS HERE FOR. Forcing the query string's default was half the
+   job: five call sites build an ask — the calendar, the archive picker, the
+   finals catalogue, the account fallback and the home button — and only the
+   one derived from the URL carried `cy`. Today's board came back blanked and
+   every other route came back scrambled. The owner found the finals boards
+   still in anagrams.
+   So this does not read the file, it RUNS askUrl: the function is lifted out
+   of the generated script and called with the ask each of those sites actually
+   builds. A textual check would have passed the broken version, which said
+   `cy = true` in one place and ignored it in another. */
+{
+  const lift = (text) => {
+    const m = /function askUrl\(ask\) \{([\s\S]*?)\n  \}/.exec(text);
+    return m ? new Function("ask", m[1]) : null;
+  };
+  const askUrl = lift(js);
+  t("askUrl can be lifted out of the generated script and run", !!askUrl);
+  const ASKS = [
+    ["the calendar", { kind: "daily", no: 12 }],
+    ["the archive picker", { kind: "daily", no: 3 }],
+    ["the finals catalogue", { kind: "iconic", id: 1001 }],
+    ["the account fallback", { kind: "daily" }],
+    ["the home button", { kind: "daily" }],
+    ["a link carrying the query string", { kind: "daily", no: 5, cy: true }],
+  ];
+  const missing = ASKS.filter(([, a]) => !/[?&]cy=1(&|$)/.test(askUrl(a)));
+  t("every ask a caller builds fetches the consonant board",
+    missing.length === 0,
+    missing.length ? missing.map(([n]) => n).join(", ") + " did not"
+      : ASKS.length + " routes, all carrying cy=1");
+  t("and it does not depend on the caller remembering to say so",
+    /[?&]cy=1/.test(askUrl({ kind: "daily" })) &&
+    /[?&]cy=1/.test(askUrl({ kind: "iconic", id: 1 })),
+    askUrl({ kind: "iconic", id: 1 }));
+  /* And Scrambled has NOT been turned into this game by the same edit. */
+  const sAsk = lift(scrambledJs);
+  t("while Scrambled still serves the anagram unless it is asked otherwise",
+    !!sAsk && !/cy=1/.test(sAsk({ kind: "daily" })) && /cy=1/.test(sAsk({ kind: "daily", cy: true })),
+    sAsk ? sAsk({ kind: "daily" }) : "could not lift");
+}
+
 console.log("\n=== Its own keys, because board 7 is not board 7 ===");
 /* The consonant ring is offset half a turn from the anagram ring, so the two
    games' board 7s are different elevens. A shared storage prefix would have
