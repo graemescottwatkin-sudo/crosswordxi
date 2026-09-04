@@ -1,6 +1,6 @@
 /* vowels/live_check.mjs — what production is actually serving.
  *
- *   node vowels/live_check.mjs --expect v001k
+ *   node vowels/live_check.mjs --expect v001
  *
  * Run AFTER a deploy. The deploy gate reads the tree; this reads the site, and
  * the two answer different questions: the gate says what would ship, this says
@@ -25,10 +25,15 @@ const t = (n, ok, d) => {
 };
 const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`); };
 
-/* Eighteen assertions run with --expect; without it the tag is reported and
-   not judged, so seventeen is the honest floor. Set to the exact count it
-   would flap the first time somebody ran this without --expect. */
-const MIN_ASSERTIONS = 17;
+/* TWENTY-SEVEN run with --expect. Without it the tag is reported rather than
+   judged, which is the one assertion that can legitimately skip, so twenty-six
+   is the honest floor — the exact count would flap the first time somebody ran
+   this without --expect.
+   Set for THIS file rather than inherited: it arrived from Scrambled's saying
+   seventeen, which was that file's honest floor and is not this one's. A floor
+   five below the run cannot refuse a block that goes quiet, which is the whole
+   job it has. */
+const MIN_ASSERTIONS = 26;
 let finished = false;
 const done = () => {
   if (!finished) {
@@ -59,11 +64,23 @@ if (EXPECT) {
 } else {
   w("no --expect given, so the tag is reported and not judged", tag);
 }
-t("every asset on the page carries that same tag", (() => {
-  const tags = [...html.matchAll(/(?:css|js)\/[a-z_]+\.(?:css|js)\?v=([^"]+)"/g)]
+/* ITS OWN ASSETS, ANCHORED ON THE QUOTE — the same correction the deploy gate
+   needed, and missed here first: this page loads config.js and scoring.js from
+   ../scrambled/js/ on purpose, one file and one cache entry for two games, and
+   they carry SCRAMBLED's tag. Unanchored, the pattern matched "js/config.js"
+   inside that longer path and failed the live game for doing the right thing.
+   Fixed in the gate and not here, so it passed offline and refused in
+   production — which is exactly the class of fault a live_check is for. */
+t("every asset on the page of its OWN carries that same tag", (() => {
+  const tags = [...html.matchAll(/(?:src|href)="(?:css|js)\/[a-z_]+\.(?:css|js)\?v=([^"]+)"/g)]
     .map((m) => m[1]);
   return tags.length > 0 && tags.every((x) => x === tag);
 })());
+t("and the rules it borrows are served on Scrambled's tag, not this game's", (() => {
+  const borrowed = [...html.matchAll(/\.\.\/scrambled\/js\/(?:config|scoring)\.js\?v=([^"]+)"/g)]
+    .map((m) => m[1]);
+  return borrowed.length === 2 && borrowed.every((v) => v !== tag);
+})(), "one file, one cache entry, two games");
 /* shared/ has its own lifecycle and must NOT match the game tag: they move for
    different reasons, and a shared change riding a game tag is a change nobody
    can see in the other three games. */
