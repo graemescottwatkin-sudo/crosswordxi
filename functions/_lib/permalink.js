@@ -23,11 +23,26 @@
  * board and a mapping to keep in step. `/answers/<no>` already addresses a
  * crossword board by its number, and this agrees with it.
  *
- * WHAT THE ROUTE DOES NOT DO. It does not know whether a board EXISTS — that
- * needs the bank, and a database read on every page load to answer a question
- * the game answers a moment later anyway. It refuses what it can be sure of
- * without asking: a key of the wrong shape, and a key in the future. A
- * well-formed past key with no board behind it opens the game, which says so.
+ * WHETHER A BOARD EXISTS, and why that changed on 4 Sep 2026.
+ *
+ * This said the route deliberately did not check — that it needed the bank,
+ * and a database read on every page load to answer a question the game answers
+ * a moment later anyway, so a well-formed past key with no board behind it
+ * opened the game, which said so. That reasoning holds for a PLAYER. It does
+ * not hold for a crawler, and the two use the same URLs.
+ *
+ * A numbered game is bounded: keys run 1 to today. A game keyed by DATE is
+ * not, and /wordsearch/daily/2020-01-01 answered 200 with a self-referencing
+ * canonical, as did /hilo/daily/1999-12-31 — an unbounded set of
+ * near-identical pages each claiming to be the permanent address of a board
+ * that never ran. Crawl budget is finite and those pages would spend it, which
+ * makes this worse for search than having no board links at all.
+ *
+ * So the date games now ask their own schedule, and a day with no board gets
+ * the same identical 404 a future key gets. That IS a database read per page
+ * load, for two of the five games — one indexed lookup on a schedule table,
+ * paid to keep an unbounded URL space off the index. The numbered games ask
+ * nothing, because for them there was never a question.
  */
 import { dailyNumber, dailyDayKey, utcDay } from "./daily.js";
 
@@ -100,6 +115,50 @@ export function validKey(game, raw, now = Date.now()) {
   const d = new Date(s + "T00:00:00Z");
   if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return null;
   return s <= today ? s : null;
+}
+
+/* ---- AND DID THE GAME ACTUALLY RUN THAT DAY? ----
+ *
+ * validKey above answers "could this key ever have been a board, and is it not
+ * in the future". For a numbered game that is the whole question: the ring
+ * wraps, so every number from 1 to today resolves to a board. For a game keyed
+ * by DATE it is not, and the gap was an unbounded set of crawlable pages —
+ * /wordsearch/daily/2020-01-01 and /hilo/daily/1999-12-31 both answered 200
+ * with a self-referencing canonical, for any past date anybody typed. Hundreds
+ * of thousands of near-identical pages, each claiming to be the permanent
+ * address of a board that never existed. Worse for search than having no board
+ * links at all, because crawl budget is finite and those pages would spend it.
+ *
+ * The route's own 404 already said it refused a key that was "simply not a
+ * board". It did not. This is that sentence made true.
+ *
+ * Asked of each game's own schedule, because the schedule is where the answer
+ * lives. Without a database there is nothing to ask, and the honest answer is
+ * yes — the same rule the rest of the family keeps, and the sample banks the
+ * offline suites run against would otherwise all 404. */
+export async function ranOn(env, game, key) {
+  const g = PERMA_GAMES[game];
+  if (!g) return false;
+  if (g.kind === "number") return true;
+  if (!env || !env.DB) return true;
+  try {
+    if (game === "wordsearch") {
+      const row = await env.DB.prepare("SELECT 1 AS n FROM ws_schedule WHERE day = ?")
+        .bind(String(key)).first();
+      return !!row;
+    }
+    if (game === "hilo") {
+      const row = await env.DB.prepare("SELECT 1 AS n FROM hl_schedule WHERE day = ?")
+        .bind(String(key)).first();
+      return !!row;
+    }
+  } catch (e) {
+    /* The table is absent or unreadable. Refusing every board on a database
+       error would take an entire game's archive off the site for a fault that
+       has nothing to do with the board asked for. */
+    return true;
+  }
+  return true;
 }
 
 export const permalinkPath = (game, key) => `/${game}/daily/${key}`;
@@ -178,6 +237,11 @@ export async function permalinkRoute({ request, env, params }, game) {
       headers: { Location: permalinkPath(game, key), "Cache-Control": "no-store" },
     });
   }
+
+  /* A DAY THE GAME DID NOT RUN IS NOT A BOARD, and gets the same identical
+     refusal a future key gets — a probe must not be able to tell which of the
+     two it hit, which is the rule the answers pages already keep. */
+  if (!(await ranOn(env, game, key))) return notFound();
 
   const shell = await env.ASSETS.fetch(new URL(`/${game}/`, url.origin));
   if (!shell.ok) return notFound();

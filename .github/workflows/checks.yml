@@ -79,6 +79,8 @@ jobs:
       # and the four games must not grow four schemes for saying so.
       - name: One URL, one puzzle
         run: node tools/permalink_test.mjs
+      - name: The sitemap lists every board and nothing that 404s
+        run: node tools/sitemap_test.mjs
 
       - name: API
         run: |

@@ -302,8 +302,15 @@ const chrome = read("shared/xi-chrome.js");
 t("every released game is on the chrome's squad list, at its own path",
   GAMES.every((g) => chrome.indexOf(`href: "/${g.dir}/"`) > -1 &&
                      chrome.indexOf(`"${g.name}"`) > -1));
-t("the sitemap lists every released game and its answers where they exist",
-  GAMES.every((g) => read("sitemap.xml").indexOf(`/${g.dir}/</loc>`) > -1));
+/* THE SITEMAP IS GENERATED NOW, so this reads the generator rather than a
+   file. The file it replaced held thirteen URLs and not one board, months
+   after the permalinks shipped — a hand-kept list of pages that appear daily
+   was never going to hold them. */
+t("the sitemap lists every released game",
+  GAMES.every((g) => read("functions/sitemap.xml.js").indexOf(`"/${g.dir}/"`) > -1));
+t("and there is no static sitemap left to be served instead",
+  !has("sitemap.xml"),
+  "two answers to one URL is the fault this file exists to catch");
 t("the CSRF rule is the family's, defined once",
   /export const CSRF_HEADER = "X-XI-Games"/.test(read("functions/_lib/auth.js")) &&
   GAMES.every((g) => {

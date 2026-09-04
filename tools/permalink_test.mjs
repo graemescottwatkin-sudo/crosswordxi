@@ -170,5 +170,75 @@ console.log("\nA refusal says nothing about what it refused");
     future.headers.get("Cache-Control") === "no-store");
 }
 
+/* ---- A DAY THE GAME DID NOT RUN IS NOT A BOARD ----
+ *
+ * /wordsearch/daily/2020-01-01 and /hilo/daily/1999-12-31 both answered 200
+ * with a self-referencing canonical, for any past date at all: an unbounded
+ * set of near-identical pages each claiming to be the permanent address of a
+ * board that never existed.
+ *
+ * The env above has no DB, which is how every check before this one passes —
+ * and it is also why none of them could see this. Without a database there is
+ * no schedule to ask and the honest answer is yes, so proving the rule needs a
+ * database that answers. */
+console.log("\n=== A date with no board ===");
+{
+  const RAN = { wordsearch: ["2026-09-03"], hilo: ["2026-09-03"] };
+  const dbEnv = {
+    ASSETS: env.ASSETS,
+    DB: {
+      prepare: (sql) => ({
+        bind: (day) => ({
+          first: async () => {
+            const game = /ws_schedule/.test(sql) ? "wordsearch"
+              : /hl_schedule/.test(sql) ? "hilo" : null;
+            return game && RAN[game].includes(day) ? { n: 1 } : null;
+          },
+        }),
+      }),
+    },
+  };
+  const callDb = (game, key) => permalinkRoute({
+    request: new Request(`https://www.thexigames.com/${game}/daily/${key}`),
+    env: dbEnv,
+    params: { path: [String(key)] },
+  }, game);
+
+  for (const game of ["wordsearch", "hilo"]) {
+    const ran = await callDb(game, "2026-09-03");
+    t(`${game}: a day it DID run is served`, ran.status === 200, String(ran.status));
+    const never = await callDb(game, "2020-01-01");
+    t(`${game}: a well-formed past day it never ran is refused`,
+      never.status === 404, String(never.status));
+    /* The SAME refusal a future key gets, so a probe cannot tell a day with no
+       board from a day that has not come — the rule the answers pages keep. */
+    const future = await callDb(game, "2099-01-01");
+    t(`${game}: and refused identically to a day that has not come`,
+      never.status === future.status &&
+      never.headers.get("X-Robots-Tag") === future.headers.get("X-Robots-Tag") &&
+      never.headers.get("Cache-Control") === future.headers.get("Cache-Control"),
+      `${never.status} / ${future.status}`);
+  }
+  /* A NUMBERED GAME ASKS NOTHING, because for it there was never a question:
+     the ring wraps, so every key from 1 to today resolves. If this started
+     querying, every crossword and Scrambled permalink would take a database
+     read to answer something already known.
+     TWO THINGS KEEP THAT TRUE — an early return on `kind === "number"`, and a
+     query scoped to the two games that have a schedule — and breaking either
+     one alone leaves the BEHAVIOUR unchanged, so this check stays green.
+     Recorded rather than filed as a weakness: it asserts what the route does,
+     not how, and it goes red the moment both guards are gone. */
+  let asked = 0;
+  const countEnv = {
+    ASSETS: env.ASSETS,
+    DB: { prepare: () => { asked++; return { bind: () => ({ first: async () => ({ n: 1 }) }) }; } },
+  };
+  await permalinkRoute({
+    request: new Request("https://www.thexigames.com/crossword/daily/1"),
+    env: countEnv, params: { path: ["1"] },
+  }, "crossword");
+  t("a numbered game reads no schedule to serve a board", asked === 0, asked + " queries");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
