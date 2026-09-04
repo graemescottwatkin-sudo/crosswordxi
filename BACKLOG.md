@@ -85,6 +85,69 @@ What has to be decided before this is built:
 One fact, one place: the day rule goes in ONE module read by both the hub and
 the server. It must not be written once for the page and once for the API.
 
+**THE TWO HALVES SPLIT BY THEME, and that decides where each one lives.**
+Recorded 4 Sep, when the owner said other themes are coming — Friends, Game of
+Thrones — and that they will drop the 114 scoring for something more
+appropriate. XI is a triple meaning and none of them is football: eleven clues,
+eleven games, eleven players to a team.
+
+- The HUB SEASON counts finishes, not points: two puzzles done is a win, one a
+  draw. Nothing in that rule knows what a puzzle scores out of, so it works
+  whatever a Friends crossword is marked on. It is the family-wide half.
+- The PER-GAME LIVE TABLE does not. It is 114 = 38 matches at 3 points a win
+  (`MAX_SCORE: 114` and `SEASON_GAMES: 38`, both in `crossword/js/engine.js`),
+  and it puts the player in a real league season by way of their chosen club. A
+  Friends crossword cannot have a position in the Premier League table.
+
+So the live table is a FOOTBALL-THEME feature, not a family-wide one, and it
+should be built as one — rolled out to the four football games and not assumed
+of whatever comes next. The half that spans themes is the half that does not
+depend on scoring, which is a good sign it is the right half to make universal.
+
+### 13. A theme segment in the URL — /football/crossword/daily/1
+
+Raised by the owner on 4 Sep: other kinds of quiz are coming, so should the
+path carry the theme? Recommended YES, and the argument is TIMING rather than
+shape.
+
+**The window is open and closing.** Board permalinks shipped 3 Sep. The sitemap
+listed no boards at all until 4 Sep, and the whole site has two on-site links
+to any board page. So there is essentially nothing indexed to invalidate.
+Restructuring now costs nothing in search; in three months it costs a redirect
+map over hundreds of URLs and a re-crawl. It gets more expensive every day.
+
+**Cost in code, measured:** 20 `_headers` blocks, 18 hard-coded links in served
+HTML, 24 references in `shared/`, 10 files under `functions/_lib`, 6
+canonicals. Mechanical, and every one of them is already covered by a check
+that would go red if it were missed.
+
+**Theme first, not game first.** `/football/crossword/` groups by what a
+visitor came for, and gives each theme a landing page and a sitemap section
+that match search intent. `/crossword/football/` would treat themes as content
+inside products, which is the weaker read now that the theme carries real
+BEHAVIOUR — see item 11: the scoring and the league table are football's, not
+the family's.
+
+Two conditions:
+
+- Move football on the same day. A flagship left at `/crossword/` while new
+  themes sit under a theme segment is two conventions kept forever.
+- 301 the old paths permanently. The permalinks promise one URL, one puzzle,
+  forever; a 301 keeps that promise and a 404 breaks it.
+
+**REJECTED: `/1/daily/1`, the shirt number as the path.** A shirt number is not
+a stable identifier — this project's have moved three times. CLAUDE.md records
+"HiLo XI went out on 10, was renumbered to 9, and is 4", and QuickFire moved
+from 5 to 6 on 4 Sep when Vowels launched. Putting a reassignable number in the
+path reintroduces, one level up, the exact fault `permalink.js` exists to end:
+"a link posted on the 3rd pointed at a different puzzle by the 10th". It is
+also unreadable (two numbers meaning different things), gives search no words,
+and has no room for the theme that prompted the question. A shirt number's home
+is the strip on the hub, which is precisely why reordering it is cheap.
+
+Do it as its own piece of work: it touches every game, so it wants its own
+gates and its own deploy rather than riding along with something else.
+
 ### 5c. The word search's score, server-side — and two live leaks it closes
 
 The last of the four. Its loop has to be inverted: the page is shipped
