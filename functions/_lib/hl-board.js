@@ -184,6 +184,35 @@ export function publicBoard(board, token) {
 /* THE JUDGE. Call i (1..11) asks whether row i is higher than row i-1. The
    answer, the row's value and its source come back together: the source is
    the answers payload and is shown as the call settles, never before. */
+/* A QUOTE IS EVIDENCE, AND NOT ALL EVIDENCE IS COPY.
+ *
+ * Every row carries the text its value was read from, and the audit needs that
+ * text to be verbatim. For the 274 club boards the source is the league's data
+ * endpoint, so verbatim means a slice of JSON — and the settled row printed it
+ * to the player between quotation marks:
+ *
+ *   ""display":"Ricardo Gardner","first":"Ricardo","last":"Gardner"},"id":
+ *   2041.0,"altIds":{"opta":"p1307"}},"rank":4.0,"name":"appearances"…
+ *
+ * That went out live. So the SERVER decides what a quote is fit for: prose
+ * goes to the player, structured data does not, and either way the row keeps
+ * its publisher and its link — the claim is still sourced on the page, and the
+ * quote is still in the bank for the audit. Not a client-side tidy-up: the
+ * share text and anything else built later would each have had to remember. */
+export function readableQuote(q) {
+  const s = String(q == null ? "" : q).trim();
+  if (!s) return null;
+  /* The test is a JSON KEY — a quoted string with a colon straight after it —
+     and nothing else. Squared brackets were in this rule for one draft and
+     took 2,400 real sentences out with the JSON, because a quote reads "the
+     Brentford Local Board [a forerunner of today's councils]" and an editorial
+     insertion in square brackets is ordinary written English.
+     Prose that quotes speech reads `said: "we go again"` — a colon then a
+     quote, never a quote then a colon — so it is not caught either. */
+  if (/"[^"]*":/.test(s)) return null;
+  return s;
+}
+
 export function judge(board, index, call) {
   const chain = board.chain || [];
   const i = Number(index);
@@ -202,7 +231,7 @@ export function judge(board, index, call) {
     context: row.context || "",
     ...(row.detail && row.detail.birthDate ? { birthDate: row.detail.birthDate } : {}),
     ...(row.precision ? { precision: row.precision } : {}),
-    source: { publisher: src.publisher || null, url: src.url || null, quote: src.quote || null },
+    source: { publisher: src.publisher || null, url: src.url || null, quote: readableQuote(src.quote) },
   };
 }
 

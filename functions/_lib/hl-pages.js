@@ -77,10 +77,37 @@ export async function treeRoute({ params, env }) {
   return clubPage(club);
 }
 
-function boardRow(club, b, n) {
-  return `<li class="set"><span class="name">${esc(b.subtitle)}</span><span class="chips">` +
-    `<a class="no" href="${esc(clubPath(club.slug))}${n}" aria-label="${esc(club.name)}, board ${n}">#${n}</a>` +
-    `</span></li>`;
+/* ---- a row is a SET of boards, not one board ----
+ *
+ * A row used to be a single board, so a label repeated down the page: 43 of
+ * the 47 clubs had duplicate rows and one had eight identical ones, because a
+ * club has three boards of Premier League appearances and they are all called
+ * "Most Premiership appearances". Now the label is written once and every
+ * board wearing it is a numbered target beside it.
+ *
+ * THE NUMBER IS THE ADDRESS. It counts across the whole club rather than
+ * restarting inside each row, so the number a player presses is the number in
+ * the URL it opens and no door moves when the rows are regrouped. The word
+ * search's theme pages hold the same rule for the same reason — a chip reading
+ * "#2" that opens ".../3" is one thing with two numbers, which is the fault
+ * this project pays for most often.
+ */
+export function boardRows(club) {
+  const rows = [];
+  const byLabel = new Map();
+  (club.boards || []).forEach((b, i) => {
+    const label = b.subtitle;
+    if (!byLabel.has(label)) { byLabel.set(label, { label, chips: [] }); rows.push(byLabel.get(label)); }
+    byLabel.get(label).chips.push(i + 1);
+  });
+  return rows;
+}
+
+function boardRow(club, row) {
+  const chips = row.chips.map((n) =>
+    `<a class="no" href="${esc(clubPath(club.slug))}${n}" aria-label="${esc(club.name)}, board ${n}">#${n}</a>`)
+    .join("");
+  return `<li class="set"><span class="name">${esc(row.label)}</span><span class="chips">${chips}</span></li>`;
 }
 
 /* ---- what the numbers mean, said once ----
@@ -159,13 +186,15 @@ function asAtLine(boards) {
 }
 
 function clubPage(club) {
+  const rows = boardRows(club);
   const body = `<p class="crumb"><a href="${INDEX}">Clubs and themes</a></p>
 <h1>${esc(club.name)}</h1>
-<p class="sub">${plural(club.boards.length, "board", "boards")}. Pick one — it opens on the
+<p class="sub">${plural(club.boards.length, "board", "boards")} in
+${plural(rows.length, "set", "sets")}. Pick one — it opens on the
 board, and the first clock starts when you kick off.</p>
 ${rulesFor(club.boards)}
 ${asAtLine(club.boards)}
-<ul>${club.boards.map((b, i) => boardRow(club, b, i + 1)).join("")}</ul>
+<ul>${rows.map((r) => boardRow(club, r)).join("")}</ul>
 <a class="cta" href="/hilo/">Play today's board</a>`;
   return htmlResponse(sitePage({
     title: `${club.name} — HiLo XI`,

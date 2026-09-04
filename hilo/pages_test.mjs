@@ -44,6 +44,54 @@ t("no name from the chain, on either page", !idxHtml.includes(aName) && !pageHtm
 t("no value from the chain", !pageHtml.includes(String(club.chain[3].value)) || pageHtml.includes("board"));
 t("no quote", !/quote/.test(pageHtml) && !/quote/.test(idxHtml));
 
+console.log("\n=== A row is a set, and no label is written twice ===");
+{
+  /* Three boards to a label is the ordinary case — a club has three boards of
+     Premier League appearances and they are all called the same thing — and
+     the page used to print the label once per board. Aston Villa's read four
+     labels down twelve rows, eight of them repeats. */
+  const mk = (id, category, subtitle) => ({ ...club, id, category, subtitle,
+    trueAsOf: "2026-09-02" });
+  const bank = [
+    mk("r1", "Rowton managers", "Manager appointed"),
+    mk("r2", "Rowton managers", "Manager appointed"),
+    mk("r3", "Rowton managers", "Manager appointed"),
+    mk("r4", "Rowton Premier League goals", "Most Premiership goals"),
+    mk("r5", "Rowton Premier League goals", "Most Premiership goals"),
+  ];
+  const env = { DB: { prepare: (sql) => ({ all: async () => ({
+    results: /hl_board/.test(sql) ? bank.map((b) => ({ payload: JSON.stringify(b) })) : [],
+  }) }) } };
+  const html = await (await treeRoute({ params: { path: ["rowton"] }, env })).text();
+  const labels = [...html.matchAll(/<span class="name">([^<]*)<\/span>/g)].map((m) => m[1]);
+
+  t("every label appears once, however many boards wear it",
+    labels.length === new Set(labels).size && labels.length === 2, labels.join(" | "));
+  t("and the repeats become more numbers on that one row",
+    /<span class="name">Manager appointed<\/span><span class="chips">(?:[^<]*<a[^>]*>#[123]<\/a>){3}<\/span>/
+      .test(html.replace(/\s+/g, " ")),
+    (/Manager appointed<\/span><span class="chips">.*?<\/span>/.exec(html.replace(/\s+/g, " ")) || ["not found"])[0]
+      .replace(/<[^>]*>/g, " ").trim());
+
+  /* THE NUMBER IS THE ADDRESS. A chip reading #4 that opens .../5 would be one
+     board with two numbers, and every door on the page would have moved the
+     day the rows were grouped. Checked by following each chip to the number in
+     its own href. */
+  const chips = [...html.matchAll(/href="\/hilo\/club\/rowton\/(\d+)"[^>]*>#(\d+)</g)];
+  t("the number on a chip is the number in the url it opens",
+    chips.length === 5 && chips.every((m) => m[1] === m[2]),
+    chips.map((m) => `#${m[2]}->${m[1]}`).join(" "));
+  t("and they run 1 to 5 across the club, not 1 to 3 then 1 to 2",
+    chips.map((m) => m[2]).join(",") === "1,2,3,4,5", chips.map((m) => m[2]).join(","));
+  t("the page counts sets as well as boards", /5 boards in\s*2 sets/.test(html));
+
+  /* And the doors still land where they did. */
+  const door = await treeRoute({ params: { path: ["rowton", "4"] }, env });
+  t("board #4 is the fourth board of the club, as its number says",
+    door.status === 302 && door.headers.get("Location").endsWith("?b=r4"),
+    door.headers.get("Location"));
+}
+
 console.log("\n=== What the numbers mean, and when they were true ===");
 {
   /* THE MIXED-DATE CLUB, WHICH THE SAMPLE BANK CANNOT REACH. It holds one club

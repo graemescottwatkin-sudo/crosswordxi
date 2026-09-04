@@ -9,7 +9,7 @@
 import { createRequire } from "node:module";
 import { gate, isClub } from "../tools/import_hilo.js";
 import {
-  clubOf, clubSlug, familyOf, publicBoard, judge, released, boardForToken, dayToken, boardToken,
+  clubOf, clubSlug, familyOf, readableQuote, publicBoard, judge, released, boardForToken, dayToken, boardToken,
   archive, clubCatalog, todayKey,
 } from "../functions/_lib/hl-board.js";
 import { HL_SAMPLE_BOARDS, HL_SAMPLE_SCHEDULE } from "../functions/_lib/hl-sample.js";
@@ -81,6 +81,37 @@ t("a call that ran out of clock is wrong and still reveals the value",
   judge(daily, 2, "none").right === false && judge(daily, 2, "none").value === daily.chain[2].value);
 t("call zero and call twelve are not calls", judge(daily, 0, "higher") === null && judge(daily, 12, "higher") === null);
 t("and a call that is not a call is refused", judge(daily, 1, "sideways") === null);
+
+/* ---- A QUOTE IS EVIDENCE, AND NOT ALL EVIDENCE IS COPY ----
+   The club boards are sourced from the league's data endpoint, so their
+   verbatim quote is a slice of JSON — and the settled row printed it to the
+   player between quotation marks. It went out live. */
+console.log("\nWhat a quote is fit to be shown as");
+const JSONISH = '"display":"Ricardo Gardner","first":"Ricardo","id":2041.0,"value":251.0';
+t("a slice of JSON is not shown to anybody", readableQuote(JSONISH) === null);
+t("a sentence is", readableQuote("Wrexham AFC was founded in 1864.") === "Wrexham AFC was founded in 1864.");
+/* THE HALF THAT WAS WRONG FIRST. Squared brackets were in this rule for one
+   draft and took 2,400 real sentences out with the JSON: an editorial
+   insertion in brackets is ordinary written English, not structured data. */
+t("a sentence with an editorial insertion in brackets is still a sentence",
+  readableQuote("the Brentford Local Board [a forerunner of today's councils] met") !== null);
+t("and a sentence quoting speech is too — a colon before a quote, not after",
+  readableQuote('He said: "we go again" and they did') !== null);
+t("nothing is not a quote", readableQuote("") === null && readableQuote(null) === null &&
+  readableQuote("   ") === null);
+{
+  /* Through the judge, which is what the page actually reads. The publisher
+     and the link SURVIVE — the claim stays sourced on the page whether or not
+     its evidence reads as prose. */
+  const b = clone(daily);
+  b.chain[1].source = { publisher: "Premier League", url: "https://example.test/x", quote: JSONISH };
+  const v = judge(b, 1, "higher");
+  t("the judge withholds an unreadable quote and keeps the source",
+    v.source.quote === null && v.source.publisher === "Premier League" && v.source.url === "https://example.test/x",
+    JSON.stringify(v.source));
+  t("and the bank still holds it, for the audit",
+    b.chain[1].source.quote === JSONISH, "withheld from the wire, not deleted");
+}
 
 console.log("\n=== The future is shut ===");
 const bank = { boards: HL_SAMPLE_BOARDS, schedule: HL_SAMPLE_SCHEDULE, source: "sample" };
