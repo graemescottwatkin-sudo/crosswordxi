@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001m";
+var BUILD = "v001n";
 
 (function () {
   "use strict";
@@ -321,7 +321,22 @@ var BUILD = "v001m";
   /* ---- opening a board ------------------------------------------------- */
   var pending = null;   /* a board opened and not yet kicked off */
   function show(id) {
-    ["screenStart", "screenGame", "screenResults"].forEach(function (s) { $(s).hidden = s !== id; });
+    /* AT FULL TIME THE BOARD STAYS. These screens were exclusive, so the
+       eleventh call hid the ladder, the settled rows and the answers sheet —
+       every value, every source quote, the whole record of what was just
+       played — and left a score card. The crossword never did it: its result
+       opens beside the grid and the grid stays. Scrambled was brought to that
+       behaviour first; this is the same change in this game's shape.
+
+       What is kept is what can be READ: the ladder, the calls as they settled
+       and the eleven with their sources. What goes is what belongs to a round
+       in progress — the live pair, the two call buttons, Next, the question
+       and the rule that explains a substitution. */
+    var full = id === "screenResults";
+    ["screenStart", "screenGame", "screenResults"].forEach(function (s) {
+      $(s).hidden = full ? !(s === "screenResults" || s === "screenGame") : s !== id;
+    });
+    $("screenGame").classList.toggle("finished", full);
     window.scrollTo(0, 0);
   }
   /* A board on its card, covered, the first clock waiting for Kick off. */

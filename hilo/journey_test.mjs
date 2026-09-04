@@ -201,6 +201,20 @@ t("a timed-out call is a wrong call: a stamp, a substitution, the value revealed
 
 console.log("\n=== Full time ===");
 t("the round ends on the eleventh call", shown("screenResults"));
+/* AND THE BOARD IS STILL THERE. These screens were exclusive, so the eleventh
+   call hid the ladder, the settled rows and the eleven with their source
+   quotes — the whole record of what was just played — and left a score card.
+   The crossword never did it, and Scrambled was brought off it first. */
+t("and the ladder and the answers are still on screen, not replaced",
+  shown("screenGame") && doc.querySelectorAll("#ladder i").length === 11 &&
+  doc.querySelectorAll("#sheet li").length === 11,
+  doc.querySelectorAll("#sheet li").length + " on the sheet");
+t("marked finished, so the call buttons and the live pair go",
+  $("screenGame").classList.contains("finished"), $("screenGame").className);
+/* The settled calls stay readable: eleven of them, each with its verdict. */
+t("and every settled call is still shown",
+  doc.querySelectorAll("#rows .duel.settled").length === 11,
+  doc.querySelectorAll("#rows .duel.settled").length + " settled rows");
 const S = window.HL_SCORING;
 const expected = S.score([...Array(10).fill(true), false], [...Array(10).fill(10), 0]);
 t("the score is ten right at full value plus the run bonus, out of 114",

@@ -182,3 +182,13 @@ a.home-choice{text-decoration:none;color:inherit}
    lock is the reason to register, and a row that vanished would say nothing. */
 .arch-row.locked{opacity:.62}
 .arch-row.locked .arch-state::after{content:" 🔒"}
+
+/* FULL TIME: THE LADDER AND THE ANSWERS STAY, THE CONTROLS GO. The settled
+   calls and the eleven with their sources are the record of what was just
+   played, and they used to be hidden the instant the last call landed. What
+   is taken away is everything belonging to a round in progress. */
+.screen.finished #live,
+.screen.finished .calls,
+.screen.finished .nextRow,
+.screen.finished .ask,
+.screen.finished .rule { display: none; }
