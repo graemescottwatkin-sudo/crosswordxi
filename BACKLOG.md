@@ -145,9 +145,17 @@ it. Either way it must exclude unreleased and future boards, which is the rule
 the pages already keep — so it reads that rule from `permalink.js` rather than
 restating it.
 
-**Gap 2 — nothing on the site links to a board page.** Zero links to
-`/crossword/daily/` on the hub, on `/crossword/`, or on `/crossword/answers/`.
-Google has no route in.
+**Gap 2 — almost nothing on the site links to a board page.** CORRECTED 4 Sep:
+the first write-up of this said "zero links anywhere", and so did my own check,
+because neither of us looked at an answers DETAIL page. `/crossword/answers/1`
+and `/crossword/answers/2` each link the board they are about — the crossword's
+live_check has an assertion for it. Everything else is bare: zero on the hub,
+on `/crossword/`, on `/crossword/answers/`, on `/crossword/clubs/`, on a club
+page, on `/hilo/clubs/` and on `/wordsearch/answers/`.
+
+So a crawl path exists and reaches exactly TWO boards, because an answers page
+is sealed until `ANSWERS_AFTER_DAYS` past a board's first day and only two are
+published. It is the shape of the fix, at 2 boards out of hundreds.
 
 TWO CORRECTIONS to how this was first written up, both from checking it:
 
@@ -157,14 +165,13 @@ TWO CORRECTIONS to how this was first written up, both from checking it:
   by `functions/_lib/permalink.js`. Two games count matchdays and two schedule
   by date. The sitemap generator has to handle both key shapes, and the fix is
   worth four games rather than one.
-- **The answers index cannot be the whole route.** It is the natural place and
-  it is good for players — someone reading yesterday's answers is one click
-  from playing it — but an answers page is sealed until `ANSWERS_AFTER_DAYS`
-  past a board's first day, so `/crossword/answers/` lists exactly TWO boards
-  today and `/wordsearch/answers/` lists NONE. Linking from there would give
-  crawlers a path to two crossword boards. The sitemap is doing the real work;
-  a crawlable per-game ARCHIVE index would be the on-site path to all of them,
-  and no such page exists today.
+- **The answers pages cannot be the whole route, and already are the route.**
+  A detail page already links its board; the index does not, and the word
+  search's answers index lists nothing at all. But an answers page is sealed
+  until `ANSWERS_AFTER_DAYS` past a board's first day, so this path can never
+  reach more than the published few however it is wired. The sitemap is doing
+  the real work; a crawlable per-game ARCHIVE index would be the on-site path
+  to all of them, and no such page exists today.
 
 **Graeme's call, not mine: where the board links sit.** Whether the answers
 index gets a "play this board" link beside each entry, whether a crawlable
