@@ -1,0 +1,31 @@
+/* xi-share.css — the share row, in every game.
+ *
+ * Layout only. Every colour and radius comes from the family's tokens, and a
+ * game may still place the block where its own results card wants it — what
+ * must not differ is what the controls ARE and how they read.
+ */
+
+.xis { display: block; }
+
+.xis-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.xis-row .btn { flex: 1 1 auto; }
+
+/* The named places a result gets posted. Quieter than the two controls above
+   them: sharing is the decision, WHERE is a detail, and on a phone the native
+   sheet has usually answered it already. */
+.xis-to {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.xis-to .btn {
+  flex: 1 1 auto;
+  font-size: 13px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}

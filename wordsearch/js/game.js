@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002f";
+  var BUILD = "v002g";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -809,6 +809,19 @@
     if (navigator.share) { navigator.share({ text: text }).catch(function () { copy(text); }); return; }
     copy(text);
   }
+
+  /* THE SHARE ROW, THE FAMILY'S. This game hands over its own text and the
+     address of the board it was scored on; shared/xi-share.js owns the
+     buttons, the platforms and the copy fallback, so every game offers the
+     same way out. Mounted once — the text is read when a button is pressed,
+     not when it is built. */
+  if (window.XIShare && document.getElementById("shareRow")) {
+    window.XIShare.mount(document.getElementById("shareRow"), {
+      text: shareText,
+      url: function () { return location.href; },
+    });
+  }
+
   function copy(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t).then(function () { toast("Result copied"); },
@@ -1364,7 +1377,7 @@
     };
     $("finishBtn").onclick = function () { finish("complete"); };
     $("shareBtn").onclick = doShare;
-    $("copyResult").onclick = doShare;
+
     $("againBtn").onclick = function () { goToMenu(); setPrematchMode("free"); };
     $("resultMenuBtn").onclick = goToMenu;
 

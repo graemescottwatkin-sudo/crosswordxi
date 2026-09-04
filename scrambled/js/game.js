@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002e";
+var BUILD = "v002f";
 
 (function () {
   "use strict";
@@ -1662,10 +1662,19 @@ var BUILD = "v002e";
   $("benchClose").addEventListener("click", function () {
     state.picked = null; hideBench(); drawPitch(); paintEcho();
   });
-  $("copyShare").addEventListener("click", function () {
-    $("shareText").select();
-    try { document.execCommand("copy"); } catch (e) { /* clipboard blocked */ }
-  });
+
+  /* THE SHARE ROW, THE FAMILY'S. This game hands over its own text and the
+     address of the board it was scored on; shared/xi-share.js owns the
+     buttons, the platforms and the copy fallback, so every game offers the
+     same way out. Mounted once — the text is read when a button is pressed,
+     not when it is built. */
+  if (window.XIShare && $("shareRow")) {
+    window.XIShare.mount($("shareRow"), {
+      text: function () { return $("shareText").value; },
+      url: function () { return location.href; },
+    });
+  }
+
   $("playAgain").addEventListener("click", function () {
     try { localStorage.removeItem(storeKey()); } catch (e) { /* ignore */ }
     location.reload();

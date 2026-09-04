@@ -156,6 +156,10 @@ jobs:
           # name a board four different ways and this asserts they are four
           # doors onto ONE rule — a gate three games keep is a gate with a way
           # round it, and the way round is the one people find.
+          # How a result leaves the site: one share row, mounted by four games.
+          # Three of them had share text and nowhere to send it, which is the
+          # same gap the settings cog and the keyboard had before it.
+          node tools/share_test.mjs
           node tools/gating_test.mjs
           # The consonant cypher: the same stored board shown a second way,
           # hidden behind CONSONANTS_PUBLIC while it is unfinished. It PLAYS

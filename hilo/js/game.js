@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001n";
+var BUILD = "v001o";
 
 (function () {
   "use strict";
@@ -668,11 +668,6 @@ var BUILD = "v001n";
     var t = $("toast"); t.textContent = s; t.classList.add("on");
     clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 1800);
   }
-  function copyShare() {
-    var text = $("shareText").value;
-    if (navigator.share) { navigator.share({ text: text }).catch(function () { copy(text); }); return; }
-    copy(text);
-  }
   function copy(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { toast("Result copied"); }, function () { toast("Copy failed"); });
@@ -718,7 +713,17 @@ var BUILD = "v001n";
       else if (ev.key === "ArrowDown" || ev.key === "l" || ev.key === "L") { call("lower"); ev.preventDefault(); }
       else if (ev.key === "Enter" && g && g.awaitingNext) { nextCall(); ev.preventDefault(); }
     });
-    $("copyShare").onclick = copyShare;
+    /* THE SHARE ROW, THE FAMILY'S. This game hands over its own text and the
+       address of the board it was scored on; shared/xi-share.js owns the
+       buttons, the platforms and the copy fallback, so every game offers the
+       same way out. Mounted once — the text is read when a button is pressed,
+       not when the row is built. */
+    if (window.XIShare && $("shareRow")) {
+      window.XIShare.mount($("shareRow"), {
+        text: function () { return $("shareText").value; },
+        url: function () { return location.href; },
+      });
+    }
     $("resultMenuBtn").onclick = goToMenu;
     $("navToday").onclick = function () { if ($("screenStart").hidden) goToMenu(); };
 

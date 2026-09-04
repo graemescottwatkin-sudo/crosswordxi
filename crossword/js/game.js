@@ -286,7 +286,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002u";
+  var BUILD = "v002v";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -5374,53 +5374,24 @@
     return name + "\n" + line + "\n" + invite;
   }
 
-  function shareFallback(text) {
-    function done(ok) {
-      $("shareBtn").textContent = ok ? "Copied!" : "Copy failed";
-      setTimeout(function () { $("shareBtn").textContent = "Share result"; }, 1800);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
-    } else {
-      var ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      try { done(document.execCommand("copy")); } catch (e) { done(false); }
-      document.body.removeChild(ta);
-    }
+  /* The copy fallback lived here and wrote its result back onto the button it
+     was pressed from. Both went with the button: shared/xi-share.js owns the
+     row now, and owns saying "Copied" on whichever control was used. */
+
+
+
+  /* THE SHARE ROW, THE FAMILY'S. This game hands over its own text and the
+     address of the board it was scored on; shared/xi-share.js owns the
+     buttons, the platforms and the copy fallback, so every game offers the
+     same way out. Mounted once — the text is read when a button is pressed,
+     not when it is built. */
+  if (window.XIShare && $("shareRow")) {
+    window.XIShare.mount($("shareRow"), {
+      text: shareText,
+      url: function () { return SHARE_URL; },
+      challenge: false,
+    });
   }
-
-  on("shareBtn", "click", function () {
-    var text = shareText();
-    /* The native sheet on a phone already offers WhatsApp, Messages and
-       everything else installed — better than a row of buttons guessing which
-       apps somebody has. Desktop has no such thing, so it copies instead. */
-    if (navigator.share) {
-      navigator.share({ text: text }).catch(function () { shareFallback(text); });
-      return;
-    }
-    shareFallback(text);
-  });
-
-  /* Named buttons for where a result actually gets posted. Each opens that
-     platform's own composer with the text already in it. */
-  on("shareX", "click", function () {
-    window.open("https://twitter.com/intent/tweet?text=" +
-      encodeURIComponent(shareText()), "_blank", "noopener");
-  });
-  on("shareWhatsApp", "click", function () {
-    window.open("https://wa.me/?text=" + encodeURIComponent(shareText()),
-      "_blank", "noopener");
-  });
-  on("shareReddit", "click", function () {
-    /* Reddit takes a title and a link rather than a body, so the result becomes
-       the title and the game is the link. */
-    var res = shareResult();
-    var title = "Crossword XI \u2014 " +
-      (board.kind === "daily" ? FCW.dailyPhase(board.no).label : "practice") +
-      " \u2014 " + res.score + "/114 in " + fmt(elapsed);
-    window.open("https://reddit.com/submit?url=" + encodeURIComponent(SHARE_URL) +
-      "&title=" + encodeURIComponent(title), "_blank", "noopener");
-  });
 
   function startPractice() {
     openBoard({ kind: "practice" });

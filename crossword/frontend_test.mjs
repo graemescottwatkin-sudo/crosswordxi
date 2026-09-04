@@ -1018,19 +1018,31 @@ server.listen(0, "127.0.0.1", async () => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
     return /function shareStrip/.test(js) && /FCW\.seasonRecord/.test(js);
   })());
+  /* STILL THIS GAME'S, because the TEXT is: a crossword result is written
+     here and must be safe to read before playing. The slice used to end at
+     "function shareFallback", which moved to the shared row — and indexOf
+     returning -1 does not fail, it slices to one character from the end and
+     scans most of the file. Anchored on the next function declaration
+     instead, so it reads shareText and only shareText. */
   t("no answer or clue text can reach the clipboard", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    const fn = js.slice(js.indexOf("function shareText"), js.indexOf("function shareFallback"));
-    return !/\.grid|\.answer|clueText|entries\[/.test(fn);
+    const at = js.indexOf("function shareText");
+    const end = js.indexOf("\n  function ", at + 10);
+    const fn = js.slice(at, end > -1 ? end : undefined);
+    return at > -1 && end > at && fn.length < 4000 &&
+      !/\.grid|\.answer|clueText|entries\[/.test(fn);
   })(), "a shared result must be safe to read before playing");
-  t("the phone's own share sheet is used where there is one", (() => {
+  /* THE SHEET AND THE NAMED BUTTONS MOVED WITH THE ROW. They were this
+     game's alone while the other three had share text and nowhere to send
+     it; shared/xi-share.js owns them now and tools/share_test.mjs checks
+     them for all four. What is left to check HERE is that this game asks for
+     the shared row and keeps no second copy of it. */
+  t("it mounts the family's share row rather than keeping its own", (() => {
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /navigator\.share/.test(js) && /shareFallback\(text\)/.test(js);
-  })());
-  t("with named buttons for desktop, where there is not", (() => {
-    return !!d.getElementById("shareWhatsApp") && !!d.getElementById("shareX") &&
-      !!d.getElementById("shareReddit");
-  })());
+    const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
+    return /XIShare\.mount\(/.test(js) && /id="shareRow"/.test(html) &&
+      !/wa\.me|twitter\.com\/intent|reddit\.com\/submit/.test(js);
+  })(), "see tools/share_test.mjs for what the row itself must do");
 
   console.log("\nThe new home");
   t("no active code path names the old hostname", (() => {
