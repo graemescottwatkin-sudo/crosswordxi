@@ -179,6 +179,12 @@ jobs:
           # how many slots the board has — which the page used to be asked for,
           # and which is what a short board was claimed against.
           node scrambled/verified_test.mjs
+          # Vowels XI, shirt 5. The same engine and the same bank as Scrambled
+          # with the other cypher, so its page and script are GENERATED from
+          # Scrambled's — --check is what makes that copy honest, and refuses
+          # if either side has moved without the other.
+          node tools/build_vowels.js --check
+          node vowels/generated_test.mjs
           # Half time: free hints, fired by the clock and not by a click, so no
           # journey through the game ever reaches it. It was the only untested
           # path in Scrambled, and a player who never receives their hints has
@@ -218,6 +224,7 @@ jobs:
           node crossword/deploy_check.mjs
           node wordsearch/deploy_check.mjs
           node scrambled/deploy_check.mjs
+          node vowels/deploy_check.mjs
           node quickfire/deploy_check.mjs
           node hilo/deploy_check.mjs
 

@@ -17,7 +17,7 @@
    already keep about naming unbuilt games. */
 import { dailyKey, dailyDayKey } from "./daily.js";
 
-export const GAMES = ["crossword", "wordsearch", "scrambled", "hilo"];
+export const GAMES = ["crossword", "wordsearch", "scrambled", "hilo", "vowels"];
 
 export const DEFAULT_GAME = "crossword";
 
@@ -117,6 +117,7 @@ export const LABELS = {
   crossword: "Crossword XI",
   wordsearch: "Wordsearch XI",
   scrambled: "Scrambled XI",
+  vowels: "Vowels XI",
   quickfire: "QuickFire XI",
   hilo: "HiLo XI",
 };
@@ -150,12 +151,19 @@ export function entryKey(game, row) {
     const d = String((row && (row.day || row.date)) || "");
     return /^\d{4}-\d{2}-\d{2}$/.test(d) ? "ws:" + d : null;
   }
-  if (game === "scrambled") {
+  if (game === "scrambled" || game === "vowels") {
     /* THE THIRD GAME HAD NO KEY, so every Scrambled result pushed to an
        account was skipped by migrate.js and the client believed it had
-       pushed. A board is addressed by its number in the daily ring. */
+       pushed. A board is addressed by its number in the daily ring.
+       VOWELS IS THE SAME RING AND A DIFFERENT ELEVEN. Its cypher reads the
+       ring half a turn round, so board 7 of one game is not board 7 of the
+       other — one prefix over both would file two boards under one key and
+       the second would look like a board already played. One derivation,
+       because the derivation IS the same; two prefixes, because the boards
+       are not. */
     const n = Number(row && row.no);
-    return Number.isFinite(n) && n > 0 ? "sc:" + Math.floor(n) : null;
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return (game === "vowels" ? "vw:" : "sc:") + Math.floor(n);
   }
   if (game === "hilo") {
     /* A HiLo daily is addressed by its day, like the word search's: the
@@ -181,7 +189,7 @@ export function playedOn(game, row) {
   if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
   /* A numbered board carries no date of its own; its day is its number's,
      from the one epoch. Scrambled's ring counts by the same daily number. */
-  if (game === "scrambled") return dailyDayKey(row && row.no);
+  if (game === "scrambled" || game === "vowels") return dailyDayKey(row && row.no);
   return null;
 }
 
@@ -205,10 +213,11 @@ export function detailOf(game, row) {
       result: ["W", "D", "L"].includes(row.result) ? row.result : null,
     });
   }
-  if (game === "scrambled") {
+  if (game === "scrambled" || game === "vowels") {
     /* What a Scrambled result keeps beyond the shared columns: the help
        bought, the names revealed outright, and the board's title so a row
-       reads as a board rather than a number. */
+       reads as a board rather than a number. Vowels XI is the same engine
+       with the other cypher, so it keeps the same three. */
     return JSON.stringify({
       help: n(row.help),
       revealed: n(row.revealed),

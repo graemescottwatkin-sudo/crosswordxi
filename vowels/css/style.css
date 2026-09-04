@@ -1,0 +1,715 @@
+/* Scrambled XI — style.css
+ *
+ * Every colour, font and radius comes from shared/xi-tokens.css. Nothing is
+ * restated here: a palette declared twice is the fault that made the word
+ * search and the crossword stop looking like the same suite, and it is the one
+ * this file is not allowed to repeat. There are no .xic- rules here either —
+ * the chrome is styled by shared/xi-chrome.css and a game styling the chrome
+ * is a second chrome starting.
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 14px 40px;
+}
+
+.screen[hidden] { display: none; }
+
+/* ---- Pre-match ---------------------------------------------------------- */
+
+.prematch { display: flex; justify-content: center; padding-top: 18px; }
+
+.pmCard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px 22px 28px;
+  width: 100%;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pmCard h1 {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1.05;
+  margin: 6px 0 2px;
+}
+
+.pmDate {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+
+.pmPool, .poolLine {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0 0 14px;
+}
+
+.pmLede { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 20px; }
+
+.tiny { font-size: 12.5px; color: var(--ink-faint); margin: 14px 0 0; }
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.kick, .btn, .benchBtn {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--pitch-deep);
+  background: var(--pitch);
+  color: #fff;
+  cursor: pointer;
+}
+
+.kick:focus-visible, .btn:focus-visible, .benchBtn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn, .benchBtn {
+  font-size: 14px;
+  padding: 0 14px;
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.benchBtn.danger { color: var(--danger); }
+.benchBtn.quiet, .btn.quiet { color: var(--ink-soft); }
+.benchBtn .cost {
+  font-family: var(--body);
+  font-size: 12px;
+  margin-left: 7px;
+  color: var(--xi-ink);
+}
+
+/* ---- Match head --------------------------------------------------------- */
+
+.matchHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 6px 2px 10px;
+}
+
+.progress {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.clock { font-family: var(--disp); font-weight: 700; font-size: 26px; }
+.clock .prime { color: var(--ink-faint); }
+
+.poolLine { font-size: 13.5px; color: var(--ink-soft); margin: 0 2px 12px; }
+
+/* ---- The pitch ---------------------------------------------------------- */
+
+.pitchWrap { position: relative; }
+
+.pitch {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  background: var(--pitch-deep);
+  border: 1px solid var(--pitch-deep);
+  overflow: hidden;
+}
+
+/* Chalk. Halfway line, centre circle, the two boxes — drawn with borders
+   rather than an image so it themes with everything else. */
+.pitch::before,
+.pitch::after { content: ""; position: absolute; pointer-events: none; }
+.pitch::before {
+  left: 0; right: 0; top: 50%;
+  border-top: 1px solid rgba(255,255,255,.16);
+}
+.pitch::after {
+  left: 50%; top: 50%;
+  width: 34%; aspect-ratio: 1;
+  transform: translate(-50%,-50%);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 50%;
+}
+
+.box {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56%;
+  height: 13%;
+  border: 1px solid rgba(255,255,255,.16);
+  pointer-events: none;
+}
+.box.bottom { bottom: -1px; border-bottom: 0; }
+.box.top { top: -1px; border-top: 0; }
+
+.slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 27%;
+  min-height: var(--tap);
+  padding: 5px 4px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.28);
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  font: inherit;
+}
+.slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.slot .pos {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.62);
+}
+
+.slot .letters {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: clamp(12px, 3.4vw, 17px);
+  letter-spacing: .06em;
+  line-height: 1.15;
+  word-break: break-all;
+}
+
+.slot .enum {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(255,255,255,.58);
+  margin-top: 2px;
+}
+
+.slot .hint {
+  display: block;
+  font-size: 10.5px;
+  color: var(--gold);
+  margin-top: 2px;
+  /* A career is not one word. "Reveal club" returned "Aston Villa"; "Reveal
+     career" can return six clubs and ninety-five characters, and an
+     absolutely-positioned tile with no bound on its hint pushes itself across
+     the pitch and over its neighbours.
+     Bounded in ch rather than px so it scales with the type, wrapping instead
+     of growing sideways, and with the separators given room to breathe so a
+     long history reads as a list rather than a paragraph. */
+  max-width: 22ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.slot.solved {
+  background: var(--pitch);
+  border-color: var(--gold);
+}
+.slot.solved .letters { letter-spacing: .02em; }
+.slot.given { background: rgba(0,0,0,.5); border-style: dashed; }
+.slot.given .letters { color: rgba(255,255,255,.72); }
+.slot.picked { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* ---- Entry -------------------------------------------------------------- */
+
+.feedback {
+  min-height: 20px;
+  margin: 10px 2px 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.feedback.good { color: var(--ok); }
+.feedback.bad { color: var(--danger); }
+
+/* The picked tile echoed above the box, so the keyboard cannot hide what
+   is being typed at. The same three parts as the tile — lifted letters, the
+   rest of the bag, the enumeration — at a size that reads at arm's length. */
+.echo { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 8px; font-family: var(--disp); }
+.echo .pos { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.echo .lifted { font-weight: 700; font-size: 22px; letter-spacing: .06em; color: var(--pitch-ink); }
+.echo .lifted:empty { display: none; }
+.echo .letters { font-weight: 700; font-size: 22px; letter-spacing: .06em; color: var(--ink); }
+.echo .enum { font-size: 12px; color: var(--ink-soft); }
+.entry { display: flex; gap: 8px; }
+
+.entry input {
+  flex: 1 1 auto;
+  min-height: var(--tap);
+  padding: 0 14px;
+  font-family: var(--disp);
+  font-size: 19px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.entry input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.benchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--tint);
+  border-radius: var(--radius);
+}
+.benchFor {
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: var(--ink-soft);
+  width: 100%;
+}
+
+/* ---- Score -------------------------------------------------------------- */
+
+.scoreCluster { display: flex; gap: 10px; margin-top: 14px; }
+
+.scoreBox, .worthBox {
+  flex: 1 1 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.scoreBox .label, .worthBox .label {
+  display: block;
+  font-family: var(--disp);
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.scoreVal, .worthVal { font-family: var(--disp); font-weight: 700; font-size: 26px; }
+.worthVal { color: var(--xi-ink); }
+
+/* ---- Full time ---------------------------------------------------------- */
+
+#resultsBody { margin: 10px 0 16px; }
+
+.ftScore { font-family: var(--disp); font-weight: 700; font-size: 46px; line-height: 1; }
+.ftLine { font-size: 14.5px; color: var(--ink-soft); margin: 6px 0 0; }
+.ftUnverified { font-size: 12.5px; color: var(--ink-faint); margin: 10px 0 0; }
+
+.ftList { list-style: none; margin: 16px 0 0; padding: 0; }
+.ftList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.ftList .who { font-weight: 600; }
+.ftList .how { color: var(--ink-soft); font-size: 13px; }
+
+.share { display: flex; flex-direction: column; gap: 8px; }
+.share textarea {
+  width: 100%;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  resize: vertical;
+}
+
+@media (min-width: 620px) {
+  .pitch { aspect-ratio: 4 / 5; }
+  .slot { width: 21%; }
+}
+
+/* The owner's board picker. Hidden for everyone else, so it needs no styling
+   beyond being unobtrusive when it is there. */
+.owner-bar { display: flex; align-items: center; gap: .5rem; margin: 0 0 .75rem;
+  font-size: .85rem; opacity: .8; }
+.owner-bar select { max-width: 22rem; }
+.owner-note { opacity: .7; }
+
+/* ---- The lifted letters ------------------------------------------------
+   What the player has typed that THIS tile could supply, above the bag it
+   came out of. It has to read as a different KIND of thing from the scramble,
+   not a bolder version of it — the whole point is "these letters are mine and
+   those are still the puzzle's".
+
+   Four things carry that, because colour alone fails in the two places it
+   matters: a gold-on-dark tile at arm's length, and anyone who cannot separate
+   gold from white.
+     - gold, the family's own highlight token, not a new colour
+     - wide tracking, so the letters read as counters rather than a word
+     - a rule underneath, which is the actual boundary between mine and the bag
+     - and the bag steps back to .55 while anything is held above it
+
+   Not an outline: .slot.picked already owns a gold outline, and two states
+   sharing one signal is how a player stops trusting either. */
+.slot .lifted {
+  display: block;
+  min-height: 1.15em;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: clamp(12px, 3.4vw, 17px);
+  letter-spacing: .28em;
+  line-height: 1.15;
+  color: var(--gold);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+}
+/* The rule appears only when something is held, so an empty tile is not a
+   tile with a line through it. */
+.slot.could .lifted { border-bottom: 2px solid var(--gold); padding-bottom: 2px; }
+.slot.could .letters { opacity: .55; }
+
+/* THE CAREER OF THE TILE IN HAND.
+   One purchase reveals all eleven careers, which is a lot of gold text on a
+   pitch. The one the player actually picked is repeated here at a readable
+   size, so the board-wide reveal does not bury the answer to the question
+   they asked. Full width on its own line: a career runs to six clubs. */
+.benchHint {
+  flex: 1 0 100%;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--gold);
+  word-break: break-word;
+}
+
+/* And on the pitch, the picked tile's career is the one lit; the other ten
+   stay legible but recede, so the eye is not asked to read all eleven. */
+.slot .hint { opacity: 0.62; }
+.slot .hint.focus {
+  opacity: 1;
+  font-weight: 600;
+}
+
+/* The two clubs under a solved name. Quieter than the name it belongs to —
+   the name is the answer, this is the recognition that follows it — and
+   bounded like the career hint so a long club name wraps instead of pushing
+   an absolutely-positioned tile across its neighbours. */
+.slot .clubs {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  /* ON GREEN, NOT ON PAPER. A solved tile is pitch green and a revealed one
+     is near black, and --ink-soft is the soft ink for the page's paper — on
+     the tile it read as grey on green and could not be seen at all. The
+     family's token for quiet text on the pitch is the right one here. */
+  color: var(--on-pitch-soft);
+  max-width: 22ch;
+  overflow-wrap: break-word;
+}
+
+
+/* ---- SHEETS: PREVIOUS BOARDS, AND THE FINALS -------------------------------
+
+   A NOTE ON WHERE THIS LIVES. The crossword carries the same sheet and the
+   same month grid in its own stylesheet, so these rules now exist twice in the
+   family, which is the drift this project pays for everywhere else. The right
+   home is the shared layer beside the chrome. It is not moved here because
+   lifting it means bumping SHARED_TAG for all five games in the same breath as
+   a new feature, and a wide deploy and a new feature should not be one commit.
+   Recorded rather than left to be discovered. */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 34, 25, 0.6);
+  z-index: 55;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.sheet.show { display: flex; }
+.sheet-card {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  max-width: 520px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: auto;
+  padding: 22px 22px 20px;
+  border-top: 6px solid var(--pitch);
+}
+.sheet-card h3 {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pitch-ink);
+  border-bottom: 2px solid var(--pitch-deep);
+  padding-bottom: 4px;
+  margin: 0 0 8px;
+}
+.sheet-sub { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 16px; }
+.sheet-empty { color: var(--ink-soft); font-size: 13.5px; padding: 10px 0 14px; }
+.sheet-note { font-size: 11.5px; color: var(--ink-faint); margin-top: 14px; line-height: 1.45; }
+.sheet-close { width: 100%; margin-top: 14px; }
+
+/* ---- the month grid ---- */
+
+.cal-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; }
+.cal-head button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+.cal-head button[disabled] { opacity: 0.35; }
+.cal-month {
+  flex: 1;
+  text-align: center;
+  font-family: var(--disp);
+  font-size: 19px;
+  font-weight: 700;
+}
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ink);
+  min-height: 40px;
+  padding: 0;
+}
+.cal-cell.empty { border: 0; background: none; }
+/* Not released. A dot rather than a number: there is nothing there to choose,
+   and an empty square with a date on it reads as something you failed to do. */
+.cal-cell.none { border: 0; background: none; color: var(--ink-faint); }
+.cal-cell.none::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.cal-cell.none span { display: none; }
+.cal-cell.open { border-color: var(--pitch); color: var(--pitch); font-weight: 700; }
+.cal-cell.done { background: var(--pitch); border-color: var(--pitch); color: #fff; font-weight: 700; }
+.cal-cell.today { box-shadow: 0 0 0 2px var(--sel); }
+/* The date and the score are separate lines. Inline, a 24th with a score of
+   97 rendered as "2497". */
+.cal-cell span { display: block; line-height: 1.1; }
+.cal-cell b { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; opacity: 0.85; }
+.cal-key {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 14px 0 4px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+.cal-key span { display: flex; align-items: center; gap: 6px; }
+.cal-key .k {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--line);
+  display: inline-block;
+}
+.cal-key .k.done { background: var(--pitch); border-color: var(--pitch); }
+.cal-key .k.open { border-color: var(--pitch); }
+.cal-key .k.none { border: 0; background: var(--line); }
+
+/* ---- the finals list ----
+
+   Two lines per row: the side, which is what somebody is looking for, and the
+   fixture under it. One line with both ran to sixty characters and wrapped on
+   a phone, and a wrapped row in a list of five hundred is unreadable. */
+
+.fin-search {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.fin-list { max-height: 52vh; overflow: auto; }
+.fin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0 4px;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+}
+.fin-head i { font-style: normal; color: var(--ink-faint); font-size: 10px; }
+.fin-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.fin-row:hover { background: var(--paper); }
+.fin-side { display: block; font-weight: 600; font-size: 14.5px; }
+.fin-when { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+
+/* ---- THE KEYBOARD ----------------------------------------------------------
+
+   The keys are the family's: shared/xi-keys.css sizes them and shared/xi-keys.js
+   builds them. What is here is what belongs to this game's layout — when the
+   keyboard is shown at all, and leaving the answer box room above it. */
+
+/* Only over the board. show() puts .playing on the body for the game screen
+   and takes it off everywhere else; without this the keyboard would sit under
+   the landing and the full-time card, where there is nothing to type. */
+body:not(.playing) .osk { display: none; }
+
+/* FIXED, NOT STICKY. The crossword's keyboard is sticky and pins itself,
+   because its board fills the screen and there is always something below the
+   keys pushing them down. This page is ordinary document flow and the keyboard
+   is the last thing in it, so sticky had nothing to stick against: it sat
+   wherever the content ended, with empty page underneath it. Fixed to the
+   bottom of the viewport is what it looked like it was doing and now is. */
+body.touch.playing .osk {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* The answer row is what the keys type into, so it is the one thing that must
+   never be behind them: parked directly above the keyboard, using the block
+   height the keys publish rather than a number guessed at here. */
+body.touch.playing .entry {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--osk-block);
+  z-index: 19;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 7px 10px;
+  margin: 0;
+}
+
+/* And room under the board for both, so the bench and the score can be
+   scrolled clear of the keys instead of living behind them. */
+body.touch.playing #screenGame {
+  padding-bottom: calc(var(--osk-block) + var(--osk-h) + 24px);
+}
+
+/* A DAY BEHIND THE LOCK. Shown rather than hidden: what is behind it is the
+   reason to register, and a day that simply vanished from the grid would say
+   nothing at all. Quieter than an open day and plainly not a button that
+   plays — the padlock is the whole message. */
+.cal-cell.locked {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--ink-faint);
+}
+.cal-cell.locked::after {
+  content: "🔒";
+  font-size: 8px;
+  line-height: 1;
+  margin-top: 2px;
+  opacity: .75;
+}
+.cal-key .k.locked { border-style: dashed; background: none; }
+
+/* FULL TIME: THE BOARD STAYS, THE CONTROLS GO. The finished XI is the payoff
+   and it used to vanish the moment the last name went in — the results screen
+   replaced it. Now it sits above the result, readable, with everything that
+   belongs to a round in progress taken away. */
+.screen.finished .entry,
+.screen.finished .benchRow,
+.screen.finished .echo,
+.screen.finished .feedback { display: none; }
+/* A little air between the finished board and the card under it, so they read
+   as two things rather than one run-on. */
+.screen.finished { padding-bottom: 4px; }
+
+/* Whether the score above is the server's. A note about the number, not part
+   of it, and absent on a round nothing could verify. */
+.ftVerified { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.ftVerified:empty { display: none; }

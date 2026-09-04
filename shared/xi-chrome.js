@@ -47,12 +47,19 @@
     { n: 2,  name: "Wordsearch XI",  href: "/wordsearch/" },
     { n: 3,  name: "Scrambled XI",   href: "/scrambled/" },
     { n: 4,  name: "HiLo XI",        href: "/hilo/" },
-    { n: 5,  status: "In testing",   href: "/quickfire/" },
-    { n: 6,  status: "In build" },
+    /* Vowels XI launched on 4 Sep 2026 and took the next free number, which
+       is what launching does. QuickFire was sitting at 5 while in testing and
+       moves down: a game that is not out does not hold a shirt, and the rule
+       says so — "only a launched game holds a number ... and moves down when a
+       game ships past it". */
+    { n: 5,  name: "Vowels XI",      href: "/vowels/" },
+    { n: 6,  status: "In testing",   href: "/quickfire/" },
     { n: 7,  status: "In build" },
-    { n: 8,  status: "On the drawing board" },
+    { n: 8,  status: "In build" },
     { n: 9,  status: "On the drawing board" },
-    { n: 10, status: "Not yet signed" },
+    { n: 10, status: "On the drawing board" },
+    /* Eleven shirts, and a game launching pushes the tail down one — so the
+       squad loses an unsigned slot rather than growing a twelfth. */
     { n: 11, status: "Not yet signed" }
   ];
 

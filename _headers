@@ -116,6 +116,23 @@
 /scrambled/js/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Vowels XI — the same three rules again, one pair per game. Its page and
+# stylesheet are generated from Scrambled's but SERVED FROM ITS OWN PATH, so
+# they need their own block; config.js and scoring.js are loaded from
+# /scrambled/js/ and are covered by that game's block, which is the point of
+# loading them from there rather than copying them.
+/vowels/
+  Cache-Control: no-store
+
+/vowels/index.html
+  Cache-Control: no-store
+
+/vowels/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/vowels/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # HiLo XI — the same three rules again, one pair per game.
 /hilo/
   Cache-Control: no-store

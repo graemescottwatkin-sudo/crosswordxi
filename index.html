@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v19">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v19">
-<script src="shared/xi-theme.js?v=v19"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v20">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v20">
+<script src="shared/xi-theme.js?v=v20"></script>
 <style>
 :root{
 
@@ -237,7 +237,9 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       <a class="shirt live" id="shirt4" href="/hilo/" title="HiLo XI" aria-label="HiLo XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><path d="M6.5 9.5 12 4l5.5 5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 15.5 12 21l5.5-5.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg></a>
-      <span class="shirt soon" title="Not out yet">5</span>
+      <a class="shirt live" id="shirt5" href="/vowels/" title="Vowels XI" aria-label="Vowels XI">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+             stroke-width="1.9"><path d="M4 8h4M10 8h4M16 8h4" stroke-linecap="round"/><path d="M4 13h4M16 13h4" stroke-linecap="round"/><path d="M10 12.4v1.2" stroke-linecap="round" opacity=".45"/><path d="M4 18h16" stroke-linecap="round" opacity=".35"/></svg></a>
       <span class="shirt soon" title="Not out yet">6</span>
       <span class="shirt soon" title="Not out yet">7</span>
       <span class="shirt soon" title="Not out yet">8</span>
@@ -326,6 +328,23 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
       </article>
 
+      <article class="game">
+        <div class="cap on-dark" style="background:var(--kit-05)">
+          <span class="num">5</span>
+          <svg viewBox="0 0 48 48" aria-hidden="true" fill="none">
+            <rect x="2" y="2" width="44" height="44" rx="3" stroke="#fff" stroke-width="2.5"/>
+            <path d="M10 20h6M20 20h8M32 20h6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M10 28h6M32 28h6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M20 27.4v1.2M28 27.4v1.2" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+          </svg>
+          <h3>Vowels XI</h3>
+        </div>
+        <div class="body">
+          <p>The same eleven names, in the right order with the vowels taken out. Fill them back in before the whistle.</p>
+          <a class="btn primary" href="/vowels/">Play today</a>
+        </div>
+      </article>
+
     </div>
   </section>
 
@@ -352,20 +371,16 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     <div class="soon-grid">
       <a class="soon-card open" href="/quickfire/" rel="nofollow"
          title="In testing — not finished, and not yet a daily game">
-        <span class="sq" style="background:var(--kit-05)">5</span>
-        <span class="nm">Number five<span>In testing</span></span>
-      </a>
-      <div class="soon-card">
         <span class="sq" style="background:var(--kit-06)">6</span>
-        <span class="nm">Number six<span>In build</span></span>
-      </div>
+        <span class="nm">Number six<span>In testing</span></span>
+      </a>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-07)">7</span>
         <span class="nm">Number seven<span>In build</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-08)">8</span>
-        <span class="nm">Number eight<span>On the drawing board</span></span>
+        <span class="nm">Number eight<span>In build</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:var(--kit-09)">9</span>
@@ -373,7 +388,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       </div>
       <div class="soon-card">
         <span class="sq" style="background:#8A968D">10</span>
-        <span class="nm">Number ten<span>Not yet signed</span></span>
+        <span class="nm">Number ten<span>On the drawing board</span></span>
       </div>
       <div class="soon-card">
         <span class="sq" style="background:#8A968D">11</span>
@@ -421,7 +436,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v19"></script>
+<script src="shared/xi-chrome.js?v=v20"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without

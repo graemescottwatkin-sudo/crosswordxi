@@ -146,15 +146,17 @@ export function boardForNumber(n, boards, mode) {
    board_test so it cannot be left true by accident the day this game ships. */
 const OPEN_ARCHIVE = false;
 
-/* WHETHER THE CONSONANT BOARDS ARE PUBLIC, AND THEY ARE NOT YET.
-   False does not mean absent: they build, they store and they serve — but
-   only to a signed-in admin, so the owner can test on the live site while
-   nobody else can reach it. Same shape as the preview token: a mode is not
-   authority, and the routes re-check the admin flag on the request.
-   Named rather than hidden in a condition so it is greppable, and asserted
-   by the suite so it cannot be flipped by accident — exactly as OPEN_ARCHIVE
+/* WHETHER THE CONSONANT BOARDS ARE PUBLIC. THEY ARE, SINCE 4 SEP 2026.
+   They became Vowels XI, the fifth shirt, at /vowels/ — the same eleven names
+   and the same bank as Scrambled, with the letters left in their own order and
+   the vowels taken out instead of the whole name shuffled.
+   It was false for as long as the game was being built, and false did not mean
+   absent: the boards built, stored and served, but only to a signed-in admin,
+   so the owner could test on the live site while nobody else could reach it.
+   Named rather than hidden in a condition so it is greppable, and asserted by
+   the suite so it cannot be flipped by accident — exactly as OPEN_ARCHIVE
    above, which is the fault this pattern was invented for. */
-const CONSONANTS_PUBLIC = false;
+const CONSONANTS_PUBLIC = true;
 export function consonantsPublic() { return CONSONANTS_PUBLIC; }
 
 /* Any board up to today, never one after it. The past is open — somebody

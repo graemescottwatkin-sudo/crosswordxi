@@ -39,6 +39,9 @@ export const PERMA_GAMES = {
   wordsearch: { name: "Wordsearch XI", kind: "date" },
   scrambled: { name: "Scrambled XI", kind: "number" },
   hilo: { name: "HiLo XI", kind: "date" },
+  /* The same ring as Scrambled read half a turn round, so the same key shape
+     and a different board behind every number. */
+  vowels: { name: "Vowels XI", kind: "number" },
 };
 
 /* WHAT A BOARD IS CALLED OUT LOUD: the day it ran, in every game.

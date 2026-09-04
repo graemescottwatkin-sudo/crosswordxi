@@ -23,11 +23,6 @@ Three answers needed:
 Needs a migration (next free number is 030) and changes the citations feature
 that shipped 3 Sep.
 
-**Vowels XI — go or no go.** The consonant cypher is landed and playable,
-hidden behind `CONSONANTS_PUBLIC = false` in `scrambled/js/config.js`. Launch
-takes the flag off, a shirt number (the next free one, taken AT launch), and a
-row in `tools/aligned_test.mjs`. Nothing else is blocking.
-
 ---
 
 ## Queued
@@ -68,12 +63,13 @@ completed.
 
 What has to be decided before this is built:
 
-- **What does each game's live table rank?** The crossword's ranks YOU against
-  a real league season by way of your chosen club. Rolling it out to the other
-  three is a straight lift if it stays that; it is a different feature if it is
-  meant to rank players against each other on the board at play, which is what
-  the challenge tables in item 6 do. Confirm which before building three of
-  them.
+- ~~What does each game's live table rank?~~ **ANSWERED 4 Sep: it is all
+  personal.** Every game scores a board out of 114, and that score gives the
+  player a table position in a random season, from that one game. Nobody is
+  ranked against anybody. So it is the crossword's existing mechanism lifted
+  into the other four, not the challenge tables of item 6 — those stay their
+  own thing. The hub is where the season lives, and the season is the daily
+  W/D/L below.
 - **When does a day settle?** A loss cannot be known until the day is over, so
   the result is provisional while the day runs and final at midnight UTC. The
   server decides what day it is (project law); nothing about this may be
@@ -206,6 +202,13 @@ Debt recorded in `scrambled/css/style.css`.
 
 ## Shipped
 
+- **Vowels XI launched** — shirt 5, `/vowels/`, 4 Sep. The same eleven names
+  and the same bank as Scrambled, with the letters left in their own order and
+  the vowels taken out. Its page, stylesheet and script are GENERATED from
+  Scrambled's by `tools/build_vowels.js`, gated by `--check`, because two
+  hand-maintained copies of one engine is the fault this project has paid for
+  most. QuickFire moved to 6: a game in testing does not hold a shirt.
+- **Sources behind a register wall** — crossword v002w, migration 030, 4 Sep.
 - **HiLo's club boards, re-imported** — hilo v001q and v001r, 4 Sep. The owner
   shortened all 274 club subtitles and took the as-at date out of them, so the
   club page now carries the date once at the top and one rule per family; the

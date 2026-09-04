@@ -139,8 +139,14 @@ t("and says only its number and its status, never a name", (() => {
   const status = e.querySelector(".xic-status");
   return !!e.querySelector(".xic-shirt") && !!status && /testing/i.test(status.textContent) &&
     /* The whole of its text is the shirt and the status: nothing else has
-       crept in, which is the property "never a name" actually needs. */
-    e.textContent.replace(/\s+/g, " ").trim() === `5${status.textContent}`;
+       crept in, which is the property "never a name" actually needs.
+       THE NUMBER IS READ, NOT WRITTEN DOWN. This compared against a literal
+       `5` and went red the day Vowels XI launched and took the fifth shirt,
+       pushing the game in testing to six — a check that failed for a change
+       it was never about. The shirt number lives in the squad list and
+       nowhere else, and that includes here. */
+    e.textContent.replace(/\s+/g, " ").trim() ===
+      `${e.querySelector(".xic-shirt").textContent.trim()}${status.textContent}`;
 })());
 t("the route in is marked nofollow, so it is not an announcement",
   !!testingSlots[0] && testingSlots[0].getAttribute("rel") === "nofollow");

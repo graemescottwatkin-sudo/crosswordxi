@@ -178,9 +178,14 @@ t("both finals tokens name the same board", (() => {
 })());
 t("a finals token is not a daily token", playableTokenNo("sc:iconic:c:1") === null);
 
-console.log("\n=== It is not public yet, and the suite says so ===");
-t("CONSONANTS_PUBLIC is false", consonantsPublic() === false,
-  "delete this assertion the day the mode ships, and not before");
+console.log("\n=== It shipped, as Vowels XI ===");
+/* This read "CONSONANTS_PUBLIC is false — delete this assertion the day the
+   mode ships, and not before". That day was 4 Sep 2026: the cypher became
+   Vowels XI at /vowels/, the fifth shirt. The assertion is turned over rather
+   than deleted — the flag still has to say something definite, and a mode that
+   silently stopped being public would take a live game off the site. */
+t("the consonant boards are public, because they are a game now",
+  consonantsPublic() === true, "Vowels XI, shirt 5, /vowels/");
 
 
 /* ---- THE PAGE, PLAYED ---------------------------------------------------
