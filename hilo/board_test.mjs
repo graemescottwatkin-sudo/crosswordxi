@@ -111,5 +111,52 @@ t("win with three wrong, draw with four, loss if unfinished",
 t("three substitutions and a twelve-second clock with two of grace",
   S.SUBS === 3 && S.CLOCK_MS === 12000 && S.GRACE_MS === 2000 && S.CALLS === 11);
 
+/* ---- WHICH CATEGORIES ARE A CLUB'S ------------------------------------
+
+   The rule is derived from the category, because the research side carries no
+   club field — so it has to name every family the content side writes, and
+   the cost of missing one is silence rather than an error. It read
+   `(managers|head coaches)` and matched 54 of the 274 club boards in the
+   September import: the other 220 were filed as dailies, and a daily that is
+   not on the calendar is refused by released(). They imported green and were
+   unplayable and invisible. The importer printed "220 daily board(s) are not
+   on the calendar", which reads like a scheduling note.
+
+   THE HARD HALF IS THE PREFIX. Seven daily boards are categorised "Premier
+   League appearances" with no club in front of them, beside 113 that read
+   "Arsenal Premier League appearances". A rule matched on the tail alone
+   claims both. So each family is checked in the pair it comes in: the club
+   form claimed, the bare form left alone. */
+console.log("\nWhich categories name a club");
+const CLUB_FAMILIES = [
+  ["Arsenal managers", "managers"],
+  ["Brighton & Hove Albion head coaches", "head coaches"],
+  ["Everton managers by longest spell", "managers by longest spell"],
+  ["Arsenal Premier League appearances", "Premier League appearances"],
+  ["Chelsea Premier League goals", "Premier League goals"],
+  ["Aston Villa Premier League assists", "Premier League assists"],
+];
+for (const [withClub, bare] of CLUB_FAMILIES) {
+  t(`"${bare}" is a club board when a club is named`,
+    clubOf({ category: withClub }) !== null, clubOf({ category: withClub }));
+  /* The pair. Without this the rule could claim everything ending in those
+     words and both halves of the check would still read as passing. */
+  t(`  and a daily when it is not`, clubOf({ category: bare }) === null);
+}
+t("the club name comes out with no family word left on it",
+  CLUB_FAMILIES.every(([withClub]) =>
+    !/managers|head coaches|Premier League|longest spell/i.test(clubOf({ category: withClub }))),
+  CLUB_FAMILIES.map(([c]) => clubOf({ category: c })).join(" | "));
+t("a category with nothing before the family word is never a club board",
+  ["managers", "head coaches", "Premier League goals", ""]
+    .every((c) => clubOf({ category: c }) === null));
+/* The importer must not keep a second opinion. It kept its own copy of this
+   regex, identical when both were written and stale in both when the content
+   side added three families. */
+t("the importer asks this rule rather than keeping its own",
+  isClub({ category: "Arsenal Premier League appearances" }) === true &&
+  isClub({ category: "Premier League appearances" }) === false,
+  "one statement of what a club board is");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

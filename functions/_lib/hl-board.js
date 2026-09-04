@@ -28,10 +28,30 @@ export function hasDB(env) { return !!(env && env.DB); }
 /* The family's, not this game's: see utcDay in daily.js. */
 export function todayKey(now = Date.now()) { return utcDay(now); }
 
-/* A club board is one whose category names a club's managers or head
-   coaches. The research side carries no club field, and a rule derived from
-   the category is one the importer, the pages and the play route all share. */
-const CLUB_CATEGORY = /^(.*\S)\s+(managers|head coaches)$/i;
+/* A club board is one whose category names a club and then a family of facts
+   about it. The research side carries no club field, and a rule derived from
+   the category is one the importer, the pages and the play route all share.
+   THIS IS THE ONE PLACE IT IS WRITTEN — tools/import_hilo.js asks here rather
+   than keeping the second copy it used to keep.
+ *
+ * IT MUST NAME EVERY FAMILY, or the boards it misses are buried alive.
+ * It read `(managers|head coaches)` and matched 54 of the 274 club boards in
+ * the September import. The other 220 — a club's Premier League appearances,
+ * goals and assists, and the one longest-spell board — would have been filed
+ * as dailies, and a daily that is not on the calendar is refused by
+ * released(). They would have imported green and been unplayable and
+ * invisible: not on the club pages, because clubOf() returned null, and not
+ * playable, because no day names them.
+ *
+ * THE PREFIX IS REQUIRED, AND THAT IS THE WHOLE DIFFICULTY. Seven daily
+ * boards are categorised "Premier League appearances" with no club in front,
+ * beside 113 that read "Arsenal Premier League appearances". A rule that
+ * matched on the tail alone would swallow the dailies too, so the club name
+ * is `(.+\S)` — at least one character, non-blank — and a bare category
+ * cannot satisfy it. Checked against all 363 boards of the import: 274 club,
+ * 89 daily, no daily claimed and no previously-club board lost. */
+const CLUB_CATEGORY =
+  /^(.+\S)\s+(?:managers(?: by longest spell)?|head coaches|Premier League (?:appearances|goals|assists))$/i;
 export function clubOf(board) {
   const m = CLUB_CATEGORY.exec(String((board && board.category) || ""));
   return m ? m[1] : null;

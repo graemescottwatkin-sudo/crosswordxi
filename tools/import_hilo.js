@@ -20,6 +20,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+/* THE CLUB RULE IS THE SERVER'S, ASKED FOR RATHER THAN COPIED. This file
+   kept its own CLUB_CATEGORY, identical to the one in hl-board.js on the
+   day both were written and stale in both on the day the content side
+   added three families. Two statements of "what is a club board" is the
+   fault this project pays for most often, and here it would have buried
+   220 boards. One place now: functions/_lib/hl-board.js. */
+import { clubOf, isClubBoard } from "../functions/_lib/hl-board.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CHECK_ONLY = process.argv.includes("--check");
@@ -30,7 +37,6 @@ const SAMPLE = path.join(ROOT, "functions", "_lib", "hl-sample.js");
 
 const UNITS = ["year", "count", "pounds", "date"];
 const VALUE_CLASSES = ["fixed-by-nature", "retired-only", "snapshot"];
-const CLUB_CATEGORY = /^(.*\S)\s+(managers|head coaches)$/i;
 
 /* ---- the gate, exported so board_test can sabotage it ---- */
 export function gate(board) {
@@ -66,7 +72,7 @@ export function gate(board) {
   return p;
 }
 
-export function isClub(board) { return CLUB_CATEGORY.test(String((board && board.category) || "")); }
+export const isClub = isClubBoard;
 
 function readJSON(f) { return JSON.parse(fs.readFileSync(f, "utf8")); }
 
@@ -185,7 +191,7 @@ function main() {
     "",
   ];
   for (const b of boards) {
-    const club = (CLUB_CATEGORY.exec(b.category) || [])[1] || null;
+    const club = clubOf(b);
     const slug = club ? club.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : null;
     lines.push("INSERT INTO hl_board (id, kind, club, category, subtitle, payload, updated_at) VALUES (" +
       [q(b.id), q(club ? "club" : "daily"), slug ? q(slug) : "NULL", q(b.category), q(b.subtitle), q(JSON.stringify(b)), q(now)].join(", ") + ");");
