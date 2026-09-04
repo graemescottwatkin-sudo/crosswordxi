@@ -696,3 +696,15 @@ body.touch.playing #screenGame {
   opacity: .75;
 }
 .cal-key .k.locked { border-style: dashed; background: none; }
+
+/* FULL TIME: THE BOARD STAYS, THE CONTROLS GO. The finished XI is the payoff
+   and it used to vanish the moment the last name went in — the results screen
+   replaced it. Now it sits above the result, readable, with everything that
+   belongs to a round in progress taken away. */
+.screen.finished .entry,
+.screen.finished .benchRow,
+.screen.finished .echo,
+.screen.finished .feedback { display: none; }
+/* A little air between the finished board and the card under it, so they read
+   as two things rather than one run-on. */
+.screen.finished { padding-bottom: 4px; }

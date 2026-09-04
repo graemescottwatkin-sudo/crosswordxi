@@ -523,6 +523,27 @@ for (const s of board.slots) {
   await type(s.name);
 }
 t("solving the eleventh ends the match", shown("screenResults"), "no button to press");
+/* AND THE BOARD IS STILL THERE. The four screens were exclusive, so the
+   moment the eleventh name went in the pitch was hidden and all that was left
+   was a score and a block of share text — the finished XI, which is the whole
+   payoff, thrown away at the instant it was finished. The crossword never did
+   it: its result opens beside the grid. So the result now sits UNDER the
+   board rather than instead of it, and what goes away is the controls for a
+   round that is over. */
+t("and the finished board is still on screen, not replaced by the card",
+  shown("screenGame") && doc.querySelectorAll(".slot").length === 11,
+  doc.querySelectorAll(".slot.solved, .slot.given").length + " of 11 tiles still drawn");
+t("marked finished, so the answer box and the bench go",
+  $("screenGame").classList.contains("finished"),
+  $("screenGame").className);
+/* The eleven names are readable on it — the thing the player just earned. */
+t("and the tiles read the names rather than the cypher",
+  [...doc.querySelectorAll(".slot")].every((el) => {
+    const txt = (el.querySelector(".letters") || {}).textContent || "";
+    return txt.length > 0;
+  }) && board.slots.some((sl) =>
+    doc.querySelector(`.slot[data-slot="${sl.id}"] .letters`).textContent
+      .includes(String(sl.name).split(" ").pop())));
 /* The end: the same attempt, finished, eleven of eleven, the help spent in
    detail. Sent by fetch here — the beacon path is the page-leaving one. */
 {

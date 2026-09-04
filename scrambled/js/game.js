@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002d";
+var BUILD = "v002e";
 
 (function () {
   "use strict";
@@ -1278,8 +1278,25 @@ var BUILD = "v002d";
   /* ---- screens ---------------------------------------------------------- */
 
   function show(id) {
+    /* AT FULL TIME THE BOARD STAYS ON SCREEN. These four screens were
+       exclusive, so the moment the eleventh name went in the pitch was hidden
+       and all that was left was a score and a block of share text — the
+       completed XI, which is the whole payoff, thrown away at the moment it
+       was finished. The crossword never did this: its result is a panel that
+       opens beside the grid, and the grid stays.
+
+       So Full Time shows the results card UNDER the board rather than instead
+       of it. Not scrolled to, deliberately: the player is looking at the XI
+       they just finished, and the result is a scroll away in the direction
+       they are already reading. */
+    var full = id === "screenResults";
     ["screenLoading", "screenStart", "screenGame", "screenResults"]
-      .forEach(function (s) { $(s).hidden = s !== id; });
+      .forEach(function (s) {
+        $(s).hidden = full ? !(s === "screenResults" || s === "screenGame") : s !== id;
+      });
+    /* The board is there to be READ now, not played: the answer box, the
+       bench and the echo are controls for a round that is over. */
+    $("screenGame").classList.toggle("finished", full);
     /* THE KEYBOARD BELONGS TO THE BOARD. On the landing and the full-time card
        there is nothing to type into, and a keyboard stuck to the bottom of a
        page somebody is reading takes a third of the screen for nothing. The
