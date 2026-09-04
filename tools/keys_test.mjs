@@ -157,6 +157,100 @@ console.log("\nAsked for nothing, it does nothing");
     win.XIKeys.build(win.document.getElementById("osk"), null) === false);
 }
 
+/* ---- HOW BIG A KEY IS ----------------------------------------------------
+
+   These checks were in crossword/viewport_test.mjs while the keys lived in
+   that game's stylesheet. They came here with them: left behind they would
+   have gone on reading a file the rules had left, passing on its silence.
+
+   The keyboard's widest row is ten keys, sized from three clamped variables,
+   so the fit can be computed rather than guessed — and it is the one thing
+   that would put a horizontal scrollbar on a phone. */
+console.log("\nHow big a key is, at every width that has to work");
+/* ALL WHITESPACE OUT, not only the newlines. These patterns came from a suite
+   that read one stylesheet written without spaces after its colons; against a
+   file punctuated the other way they matched nothing and reported the rules as
+   missing. A check that depends on how a file is spaced is a check that goes
+   red on a reformat and quiet on a real change. */
+const tight = css.replace(/\s+/g, "");
+const dial = (name) => {
+  const m = tight.match(new RegExp("--" + name + ":clamp\\(([^)]*)\\)"));
+  if (!m) return null;
+  const [lo, pref, hi] = m[1].split(",").map((x) => x.trim());
+  return { lo: parseFloat(lo), vw: parseFloat(pref), hi: parseFloat(hi) };
+};
+const key = dial("osk-key"), gap = dial("osk-gap");
+t("the keyboard is sized from clamped variables", !!key && !!gap);
+
+const widths = [320, 360, 390, 430, 768, 1024, 1366, 1920];
+
+/* THE ROW IS THE CEILING, so the clamp above is a wish and not the width.
+   Keys used to be sized by the clamp alone, which meant the cap had to be
+   small enough for the narrowest phone and the keyboard then huddled in the
+   middle of anything wider. The width is now the smaller of that wish and
+   what a row of ten will actually take, so the wish can be generous.
+
+   That moves what can go wrong. Overflow is impossible by construction; what
+   is NOT impossible is the ceiling's own arithmetic drifting from the
+   keyboard it describes — it divides by the number of keys in the widest row
+   and subtracts one gap fewer, and both are written as literals. If a row
+   gains a key they are wrong and every key is too wide by a tenth. So the
+   numbers in the CSS are checked against the rows the module actually builds. */
+const ceiling = tight.match(
+  /\.osk-key\{[^}]*width:min\(var\(--osk-key\),calc\(\(100%-(\d+)\*var\(--osk-gap\)\)\/(\d+)\)\)/);
+t("a key is capped by the row it is in, not only by the viewport", !!ceiling,
+  ceiling ? `minus ${ceiling[1]} gaps, over ${ceiling[2]}` : "no row ceiling in .osk-key");
+
+/* Read from the module's own row strings — the one place the layout is
+   stated — rather than from a number repeated in the suite. */
+const rowLengths = freshWindow(true).XIKeys.ROWS.map((r) => r.length);
+const widest = Math.max(0, ...rowLengths);
+t("and the row it divides by is the widest row the keyboard has",
+  !!ceiling && Number(ceiling[2]) === widest && Number(ceiling[1]) === widest - 1,
+  `rows ${rowLengths.join("/")} — CSS divides by ${ceiling ? ceiling[2] : "?"}`);
+
+/* With that ceiling the row cannot exceed its container at any width, which
+   is the property the old arithmetic was reaching for. Checked by computing
+   the effective width the same way the browser will. */
+const keyAt = (vw) => {
+  const g = Math.min(Math.max(gap.lo, vw * gap.vw / 100), gap.hi);
+  const wish = Math.min(Math.max(key.lo, vw * key.vw / 100), key.hi);
+  return Math.min(wish, (vw - 8 - (widest - 1) * g) / widest);
+};
+const overflow = widths.filter((vw) => {
+  const g = Math.min(Math.max(gap.lo, vw * gap.vw / 100), gap.hi);
+  return widest * keyAt(vw) + (widest - 1) * g + 8 > vw + 0.01;
+});
+t("the widest keyboard row fits every supported width", overflow.length === 0,
+  overflow.length ? overflow.join(", ") + "px overflow" : widths.length + " widths checked");
+
+/* AND IT IS NOT LEAVING THE ROOM EMPTY, which is the fault that started this:
+   on a tablet a row of ten sat in the middle of the screen at a 64px cap with
+   space to spare on both sides. Measured as the key's own size rather than as
+   a fraction of the viewport — a fraction passes on the old CSS at 768px and
+   only tells the truth on a very wide one, where the cap is doing something
+   deliberate and not something to complain about. */
+t("a key on a tablet is bigger than the old fixed cap", keyAt(1024) >= 80,
+  Math.round(keyAt(1024)) + "px at 1024");
+t("and a phone gains from it too, rather than only the tablet",
+  keyAt(390) >= 33 && keyAt(320) >= 27,
+  Math.round(keyAt(320)) + "px at 320, " + Math.round(keyAt(390)) + "px at 390");
+/* The cap is what stops a key stretching into a letterbox on a wide screen,
+   so it is a shape rule, not an oversight. */
+t("but a key never grows wider than about two and a half times its height",
+  key.hi <= 2.6 * 52, key.hi + "px against a 52px tallest key");
+t("keys grow with the screen instead of huddling at a fixed cap",
+  key.hi >= 60 && !/\.osk-key\{[^}]*max-width:44px/.test(tight));
+t("letter size is clamped, so phones do not lose out to the tablet fix",
+  /font-size:clamp\(16px/.test(tight));
+
+/* The block height a game reserves room from. It has to describe the same
+   three rows the module builds, or a game leaves a gap or hides its own
+   controls behind the keys. */
+t("the block height a game reserves is three rows of keys",
+  /--osk-block:calc\(var\(--osk-h\)\*3/.test(tight) && rowLengths.length === 3,
+  rowLengths.length + " rows");
+
 console.log("\nBoth games ask for it, and neither keeps a copy");
 {
   const pages = { crossword: "crossword/index.html", scrambled: "scrambled/index.html" };
