@@ -97,9 +97,23 @@ if (fs.existsSync(bankDir)) {
   console.log("  bank not found — using the " + mod.SC_BOARDS.length + "-board sample");
 }
 
+/* EVERY LIBRARY THE INLINED HANDLERS REACCH FOR. Order matters: these are
+   concatenated as plain script with their imports stripped, so a file must
+   come after anything it reads at load time — archive.js after daily.js,
+   because it calls utcDay.
+
+   archive.js also imports currentUser from auth.js, which is NOT inlined and
+   does not need to be: the tester passes no env, so accountsOffered() is
+   false and the session is never looked up. A name referenced inside a branch
+   that cannot run is not a missing dependency.
+
+   Adding an import to a handler and not adding it here produces a tester
+   whose shim throws on the first board — tester_test asserts the pair now, so
+   it is caught in the build rather than in the file. */
 const libs = [
   "functions/_lib/sc-names.js",
   "functions/_lib/daily.js",
+  "functions/_lib/archive.js",
   "functions/_lib/sc-board.js",
 ].map((f) => `/* ===== ${f} ===== */\n${plain(read(f))}`).join("\n\n");
 

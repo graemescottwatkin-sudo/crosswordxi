@@ -16,6 +16,7 @@
  * it says so.
  */
 import fs from "node:fs";
+import path from "node:path";
 import { JSDOM } from "jsdom";
 /* Read from the module, not off the tester's window: SC_BOARDS is a top-level
    `const` in the inlined script, and a top-level const is not a property of
@@ -60,6 +61,73 @@ t("nothing of the shared chrome came with it",
 t("and it is marked noindex", /name="robots" content="noindex/.test(html));
 t("it says out loud that the answers are inside it",
   /answers are in this file|View Source gives the answers/i.test(html));
+
+/* ---- EVERYTHING THE HANDLERS REACH FOR IS IN THE FILE --------------------
+
+   The tester is one HTML file with the real endpoint handlers inlined, their
+   import lines stripped, above a fixed list of libraries. So an import ADDED
+   to a handler and not added to that list leaves a free variable: the handler
+   throws on its first call, the shim answers nothing, and the tester opens on
+   a board that never loaded.
+
+   That happened the day the archive gate landed — daily.js gained an import
+   of _lib/archive.js and the list did not. The checks above caught it, which
+   is why the tester is built and PLAYED in CI rather than only generated; but
+   they caught it as "the shim answered for the board", four failures deep and
+   a long way from the cause. This says the cause.
+
+   Read from the builder rather than restated here: a second list of libraries
+   in the suite that checks the list is the fault it is checking for. */
+{
+  const builder = fs.readFileSync("tools/build_scrambled_tester.js", "utf8");
+  const listOf = (name) => {
+    const at = builder.indexOf("const " + name + " = [");
+    if (at === -1) return [];
+    const end = builder.indexOf("]", at);
+    return [...builder.slice(at, end).matchAll(/"(functions\/[^"]+\.js)"/g)].map((m) => m[1]);
+  };
+  const libs = listOf("libs");
+  const handlerFiles = [...builder.matchAll(/handler\("(functions\/[^"]+\.js)"/g)].map((m) => m[1]);
+  t("the builder names the libraries and the handlers it inlines",
+    libs.length > 0 && handlerFiles.length > 0,
+    `${libs.length} libraries, ${handlerFiles.length} handlers`);
+
+  const inlined = new Set([...libs, ...handlerFiles]);
+
+  /* TWO FILES ARE REACHED AND NOT IN THAT LIST, AND BOTH ARE CORRECT. Named
+     one at a time with the reason, because "some imports are fine to miss" is
+     how this check would stop meaning anything.
+
+     sc-boards.js is inlined by a different route: the builder serialises the
+     bank as `var SC_BOARDS = ...` rather than concatenating the module, so it
+     is in the file under another shape. That is asserted below rather than
+     taken on trust — an exemption nobody checks is a hole.
+
+     auth.js is genuinely absent, and provably unused here: archive.js imports
+     currentUser from it, the tester passes no env, so accountsOffered() is
+     false and the session is never looked up. A name inside a branch that
+     cannot run is not a missing dependency. */
+  t("the bank is in the file, inlined as a value rather than as a module",
+    /var SC_BOARDS = \[/.test(html));
+  const ACCOUNTED_FOR = new Set([
+    "functions/_lib/sc-boards.js",
+    "functions/_lib/auth.js",
+  ]);
+
+  const missing = [];
+  for (const f of [...handlerFiles, ...libs]) {
+    const src = fs.readFileSync(f, "utf8");
+    for (const m of src.matchAll(/^import\s[^"']*["'](\.[^"']+)["']/gm)) {
+      const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(f), m[1]));
+      if (!inlined.has(resolved) && !ACCOUNTED_FOR.has(resolved)) {
+        missing.push(f + " -> " + resolved);
+      }
+    }
+  }
+  t("every module an inlined file imports is inlined too, or accounted for",
+    missing.length === 0,
+    missing.length ? missing.join(", ") : `${inlined.size} files, nothing dangling`);
+}
 
 console.log("\n=== It runs ===");
 /* Pinned to board one for the same reason journey_test is: the ring moves with
