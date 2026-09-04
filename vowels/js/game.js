@@ -1,4 +1,4 @@
-/* Scrambled XI — game.js
+/* Vowels XI — game.js
  *
  * The browser holds no names. It holds scrambles, positions and whatever the
  * server has told it, and every guess goes up to be marked. That is not
@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v001";
+var BUILD = "v001a";
 
 (function () {
   "use strict";
@@ -451,7 +451,7 @@ var BUILD = "v001";
      server is not a signed-out player, and telling them so mid-game would be
      a lie they cannot act on. */
   function accountNote(what, e) {
-    try { console.info("scrambled account " + what + ": " + (e && e.message)); } catch (x) {}
+    try { console.info("vowels account " + what + ": " + (e && e.message)); } catch (x) {}
   }
 
   function pushResults() {
@@ -462,7 +462,7 @@ var BUILD = "v001";
 
   function pullResults() {
     if (!account) return Promise.resolve(null);
-    return apiAuth("/api/account/results?game=scrambled").then(function (r) {
+    return apiAuth("/api/account/results?game=vowels").then(function (r) {
       var remote = (r && r.results) || [];
       if (!remote.length) return null;
       /* THE ACCOUNT'S ROW WINS OUTRIGHT on pull, and unpushed local rows
@@ -1320,7 +1320,7 @@ var BUILD = "v001";
     });
     var givenCount = state.board.slots.length - solvedCount - freeCount;
     $("shareText").value =
-      (state.board.no == null ? "Scrambled XI" : "Scrambled XI #" + state.board.no) + "\n" +
+      (state.board.no == null ? "Vowels XI" : "Vowels XI #" + state.board.no) + "\n" +
       state.board.title + "\n" +
       solvedCount + " of 11 unravelled, " + givenCount + " given" +
       (freeCount ? ", " + freeCount + " free" : "") + "\n" +

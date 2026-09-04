@@ -41,6 +41,33 @@ t("the page always asks for the consonant board",
 t("and Scrambled still asks, so this is a difference and not a change to both",
   /params\.get\("cy"\) === "1"/.test(scrambledJs));
 
+console.log("\n=== It says which game it is, everywhere a reader looks ===");
+/* IT SHIPPED SAYING SCRAMBLED. The masthead — the largest type on the page —
+   read "Scrambled XI", because the generator replaced "Scrambled XI" as one
+   string and the markup splits it across a span. Three meta descriptions and
+   the lede said the names were scrambled. The results card and the share text
+   said "Scrambled XI #10". And ?game=scrambled had this game reading the OTHER
+   game's account results, which is not wording at all.
+   The generator refuses on any of it now. This checks the same property from
+   the other side, because a guard living inside the thing it guards is one
+   mistake away from being edited out along with the fault it was catching. */
+{
+  const visible = html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\b(?:href|src)\s*=\s*("[^"]*"|'[^']*')/gi, "");
+  t("no part of the page a reader sees names the other game",
+    !/scrambl|anagram/i.test(visible),
+    (visible.match(/.{0,30}(scrambl|anagram)[a-z]*.{0,20}/i) || ["clean"])[0]);
+  t("the masthead is this game's name",
+    /<div class="site-mast">Vowels <span class="site-xi">XI<\/span>/.test(html));
+  t("and the script names this game on the card and in the share",
+    js.includes('"Vowels XI #"') || js.includes('"Vowels XI"'),
+    "the results card said Scrambled XI #10 on launch day");
+  t("its account results are ITS results",
+    js.includes("?game=vowels") && !js.includes("?game=scrambled"),
+    "not a wording slip: the wrong game's history on the page and in the sync");
+}
+
 console.log("\n=== Its own keys, because board 7 is not board 7 ===");
 /* The consonant ring is offset half a turn from the anagram ring, so the two
    games' board 7s are different elevens. A shared storage prefix would have
