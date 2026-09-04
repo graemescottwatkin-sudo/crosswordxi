@@ -151,17 +151,35 @@ t("the footer names released games only, with no empty link", (() => {
   return links.length > 0 && links.every((a) => a.textContent.trim().length > 0) &&
     !links.some((a) => a.getAttribute("href") === "/quickfire/");
 })());
+/* THE NUMBER IS DERIVED, BECAUSE AN UNLAUNCHED GAME DOES NOT HOLD ONE.
+   A shirt is taken when a game LAUNCHES, first come first served; a game in
+   testing is in the queue and moves down the moment something ships past it.
+   So this asked for "Number five" and was writing the opposite of the rule
+   down: it read as the game in testing owning shirt five, and it would have
+   gone red the day a fifth game launched — for a reason that has nothing to
+   do with what it guards.
+
+   What it is actually for is that the game in testing is reachable from the
+   hub, under the rest of the XI rather than Out now, unnamed and nofollow.
+   The number it happens to sit on is the first shirt no launched game wears,
+   which the squad already states — so it is read from there. */
 t("the hub carries the same route in, on a card under the rest of the XI", (() => {
   const card = hub.querySelector(".soon-grid a.soon-card");
   if (!card) return false;
   const strip = hub.querySelector(".xi-strip");
+  /* The first shirt no launched game wears, read off the drawer the chrome
+     just built rather than off a number typed here. */
+  const firstFree = cw.querySelector(".xic-squad .xic-slot.soon .xic-shirt");
+  const shirt = card.querySelector(".sq");
   return card.getAttribute("href") === "/quickfire/" &&
     card.getAttribute("rel") === "nofollow" &&
     /in testing/i.test(card.textContent) &&
-    /Number five/i.test(card.textContent) &&
-    /* Not in Out now, and not promoted to a live shirt in the roll-call. */
+    !!firstFree && !!shirt && shirt.textContent.trim() === firstFree.textContent.trim() &&
+    /* Not in Out now, and not promoted to a live shirt in the roll-call. The
+       count of live shirts is the count of launched games, derived above for
+       the same reason rather than written down. */
     !card.closest("section").textContent.includes("Out now") &&
-    !!strip && strip.querySelectorAll("a.shirt.live").length === 4;
+    !!strip && strip.querySelectorAll("a.shirt.live").length === releasedSlots;
 })());
 
 console.log("\nOne palette, and the chrome defines none of it");
