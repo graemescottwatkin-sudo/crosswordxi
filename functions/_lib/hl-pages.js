@@ -83,17 +83,98 @@ function boardRow(club, b, n) {
     `</span></li>`;
 }
 
+/* ---- what the numbers mean, said once ----
+ *
+ * The rules used to be written into the titles, all 274 of them. The owner
+ * took them out on 4 Sep so a title says what the number is and nothing else,
+ * which puts them here: one statement per family, on the page that shows the
+ * family, and only for the families this club actually has. A club with no
+ * assists boards is not told how assists are counted.
+ *
+ * The three stat families share one rule, because it is one rule. */
+const FAMILY_RULE = [
+  ["managers", "Managers in order is the year he first took charge — caretaker spells " +
+    "included — going back to 1960."],
+  ["longest-spell", "Longest spell is the end year less the start year, and counts " +
+    "departed permanent managers only."],
+  ["stats", "Appearances, goals and assists are Premier League figures for this club " +
+    "alone, since 1992. They are not the club's all-time record."],
+];
+const STAT_FAMILIES = ["appearances", "goals", "assists"];
+
+function rulesFor(boards) {
+  const here = new Set(boards.map((b) => b.family).filter(Boolean));
+  if (STAT_FAMILIES.some((f) => here.has(f))) here.add("stats");
+  const lines = FAMILY_RULE.filter(([k]) => here.has(k)).map(([, text]) => text);
+  return lines.length ? `<p class="note">${lines.map(esc).join(" ")}</p>` : "";
+}
+
+/* ---- when the numbers were true ----
+ *
+ * WRITTEN ONCE, AND ONLY WHERE IT IS TRUE. Every club board carries trueAsOf
+ * and most of a club's agree, so one line covers the page. They do not always:
+ * the assists tables were read two days after the rest, and a single line over
+ * boards with two dates would be wrong about one of them. So the dates are
+ * counted, the commonest leads, and any other is named with the families it
+ * covers. Nothing is invented — a board with no date contributes no claim. */
+function monthName(iso) {
+  const M = ["January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"];
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+  if (!m) return null;
+  const mi = Number(m[2]) - 1;
+  if (!M[mi]) return null;
+  return `${Number(m[3])} ${M[mi]} ${m[1]}`;
+}
+const FAMILY_NOUN = { managers: "managers", "longest-spell": "longest spell",
+  appearances: "appearances", goals: "goals", assists: "assists" };
+
+/* The families a club has, in reading order, for the page's description. */
+function familyList(boards) {
+  const order = ["managers", "longest-spell", "appearances", "goals", "assists"];
+  const here = new Set(boards.map((b) => b.family).filter(Boolean));
+  const named = order.filter((f) => here.has(f)).map((f) => FAMILY_NOUN[f]);
+  if (!named.length) return "boards";
+  if (named.length === 1) return named[0];
+  return named.slice(0, -1).join(", ") + " and " + named[named.length - 1];
+}
+
+function asAtLine(boards) {
+  const byDate = new Map();
+  for (const b of boards) {
+    if (!b.trueAsOf || !monthName(b.trueAsOf)) continue;
+    if (!byDate.has(b.trueAsOf)) byDate.set(b.trueAsOf, new Set());
+    if (b.family) byDate.get(b.trueAsOf).add(b.family);
+  }
+  if (!byDate.size) return "";
+  const dates = [...byDate.entries()].sort((a, b) => b[1].size - a[1].size ||
+    (a[0] < b[0] ? -1 : 1));
+  const [main] = dates;
+  let line = `Figures as at ${monthName(main[0])}`;
+  for (const [iso, fams] of dates.slice(1)) {
+    const named = [...fams].map((f) => FAMILY_NOUN[f] || f).sort();
+    line += `; ${named.join(" and ")} as at ${monthName(iso)}`;
+  }
+  return `<p class="note">${esc(line + ".")}</p>`;
+}
+
 function clubPage(club) {
   const body = `<p class="crumb"><a href="${INDEX}">Clubs and themes</a></p>
 <h1>${esc(club.name)}</h1>
 <p class="sub">${plural(club.boards.length, "board", "boards")}. Pick one — it opens on the
 board, and the first clock starts when you kick off.</p>
+${rulesFor(club.boards)}
+${asAtLine(club.boards)}
 <ul>${club.boards.map((b, i) => boardRow(club, b, i + 1)).join("")}</ul>
 <a class="cta" href="/hilo/">Play today's board</a>`;
   return htmlResponse(sitePage({
     title: `${club.name} — HiLo XI`,
-    description: `${plural(club.boards.length, "board", "boards")} of ${club.name} managers, earlier or later. ` +
-      `Free to play, nothing given away.`,
+    /* IT IS NOT ALL MANAGERS ANY MORE. This said "boards of <club> managers"
+       from the day the only club family WAS managers; there are now four, and
+       a description naming one of them is wrong on most pages. Named from the
+       families the club actually has, so it cannot go stale again. */
+    description: `${plural(club.boards.length, "board", "boards")} of ${club.name} ` +
+      `${familyList(club.boards)}, earlier or later. Free to play, nothing given away.`,
     canonical: SITE + clubPath(club.slug),
     game: "hilo", current: INDEX,
     body,

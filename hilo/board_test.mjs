@@ -9,7 +9,7 @@
 import { createRequire } from "node:module";
 import { gate, isClub } from "../tools/import_hilo.js";
 import {
-  clubOf, clubSlug, publicBoard, judge, released, boardForToken, dayToken, boardToken,
+  clubOf, clubSlug, familyOf, publicBoard, judge, released, boardForToken, dayToken, boardToken,
   archive, clubCatalog, todayKey,
 } from "../functions/_lib/hl-board.js";
 import { HL_SAMPLE_BOARDS, HL_SAMPLE_SCHEDULE } from "../functions/_lib/hl-sample.js";
@@ -157,6 +157,39 @@ t("the importer asks this rule rather than keeping its own",
   isClub({ category: "Arsenal Premier League appearances" }) === true &&
   isClub({ category: "Premier League appearances" }) === false,
   "one statement of what a club board is");
+
+/* THE FAMILY, WHICH THE CLUB PAGE NOW STATES A RULE FOR. Five categories, four
+   families: head coaches ARE managers, because Real Madrid's are called that
+   and the rule behind the number is the same one. A daily has no family. */
+t("each club category reports its family, and head coaches are managers",
+  familyOf({ category: "Arsenal managers" }) === "managers" &&
+  familyOf({ category: "Real Madrid head coaches" }) === "managers" &&
+  familyOf({ category: "Everton managers by longest spell" }) === "longest-spell" &&
+  familyOf({ category: "Arsenal Premier League appearances" }) === "appearances" &&
+  familyOf({ category: "Chelsea Premier League goals" }) === "goals" &&
+  familyOf({ category: "Aston Villa Premier League assists" }) === "assists" &&
+  familyOf({ category: "Premier League goals" }) === null,
+  [familyOf({ category: "Real Madrid head coaches" }),
+    familyOf({ category: "Everton managers by longest spell" })].join(" / "));
+
+/* WHEN THE NUMBERS WERE TRUE, REQUIRED OF A CLUB BOARD. The date used to live
+   in all 274 subtitles and was taken out on 4 Sep so a title says what the
+   number is and nothing else. It moved to trueAsOf and the club page states it
+   there — so a club board arriving without one would put an undated snapshot
+   on a page, and is refused here instead. A daily is not a snapshot and owes
+   nothing. */
+{
+  const snapshot = { ...daily, category: "Arsenal Premier League appearances" };
+  const dated = { ...snapshot, trueAsOf: "2026-09-02" };
+  const { trueAsOf, ...undated } = snapshot;
+  const said = (b) => gate(b).filter((x) => /trueAsOf/.test(x));
+  t("a club board with no trueAsOf is refused", said(undated).length === 1, said(undated)[0]);
+  t("  and one with a date is not", said(dated).length === 0);
+  t("  and a malformed date is refused too",
+    said({ ...snapshot, trueAsOf: "2 September 2026" }).length === 1);
+  const { trueAsOf: _t, ...bareDaily } = daily;
+  t("  while a daily owes no such date", said(bareDaily).length === 0);
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

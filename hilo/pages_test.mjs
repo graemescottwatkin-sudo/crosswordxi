@@ -44,6 +44,53 @@ t("no name from the chain, on either page", !idxHtml.includes(aName) && !pageHtm
 t("no value from the chain", !pageHtml.includes(String(club.chain[3].value)) || pageHtml.includes("board"));
 t("no quote", !/quote/.test(pageHtml) && !/quote/.test(idxHtml));
 
+console.log("\n=== What the numbers mean, and when they were true ===");
+{
+  /* THE MIXED-DATE CLUB, WHICH THE SAMPLE BANK CANNOT REACH. It holds one club
+     board, so every check above sees a page with one family and one date — and
+     the line that needed proving is the one covering boards read on different
+     days. The assists tables were read two days after the rest, so a club with
+     assists has two dates on one page and a single "as at" over the lot would
+     be wrong about one of them. Built here rather than waited for. */
+  const mk = (id, category, subtitle, trueAsOf) => ({
+    ...club, id, category, subtitle, trueAsOf,
+  });
+  const bank = [
+    mk("t1", "Testville managers", "Manager appointed", "2026-09-02"),
+    mk("t2", "Testville Premier League goals", "Most Premiership goals", "2026-09-02"),
+    mk("t3", "Testville Premier League assists", "Most Premiership assists", "2026-09-04"),
+  ];
+  const env = { DB: { prepare: (sql) => ({ all: async () => ({
+    results: /hl_board/.test(sql) ? bank.map((b) => ({ payload: JSON.stringify(b) })) : [],
+  }) }) } };
+  const r = await treeRoute({ params: { path: ["testville"] }, env });
+  const html = await r.text();
+
+  t("the page states when the figures were true, once",
+    (html.match(/Figures as at/g) || []).length === 1, "found " + (html.match(/Figures as at/g) || []).length);
+  t("and where two dates meet on one page, it names which is which",
+    /Figures as at 2 September 2026; assists as at 4 September 2026\./.test(html),
+    (/Figures as at[^<]*/.exec(html) || ["not found"])[0]);
+  t("the rule behind each family is stated on the page, not in the titles",
+    /caretaker spells/.test(html) && /since 1992/.test(html));
+  t("and only for the families this club has",
+    !/Longest spell is/.test(html), "no longest-spell board here, so no rule for one");
+  t("the description names the families rather than calling them all managers",
+    /content="3 boards of Testville managers, goals and assists, earlier or later\./.test(html),
+    (/description" content="([^"]*)/.exec(html) || [, "not found"])[1]);
+}
+{
+  /* A club whose boards all agree needs no second clause. */
+  const one = [{ ...club, id: "u1", category: "Onedate managers",
+    subtitle: "Manager appointed", trueAsOf: "2026-09-02" }];
+  const env = { DB: { prepare: (sql) => ({ all: async () => ({
+    results: /hl_board/.test(sql) ? one.map((b) => ({ payload: JSON.stringify(b) })) : [],
+  }) }) } };
+  const html = await (await treeRoute({ params: { path: ["onedate"] }, env })).text();
+  t("one date is one clause and no semicolon",
+    /Figures as at 2 September 2026\./.test(html) && !/;/.test(/Figures as at[^<]*/.exec(html)[0]));
+}
+
 console.log("\n=== A board is a door ===");
 const door = await treeRoute(ctx([slug, "1"]));
 t("a board hands off to the game with the board named",

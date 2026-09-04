@@ -50,13 +50,36 @@ export function todayKey(now = Date.now()) { return utcDay(now); }
  * is `(.+\S)` — at least one character, non-blank — and a bare category
  * cannot satisfy it. Checked against all 363 boards of the import: 274 club,
  * 89 daily, no daily claimed and no previously-club board lost. */
+/* The tail is captured as well as the club, because familyOf() below reads it.
+   The alternation is written longest-first for reading, and ONLY for reading:
+   the `$` means a branch that leaves " by longest spell" over cannot match at
+   all, so the order changes nothing. That was worth checking rather than
+   asserting — a comment claiming this file depends on branch order was
+   written here first, and reversing the two branches proved it false. */
 const CLUB_CATEGORY =
-  /^(.+\S)\s+(?:managers(?: by longest spell)?|head coaches|Premier League (?:appearances|goals|assists))$/i;
+  /^(.+\S)\s+(managers by longest spell|managers|head coaches|Premier League (?:appearances|goals|assists))$/i;
 export function clubOf(board) {
   const m = CLUB_CATEGORY.exec(String((board && board.category) || ""));
   return m ? m[1] : null;
 }
 export function isClubBoard(board) { return clubOf(board) !== null; }
+
+/* WHICH FAMILY, OUT OF THE SAME MATCH. The club page states the rule behind
+   each family once, at the top, rather than writing it into 274 titles — so it
+   has to know which families are on the page. Read from the tail of the same
+   expression that finds the club: a second regex over the same string is
+   exactly the drift the comment above CLUB_CATEGORY was written about.
+
+   Head coaches are managers. The word differs because Real Madrid's do; the
+   rule behind the number is the same one. */
+export function familyOf(board) {
+  const m = CLUB_CATEGORY.exec(String((board && board.category) || ""));
+  if (!m) return null;
+  const tail = String(m[2]).toLowerCase();
+  if (tail === "managers by longest spell") return "longest-spell";
+  if (tail === "managers" || tail === "head coaches") return "managers";
+  return tail.replace("premier league ", "");   // appearances | goals | assists
+}
 export function clubSlug(name) {
   return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
 }
@@ -192,7 +215,8 @@ export function clubCatalog(bank) {
     const slug = clubSlug(club);
     if (!slug) continue;
     if (!byClub.has(slug)) byClub.set(slug, { slug, name: club, boards: [] });
-    byClub.get(slug).boards.push({ id: String(b.id), subtitle: b.subtitle, trueAsOf: b.trueAsOf || null });
+    byClub.get(slug).boards.push({ id: String(b.id), subtitle: b.subtitle,
+      trueAsOf: b.trueAsOf || null, family: familyOf(b) });
   }
   for (const c of byClub.values()) c.boards.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   return [...byClub.values()].sort((a, b) => a.name.localeCompare(b.name));

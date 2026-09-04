@@ -45,6 +45,16 @@ export function gate(board) {
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(String(board.id || ""))) p.push("no id, or an id that is not an id");
   if (!board.category || typeof board.category !== "string") p.push("no category");
   if (!board.subtitle || typeof board.subtitle !== "string") p.push("no subtitle — the line that says what the number is");
+  /* A CLUB BOARD MUST SAY WHEN ITS NUMBERS WERE TRUE. The subtitles used to
+     carry the date — "as at 2 September 2026" written into all 274 of them —
+     and the owner took it out on 4 Sep so a title says what the number is and
+     nothing else. The date did not stop mattering: an appearance count is a
+     snapshot and an undated snapshot is a claim with no date on it. It moved
+     to trueAsOf, shown once at the top of the club page, so this is where the
+     board is refused for not carrying one. */
+  if (isClubBoard(board) && !/^\d{4}-\d{2}-\d{2}$/.test(String(board.trueAsOf || ""))) {
+    p.push("a club board needs trueAsOf as YYYY-MM-DD — the club page states it and cannot invent it");
+  }
   if (!UNITS.includes(board.unit)) p.push(`unit must be one of ${UNITS.join(", ")}, not ${JSON.stringify(board.unit)}`);
   if (board.valueClass !== undefined && !VALUE_CLASSES.includes(board.valueClass)) p.push(`unknown valueClass ${JSON.stringify(board.valueClass)}`);
   if (board.direction != null) {

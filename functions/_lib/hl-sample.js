@@ -431,7 +431,7 @@ export const HL_SAMPLE_BOARDS = [
  {
   "id": "587",
   "category": "Real Madrid head coaches",
-  "subtitle": "The year he first took charge, caretaker spells included. A coach with more than one spell is dated by his first.",
+  "subtitle": "Manager appointed",
   "unit": "year",
   "valueClass": "fixed-by-nature",
   "trueAsOf": "2026-09-02",
