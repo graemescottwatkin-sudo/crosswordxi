@@ -42,7 +42,12 @@ function plain(src) {
        .js file sees ESM syntax, decides the file is a module, and checks it as
        one — a green light that meant the opposite of what it appeared to. The
        assertion below is what actually guards this now. */
-    .replace(/^export\s+(?=(async\s+)?(const|function|class|let|var)\b)/gm, "");
+    .replace(/^export\s+(?=(async\s+)?(const|function|class|let|var)\b)/gm, "")
+    /* And a bare re-export list, `export { A, B };`. sc-round.js has one: it
+       re-exports the page's own scoring rule and bench prices so there is a
+       single statement of each. Here those names are already globals, so the
+       line carries nothing and dropping it loses nothing. */
+    .replace(/^export\s*\{[^}]*\}\s*;\s*$/gm, "");
   const survived = out.split("\n").filter((l) => /^\s*(import|export)\s/.test(l));
   if (survived.length) {
     throw new Error("ESM plumbing survived the strip, so the tester would not " +
@@ -115,6 +120,11 @@ const libs = [
   "functions/_lib/daily.js",
   "functions/_lib/archive.js",
   "functions/_lib/sc-board.js",
+  /* sc-round.js reaches for SCX_SCORING and SCX_CONFIG, which are inlined
+     further down with the rest of scrambled/js/ — and that is soon enough,
+     because it only reads them inside functions, and with no env every one of
+     them answers null before it gets that far. */
+  "functions/_lib/sc-round.js",
 ].map((f) => `/* ===== ${f} ===== */\n${plain(read(f))}`).join("\n\n");
 
 /* Bank first: sc-board.js reads SC_BOARDS. */

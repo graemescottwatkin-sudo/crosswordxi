@@ -708,3 +708,8 @@ body.touch.playing #screenGame {
 /* A little air between the finished board and the card under it, so they read
    as two things rather than one run-on. */
 .screen.finished { padding-bottom: 4px; }
+
+/* Whether the score above is the server's. A note about the number, not part
+   of it, and absent on a round nothing could verify. */
+.ftVerified { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.ftVerified:empty { display: none; }

@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002f";
+var BUILD = "v002g";
 
 (function () {
   "use strict";
@@ -971,6 +971,28 @@ var BUILD = "v002f";
     return state.board.slots.find(function (s) { return String(s.id) === String(id); });
   }
 
+  /* ---- THE SERVER'S CLOCK ------------------------------------------------
+
+     A challenge table is only worth looking at if the scores in it were
+     computed by the server. This game's server already marks every guess and
+     sells every reveal, so what it was missing was the clock — one for the
+     whole board here, unlike HiLo's eleven. Kick off tells it, and from then
+     on it has everything a score is made of.
+
+     Best-effort throughout. A round it cannot verify is played and scored
+     exactly as it always was, on the number the Full Time card has always
+     called unverified. */
+  function playIdOf() {
+    var cur = window.XIPlays && window.XIPlays.current ? window.XIPlays.current() : null;
+    return (cur && cur.playId) || null;
+  }
+  function startServerRound() {
+    var id = playIdOf();
+    if (!id || !state.board) return;
+    post("round", { playId: id, token: state.board.token })
+      .catch(function () { /* unverified, and the board plays on */ });
+  }
+
   function post(path, body) {
     return fetch("/api/scrambled/" + path, {
       method: "POST",
@@ -983,7 +1005,7 @@ var BUILD = "v002f";
     var id = state.picked;
     if (!id || state.solved[id]) return;
     post("reveal", {
-      token: state.board.token, slotId: id, kind: kind,
+      token: state.board.token, slotId: id, kind: kind, playId: playIdOf(),
       /* How many of THIS kind of help the slot has already had. The letter
          reveal counts letters off the front; the vowel reveal counts blanks
          already filled. Sending the wrong one asks the server for a position
@@ -1147,7 +1169,10 @@ var BUILD = "v002f";
     post("guess", {
       token: state.board.token,
       guess: typed,
-      solved: Object.keys(state.solved)
+      solved: Object.keys(state.solved),
+      /* The attempt rides with the guess so the server can count the solve
+         against the clock it started. */
+      playId: playIdOf()
     }).then(function (r) {
       sending = false;
       if (r.error) return say(r.error, "bad");
@@ -1209,6 +1234,21 @@ var BUILD = "v002f";
     });
   }
 
+  function verifyScore(local, scoreEl, note) {
+    var id = playIdOf();
+    if (!id || !state.board) return;
+    post("finish", { playId: id })
+      .then(function (v) {
+        if (!v || !v.verified) return;
+        scoreEl.textContent = v.score + " / " + SCORING.MAX_SCORE;
+        note.textContent = v.score === local
+          ? "Verified by the server."
+          : "Verified by the server — " + v.score + " rather than " + local +
+            ", timed from when the board was pulled.";
+      })
+      .catch(function () { /* the card keeps its own number */ });
+  }
+
   function showResults() {
     var res = SCORING.computeScore(state.elapsed, state.help);
     var mins = Math.floor(state.elapsed / 60), secs = state.elapsed % 60;
@@ -1219,6 +1259,21 @@ var BUILD = "v002f";
     score.className = "ftScore";
     score.textContent = res.score + " / " + SCORING.MAX_SCORE;
     body.appendChild(score);
+
+    /* THE SERVER'S OWN NUMBER, ASKED FOR AFTER THE CARD IS DRAWN. It marked
+       every guess, sold every reveal and timed the board from a clock it
+       started, so it can work the score out without being told any of it —
+       and it writes plays.srv_score, which is what a challenge table reads.
+
+       The card keeps the device's number until the answer comes back, and
+       keeps it for good on a round nothing could verify. Where the two
+       differ the server wins and the line says why: its clock runs from when
+       the board was pulled and does not pause, which is deliberate — an
+       unverifiable pause is exactly where a table would be gamed. */
+    var vnote = document.createElement("p");
+    vnote.className = "ftLine ftVerified";
+    body.appendChild(vnote);
+    verifyScore(res.score, score, vnote);
 
     var line = document.createElement("p");
     line.className = "ftLine";
@@ -1571,6 +1626,8 @@ var BUILD = "v002f";
     show("screenGame");
     drawPitch();
     startClock();
+    /* After startClock, which is what mints the play id this names. */
+    startServerRound();
     $("answer").focus({ preventScroll: true });
   }
   $("homeDaily").addEventListener("click", kickOff);

@@ -18,6 +18,7 @@
  */
 import { json, bad, boardForToken, boardForPreviewToken, slotHint, hintLabel, loadBoards, revealName, topClubs } from "../../_lib/sc-board.js";
 import { normalise } from "../../_lib/sc-names.js";
+import { recordHelp, recordSolve, alreadyDone } from "../../_lib/sc-round.js";
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -59,6 +60,10 @@ export async function onRequestPost({ request, env }) {
       const v = slotHint(board, s.id);
       if (v) hints[s.id] = v;
     }
+    /* CHARGED WHERE IT IS SERVED. recordHelp keeps the board-wide rule the
+       page keeps — one purchase, a second press free — so the two arrive at
+       the same number. */
+    await recordHelp(env, body.playId, "hint");
     return json({ kind, slotId: slot ? slot.id : null, label: hintLabel(board), hints });
   }
 
@@ -81,6 +86,8 @@ export async function onRequestPost({ request, env }) {
     /* Never the last one. A vowel reveal that completes the name is a name
        reveal at the cheaper price — the rule the letter reveal already keeps. */
     if (had >= spots.length - 1) return json({ kind, slotId: slot.id, index: null, letter: null });
+    /* Nothing served, nothing charged — the branch above returns before this. */
+    await recordHelp(env, body.playId, "vowel");
     return json({ kind, slotId: slot.id, index: spots[had], letter: basis[spots[had]] });
   }
 
@@ -90,12 +97,22 @@ export async function onRequestPost({ request, env }) {
     /* Never the last one. A letter reveal that completes the name is a name
        reveal at the cheaper price. */
     if (known >= letters.length - 1) return json({ kind, slotId: slot.id, index: null, letter: null });
+    await recordHelp(env, body.playId, "letter");
     return json({ kind, slotId: slot.id, index: known, letter: letters[known] });
   }
 
   if (kind === "name") {
     /* A bought name solves the slot exactly as a correct guess does, so it
        hands over the same two facts. */
+    /* A NAME IS A PURCHASE AND AN ENDING. Charged once: a slot the round
+       already holds costs nothing, which is the page's rule too — it refuses
+       the click on a solved tile rather than billing for it. Recorded as
+       'revealed', because a name bought is not a name worked out and full
+       time counts them apart. */
+    if (!(await alreadyDone(env, body.playId, slot.id))) {
+      await recordHelp(env, body.playId, "name");
+      await recordSolve(env, body.playId, slot.id, "revealed", Date.now());
+    }
     return json({ kind, slotId: slot.id, name: revealName(slot), clubs: topClubs(slot) });
   }
 

@@ -92,7 +92,21 @@ t("it says out loud that the answers are inside it",
     libs.length > 0 && handlerFiles.length > 0,
     `${libs.length} libraries, ${handlerFiles.length} handlers`);
 
-  const inlined = new Set([...libs, ...handlerFiles]);
+  /* AND THE GAME'S OWN FILES, inlined verbatim further down rather than
+     through the libs list. sc-round.js imports two of them — the scoring rule
+     and the bench prices — so they are part of what "inlined" means here.
+     Read out of the builder rather than listed by hand: a hand-written
+     exemption would go on passing the day the builder stopped inlining one. */
+  const verbatim = [...builder.matchAll(/\$\{read\("(scrambled\/js\/[^"]+\.js)"\)\}/g)]
+    .map((m) => m[1]);
+  /* This says only that the derivation FOUND something — sabotaging one file
+     out of the template left it green, because two others still matched. It
+     is here so an empty list reads as a broken derivation rather than as a
+     tester with nothing inlined; what actually catches a missing file is the
+     accounting check below, which named scoring.js when it was taken out. */
+  t("the builder's verbatim inlines are read from it, and the read found some",
+    verbatim.length > 0, verbatim.join(", ") || "none found in the builder");
+  const inlined = new Set([...libs, ...handlerFiles, ...verbatim]);
 
   /* TWO FILES ARE REACHED AND NOT IN THAT LIST, AND BOTH ARE CORRECT. Named
      one at a time with the reason, because "some imports are fine to miss" is

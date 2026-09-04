@@ -17,6 +17,7 @@
  */
 import { json, bad, boardForToken, boardForPreviewToken, loadBoards, revealName, topClubs } from "../../_lib/sc-board.js";
 import { matchesSlot } from "../../_lib/sc-names.js";
+import { recordSolve } from "../../_lib/sc-round.js";
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -40,6 +41,16 @@ export async function onRequestPost({ request, env }) {
   const hit = (board.slots || [])
     .filter((s) => !already.has(String(s.id)))
     .find((s) => matchesSlot(guess, s));
+
+  /* MARKED HERE, SO COUNTED HERE. The server decided this was right, from
+     names the browser does not hold, which is what makes a verified score
+     possible at all — see functions/_lib/sc-round.js. Keyed by the slot, so
+     the same slot guessed twice after a dropped connection counts once.
+
+     Nothing here can change the answer: a round the server never saw start,
+     or a site with no database, records nothing and the guess is marked and
+     returned exactly as it always was. */
+  if (hit) await recordSolve(env, body.playId, hit.id, "solved", Date.now());
 
   /* The reveal, not the cypher. The client never holds the names, so the one
      name it is allowed to learn — the one it just guessed correctly — has to

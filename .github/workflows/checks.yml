@@ -174,6 +174,11 @@ jobs:
           # break it and the id space becomes a way to read the schedule.
           node scrambled/iconic_test.mjs
           node scrambled/journey_test.mjs
+          # The score the SERVER computes. It already marked every guess and
+          # sold every reveal; the clock is its own now, and so is the count of
+          # how many slots the board has — which the page used to be asked for,
+          # and which is what a short board was claimed against.
+          node scrambled/verified_test.mjs
           # Half time: free hints, fired by the clock and not by a click, so no
           # journey through the game ever reaches it. It was the only untested
           # path in Scrambled, and a player who never receives their hints has
@@ -187,7 +192,7 @@ jobs:
           # produce. --check gates and writes nothing, so a board edited by
           # hand in functions/_lib/ shows up here rather than in production.
           node tools/build_scrambled.js --check
-          # HiLo XI, shirt 10, released. Its gate on the board shape and the
+          # HiLo XI, released. Its gate on the board shape and the
           # judge, its API executed against the sample bank, its club pages,
           # and one round played from kick off to full time through the real
           # page and the real handlers.
