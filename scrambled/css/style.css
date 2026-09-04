@@ -633,3 +633,48 @@ html, body {
 .fin-row:hover { background: var(--paper); }
 .fin-side { display: block; font-weight: 600; font-size: 14.5px; }
 .fin-when { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+
+/* ---- THE KEYBOARD ----------------------------------------------------------
+
+   The keys are the family's: shared/xi-keys.css sizes them and shared/xi-keys.js
+   builds them. What is here is what belongs to this game's layout — when the
+   keyboard is shown at all, and leaving the answer box room above it. */
+
+/* Only over the board. show() puts .playing on the body for the game screen
+   and takes it off everywhere else; without this the keyboard would sit under
+   the landing and the full-time card, where there is nothing to type. */
+body:not(.playing) .osk { display: none; }
+
+/* FIXED, NOT STICKY. The crossword's keyboard is sticky and pins itself,
+   because its board fills the screen and there is always something below the
+   keys pushing them down. This page is ordinary document flow and the keyboard
+   is the last thing in it, so sticky had nothing to stick against: it sat
+   wherever the content ended, with empty page underneath it. Fixed to the
+   bottom of the viewport is what it looked like it was doing and now is. */
+body.touch.playing .osk {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* The answer row is what the keys type into, so it is the one thing that must
+   never be behind them: parked directly above the keyboard, using the block
+   height the keys publish rather than a number guessed at here. */
+body.touch.playing .entry {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--osk-block);
+  z-index: 19;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 7px 10px;
+  margin: 0;
+}
+
+/* And room under the board for both, so the bench and the score can be
+   scrolled clear of the keys instead of living behind them. */
+body.touch.playing #screenGame {
+  padding-bottom: calc(var(--osk-block) + var(--osk-h) + 24px);
+}

@@ -1082,46 +1082,11 @@ table.league tr.zone-end td{border-bottom:2px solid var(--ink-faint)}
 tr.faroff{display:none}
 
 /* ============ ON-SCREEN KEYBOARD ============ */
-.osk{
-  position:sticky;bottom:0;z-index:20;display:none;
-  background:var(--paper);border-top:1px solid var(--line);
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-  /* Two dials, so height and width are tuned independently. Keys used to be
-     capped at 44px wide, which on a tablet left the keyboard huddled in the
-     middle of the screen with small letters and a lot of empty space either
-     side. Width now scales with the viewport; height is scaled by viewport
-     height, because that is the scarce dimension in landscape. */
-  /* THE ROW DECIDES, NOT THE VIEWPORT. This was a viewport percentage with a
-     64px ceiling, so on anything wide the keyboard stopped growing and sat in
-     the middle of the screen with room to spare on both sides. The ceiling is
-     raised and the real limit moved to where it belongs: the width of the row
-     the keys are in. A key is the biggest it can be that still fits ten of
-     them across, which is true on a 320px phone and on a desk monitor without
-     either being a special case, and the row can no longer overflow whatever
-     is asked for here. */
-  --osk-key:clamp(27px,9.4vw,92px);
-  --osk-h:clamp(34px,5.4vh,52px);
-  --osk-gap:clamp(3px,0.7vw,8px);
-}
-body.touch .osk{display:block}
-.osk-row{display:flex;justify-content:center;gap:var(--osk-gap);margin-bottom:var(--osk-gap)}
-.osk-key{
-  /* The percentage resolves against the row, so ten keys and nine gaps are
-     exactly the row: bigger than that is not available and smaller than that
-     is space going to waste. */
-  flex:0 0 auto;height:var(--osk-h);
-  width:min(var(--osk-key),calc((100% - 9 * var(--osk-gap)) / 10));
-  border:1px solid var(--line);border-radius:var(--r-sm);
-  background:var(--card);font-family:var(--disp);font-weight:600;
-  /* Clamped, not purely proportional: a plain ratio would have made the
-     letters smaller on a phone than they were before, while fixing the tablet. */
-  font-size:clamp(16px,calc(var(--osk-key) * .42),26px);color:var(--ink);
-}
-.osk-key:active{background:var(--sel)}
-.osk-key.wide{
-  width:calc(1.5 * min(var(--osk-key),calc((100% - 9 * var(--osk-gap)) / 10)));
-  font-size:clamp(14px,calc(var(--osk-key) * .30),22px);
-}
+/* THE KEYS THEMSELVES ARE THE FAMILY'S NOW — shared/xi-keys.css, linked by
+   this page — because Scrambled XI needed the same keyboard and the sizing
+   here had already been got wrong twice and fixed twice. What stays in this
+   file is what belongs to this game's layout: the heights it wants when the
+   board is short, and hiding the keyboard while the landing is up. */
 
 /* WHERE A CLUE CAME FROM. Small, and after the enumeration, because it is a
    footnote on a clue rather than part of it — and it only exists once the
@@ -1522,7 +1487,7 @@ body.touch.offline .net-strip{bottom:auto;top:0}
 select {
   min-height:44px;
 }
-.osk-key { min-height:0; }          /* exempt: see above */
+/* .osk-key's exemption moved with the keys, to shared/xi-keys.css. */
 .build-badge { min-height:0; }      /* status pill, not a control */
 
 

@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002";
+var BUILD = "v002a";
 
 (function () {
   "use strict";
@@ -1015,6 +1015,11 @@ var BUILD = "v002";
   function show(id) {
     ["screenLoading", "screenStart", "screenGame", "screenResults"]
       .forEach(function (s) { $(s).hidden = s !== id; });
+    /* THE KEYBOARD BELONGS TO THE BOARD. On the landing and the full-time card
+       there is nothing to type into, and a keyboard stuck to the bottom of a
+       page somebody is reading takes a third of the screen for nothing. The
+       crossword hides its own the same way while its landing is up. */
+    document.body.classList.toggle("playing", id === "screenGame");
   }
 
   /* ---- start ------------------------------------------------------------ */
@@ -1245,6 +1250,40 @@ var BUILD = "v002";
     finalsFilter = ev.target.value || "";
     renderFinals();
   });
+
+  /* ---- the keyboard ----------------------------------------------------
+
+     THE FAMILY'S KEYS, NOT THE DEVICE'S. This game had a plain text input, so
+     a phone raised the system keyboard over the pitch — half the board gone,
+     and a different keyboard from the one the crossword draws two taps away.
+     shared/xi-keys.js builds the same three rows here; what they mean is this
+     game's, and here a letter goes in the answer box.
+
+     inputmode is switched to "none" on a touch device rather than making the
+     box readonly: readonly takes the caret with it, and a player needs to see
+     where the next letter is going. On anything with a real keyboard nothing
+     changes at all — no keys are drawn and the box is typed into as before.
+
+     Only the letters, backspace and enter. Every guess is normalised to A-Z
+     before it is marked — see functions/_lib/sc-names.js — so a space bar and
+     a hyphen would be two keys that cannot change any answer, taking room
+     from the twenty-six that can. */
+  function keyInto(ch) {
+    if (!state.board || state.over) return;
+    var box = $("answer");
+    box.value += ch;
+    paintTyped();
+  }
+  function keyBack() {
+    var box = $("answer");
+    box.value = box.value.slice(0, -1);
+    paintTyped();
+  }
+  if (window.XIKeys) {
+    var onTouch = window.XIKeys.markTouch();
+    if (onTouch) $("answer").setAttribute("inputmode", "none");
+    window.XIKeys.build($("osk"), { letter: keyInto, back: keyBack, enter: submit });
+  }
 
   $("submit").addEventListener("click", submit);
   $("answer").addEventListener("keydown", function (e) {

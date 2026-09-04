@@ -257,7 +257,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002r";
+  var BUILD = "v002s";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -3754,32 +3754,22 @@
     else if (ev.key === "Enter") { stepClue(1); ev.preventDefault(); }
   });
 
-  /* ---------- On-screen keyboard ---------- */
-  function buildOsk() {
-    var rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-    var osk = $("osk");
-    rows.forEach(function (r, ri) {
-      var div = document.createElement("div");
-      div.className = "osk-row";
-      r.split("").forEach(function (ch) {
-        var b = document.createElement("button");
-        b.className = "osk-key"; b.textContent = ch;
-        b.addEventListener("pointerdown", function (ev) { typeLetter(ch); startTimer(); ev.preventDefault(); });
-        div.appendChild(b);
-      });
-      if (ri === 2) {
-        var bs = document.createElement("button");
-        bs.className = "osk-key wide"; bs.innerHTML = "&#9003;";
-        bs.addEventListener("pointerdown", function (ev) { backspace(); ev.preventDefault(); });
-        div.appendChild(bs);
-      }
-      osk.appendChild(div);
-    });
-  }
-  if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
-    document.body.classList.add("touch");
-  }
-  buildOsk();
+  /* ---------- On-screen keyboard ----------
+
+     The keys are the family's — shared/xi-keys.js builds them, and the CSS
+     that sizes them lives beside it — because Scrambled needed the same
+     keyboard and a second copy would have been a second thing to tune. What
+     the keys MEAN is still this game's: a letter goes in the selected cell
+     and starts the clock, which is true of nothing else in the family.
+
+     No enter key here. Enter steps to the next clue on this board, and a
+     keyboard key that moves you off the clue you are typing is not what
+     anybody reaches for. */
+  window.XIKeys.markTouch();
+  window.XIKeys.build($("osk"), {
+    letter: function (ch) { typeLetter(ch); startTimer(); },
+    back: function () { backspace(); },
+  });
 
   /* ---------- Check (selected answer, -3 pts) ---------- */
   /* Which letters are wrong is what Check costs three points for, so it is

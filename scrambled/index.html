@@ -26,13 +26,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared/xi-tokens.css?v=v15">
-<link rel="stylesheet" href="../shared/xi-landing.css?v=v15">
-<link rel="stylesheet" href="../shared/xi-chrome.css?v=v15">
+<link rel="stylesheet" href="../shared/xi-tokens.css?v=v16">
+<link rel="stylesheet" href="../shared/xi-landing.css?v=v16">
+<link rel="stylesheet" href="../shared/xi-chrome.css?v=v16">
+<link rel="stylesheet" href="../shared/xi-keys.css?v=v16">
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
-<script src="../shared/xi-theme.js?v=v15"></script>
-<link rel="stylesheet" href="css/style.css?v=v002">
+<script src="../shared/xi-theme.js?v=v16"></script>
+<link rel="stylesheet" href="css/style.css?v=v002a">
 </head>
 <body>
 
@@ -190,6 +191,11 @@
       <span class="enum" id="echoEnum"></span>
     </div>
     <div class="entry">
+      <!-- inputmode is set to "none" by the game on a touch device, so the
+           system keyboard stays down and the family's own is used instead.
+           Left as "text" here: a device with a real keyboard gets no drawn
+           keyboard, and an input that refuses to be typed into would be worse
+           than the one it replaced. -->
       <input id="answer" type="text" inputmode="text" autocomplete="off"
              autocorrect="off" autocapitalize="characters" spellcheck="false"
              placeholder="Type any name" aria-label="Type any name on the board">
@@ -226,6 +232,11 @@
     </div>
     <button class="btn quiet" id="playAgain">Clear this board and replay</button>
   </section>
+
+  <!-- The family's keyboard, built by shared/xi-keys.js. Outside the screens
+       and last, so it sticks to the bottom of the page rather than to the
+       inside of one section, which is where the crossword's sits too. -->
+  <div class="osk" id="osk"></div>
 
 </main>
 
@@ -280,11 +291,12 @@
 <!-- THE SHARED FOOTER, AT TOP LEVEL. It carries the family disclaimer. -->
 <footer class="xic-foot"></footer>
 
-<script src="../shared/xi-clubs.js?v=v15"></script>
-<script src="../shared/xi-chrome.js?v=v15"></script>
-<script src="../shared/xi-plays.js?v=v15"></script>
-<script src="js/config.js?v=v002"></script>
-<script src="js/scoring.js?v=v002"></script>
-<script src="js/game.js?v=v002"></script>
+<script src="../shared/xi-clubs.js?v=v16"></script>
+<script src="../shared/xi-chrome.js?v=v16"></script>
+<script src="../shared/xi-plays.js?v=v16"></script>
+<script src="../shared/xi-keys.js?v=v16"></script>
+<script src="js/config.js?v=v002a"></script>
+<script src="js/scoring.js?v=v002a"></script>
+<script src="js/game.js?v=v002a"></script>
 </body>
 </html>

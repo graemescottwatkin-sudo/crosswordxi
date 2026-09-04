@@ -1,0 +1,101 @@
+/* xi-keys.css — the family's on-screen keyboard.
+ *
+ * Moved here verbatim from crossword/css/style.css when Scrambled XI needed
+ * the same keyboard. A second copy of a keyboard is the drift this project
+ * pays for everywhere else: the crossword's key sizing was tuned twice over
+ * two releases, and a copy would have been tuned once.
+ *
+ * A game may still override any of this in its own stylesheet — the crossword
+ * does, for the heights it wants in landscape and for hiding the keyboard
+ * while its landing is up — because a keyboard sits in a game's layout and
+ * that part is the game's own. The keys themselves are not.
+ */
+
+.osk {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: none;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+/* THE THREE DIALS SIT ON THE ROOT, NOT ON .osk. A game has to make room for
+   the keyboard — padding under the board so the last row can be scrolled
+   clear, an answer box parked above the keys — and it cannot do that from a
+   variable declared on the keyboard itself. Declared here, the height of a key
+   is one value that both the keys and the layout around them read. A game may
+   still override them on .osk for its own screens; the crossword does, in
+   landscape. Note what that means for --osk-block: it is computed from the
+   root values, so a game that overrides a dial on .osk AND wants the block
+   height must override the block too. Nothing does today — the crossword
+   reserves no room, because its board is sized to what is left. */
+/* Two dials, so height and width are tuned independently. Keys used to be
+   capped at 44px wide, which on a tablet left the keyboard huddled in the
+   middle of the screen with small letters and a lot of empty space either
+   side. Width now scales with the viewport; height is scaled by viewport
+   height, because that is the scarce dimension in landscape.
+
+   THE ROW DECIDES, NOT THE VIEWPORT. The width was a viewport percentage with
+   a 64px ceiling, so on anything wide the keyboard stopped growing and sat in
+   the middle of the screen with room to spare on both sides. The ceiling is
+   raised and the real limit moved to where it belongs: the width of the row
+   the keys are in — see .osk-key. A key is the biggest it can be that still
+   fits ten across, which is true on a 320px phone and on a desk monitor
+   without either being a special case. */
+:root {
+  --osk-key: clamp(27px, 9.4vw, 92px);
+  --osk-h: clamp(34px, 5.4vh, 52px);
+  --osk-gap: clamp(3px, 0.7vw, 8px);
+  /* The whole block: three rows, the gaps under them, the padding, and
+     whatever the phone reserves at the bottom of the screen. */
+  --osk-block: calc(var(--osk-h) * 3 + var(--osk-gap) * 3 + 12px + env(safe-area-inset-bottom));
+}
+/* SHOWN ON TOUCH, AND ONLY ON TOUCH. A device with a real keyboard has one
+   already; drawing a second is taking a third of the screen for nothing. */
+body.touch .osk { display: block; }
+.osk-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--osk-gap);
+  margin-bottom: var(--osk-gap);
+}
+.osk-key {
+  /* The percentage resolves against the row, so ten keys and nine gaps are
+     exactly the row: bigger than that is not available and smaller than that
+     is space going to waste. */
+  flex: 0 0 auto;
+  height: var(--osk-h);
+  width: min(var(--osk-key), calc((100% - 9 * var(--osk-gap)) / 10));
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  font-family: var(--disp);
+  font-weight: 600;
+  /* Clamped, not purely proportional: a plain ratio would have made the
+     letters smaller on a phone than they were before, while fixing the tablet. */
+  font-size: clamp(16px, calc(var(--osk-key) * .42), 26px);
+  color: var(--ink);
+}
+.osk-key:active { background: var(--sel); }
+.osk-key.wide {
+  width: calc(1.5 * min(var(--osk-key), calc((100% - 9 * var(--osk-gap)) / 10)));
+  font-size: clamp(14px, calc(var(--osk-key) * .30), 22px);
+}
+/* The enter key names itself rather than showing a symbol nobody agrees on.
+   Smaller type, because it is a word where the others are one letter. */
+.osk-key.go {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: var(--on-pitch);
+  font-size: clamp(11px, calc(var(--osk-key) * .22), 15px);
+  letter-spacing: .06em;
+}
+.osk-key.go:active { background: var(--pitch-deep); }
+/* 44px is the platform guidance and the right default everywhere else in the
+   family; a key is the one control it cannot apply to. Ten must fit a row, so
+   they are sized like a native keyboard's, and making them 44px tall would
+   push the board further under the keyboard while appearing to fix a tap
+   target. Said here as well as in the crossword, because the rule now travels
+   with the keys. */
+.osk-key { min-height: 0; }

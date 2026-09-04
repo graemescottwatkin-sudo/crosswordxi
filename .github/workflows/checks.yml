@@ -134,6 +134,10 @@ jobs:
           # The cross-game contract: what every game must have, checked
           # identically. Game three is a row in its GAMES table.
           node tools/aligned_test.mjs
+          # The family's on-screen keyboard, which two games now build from.
+          # Tested here rather than in either of them: a suite living inside
+          # one game would be checking the keys on behalf of the other.
+          node tools/keys_test.mjs
           # QuickFire XI's gate, and the proof that its gate can fail. The
           # second one is the point: every check in that file is watched
           # failing before it is trusted.
