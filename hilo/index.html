@@ -33,7 +33,7 @@
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
 <script src="../shared/xi-theme.js?v=v19"></script>
-<link rel="stylesheet" href="css/style.css?v=v001o">
+<link rel="stylesheet" href="css/style.css?v=v001p">
 </head>
 <body>
 
@@ -237,6 +237,11 @@
       <h3><span id="ftScore">0</span> <span class="of">/ 114</span></h3>
       <span class="res W" id="ftRes">Win</span>
       <p class="line" id="ftLine"></p>
+      <!-- Whether the number above is the server's. Empty until it
+           answers, and empty for good on a round it could not verify:
+           the card is the player's own arithmetic either way, and has
+           always been honest about that. -->
+      <p class="line verified" id="ftVerified"></p>
       <textarea id="shareText" rows="5" readonly aria-label="Shareable result"></textarea>
       <div class="row">
         <div id="shareRow"></div>
@@ -256,7 +261,7 @@
 <script src="../shared/xi-chrome.js?v=v19"></script>
 <script src="../shared/xi-plays.js?v=v19"></script>
 <script src="../shared/xi-share.js?v=v19"></script>
-<script src="js/scoring.js?v=v001o"></script>
-<script src="js/game.js?v=v001o"></script>
+<script src="js/scoring.js?v=v001p"></script>
+<script src="js/game.js?v=v001p"></script>
 </body>
 </html>

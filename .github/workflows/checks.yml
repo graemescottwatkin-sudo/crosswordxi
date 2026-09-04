@@ -195,6 +195,12 @@ jobs:
           node hilo/api_test.mjs
           node hilo/pages_test.mjs
           node hilo/journey_test.mjs
+          # The score the SERVER computes, and what it refuses. This game has
+          # always judged which calls were right; the clock is its now too, so
+          # a challenge table can be worth looking at. The checks that matter
+          # are the ones that try to cheat it: a score sent up, a call replayed
+          # faster, a round that never kicked off.
+          node hilo/verified_test.mjs
           # The sample must be what the sources produce; with no bank on the
           # runner the committed sample is gated on its own.
           node tools/import_hilo.js --check

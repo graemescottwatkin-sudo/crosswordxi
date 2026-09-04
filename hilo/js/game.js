@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001o";
+var BUILD = "v001p";
 
 (function () {
   "use strict";
@@ -398,6 +398,8 @@ var BUILD = "v001o";
     drawBoard(g);
     show("screenGame");
     playsStart();
+    /* After playsStart, which is what mints the play id this names. */
+    startServerClock();
     showCall();
   }
   function drawBoard(round) {
@@ -548,7 +550,10 @@ var BUILD = "v001o";
     fetch("/api/hilo/call", {
       method: "POST", headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
       credentials: "same-origin",
-      body: JSON.stringify({ token: token, index: i, call: which }),
+      /* The attempt rides with the call so the server can time it against
+         the clock it started. Absent on a round it never saw, which it
+         handles by not scoring rather than by refusing to judge. */
+      body: JSON.stringify({ token: token, index: i, call: which, playId: playIdOf() }),
     }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) { then(v && v.index === i ? v : null); })
       .catch(function () { then(null); });
@@ -607,7 +612,42 @@ var BUILD = "v001o";
     g.awaitingNext = false;
     $("nextRow").classList.add("hidden");
     g.step++;
+    /* The wait for this tap was not thinking time, so the clock starts now.
+       Before showCall, so the call and its clock begin together. */
+    startServerClock();
     showCall();
+  }
+
+  /* ---- THE SERVER'S CLOCK ------------------------------------------------
+
+     A challenge table is only worth looking at if the scores in it were
+     computed by the server, and this game's score is per-call speed. The
+     server has always judged WHICH calls were right; what it could not know
+     was when each call was shown. So it keeps the clock now, and these are
+     the two moments the page has to tell it about.
+
+     AFTER A RIGHT CALL, NOTHING IS SENT: the next call appears at once, so
+     its clock starts when the server answered the last one and it can time
+     that itself. The two moments below are the ones it cannot see — kick off,
+     and the tap of Next after a wrong call, where the wait is not thinking
+     time. Both can only move a clock LATER, which costs points, so there is
+     nothing here worth lying about.
+
+     Every one of these is best-effort. A round that cannot be verified is
+     played and scored exactly as it always was, on the device's own number,
+     which the Full Time card has always called unverified. */
+  function playIdOf() {
+    var cur = window.XIPlays && window.XIPlays.current ? window.XIPlays.current() : null;
+    return (cur && cur.playId) || null;
+  }
+  function startServerClock() {
+    var id = playIdOf();
+    if (!id || !g) return;
+    fetch("/api/hilo/clock", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ playId: id, token: g.token }),
+    }).catch(function () { /* unverified, and the round plays on */ });
   }
 
   /* ---- full time ------------------------------------------------------- */
@@ -636,7 +676,48 @@ var BUILD = "v001o";
     }
     playsEnd(true);
     show("screenResults");
+    verifyScore(score);
   }
+
+  /* THE SERVER'S OWN NUMBER, ASKED FOR AFTER THE CARD IS UP. Every input is
+     one the browser cannot influence: the server judged each call and timed
+     each one from a clock it started. It writes plays.srv_score, which is the
+     column every challenge endpoint reads and the only reason a table of
+     other people's scores is worth looking at.
+
+     Asked for AFTER the card is shown, never before it. The card is the
+     player's own arithmetic and has always been honest about being that; a
+     round that cannot be verified — no database, an older page, a round the
+     server never saw the start of — keeps it and says so, rather than waiting
+     on a request that may never answer.
+
+     WHEN THE TWO DISAGREE, THE SERVER WINS AND THE PAGE SAYS WHY. They should
+     not: it is the same rule from the same file, hilo/js/scoring.js, which
+     this page loads as a script and the Worker imports as a module. A gap is
+     the network — a call timed from when the server answered rather than from
+     when the page painted — and it can only ever go one way, against the
+     player. Saying so is better than showing two numbers and explaining
+     neither. */
+  function verifyScore(local) {
+    var id = playIdOf();
+    var note = $("ftVerified");
+    if (!id || !note) return;
+    fetch("/api/hilo/finish", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ playId: id }),
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.verified) { note.textContent = ""; return; }
+        $("ftScore").textContent = v.score;
+        note.textContent = v.score === local
+          ? "Verified by the server."
+          : "Verified by the server — " + v.score + " rather than " + local +
+            ", timed from when each call reached it.";
+      })
+      .catch(function () { note.textContent = ""; });
+  }
+
   function goToMenu() {
     if (g && !g.over) playsEnd(false);
     stopClock(); g = null; pending = null;

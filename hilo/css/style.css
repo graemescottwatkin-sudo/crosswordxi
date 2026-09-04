@@ -192,3 +192,8 @@ a.home-choice{text-decoration:none;color:inherit}
 .screen.finished .nextRow,
 .screen.finished .ask,
 .screen.finished .rule { display: none; }
+
+/* Whether the score above was the server's. Quiet: it is a note about the
+   number, not part of it, and it is empty on a round nothing could verify. */
+.ft .line.verified { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.ft .line.verified:empty { display: none; }

@@ -14,6 +14,7 @@
 import { json, bad } from "../../_lib/puzzle.js";
 import { csrfOk } from "../../_lib/auth.js";
 import { loadBank, boardForToken, judge } from "../../_lib/hl-board.js";
+import { recordCall } from "../../_lib/hl-round.js";
 
 export async function onRequestPost({ request, env }) {
   if (!csrfOk(request)) return bad("Refused.", 403);
@@ -24,5 +25,16 @@ export async function onRequestPost({ request, env }) {
   if (!board) return bad("No such board.", 404);
   const verdict = judge(board, body.index, body.call);
   if (!verdict) return bad("Not a call.");
+
+  /* JUDGED HERE, SO RECORDED HERE. The verdict is this server's and so is the
+     clock it was made against, which together are what a verified score is:
+     see functions/_lib/hl-round.js. A right call also starts the next call's
+     clock, because a right call moves the round on by itself.
+
+     Deliberately after the verdict and deliberately unable to change it. If
+     there is no round, no database or no play id — an older page, a round that
+     never kicked off, a suite — this answers null and the call is served
+     exactly as it always was. The game does not depend on being scored. */
+  await recordCall(env, body.playId, body.index, body.call, verdict.right, Date.now());
   return json(verdict);
 }
