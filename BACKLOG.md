@@ -141,6 +141,59 @@ THE PRICE, worth deciding with eyes open: every find becomes a round trip, so
 the daily stops being playable offline. Free Play is unaffected — it keeps its
 whole board and its four help cards, and it is not scored competitively.
 
+### 12. The board permalink pages are orphaned
+
+The pages themselves are right and nothing about them needs fixing: each board
+has a unique dated title, a unique description and a self-referencing
+canonical; unreleased and future boards 404 rather than serving a thin page;
+and `/wordsearch/daily` canonicalises to its dated URL instead of competing
+with it. They simply cannot earn anything, because nothing points at them.
+
+Both gaps verified against production, 4 Sep:
+
+**Gap 1 — no board is in the sitemap.** `sitemap.xml` carries the same 12 URLs
+it had before the board pages shipped, and not one of them is a board. It has
+to be GENERATED rather than hand-kept, because a new board appears every day:
+a build step that writes it from the released boards, or a Function that serves
+it. Either way it must exclude unreleased and future boards, which is the rule
+the pages already keep — so it reads that rule from `permalink.js` rather than
+restating it.
+
+**Gap 2 — nothing on the site links to a board page.** Zero links to
+`/crossword/daily/` on the hub, on `/crossword/`, or on `/crossword/answers/`.
+Google has no route in.
+
+TWO CORRECTIONS to how this was first written up, both from checking it:
+
+- **It is four games, not one.** All four have working board pages off a single
+  module — `/crossword/daily/12`, `/scrambled/daily/12`,
+  `/wordsearch/daily/2026-09-03`, `/hilo/daily/2026-09-03`, all 200, all built
+  by `functions/_lib/permalink.js`. Two games count matchdays and two schedule
+  by date. The sitemap generator has to handle both key shapes, and the fix is
+  worth four games rather than one.
+- **The answers index cannot be the whole route.** It is the natural place and
+  it is good for players — someone reading yesterday's answers is one click
+  from playing it — but an answers page is sealed until `ANSWERS_AFTER_DAYS`
+  past a board's first day, so `/crossword/answers/` lists exactly TWO boards
+  today and `/wordsearch/answers/` lists NONE. Linking from there would give
+  crawlers a path to two crossword boards. The sitemap is doing the real work;
+  a crawlable per-game ARCHIVE index would be the on-site path to all of them,
+  and no such page exists today.
+
+**Graeme's call, not mine: where the board links sit.** Whether the answers
+index gets a "play this board" link beside each entry, whether a crawlable
+archive page is added per game, or both.
+
+Verify after:
+
+```
+curl -s https://www.thexigames.com/sitemap.xml | grep -c "/daily/"
+curl -s https://www.thexigames.com/crossword/answers/ | grep -c 'crossword/daily/'
+```
+
+Both should be greater than zero, and the first should equal the number of
+released boards across the four games.
+
 ### 6. Challenge tables, switched on per game
 
 As each game's score becomes the server's. HiLo and Scrambled now write
