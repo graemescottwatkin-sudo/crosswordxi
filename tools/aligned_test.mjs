@@ -544,5 +544,43 @@ console.log("\nNo game restates a shared token");
       restated.length ? restated.slice(0, 6).join(", ") + (restated.length > 6 ? " …" : "") : "own facts only");
   }
 }
+/* ---- THE HUB JUDGES EVERY LIVE GAME ----
+ *
+ * The front door dims a shirt and counts a game in the roll-call once that
+ * game has been played today. It does it with one fetch-and-read block per
+ * game, written out longhand — and Vowels XI launched with four of those for
+ * five live games, so its shirt never went done and the line never counted it.
+ * The comment above the block said "three live shirts" while there were four.
+ *
+ * A block repeated once per game is a block somebody adds four of and forgets
+ * the fifth, so this derives the list from the squad rather than restating it:
+ * every game in the team sheet above must have its storage prefix read and its
+ * shirt marked, or the hub is not judging it. */
+console.log("\n=== The hub judges every live game ===");
+{
+  const hub = read("index.html");
+  /* Matched on the PREFIX, not on a guessed key. The first draft looked for
+     `<prefix>.results` and failed the crossword, whose key is
+     `fcw.results.v1` — a check that demands a key shape the games never
+     agreed on is a check that fails the game for being itself. What every
+     game does share is that its key starts with its own prefix, which is the
+     cross-game rule this file already enforces above. */
+  const unjudged = GAMES.filter((g) =>
+    hub.indexOf(`getItem("${g.prefix}.`) === -1 || hub.indexOf(`"${g.name}"`) === -1);
+  t("every live game's record is read by the front door",
+    unjudged.length === 0,
+    unjudged.length ? unjudged.map((g) => g.name).join(", ") + " not judged"
+      : GAMES.map((g) => g.prefix).join(", "));
+  /* And one shirt per game, numbered from the squad rather than counted here:
+     a hub marking shirt4 twice would pass a check that only counted them. */
+  const marked = [...hub.matchAll(/markDone\("shirt(\d+)", "([^"]+)"\)/g)]
+    .map((m) => ({ n: Number(m[1]), name: m[2] }));
+  t("each is marked on its own shirt, and no shirt twice",
+    marked.length === GAMES.length &&
+    new Set(marked.map((x) => x.n)).size === GAMES.length &&
+    GAMES.every((g) => marked.some((x) => x.name === g.name)),
+    marked.map((x) => x.n + " " + x.name).join(" | "));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

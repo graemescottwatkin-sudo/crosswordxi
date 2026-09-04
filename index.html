@@ -471,11 +471,16 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     if (b) b.textContent = n;
   })();
 
-  /* Three live shirts now, each judged by its own game's record against its
-     own server's idea of today — the crossword by dailyNo, the word search
-     by day string, the scramble by board number. The roll-call line is
-     composed from whichever answered, so one API being down never blanks
-     the others' results. */
+  /* FIVE live shirts, each judged by its own game's record against its own
+     server's idea of today — the crossword by dailyNo, the word search and
+     HiLo by day string, Scrambled and Vowels by board number. The roll-call
+     line is composed from whichever answered, so one API being down never
+     blanks the others' results.
+     It said "three" while there were four, and covered four while there were
+     five: Vowels XI launched and its shirt never went done, because a block
+     that repeats itself once per game is a block somebody adds four of and
+     forgets the fifth. tools/aligned_test.mjs now derives the list from the
+     squad and refuses a live game this block does not judge. */
   try {
     var played = [];
     var settle = function () {
@@ -528,6 +533,18 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         var list = JSON.parse(localStorage.getItem("xihl.results") || "[]");
         if (list.some(function (r) { return r && r.day === day.day; })) {
           markDone("shirt4", "HiLo XI"); played.push(4); settle();
+        }
+      }).catch(function () {});
+    /* Vowels XI asks the same endpoint as Scrambled with its own cypher, and
+       reads its OWN results key: the two games share a daily number and never
+       a board, so a player who has done one has not done the other. */
+    fetch("/api/scrambled/daily?cy=1", { headers: { accept: "application/json", "X-XI-Games": "1" } })
+      .then(function (r) { return r.json(); })
+      .then(function (day) {
+        if (!day || !day.today) return;
+        var list = JSON.parse(localStorage.getItem("xivw.results") || "[]");
+        if (list.some(function (r) { return r && r.no === day.today; })) {
+          markDone("shirt5", "Vowels XI"); played.push(5); settle();
         }
       }).catch(function () {});
   } catch (e) {}
