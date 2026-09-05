@@ -153,10 +153,15 @@ async function playWordsearch(kind) {
    call reaches full time on any board. */
 async function playHilo(kind) {
   const daily = await get("/api/hilo/daily");
-  if (!daily.body || !daily.body.token) return note("hilo", "no daily to play");
-  const { token, day } = daily.body;
-  const rows = (daily.body.board && daily.body.board.chain
-    ? daily.body.board.chain.length - 1 : 11);
+  /* THE TOKEN IS ON THE BOARD, not on the payload root — /api/hilo/daily
+     answers { day, today, board: publicBoard(board, token) }. Reading it from
+     the root found nothing and reported "no daily to play" on a day the
+     preflight had already confirmed had one. */
+  const board = daily.body && daily.body.board;
+  if (!board || !board.token) return note("hilo", "no daily to play");
+  const token = board.token;
+  const day = daily.body.day;
+  const rows = Array.isArray(board.chain) ? board.chain.length - 1 : 11;
   const playId = newPlayId();
   await startPlay("hilo", "hl:" + (day || "today"), playId);
 
@@ -209,15 +214,19 @@ async function playCrossword(kind) {
   const daily = await get("/api/daily");
   if (!daily.body || !daily.body.puzzle) return note("crossword", "no daily to play");
   const entries = daily.body.puzzle.entries || [];
+  const token = daily.body.token;
   const playId = newPlayId();
   await startPlay("crossword", "daily:" + daily.body.dailyNo, playId);
   const wanted = kind === "abandon" ? Math.min(2, entries.length) : entries.length;
   let opened = 0;
   for (let i = 0; i < wanted; i++) {
-    const e = entries[i];
-    const r = await post("/api/reveal",
-      { playId, dailyNo: daily.body.dailyNo, num: e.num, dir: e.dir, kind: "answer" });
-    if (r.status === 200) opened++;
+    /* THE ENTRY IS AN INDEX AND THE BOARD IS A TOKEN. This sent
+       { dailyNo, num, dir, kind } — four fields the endpoint does not read —
+       and every reveal was refused, so the bot "played" the crossword eleven
+       times without opening a square. With no `index` the whole answer comes
+       back, which is what a bot wants: one call per entry. */
+    const r = await post("/api/reveal", { playId, token, entry: i });
+    if (r.status === 200 && r.body && r.body.answer) opened++;
   }
   if (opened === 0 && wanted > 0) note("crossword", "no entry could be revealed");
   await endPlay("crossword", playId, kind !== "abandon" && opened === entries.length, opened);
