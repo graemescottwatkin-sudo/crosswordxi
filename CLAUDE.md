@@ -59,10 +59,23 @@ hub. A 301 there would have to be un-cached from every browser that ever saw it.
 2. Every game's gate, and there are six — five live plus QuickFire:
    `node football\crossword\deploy_check.mjs` and the same for `wordsearch`,
    `scrambled`, `hilo`, `vowels`, `quickfire`. Expect **0 failed** on each.
-4. `git add -A && git commit && git push`. Watch the Actions run (30+ jobs).
-5. `node crossword\live_check.mjs --expect vNNN` and
-   `node wordsearch\live_check.mjs --expect vNNN` — including the HEAD
-   assertions (production proof of `functions/_middleware.js`).
+3. **Run the suites, CI-shaped.** There was no step 3 here for months and the
+   gap was exactly this — on 5 Sep 2026 a push went out on green gates alone,
+   and CI caught a suite the gates never run. Gates check the SHAPE of the
+   tree; suites check its BEHAVIOUR, and neither substitutes for the other.
+   `npm install -D jsdom acorn --no-save`, run every `*_test.mjs` from the
+   repo root, then `rmdir /s /q node_modules` before going back to step 1.
+   The browser suites (`render_test`, `journey_test`, `signin_test`) do not
+   run offline; CI is where they are proved.
+4. Stage BY NAME, then commit and push. Not `git add -A`: other sessions edit
+   this tree, and `-A` pushes their work past gates you never ran on it.
+   Watch the Actions run (30+ jobs).
+5. Every live game's live_check with `--expect`, five of them:
+   `node football\crossword\live_check.mjs --expect vNNN` and the same for
+   `wordsearch`, `scrambled`, `hilo`, `vowels` — including the HEAD assertions
+   (production proof of `functions/_middleware.js`). The paths are under
+   `football\` since the theme move; `node crossword\live_check.mjs` is a
+   file that no longer exists.
 6. `node tools\post_deploy.mjs` to see what it would record, then
    `--write` to apply it; commit "LAST_SHIPPED …", push. The script DERIVES:
    it reads the tag from the live page, recomputes each game's asset hash from
@@ -77,18 +90,20 @@ and diagnose before anything ships. Never push past a red gate.
 ## Reviewing a deployment (what "check the deploy" means)
 
 - Live build tags match `origin/main`: footer `buildTag`, `js/game.js?v=` on
-  both games. Game assets must match the footer; `shared/` assets carry their
+  every live game. Game assets must match the footer; `shared/` assets carry their
   own plain `vN` lifecycle and must NOT match the game tag.
 - Every live_check passes with `--expect` — one per game, five of them.
 - `results`/`plays` sanity via wrangler if relevant:
   `npx wrangler d1 execute crosswordxi --remote --command="..."`.
   **Never run a migration that is already applied** — `ALTER TABLE` is not
-  idempotent. Migration state: **001–030 all applied** (002 was applied late,
+  idempotent. Migration state: **001–032 all applied** (002 was applied late,
   27 Aug; there is no 022 in the tree — the numbering skips it). Verified 5 Sep
   2026 against the live database: every table each migration creates exists,
   and `results.game` and `plays.game` are present for the two that only ALTER.
-- HEAD on `/api/daily` and both `/…/answers/` answers 200, empty body, and
-  `/api/*` carries `X-Robots-Tag: noindex`.
+  031 (`ws_round`, `ws_find`, `ws_foul`) and 032 (`season_play`) confirmed
+  present the same day.
+- HEAD on `/api/daily` and every game's `/…/answers/` answers 200, empty body,
+  and `/api/*` carries `X-Robots-Tag: noindex`.
 
 ## Tests and gates — the rules of evidence
 
@@ -114,8 +129,15 @@ and diagnose before anything ships. Never push past a red gate.
   arity, merge behaviour, or ordering must EXECUTE the real code.
 - Totals only from CI-shaped runs: suites run **from the repo root**, after
   `npm install -D jsdom acorn --no-save`, and node_modules removed again before
-  gates. Suite roster is in `.github/workflows/checks.yml`; the gate asserts
-  every `*_test.mjs` in `football/crossword/`, `football/wordsearch/`, `tools/` is named there.
+  gates. Suite roster is in `.github/workflows/checks.yml`; the crossword gate
+  asserts every `*_test.mjs` ANYWHERE in the repo is named there, and that
+  every suite the workflow names exists. It walks the tree rather than holding
+  a list of folders: it held `crossword`, `wordsearch`, `tools`, and when the
+  games moved under `football/` two of those three stopped resolving and were
+  skipped in silence — narrowing the check to `tools/` while it still reported
+  a pass. Fifty-six suites in six folders were covered by nothing for a day.
+  A floor refuses a walk that finds implausibly few, because a check that
+  passes when it finds no problems also passes when it finds nothing at all.
 - `tools/aligned_test.mjs` is the cross-game contract. **A new game is a row in
   its GAMES table** (dir, team-sheet name, storage prefix); its failures are
   the integration checklist. Run it first when integrating a game.
@@ -138,9 +160,18 @@ Where facts live — extend these, never copy them:
 - Palette: `shared/xi-tokens.css`. Chrome (bar/drawer/footer + squad list):
   `shared/xi-chrome.{css,js}`. Games must not define `.xic-` rules or restate
   tokens — the gates check.
-- localStorage: each game under its own prefix (`fcw.` / `xiws.`); family-wide
-  facts under `xi.` (e.g. `xi.theme`). Never write another game's prefix.
-- Merge rule (both games): **first result banked wins; the account's row wins
+- localStorage: each game under its own prefix — `fcw.`, `xiws.`, `xisc.`,
+  `xihl.`, `xivw.`; family-wide facts under `xi.` (`xi.theme`, `xi.attr`,
+  `xi.season.v1`). Never write another game's prefix; reading one is fine and
+  is how the hub knows what was played today.
+- The season (one, at the top level, counting DAYS not points):
+  `shared/xi-season.js` holds the rule AND the device's record, and
+  `functions/_lib/season.js` imports that file rather than restating it — the
+  hub computes a season for a player with no account, the server computes one
+  for a player with an account, and two copies would be two answers about what
+  a Tuesday was. Rows for a signed-in player: `functions/_lib/season-store.js`.
+  Nothing is written for a player without an account.
+- Merge rule (every game): **first result banked wins; the account's row wins
   outright on pull; unpushed local rows survive.**
 - Account sync failures: log via `accountNote()`, stay caught, never surface
   to the player. A transient session failure is NOT signed-out.

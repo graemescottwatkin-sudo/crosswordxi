@@ -515,17 +515,31 @@ t("every test suite is named in the workflow", (() => {
   const wf = "\u002egithub/workflows/checks.yml";
   if (!hasRoot(wf)) return false;   // a missing workflow is a failure, not a pass
   const yml = readRoot(wf);
-  /* EVERY suite folder, not this game's. This read only crossword/, so the
-     word search could grow suites that ran nowhere and nothing said so —
-     which is precisely the gap that let its sentinel tag law and its unrun
-     suites in. External review, finding 4. */
+  /* EVERY suite in the repository, FOUND rather than listed.
+
+     This held a list of three folder names — crossword, wordsearch, tools —
+     with a `continue` for any that did not exist. On 5 Sep 2026 the games
+     moved under their theme and two of those three names stopped resolving,
+     so the loop skipped them in silence and the check narrowed to tools/
+     alone. Fifty-six suites in six game folders were covered by nothing: a
+     crossword suite could be dropped from the workflow and this gate stayed
+     green at 41 of 41, which is the silent-pass fault wearing the gate's own
+     uniform for the second time in this one check.
+
+     A list of places is a thing that goes stale the day something moves. The
+     tree is asked instead, so a new game, a new theme or another move is
+     covered the day it lands and there is no list to remember to update. */
   const suites = [];
-  for (const dir of ["crossword", "wordsearch", "tools"]) {
-    if (!hasRoot(dir)) continue;
-    for (const f of fs.readdirSync(path.join(ROOT, dir))) {
-      if (/_test\.mjs$/.test(f)) suites.push(dir + "/" + f);
+  const SKIP = new Set([".git", "node_modules", ".wrangler", ".github", ".claude"]);
+  (function walk(rel) {
+    const here = rel ? path.join(ROOT, rel) : ROOT;
+    for (const e of fs.readdirSync(here, { withFileTypes: true })) {
+      if (SKIP.has(e.name)) continue;
+      const next = rel ? rel + "/" + e.name : e.name;
+      if (e.isDirectory()) walk(next);
+      else if (/_test\.mjs$/.test(e.name)) suites.push(next);
     }
-  }
+  })("");
   /* Suites that run in NO job, named here so the exemption is a decision on
      the record rather than something that quietly grew.
 
@@ -541,6 +555,16 @@ t("every test suite is named in the workflow", (() => {
        preview_test  needs a built preview, and exits 0 without one — which is
                      the "test that cannot fail" fault; it should be fixed or
                      deleted rather than left here permanently. */
+  /* A FLOOR UNDER THE WALK, for the same reason live_check has one: this
+     check passes when it finds nothing to complain about, and a walk that
+     returned an empty list would find nothing to complain about. That is
+     exactly how it failed before — it was not wrong, it was EMPTY, and empty
+     read as green. Set well below the real count (66 on 5 Sep 2026) so it
+     refuses a broken walk without flapping when a suite is retired. */
+  if (suites.length < 40) {
+    suiteGap = `only ${suites.length} suites found — the walk is broken, not the roster`;
+    return false;
+  }
   const needsLive = ["football/crossword/signin_test.mjs", "football/crossword/preview_test.mjs"];
   const missing = suites.filter((f) => needsLive.indexOf(f) === -1 && !yml.includes(f));
   /* The reverse direction: every suite the workflow names must exist. The old
