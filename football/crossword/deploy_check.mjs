@@ -689,7 +689,14 @@ t("no absolute or machine-specific paths",
      doing the thing the move was for. */
   !/(src|href)="\/\//.test(html));
 
-const all = ["index.html", "css/style.css", "js/game.js", "js/seasons.js"].map(read).join("\n");
+/* The seasons moved to shared/xi-seasons.js on 5 Sep, when four more games
+   wanted the league table. This sweep FOLLOWS it rather than losing it: the
+   file is still served, still public, and still has to be free of anything
+   that looks like a clue or an answer. The shared table module is swept with
+   it, on the same reasoning. */
+const all = ["index.html", "css/style.css", "js/game.js"].map(read)
+  .concat(["shared/xi-seasons.js", "shared/xi-table.js"].map(readRoot))
+  .join("\n");
 /* Match data, not the word. `FCW_DATA` appears in a comment explaining why the
    bank is gone, and footballPhrase("answer", ...) is a label — neither is a
    clue bank, and a check that flags them teaches you to ignore it. */

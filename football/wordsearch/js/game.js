@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002i";
+  var BUILD = "v002j";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -318,10 +318,31 @@
 
   /* ---- clock ----------------------------------------------------------- */
   function varActive() { return varPauseUntil > 0 && Date.now() < varPauseUntil; }
+  /* ---- the live league table ------------------------------------------
+     Your score IS your club's points in a real historical season, and it moves
+     you up and down a real ladder while you play. Built by shared/xi-table.js;
+     this file only says which board it is and what the score is now.
+
+     The SEED IS THE SERVER'S DAY, so everybody on today's board sees the same
+     season. A device clock, or a random pick, would give two players different
+     ladders for one board and make comparing anything meaningless. */
+  var leagueTable = null;
+  function mountTable() {
+    if (leagueTable || !window.XITable) return;
+    var el = $("tablePanel");
+    if (!el) return;
+    leagueTable = window.XITable.mount(el, { seed: dayKey(), score: liveScore() });
+  }
+
   function renderScore(v) {
-    $("score").textContent = v === undefined ? finalScore() : v;
+    var shown = v === undefined ? finalScore() : v;
+    $("score").textContent = shown;
     $("scoreStar").textContent = bonusFound ? "★" : "☆";
     $("scoreStar").classList.toggle("found", bonusFound);
+    /* The table follows the same number the scoreboard shows — read from one
+       place rather than recomputed, so the ladder can never disagree with the
+       score printed above it. */
+    if (leagueTable) leagueTable.update(shown);
   }
   function updateClock() {
     if (varActive()) {
@@ -1581,6 +1602,11 @@
     api("daily").then(function (r) {
       serverDay = r.day; window.__daily = r.puzzle;
       if (typeof r.freeArchiveDays === "number") freeArchiveDays = r.freeArchiveDays;
+      /* THE TABLE WAITS FOR THE SERVER'S DAY. Mounted here rather than at
+         start-up because the day is what picks the season, and picking one
+         before the server has said what day it is would be the device deciding
+         — which is the rule this project has broken most often. */
+      mountTable();
       tryPermalink();
       /* The hero says whether there is one, where the mode tile used to. */
       setDailyState(r.puzzle ? "" : "No Daily scheduled today — the themes are open.");

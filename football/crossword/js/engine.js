@@ -1188,29 +1188,39 @@ var FCW = (function () {
     return { season: season, club: club };
   }
 
-  /* Build the live/final table: the player's club carries the player's score,
-     every other club keeps its real historical points. If the club did not
-     play that season, the player takes the bottom club's place. */
+  /* THE TABLE IS SHARED NOW. Both of these lived here, and on 5 Sep the other
+     four football games started wanting the same ladder — so they moved to
+     shared/xi-table.js and this delegates rather than keeping a second copy.
+     They are pure: a club, a score and a season in, twenty rows out.
+
+     What did NOT move is pickSeason above, and that is deliberate: the
+     crossword biases its choice by DIFFICULTY, which no other game has. A
+     shared function with a difficulty argument nobody else passes would be
+     this game's idea wearing a family name. The shared module has its own
+     plain pick for the games that just need one.
+
+     Loaded before this file by index.html. Called through at call time rather
+     than captured at load, so the order is a fact about the page and not a
+     value frozen into a closure. */
+  /* Resolved when it is CALLED, not captured when this file loads. index.html
+     puts xi-table.js first, but a load order is a fact about a page and not a
+     value to freeze into a closure — and the node suites have no script tags
+     at all, so they get it by require instead. */
+  function sharedTable() {
+    var g = typeof globalThis !== "undefined" ? globalThis : null;
+    if (g && g.XITable) return g.XITable;
+    if (typeof require === "function") {
+      try { return require("../../../shared/xi-table.js"); } catch (e) {}
+    }
+    throw new Error("shared/xi-table.js is not loaded");
+  }
+
   function buildTable(club, liveScore, season) {
-    if (!season) return [];
-    var rows = [], replaced = false;
-    season.table.forEach(function (r) {
-      if (r.club === club && !replaced) { replaced = true; return; } // player takes their own slot
-      rows.push({ club: r.club, points: r.points, isPlayer: false });
-    });
-    if (!replaced) rows.pop(); // club absent that season: displace the bottom club
-    rows.push({ club: club, points: liveScore, isPlayer: true });
-    rows.sort(function (a, b) {
-      if (b.points !== a.points) return b.points - a.points;
-      return (b.isPlayer ? 1 : 0) - (a.isPlayer ? 1 : 0); // player wins ties
-    });
-    rows.forEach(function (r, i) { r.pos = i + 1; });
-    return rows;
+    return sharedTable().buildTable(club, liveScore, season);
   }
 
   function playerPosition(table) {
-    for (var i = 0; i < table.length; i++) if (table[i].isPlayer) return table[i].pos;
-    return table.length;
+    return sharedTable().playerPosition(table);
   }
   function outcomeMessage(club, pos) {
     for (var i = 0; i < SCORING.OUTCOMES.length; i++) {

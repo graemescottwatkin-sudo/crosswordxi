@@ -1072,7 +1072,11 @@ server.listen(0, "127.0.0.1", async () => {
     /* crosswordxi.com 301s to the subdomain. A redirected fetch carrying a CORS
        preflight fails in a way that is hard to diagnose — the URL looks right in
        the network tab — so an absolute self-reference must not survive. */
-    const files = ["index.html", "js/game.js", "js/engine.js", "js/seasons.js"];
+    /* seasons.js moved to shared/xi-seasons.js on 5 Sep when four more games
+       wanted the league table. The sweep follows it rather than being
+       deleted with the path, and takes in the shared table with it. */
+    const files = ["index.html", "js/game.js", "js/engine.js",
+      "../../shared/xi-seasons.js", "../../shared/xi-table.js"];
     return files.every((f) => {
       const src = fs.readFileSync(path.join(DIR, f), "utf8")
         .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

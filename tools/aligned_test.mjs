@@ -355,8 +355,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v22";
-const SHARED_HASH = "52f80a548b85bbc3";
+const SHARED_TAG = "v23";
+const SHARED_HASH = "7d30d957981b1ff9";
 /* EVERY PAGE THAT LINKS THE SHARED LAYER, not the games alone. The hub, the
    two static pages and the unlaunched game all carry the chrome now, and the
    server-rendered shell writes the tag from a constant of its own — so a tag

@@ -44,9 +44,23 @@ panel (item 9) has somewhere to show them.
   in-play panel, the Full Time card and the CSS; the share picture is now ten
   squares showing how much of the 114 was kept. `headless_test.js` asserts the
   engine cannot export either function again.
-- ⬜ **The live table still exists in the crossword only.** That is the
-  remainder of this item — see below. Wordsearch, Scrambled, HiLo and Vowels
-  have no table at all.
+- ✅ **The live table is shared, and Wordsearch has one** (ws v002j,
+  SHARED_TAG v23). `shared/xi-table.js` is the one implementation and the
+  crossword's engine delegates to it — `table_test.mjs` compares 840 tables
+  between the two and they agree everywhere, so the ladder a crossword player
+  watches did not change on the way out. The thirty seasons moved to
+  `shared/xi-seasons.js`: 66KB fetched once for the whole family instead of
+  per game. The club is `xi.club`, family-wide, so picking Everton in one
+  game picks it in all of them.
+- ⬜ **Scrambled, Vowels and HiLo still have no table.** The pattern is set
+  and each is now three small pieces: a `<div class="tb-table xit"
+  id="tablePanel">` in the page, the three shared assets loaded, and a mount
+  wired to that game's live score with the SERVER's day or board number as
+  the seed. Wordsearch's `mountTable()` in its `game.js` is the worked
+  example — mounted after the daily arrives, never before, because the seed
+  is what picks the season and a device must not decide it.
+  Scrambled and Vowels compute their score at `js/game.js:593`; HiLo has no
+  live-score accessor yet and needs one before it can mount.
 
 **There is ONE season and it belongs to the hub.** Decided 4 Sep, correcting an
 earlier reading of this item: a game does not have a season of its own.

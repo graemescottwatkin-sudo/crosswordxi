@@ -38,7 +38,7 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 /* The browser loads these three in this order and they share one global
    scope, so a name declared in seasons.js resolves from game.js. */
-const FILES = ["js/seasons.js", "js/engine.js", "js/game.js"]
+const FILES = ["../../shared/xi-seasons.js", "../../shared/xi-table.js", "js/engine.js", "js/game.js"]
   /* Resolved against this file, not the working directory. The bare list only
      worked while the suite was run from the folder holding js/ — which stopped
      being true the moment the game moved into crossword/ and the suites started

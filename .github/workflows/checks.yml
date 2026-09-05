@@ -82,11 +82,6 @@ jobs:
       - name: The sitemap lists every board and nothing that 404s
         run: node tools/sitemap_test.mjs
 
-      # ONE SEASON, AT THE TOP LEVEL, and three suites because it has three
-      # parts that can drift apart: the rule, the account's rows, and the
-      # device's own record. The last one runs the real shared/xi-plays.js
-      # against a fake fetch, because "the games record a season" is the
-      # claim and grepping for a function name would not test it.
       # The forward check: what /api/preflight will say about the next
       # fortnight, and the gate in front of it. The nightly workflow runs the
       # endpoint against production; this proves the rules and the gate here,
@@ -101,6 +96,19 @@ jobs:
       - name: A bot can finish every game without being told anything
         run: node tools/bot_solve_test.mjs
 
+      # The live league table, shared by the football games. The regression
+      # check compares 840 tables between the crossword's engine and the
+      # module it now delegates to: a ladder that ranks somebody differently
+      # after the move would be a silent change to the number a player watches
+      # all the way through a board.
+      - name: The live table says the same thing it always did
+        run: node tools/table_test.mjs
+
+      # ONE SEASON, AT THE TOP LEVEL, and three suites because it has three
+      # parts that can drift apart: the rule, the account's rows, and the
+      # device's own record. The last one runs the real shared/xi-plays.js
+      # against a fake fetch, because "the games record a season" is the
+      # claim and grepping for a function name would not test it.
       - name: One season, and it says the same thing on both branches
         run: |
           node tools/season_test.mjs

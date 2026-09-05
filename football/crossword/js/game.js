@@ -281,7 +281,7 @@
   }
   var themeLabel = "";
   var cellEls = {};
-  var seasonErrors = FCW.loadSeasons(FCW_SEASONS);
+  var seasonErrors = FCW.loadSeasons(XI_SEASONS);
   // Answer-repetition control for the Daily. If the table is missing or a day
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so

@@ -17,10 +17,12 @@ import { fileURLToPath } from "node:url";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const ctx = { window: {}, console };
 vm.createContext(ctx);
-vm.runInContext("var window=this;" + fs.readFileSync(path.join(DIR, "js/seasons.js"), "utf8"), ctx);
+vm.runInContext("var window=this;" +
+  fs.readFileSync(path.join(DIR, "../../shared/xi-seasons.js"), "utf8") +
+  fs.readFileSync(path.join(DIR, "../../shared/xi-table.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(DIR, "js/engine.js"), "utf8"), ctx);
 const FCW = ctx.FCW || ctx.window.FCW;
-FCW.loadSeasons(ctx.window.FCW_SEASONS);
+FCW.loadSeasons(ctx.window.XI_SEASONS || ctx.window.FCW_SEASONS);
 
 const srvSrc = fs.readFileSync(path.join(DIR, "../../functions/_lib/scoring.js"), "utf8")
   .replace(/export /g, "");
