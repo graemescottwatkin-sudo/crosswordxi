@@ -6,10 +6,31 @@ every rule below exists because its absence cost a real release.
 ## What this is
 
 A family of football-themed daily puzzle games at **thexigames.com**, targeting
-eleven titles. Live: **Crossword XI** (`/football/crossword/`) and **Wordsearch XI**
-(`/football/wordsearch/`). Cloudflare Pages + D1 (database `crosswordxi`) + Functions at
-the repo root, shared by all games. The hub is `/index.html`; shared assets in
+eleven titles. FIVE are live, all under their theme: **Crossword XI**
+(`/football/crossword/`), **Wordsearch XI**, **Scrambled XI**, **HiLo XI** and
+**Vowels XI**. Cloudflare Pages + D1 (database `crosswordxi`) + Functions at the
+repo root, shared by all games. The hub is `/index.html`; shared assets in
 `shared/` (tokens, chrome). No package.json in the repo — Pages must not build.
+
+**THE THEME IS THE FIRST PATH SEGMENT**, since 5 Sep 2026: other kinds of quiz
+are coming — Friends, Game of Thrones — and XI never meant football. It is
+three meanings: eleven clues, eleven games, eleven players to a team.
+
+Where a game lives is ONE fact in ONE place, `functions/_lib/permalink.js`:
+`gamePath(game)` for a URL, `gameDir(game)` for a file path, `THEME_OF` for the
+map. Nothing else may assemble `"/" + game + "/"`. The move rewrote a hundred
+literal paths across ninety files and every one of them was a place the theme
+could later be wrong; the next theme is one function, not another sweep.
+
+A game's **id is not its directory**. It is identified as `crossword` — in the
+server's game list, in its results rows, in its storage prefix — and it LIVES at
+`football/crossword`. They were the same word until the move and a dozen checks
+assumed it. The id must not change when the theme does.
+
+Old paths 301 to the new ones and always will: `/crossword/daily/5` is somebody's
+link. `/football/` 302s to the hub — deliberately temporary, because the day a
+second theme lands `/` becomes the picker and `/football/` becomes the football
+hub. A 301 there would have to be un-cached from every browser that ever saw it.
 
 ## The tag law (non-negotiable)
 
@@ -35,8 +56,9 @@ the repo root, shared by all games. The hub is `/index.html`; shared assets in
 
 1. `rmdir /s /q node_modules` if present — **gates must run with no
    node_modules, no package.json, no .wrangler in the tree** (the gate checks).
-2. `node crossword\deploy_check.mjs` → expect **0 failed**.
-3. `node wordsearch\deploy_check.mjs` → expect **0 failed**.
+2. Every game's gate, and there are six — five live plus QuickFire:
+   `node football\crossword\deploy_check.mjs` and the same for `wordsearch`,
+   `scrambled`, `hilo`, `vowels`, `quickfire`. Expect **0 failed** on each.
 4. `git add -A && git commit && git push`. Watch the Actions run (30+ jobs).
 5. `node crossword\live_check.mjs --expect vNNN` and
    `node wordsearch\live_check.mjs --expect vNNN` — including the HEAD
@@ -57,11 +79,14 @@ and diagnose before anything ships. Never push past a red gate.
 - Live build tags match `origin/main`: footer `buildTag`, `js/game.js?v=` on
   both games. Game assets must match the footer; `shared/` assets carry their
   own plain `vN` lifecycle and must NOT match the game tag.
-- Both live_checks pass with `--expect`.
+- Every live_check passes with `--expect` — one per game, five of them.
 - `results`/`plays` sanity via wrangler if relevant:
   `npx wrangler d1 execute crosswordxi --remote --command="..."`.
   **Never run a migration that is already applied** — `ALTER TABLE` is not
-  idempotent. Migration state: 001–020 applied (002 was applied late, 27 Aug).
+  idempotent. Migration state: **001–030 all applied** (002 was applied late,
+  27 Aug; there is no 022 in the tree — the numbering skips it). Verified 5 Sep
+  2026 against the live database: every table each migration creates exists,
+  and `results.game` and `plays.game` are present for the two that only ALTER.
 - HEAD on `/api/daily` and both `/…/answers/` answers 200, empty body, and
   `/api/*` carries `X-Robots-Tag: noindex`.
 
@@ -126,8 +151,11 @@ Where facts live — extend these, never copy them:
   game holds a number; a game that is in build, on the drawing board or in
   testing does not, and moves down when a game ships past it. HiLo XI went
   out on 10 (its build brief said so), was renumbered to 9, and is 4 — the
-  fourth game to launch — from 3 Sep 2026. Launched games are 1 to 4 and the
-  rest queue behind them.
+  fourth game to launch — from 3 Sep 2026. **Launched games are 1 to 5**:
+  Vowels XI took the fifth shirt when it launched on 4 Sep 2026, and QuickFire
+  moved from 5 to 6 that day because a game in testing does not hold a number.
+  Eleven shirts, so a launch pushes the tail down one and the squad loses an
+  unsigned slot rather than growing a twelfth.
 - The reorder is cheap and stays cheap: the number lives in the squad list in
   `shared/xi-chrome.js`, and the hub carries the strip, the card, the kit
   colour and the played-today check. Nothing else may hold a shirt number.
