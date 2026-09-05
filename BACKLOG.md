@@ -102,8 +102,38 @@ started a puzzle an hour ago has a season under way and no settled day in it,
 and telling them to start one would be wrong. The invitation is for a player
 with no PLAY, not for one with no result.
 
+**WHOSE SEASON IS IT.** Owner, 5 Sep: "Per account if registered, per device
+if not, unless they linked their 2 accounts with the code in settings."
+
+That last clause resolves itself, and the resolution is worth writing down so
+nobody builds a third mode for it. The device code is not an alternative to an
+account — `POST /api/account/code` turns a code INTO one, `provider = 'code'`
+with the code as the provider id, and `users`, `sessions` and the results pull
+all work unchanged. Entering the same code on a second device makes both
+devices sessions of ONE account. So "linked with the code" IS the registered
+case, and the rule has two branches:
+
+  an account   the season is the account's, from results and plays on the
+               server, and it follows the player to any device they sign in on
+  no account   the season is this device's, from localStorage, and it is the
+               only season that device can honestly show
+
+WHAT HAPPENS WHEN A DEVICE REGISTERS. The family already has this rule and it
+is not re-invented here: first result banked wins, the account's row wins
+outright on pull, unpushed local rows survive. A player with three days on a
+device who then enters a code keeps those three days.
+
+WHAT THIS COSTS TO BUILD. The hub reads five localStorage blocks today, one per
+game, written out longhand — enough to dim a shirt, not enough for a season. A
+season has to outlive a device, so the account branch needs the day rule applied
+SERVER-side against `plays` and `results`, both already keyed per game in
+`functions/_lib/games.js`. That is the new endpoint; the device branch is the
+same rule applied to what the browser already has.
+
 One fact, one place: the day rule goes in ONE module read by both the hub and
-the server. It must not be written once for the page and once for the API.
+the server. It must not be written once for the page and once for the API —
+and with two branches reading it, that stops being a principle and starts being
+the only way the two can agree about what a Tuesday was.
 
 **THE TWO HALVES SPLIT BY THEME, and that decides where each one lives.**
 Recorded 4 Sep, when the owner said other themes are coming — Friends, Game of
