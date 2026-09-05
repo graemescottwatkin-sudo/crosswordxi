@@ -1,0 +1,116 @@
+/* xi-table.css — the live league table, for the games that mount one.
+ *
+ * Pairs with shared/xi-table.js. The crossword keeps its own copy of these
+ * rules in its stylesheet for now, because its panel is woven into a bespoke
+ * board layout — the LOGIC is shared and that is the half that could give two
+ * different answers. A style that drifts makes a table look different; a rule
+ * that drifts makes it say something different.
+ *
+ * Everything here is scoped under .xit so it cannot land on a game's own
+ * markup — the same reason games are forbidden from styling .xic- classes.
+ * Tokens come from xi-tokens.css and are never restated: the gates check.
+ */
+
+.xit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-sizing: border-box;
+}
+
+/* NO CLUB, NO LADDER — only the picker. A table with a blank name in it says
+   less than no table at all, so the panel shrinks to the one control that
+   turns it on. */
+.xit.xit-empty table.league,
+.xit.xit-empty .tb-season { display: none; }
+
+.xit .club-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.xit .club-bar label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.xit .club-bar select {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--body);
+  font-size: 12.5px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  padding: 4px 7px;
+}
+
+.xit table.league {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.xit table.league td {
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.xit table.league td.pos { width: 30px; color: var(--ink-soft); }
+.xit table.league td.pts { text-align: right; font-weight: 600; }
+
+/* FAR FROM THE PLAYER, AND HIDDEN RATHER THAN DROPPED. Twenty rows is a wall
+   on a phone; the rows are all rendered so the table is complete to a screen
+   reader and to anyone who wants the lot, and the ones nowhere near the player
+   are simply not painted. */
+.xit table.league tr.faroff { display: none; }
+
+/* The player's row carries a much stronger identity than its neighbours. */
+.xit table.league tr.you td {
+  background: var(--sel-word);
+  color: var(--pitch-ink);
+  border-top: 1px solid var(--pitch);
+  border-bottom: 1px solid var(--pitch);
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.xit table.league tr.you td.pos {
+  box-shadow: inset 5px 0 0 var(--pitch-deep);
+  font-weight: 700;
+  color: var(--pitch-ink);
+}
+.xit table.league tr.you td.club { font-weight: 700; font-size: 13.5px; letter-spacing: .01em; }
+.xit table.league tr.you td.pts { font-weight: 700; font-size: 14px; }
+
+.xit .tb-label {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.xit .tb-season { margin-top: 4px; display: block; }
+.xit .season-tag {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+  margin-left: 4px;
+}
