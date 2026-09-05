@@ -70,9 +70,18 @@ function checkCrossword(puzzle) {
     /* THE ANSWER MUST BE IN THE GRID. A board whose entry points at a cell
        that does not exist renders as a hole the player can never fill, and it
        is the failure a shape check on entries alone would miss. The letter is
-       READ but never reported. */
-    for (const key of e.cells) {
-      const c = cells[key];
+       READ but never reported.
+
+       AN ENTRY'S CELLS ARE { x, y } OBJECTS and the grid is keyed "x,y". This
+       indexed the grid with the object itself — cells[{x:2,y:1}] is
+       cells["[object Object]"], undefined every time — so the first live run
+       reported all eleven entries of every board pointing outside the grid.
+       Nothing was wrong with any board. */
+    for (const at of e.cells) {
+      if (!at || at.x === undefined || at.y === undefined) {
+        return `entry ${i + 1} has a cell with no position`;
+      }
+      const c = cells[at.x + "," + at.y];
       if (!c) return `entry ${i + 1} points at a cell that is not in the grid`;
       if (!c.ch || !String(c.ch).trim()) return `entry ${i + 1} has an empty square`;
     }

@@ -29,17 +29,20 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---- sound boards, one per game --------------------------------------- */
 
+/* THE SHAPE D1 ACTUALLY HOLDS: the grid is an object keyed "x,y" and an
+   entry's cells are { x, y } OBJECTS. The first version of this used the same
+   string in both places, which is what let a check that indexed the grid with
+   an object pass sixteen sabotages and then call every real board broken. */
 function goodCrossword() {
   const cells = {}, entries = [];
-  for (let i = 0; i < 11; i++) {
-    const keys = [];
-    for (let j = 0; j < 4; j++) {
-      const k = `${i},${j}`;
-      cells[k] = { ch: "A", across: i + 1, down: null, num: j === 0 ? i + 1 : null };
-      keys.push(k);
+  for (let y = 0; y < 11; y++) {
+    const at = [];
+    for (let x = 0; x < 4; x++) {
+      cells[x + "," + y] = { ch: "A", across: y + 1, down: null, num: x === 0 ? y + 1 : null };
+      at.push({ x, y });
     }
-    entries.push({ num: i + 1, dir: "across", x: 0, y: i, len: 4, cells: keys,
-      row: { id: "r" + i, clue: "A clue", enum: "(4)", diff: 1 } });
+    entries.push({ num: y + 1, dir: "across", x: 0, y, len: 4, cells: at,
+      row: { id: "r" + y, clue: "A clue", enum: "(4)", diff: 1 } });
   }
   return { cells, entries };
 }
@@ -180,12 +183,26 @@ console.log("\nA board that is short, or malformed");
   t("an entry with no clue is caught, and named by number",
     (await problemsFor({ crossword: noClue }, "crossword"))[0].why === "entry 4 has no clue");
 
-  const gap = clone(goodCrossword()); gap.entries[2].cells.push("99,99");
+  const gap = clone(goodCrossword()); gap.entries[2].cells.push({ x: 99, y: 99 });
   t("an entry pointing outside the grid is caught",
     (await problemsFor({ crossword: gap }, "crossword"))[0].why
       === "entry 3: len does not match its cells");
 
-  const blank = clone(goodCrossword()); blank.cells["5,2"].ch = "";
+  /* THE BRANCH THAT MISFIRED IN PRODUCTION. Moving a cell rather than adding
+     one keeps the count right, so this reaches the grid lookup instead of
+     being caught by the length check first — which is why the lookup being
+     wrong went unnoticed until a real board met it. */
+  const off = clone(goodCrossword()); off.entries[4].cells[1] = { x: 99, y: 99 };
+  t("an entry whose cell is not in the grid is caught",
+    (await problemsFor({ crossword: off }, "crossword"))[0].why
+      === "entry 5 points at a cell that is not in the grid");
+
+  const noPos = clone(goodCrossword()); noPos.entries[6].cells[0] = { y: 3 };
+  t("and a cell with no position at all",
+    (await problemsFor({ crossword: noPos }, "crossword"))[0].why
+      === "entry 7 has a cell with no position");
+
+  const blank = clone(goodCrossword()); blank.cells["2,5"].ch = "";
   t("and a square with no letter in it",
     (await problemsFor({ crossword: blank }, "crossword"))[0].why === "entry 6 has an empty square");
 }
