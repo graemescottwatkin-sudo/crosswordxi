@@ -1,0 +1,50 @@
+# Nightly — is the site about to serve a bad board?
+#
+# The other workflow runs on push, which is the wrong trigger for the failure
+# that actually reaches players: every game hands out a different board at
+# midnight UTC with NO deploy. A schedule that runs out, a board short of
+# eleven, a word with no placement — none of that involves a code change, and
+# nothing in this repo would have caught it.
+#
+# So this runs on a clock instead. It asks production's own /api/preflight,
+# which walks the next fortnight of every game's schedule and answers with
+# verdicts — never boards. See functions/_lib/preflight.js.
+#
+# WHY NOT ADMIN. It was asked for and refused: the admin route also exports
+# plays.csv and reports.csv and accepts mutations, and this is a public repo.
+# The preflight secret gives up one fact if it leaks — whether the next
+# fortnight is well formed — and can be rotated without touching a session.
+name: Nightly
+
+on:
+  schedule:
+    # 01:10 UTC: after midnight has rolled the boards over, and early enough
+    # that a problem found has the whole day to be fixed before the NEXT
+    # rollover puts it in front of anybody.
+    - cron: "10 1 * * *"
+  # So it can be run by hand the moment somebody imports a new schedule,
+  # rather than waiting for the small hours to find out whether it took.
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "How many days ahead to check"
+        required: false
+        default: "14"
+
+jobs:
+  preflight:
+    name: The coming fortnight is well formed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No install: this script uses fetch and nothing else. The repo has no
+      # package.json on purpose and this job must not be the one that adds a
+      # reason for one.
+      - name: Ask production
+        env:
+          PREFLIGHT_SECRET: ${{ secrets.PREFLIGHT_SECRET }}
+          DAYS: ${{ github.event.inputs.days || '14' }}
+        run: node tools/preflight_live.mjs

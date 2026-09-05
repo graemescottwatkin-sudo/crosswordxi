@@ -87,6 +87,13 @@ jobs:
       # device's own record. The last one runs the real shared/xi-plays.js
       # against a fake fetch, because "the games record a season" is the
       # claim and grepping for a function name would not test it.
+      # The forward check: what /api/preflight will say about the next
+      # fortnight, and the gate in front of it. The nightly workflow runs the
+      # endpoint against production; this proves the rules and the gate here,
+      # where a fault costs a red build rather than a bad board.
+      - name: The coming boards are checked, and the gate holds
+        run: node tools/preflight_test.mjs
+
       - name: One season, and it says the same thing on both branches
         run: |
           node tools/season_test.mjs
