@@ -133,6 +133,10 @@ jobs:
           # The themes pages: the index, a category's numbered boards, the
           # door into the game, and an unreleased board named nowhere.
           node football/wordsearch/themes_test.mjs
+          # The score the SERVER computes, and the two leaks that had to close
+          # before it could compute anything: the board travelled whole, and
+          # the free-play route handed today's board over complete.
+          node football/wordsearch/verified_test.mjs
           # The cross-game contract: what every game must have, checked
           # identically. Game three is a row in its GAMES table.
           node tools/aligned_test.mjs

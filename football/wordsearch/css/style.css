@@ -222,3 +222,8 @@ a.home-choice{text-decoration:none;color:inherit}
    lock is the reason to register, and a row that vanished would say nothing. */
 .arch-row.locked{opacity:.62}
 .arch-row.locked .arch-state::after{content:" 🔒"}
+
+/* Whether the score is the server's. A footnote to the number, not part of it,
+   and it takes no room when there is nothing to say. */
+.resultVerified{font-size:12px;color:var(--ink-faint,#8a968d);margin:2px 0 0}
+.resultVerified:empty{display:none}

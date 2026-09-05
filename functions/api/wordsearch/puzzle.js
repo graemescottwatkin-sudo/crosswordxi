@@ -5,7 +5,7 @@
  * names nothing — not the theme, not the category, not whether the id exists.
  * A refusal that says "that's next Tuesday's" has already leaked what it
  * guards. Unknown id and unreleased id are the same answer on purpose. */
-import { boardById, released, lastScheduledDay } from "../../_lib/wsdata.js";
+import { boardById, released, lastScheduledDay, isTodaysDaily } from "../../_lib/wsdata.js";
 import { mayOpenArchive, archiveRefusal, daysBack } from "../../_lib/archive.js";
 
 const json = (body, status = 200) =>
@@ -22,6 +22,15 @@ export async function onRequestGet({ request, env }) {
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!/^XIWS-\d{4}$/.test(id)) return json({ error: "No such board." }, 404);
   if (!(await released(env, id))) return json({ error: "No such board." }, 404);
+
+  /* AND NOT THE BOARD IN FLIGHT. This route hands a board over WHOLE — grid,
+     answers, every placement — which is right for free play and was a hole
+     for today's daily: released() passes a board first scheduled today, the
+     archive gate saw daysBack = 0, and so `?id=<today's id>` returned the
+     board every player is competing on, answers and all, to anyone who asked.
+     The same identical 404 an unreleased board gets, for the same reason: a
+     refusal that says WHICH rule it hit has told you something. */
+  if (await isTodaysDaily(env, id)) return json({ error: "No such board." }, 404);
 
   /* HOW OLD IS THIS BOARD TO A PLAYER: the last day it was the daily, which
      for a board still in rotation is recent however long ago it debuted. A

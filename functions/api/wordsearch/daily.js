@@ -10,6 +10,7 @@
  * No daily scheduled (the schedule has an end date) is { day, puzzle: null },
  * status 200 — the client offers Free Play instead of an error. */
 import { dailyBoard } from "../../_lib/wsdata.js";
+import { publicPuzzle } from "../../_lib/ws-public.js";
 import { FREE_ARCHIVE_DAYS } from "../../_lib/archive.js";
 
 const json = (body, status = 200) =>
@@ -24,6 +25,9 @@ export async function onRequestGet({ env }) {
      list can mark the locked days. The rule LIVES on the server; the page
      only draws it, and a copy of the number in game.js would be a second
      window drifting from the first. */
-  return json({ day, puzzle, source: sample ? "sample" : "d1",
+  /* THROUGH publicPuzzle, WHICH IS THE POINT OF THIS ENDPOINT NOW. It sent
+     `puzzle` whole: every answer's exact placement and the secret bonus word,
+     to every player, before a single word was found. See _lib/ws-public.js. */
+  return json({ day, puzzle: publicPuzzle(puzzle), source: sample ? "sample" : "d1",
     freeArchiveDays: FREE_ARCHIVE_DAYS });
 }

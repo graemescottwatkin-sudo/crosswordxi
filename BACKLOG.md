@@ -7,21 +7,20 @@ Rules of this file: an item says what it is, why, and what is UNDECIDED. An
 open question written down is worth more than a plan built on a guess. Move an
 item to **Shipped** with its tag when it lands; delete nothing.
 
+THE NUMBERS ARE THE ORDER THINGS WERE ADDED, not an order to do them in, and
+they never change. Item 5 was "move the scoring server-side" and 5a, 5b and 5c
+were its three games. The gaps are the shipped ones. A number that moves is a
+reference that rots — a commit message or a note saying "item 9" has to still
+mean item 9 next month — so they are left alone and the list is reordered by
+moving the items, not by renumbering them.
+
 ---
 
 ## Waiting on the owner
 
-**Sources behind a register wall.** Sources are shown; the ask is to hide them
-behind a "Need to register" button and to be able to see who presses one and
-how often — sharing sources is fine, mass-scraping by one account is not.
-Three answers needed:
-
-- Any sources at all without an account? (recommended: no)
-- A daily cap per account? (recommended: 50)
-- Where do the numbers get read — a table plus a query, or a page?
-
-Needs a migration (next free number is 030) and changes the citations feature
-that shipped 3 Sep.
+Nothing. Every open question has been answered — the last was where the source
+press counts get read, and the answer was a table and a query until the admin
+panel (item 9) has somewhere to show them.
 
 ---
 
@@ -82,6 +81,27 @@ What has to be decided before this is built:
   2 of 5 the day a fifth launches. The rule as written does not change when a
   game launches, which is probably right, but it does get easier.
 
+**BEFORE THERE IS A SEASON, THE HUB INVITES ONE.** Owner, 5 Sep: "there should
+be a message to play your 1st game to start your season."
+
+A player with no results has no season, and the honest empty state is not a
+blank strip or a row of zeros — it is the sentence that says what starting one
+takes. The season BEGINS with the first game played, so the hub says so, and
+the invitation is gone the moment there is anything to show.
+
+Three states, and the middle one is the one that is easy to forget:
+
+  nothing played ever      "Play your first game to start your season."
+  played today, no result   the day is in flight — provisional, not a fixture
+                            yet, because a loss cannot be known until the day
+                            is over
+  a settled day or more     the season, as W/D/L
+
+The second is why this cannot be "do they have any results": a player who
+started a puzzle an hour ago has a season under way and no settled day in it,
+and telling them to start one would be wrong. The invitation is for a player
+with no PLAY, not for one with no result.
+
 One fact, one place: the day rule goes in ONE module read by both the hub and
 the server. It must not be written once for the page and once for the API.
 
@@ -103,50 +123,6 @@ So the live table is a FOOTBALL-THEME feature, not a family-wide one, and it
 should be built as one — rolled out to the four football games and not assumed
 of whatever comes next. The half that spans themes is the half that does not
 depend on scoring, which is a good sign it is the right half to make universal.
-
-### 13. A theme segment in the URL — /football/crossword/daily/1
-
-Raised by the owner on 4 Sep: other kinds of quiz are coming, so should the
-path carry the theme? Recommended YES, and the argument is TIMING rather than
-shape.
-
-**The window is open and closing.** Board permalinks shipped 3 Sep. The sitemap
-listed no boards at all until 4 Sep, and the whole site has two on-site links
-to any board page. So there is essentially nothing indexed to invalidate.
-Restructuring now costs nothing in search; in three months it costs a redirect
-map over hundreds of URLs and a re-crawl. It gets more expensive every day.
-
-**Cost in code, measured:** 20 `_headers` blocks, 18 hard-coded links in served
-HTML, 24 references in `shared/`, 10 files under `functions/_lib`, 6
-canonicals. Mechanical, and every one of them is already covered by a check
-that would go red if it were missed.
-
-**Theme first, not game first.** `/football/crossword/` groups by what a
-visitor came for, and gives each theme a landing page and a sitemap section
-that match search intent. `/football/crossword/football/` would treat themes as content
-inside products, which is the weaker read now that the theme carries real
-BEHAVIOUR — see item 11: the scoring and the league table are football's, not
-the family's.
-
-Two conditions:
-
-- Move football on the same day. A flagship left at `/football/crossword/` while new
-  themes sit under a theme segment is two conventions kept forever.
-- 301 the old paths permanently. The permalinks promise one URL, one puzzle,
-  forever; a 301 keeps that promise and a 404 breaks it.
-
-**REJECTED: `/1/daily/1`, the shirt number as the path.** A shirt number is not
-a stable identifier — this project's have moved three times. CLAUDE.md records
-"HiLo XI went out on 10, was renumbered to 9, and is 4", and QuickFire moved
-from 5 to 6 on 4 Sep when Vowels launched. Putting a reassignable number in the
-path reintroduces, one level up, the exact fault `permalink.js` exists to end:
-"a link posted on the 3rd pointed at a different puzzle by the 10th". It is
-also unreadable (two numbers meaning different things), gives search no words,
-and has no room for the theme that prompted the question. A shirt number's home
-is the strip on the hub, which is precisely why reordering it is cheap.
-
-Do it as its own piece of work: it touches every game, so it wants its own
-gates and its own deploy rather than riding along with something else.
 
 ### 5c. The word search's score, server-side — and two live leaks it closes
 
@@ -287,6 +263,11 @@ or a schedule position independently of the server it is testing.
 
 ## Shipped
 
+- **13. The theme segment in the URL** — 5 Sep, every game moved to
+  /football/<game>/, old paths 301'd with their tails, /football/ 302 to the
+  hub. Where a game lives is gamePath/gameDir in permalink.js and nowhere else.
+- **Sources behind a register wall** — crossword v002w, migration 030, 4 Sep.
+  Needs an account, fifty a day, counted per account per UTC day.
 - **Vowels XI launched** — shirt 5, `/football/vowels/`, 4 Sep. The same eleven names
   and the same bank as Scrambled, with the letters left in their own order and
   the vowels taken out. Its page, stylesheet and script are GENERATED from

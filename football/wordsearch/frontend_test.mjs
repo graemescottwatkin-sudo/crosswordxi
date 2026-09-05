@@ -18,6 +18,14 @@ import { onRequestGet as daily } from "../../functions/api/wordsearch/daily.js";
 import { onRequestGet as puzzleFn } from "../../functions/api/wordsearch/puzzle.js";
 import { onRequestGet as catalogFn } from "../../functions/api/wordsearch/catalog.js";
 import { onRequestGet as archiveFn } from "../../functions/api/wordsearch/archive.js";
+import { onRequestPost as findFn } from "../../functions/api/wordsearch/find.js";
+import { onRequestPost as roundFn } from "../../functions/api/wordsearch/round.js";
+import { onRequestPost as finishFn } from "../../functions/api/wordsearch/finish.js";
+/* THE BOARD AS THE SERVER HOLDS IT, which is no longer the board the page is
+   given. This suite drags words, so it has to know where they are — and that
+   knowledge now comes from the same place the judge's does, not from the
+   payload. Reading it from the endpoint was the whole leak. */
+import { dailyBoard } from "../../functions/_lib/wsdata.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(DIR, "..", "..");
@@ -33,17 +41,41 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(r.status, Object.fromEntries(r.headers));
     res.end(Buffer.from(b));
   });
-  const ctx = { request: new Request("http://x" + req.url), env: {} };
+  /* THE REAL REQUEST, not just its address. This built a bare GET with no
+     headers and no body, which was enough while every word search endpoint was
+     a GET. The judging endpoints are POSTs that read a JSON body and check the
+     family's CSRF header, so a stripped request reached them as an unsigned
+     empty one and every drag came back "Refused." — a failure that looked like
+     the game and was the harness. */
+  const rawBody = ["POST", "PUT", "PATCH"].includes(req.method)
+    ? await new Promise((resolve) => {
+        const chunks = [];
+        req.on("data", (c) => chunks.push(c));
+        req.on("end", () => resolve(Buffer.concat(chunks)));
+      })
+    : undefined;
+  const ctx = {
+    request: new Request("http://x" + req.url, {
+      method: req.method,
+      headers: req.headers,
+      ...(rawBody && rawBody.length ? { body: rawBody } : {}),
+    }),
+    env: {},
+  };
   if (url.pathname === "/api/wordsearch/daily") return send(await daily(ctx));
   if (url.pathname === "/api/wordsearch/puzzle") return send(await puzzleFn(ctx));
   if (url.pathname === "/api/wordsearch/catalog") return send(await catalogFn(ctx));
   if (url.pathname === "/api/wordsearch/archive") return send(await archiveFn(ctx));
+  if (url.pathname === "/api/wordsearch/find") return send(await findFn(ctx));
+  if (url.pathname === "/api/wordsearch/round") return send(await roundFn(ctx));
+  if (url.pathname === "/api/wordsearch/finish") return send(await finishFn(ctx));
   /* The play counter, captured rather than served: what the page SENDS is the
      thing under test, and the real route is proven by play_test. */
   if (url.pathname === "/api/play") {
-    let raw = "";
-    req.on("data", (c) => { raw += c; });
-    await new Promise((r) => req.on("end", r));
+    /* The body was read from the stream here; it is read once above now, for
+       every POST, and a stream cannot be read twice — this waited on an "end"
+       that had already fired and captured nothing. */
+    const raw = rawBody ? rawBody.toString() : "";
     try { plays.push(JSON.parse(raw)); } catch (e) { plays.push({ bad: raw }); }
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ ok: true, playNo: plays.length }));
@@ -135,16 +167,36 @@ const puzzle = await (await fetch(`http://localhost:${PORT}/api/wordsearch/daily
 /* THE BONUS HAS A CLUE, and it is shown. The bank has always carried one and
    the server always sent it; the box read "Undiscovered" and threw it away.
    The clue and the length are on the card from kick-off; the word is not. */
+/* THE LENGTH TRAVELS, THE WORD DOES NOT — and since the board stopped being
+   served whole, that is not a promise about what the page draws but a fact
+   about what it was given. The check used to read bonus.grid.length and
+   bonus.display off the payload and assert the page hid the display; there is
+   no display to hide now, which is a stronger thing to be able to say. */
 t("the bonus box shows the clue and the length before the bonus is found",
   d.getElementById("bonusState").textContent === puzzle.bonus.clue &&
-  d.getElementById("bonusSub").textContent.indexOf(puzzle.bonus.grid.length + " letters") === 0 &&
-  d.getElementById("bonusBox").textContent.indexOf(puzzle.bonus.display) === -1,
+  d.getElementById("bonusSub").textContent.indexOf(puzzle.bonus.len + " letters") === 0,
   d.getElementById("bonusState").textContent + " / " + d.getElementById("bonusSub").textContent);
+t("and the page was never given the word to hide",
+  puzzle.bonus.display === undefined && puzzle.bonus.grid === undefined,
+  "the clue and the length are the hunt; the word is the answer");
 const dirMap = { E:[0,1],W:[0,-1],S:[1,0],N:[-1,0],SE:[1,1],SW:[1,-1],NE:[-1,1],NW:[-1,-1] };
+/* The placements, from the server's copy of the board. */
+const SERVER_BOARD = (await dailyBoard({})).puzzle;
+const placementFor = (grid) => {
+  if (SERVER_BOARD.bonus && SERVER_BOARD.bonus.grid === grid) return SERVER_BOARD.bonus.placement;
+  const a = SERVER_BOARD.answers.find((x) => x.grid === grid);
+  return a && a.placement;
+};
 const cellsOf = (a) => {
-  const dxy = dirMap[a.placement.direction], out = [];
+  /* ITS OWN PLACEMENT IF IT HAS ONE. Free Play's boards still travel whole, so
+     an answer from /api/wordsearch/puzzle carries where it is; only the
+     daily's public answers do not, and those are looked up in the server's
+     copy. Reaching for the daily's board unconditionally sent the free-play
+     drags looking for words that are not on it. */
+  const pl = a.placement || placementFor(a.grid);
+  const dxy = dirMap[pl.direction], out = [];
   for (let k = 0; k < a.grid.length; k++)
-    out.push((a.placement.start_row + dxy[0] * k) * 12 + (a.placement.start_col + dxy[1] * k));
+    out.push((pl.start_row + dxy[0] * k) * 12 + (pl.start_col + dxy[1] * k));
   return out;
 };
 /* jsdom has no layout, so elementFromPoint cannot find cells by geometry —
@@ -163,7 +215,25 @@ function drag(cells) {
   ev("pointermove", cells[cells.length - 1]);
   ev("pointerup", cells[cells.length - 1]);
 }
-drag(cellsOf(puzzle.answers[0]));
+
+/* A DRAG IS A ROUND TRIP NOW. The daily's page does not judge a selection —
+   it sends the two squares and the server says what they hit — so a check
+   that asserts immediately after the pointerup is asserting before the answer
+   has arrived. Every one of the drag checks failed that way the moment the
+   judging moved, and none of them was wrong about the game.
+   Waits for the thing itself rather than for a fixed delay: a sleep long
+   enough to be reliable is long enough to be slow, and one short enough to be
+   quick is a flake. */
+async function settle(cond, what) {
+  for (let i = 0; i < 200; i++) {
+    if (cond()) return true;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("timed out waiting for " + what);
+}
+const dragAndWait = async (cells, cond, what) => { drag(cells); await settle(cond, what); };
+await dragAndWait(cellsOf(puzzle.answers[0]),
+  () => d.getElementById("count").textContent === "1", "the first word to be judged");
 t("dragging a name finds it",
   d.querySelector('#wordList .word.done') !== null &&
   d.getElementById("count").textContent === "1");
@@ -178,11 +248,21 @@ t("a wrong selection is a foul, not a find",
   d.getElementById("count").textContent === "1");
 
 /* find the rest, then the bonus */
-for (let i = 1; i < 11; i++) drag(cellsOf(puzzle.answers[i]));
+// One at a time, each waited for: eleven selections are eleven round trips
+// now, and firing them all at once asserts against whichever had landed.
+for (let i = 1; i < 11; i++) {
+  await dragAndWait(cellsOf(puzzle.answers[i]),
+    () => d.getElementById("count").textContent === String(i + 1), "word " + (i + 1));
+}
 t("ten more drags complete the XI", d.getElementById("count").textContent === "11");
 t("the finish prompt offers the secret hunt",
   d.getElementById("finishPrompt").classList.contains("show"));
-drag(cellsOf(puzzle.bonus));
+// THE SECRET IS THE SERVER'S NOW. The page is given a clue and a length, so
+// the suite drags it from the server's copy - which is the separation being
+// tested, expressed in how the test has to be written.
+await dragAndWait(cellsOf(SERVER_BOARD.bonus),
+  () => d.getElementById("bonusState").textContent.indexOf("\u2605") === 0,
+  "the secret");
 await new Promise((r) => setTimeout(r, 100));
 t("finding the bonus after the XI ends the match at full time",
   d.getElementById("result").classList.contains("show"));

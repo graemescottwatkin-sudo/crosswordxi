@@ -92,23 +92,63 @@ export async function released(env, id, now) {
    theme/category is a few KB; 374 full boards is the 827KB page this
    architecture exists to retire. Unreleased boards are simply absent, so the
    browser cannot list what it must not open. */
+/* ---- IS THIS BOARD TODAY'S DAILY? ----
+ *
+ * The one question the free-play routes never asked, and the answer is why
+ * /api/wordsearch/puzzle?id=<today's id> handed back today's board complete
+ * with all eleven placements, to anybody. `released()` passes any board first
+ * scheduled today or earlier, and the archive gate saw daysBack = 0, so both
+ * doors opened on the board every player is currently competing on.
+ *
+ * Withholding the placements from /daily alone would have been theatre while
+ * this route existed. Today's board is not free play, not an archive entry and
+ * not a catalogue row: it is the one board in flight, and it stops being
+ * special at midnight by itself.
+ *
+ * Asked of the schedule, which is where the answer lives — not of a list
+ * somebody has to remember to update. */
+export async function isTodaysDaily(env, id, now) {
+  if (!id) return false;
+  const today = utcDayKey(now);
+  if (!hasDB(env)) return sampleFirstDay(id) === today;
+  try {
+    const row = await env.DB.prepare(
+      "SELECT 1 AS n FROM ws_schedule WHERE day = ? AND puzzle_id = ?")
+      .bind(today, String(id)).first();
+    return !!row;
+  } catch (e) {
+    /* FAIL CLOSED. An unreadable schedule cannot tell today's board from any
+       other, and the two wrong answers are not equal: a false NO serves the
+       board in flight complete with its answers, which is the leak this whole
+       function exists to close, while a false YES refuses a board that would
+       have been fine and shows the player a 404 until the database answers
+       again. An outage on one route is recoverable; a leak is not. */
+    return true;
+  }
+}
+
 export async function catalog(env, now) {
   const today = utcDayKey(now);
   if (!hasDB(env)) {
     const out = [];
     for (const p of SAMPLE_PUZZLES) {
       const first = sampleFirstDay(p.id);
+      if (first === today) continue;          // today's board is not free play
       if (first === null || first <= today) {
         out.push({ id: p.id, theme: p.theme, category: p.category, status: p.status });
       }
     }
     return out;
   }
+  /* AND NOT TODAY'S BOARD. Free play lists what a player may open whole; the
+     board in flight is not that, and listing it is how its id reached the
+     route that served it complete. It returns to the list tomorrow. */
   const rows = await env.DB.prepare(
     `SELECT p.id, p.theme, p.category, p.status
        FROM ws_puzzles p
       WHERE COALESCE((SELECT MIN(day) FROM ws_schedule s WHERE s.puzzle_id = p.id), '0000') <= ?
-      ORDER BY p.id`).bind(today).all();
+        AND p.id NOT IN (SELECT puzzle_id FROM ws_schedule WHERE day = ?)
+      ORDER BY p.id`).bind(today, today).all();
   return rows.results || [];
 }
 

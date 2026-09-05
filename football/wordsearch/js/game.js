@@ -15,7 +15,7 @@
      the family more time than any layout question: the footer line, the
      console, and the named window variable. If this is not the build just
      deployed, the deploy has not landed — do not start debugging the game. */
-  var BUILD = "v002h";
+  var BUILD = "v002i";
   window.WORDSEARCHXI_BUILD = BUILD;
   try { console.log("Wordsearch XI build " + BUILD); } catch (e) {}
 
@@ -40,6 +40,20 @@
   var mode = "daily";           // daily | free
   var puzzle = null, serverDay = null, catalogBoards = [];
   var found = new Set(), bonusFound = false;
+  /* WHERE EACH FOUND WORD SITS, learned one word at a time.
+     The daily's board no longer travels with its placements — the server
+     judges a selection and hands back the placement of whatever it hit, which
+     is the only moment a player is entitled to know where a word is. So the
+     lines drawn through the grid are drawn from here rather than from the
+     board, and a resumed round asks the server what it already found.
+     Free Play is unchanged: it keeps the whole board, because it is unscored,
+     it has help cards that reveal squares outright, and it is not the board
+     anybody is competing on. */
+  var placements = Object.create(null);
+  /* THE SECRET WORD, learned the same way: from the server when it is found,
+     or from full time when the round is over and naming it is the point. The
+     daily's board arrives with the clue and the length and not the word. */
+  var secretWord = null;
   /* One palette. It was declared inside renderWords AND inside drawHighlight —
      two copies of eleven hex strings that agreed only because nobody had
      edited one of them yet. The name in the list and the line through the
@@ -563,6 +577,13 @@
     if (a.length !== b.length) return false;
     var s = new Set(a); return b.every(function (x) { return s.has(x); });
   }
+  /* THE DAILY IS JUDGED BY THE SERVER, and Free Play by the page.
+     This function IS the old game: it compared a drag against placements the
+     browser had been given, which is why the browser had to be given them,
+     which is why the answers travelled and no score could mean anything. It
+     survives for Free Play, where the whole board is served on purpose. */
+  function judgedHere() { return mode !== "daily"; }
+
   function hitForSelection(cells) {
     var pool = puzzle.answers.map(function (a) { return { type: "answer", item: a }; })
       .concat([{ type: "bonus", item: puzzle.bonus }]);
@@ -594,11 +615,91 @@
     var i = eventCell(e); if (i == null) return;
     setPreview(lineCells(startIndex, i));
   }
+  /* WHAT A FOUND WORD DOES, wherever the verdict came from. Lifted out of
+     pointerUp so the server's answer and Free Play's own take the same path:
+     two ways to be told, one thing that happens. */
+  function acceptHit(item, isBonus) {
+    wrongRun = 0; clearTimeout(wrongResetTimer);
+    if (item.placement) placements[item.grid] = item.placement;
+    if (isBonus) {
+      bonusFound = true;
+      if (item.display) secretWord = item.display;
+      drawHighlight(item, true);
+      toast("★ Secret found · +10 at full time");
+    } else {
+      found.add(item.grid);
+      drawHighlight(item, false);
+      toast("Found · " + String(item.display).toUpperCase());
+    }
+    if (navigator.vibrate) navigator.vibrate(18);
+    updateUI(); saveDailyProgress();
+    pushStateSoon();
+  }
+
+  /* AND WHAT A MISS DOES. The escalation is the page's to show — the server
+     keeps its own rows and re-derives the same penalty at full time from the
+     times it recorded, so the number on screen and the number in the score
+     come from one rule applied twice rather than from two rules. */
+  function acceptFoul() {
+    wrongRun++;
+    var add = Math.min(S.FOUL_STEP_MAX, wrongRun), before = penaltyMinutes;
+    penaltyMinutes = Math.min(S.FOUL_CAP, penaltyMinutes + add);
+    var applied = penaltyMinutes - before;
+    clearTimeout(wrongResetTimer);
+    wrongResetTimer = setTimeout(function () { wrongRun = 0; }, S.FOUL_RESET_MS);
+    if (applied > 0) { showPenalty(applied); } else { toast("Penalty limit reached"); }
+    updateClock(); saveDailyProgress();
+    pushStateSoon();
+  }
+
+  /* The selection, sent up. Two squares — the ends of the drag — because the
+     line between them is the server's to work out, and a page that sent the
+     whole path could send a path the game does not allow.
+
+     Best effort: a request that never lands leaves the drag unjudged and the
+     player tries again. Nothing is marked on a promise. */
+  function sendSelection(cells) {
+    var id = playIdOf();
+    var from = [Math.floor(cells[0] / COLS), cells[0] % COLS];
+    var last = cells[cells.length - 1];
+    var to = [Math.floor(last / COLS), last % COLS];
+    fetch("/api/wordsearch/find", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ playId: id, from: from, to: to }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (v) {
+        if (v && v.hit) acceptHit(v.hit, !!v.hit.bonus);
+        else if (v && v.foul) { acceptFoul(); flashWrong(cells); }
+      })
+      .catch(function () { /* unjudged: the drag simply did not happen */ });
+  }
+
+  /* The red flash a wrong selection gets, which used to live inline at the
+     bottom of pointerUp and is now wanted from two places. */
+  function flashWrong(cells) {
+    cells.forEach(function (i) {
+      var c = cellEls[i]; if (!c) return;
+      c.classList.add("bad");
+      setTimeout(function () { c.classList.remove("bad"); }, 300);
+    });
+  }
+
   function pointerUp() {
     if (!dragging) return;
     dragging = false;
     var cells = preview.slice(); setPreview([]);
     if (cells.length < 2) return;
+
+    /* THE DAILY ASKS. Free Play still judges here, because it holds the whole
+       board on purpose; the daily does not hold it and must not, so the two
+       squares go up and the server says what they hit. The answer comes back
+       with the word's placement — earned, one word at a time — and the page
+       draws it exactly as it always did. */
+    if (!judgedHere()) { sendSelection(cells); return; }
+
     var hit = hitForSelection(cells);
     if (hit) {
       wrongRun = 0; clearTimeout(wrongResetTimer);
@@ -623,21 +724,12 @@
     /* The foul. Escalates +1' to +4' for consecutive wrongs, capped at 15'
        total, resetting after seven quiet seconds. It feeds the 90' test, so
        fifteen minutes of fouls can turn a win into a draw — that is the rule,
-       and how-to-play must say it in the same words. */
-    wrongRun++;
-    var add = Math.min(4, wrongRun), before = penaltyMinutes;
-    penaltyMinutes = Math.min(15, penaltyMinutes + add);
-    var applied = penaltyMinutes - before;
-    clearTimeout(wrongResetTimer);
-    wrongResetTimer = setTimeout(function () { wrongRun = 0; }, 7000);
-    if (applied > 0) { showPenalty(applied); } else { toast("Penalty limit reached"); }
-    updateClock(); saveDailyProgress();
-    /* A foul is a change worth carrying too: penalties move the score. */
-    pushStateSoon();
-    cells.forEach(function (i) {
-      var c = cellEls[i]; if (!c) return;
-      c.classList.add("bad"); setTimeout(function () { c.classList.remove("bad"); }, 300);
-    });
+       and how-to-play must say it in the same words.
+       Written out here once, and then again in acceptFoul when the judging
+       moved: two copies of an escalation, in one file, four lines apart. This
+       is the call. */
+    acceptFoul();
+    flashWrong(cells);
   }
   function showPenalty(mins) {
     var p = $("penaltyPop"); if (!p) return;
@@ -646,8 +738,16 @@
   }
 
   /* ---- highlights ------------------------------------------------------ */
+  /* THE PLACEMENT, WHEREVER IT CAME FROM. Free Play has it on the board;
+     the daily learns it from the server as each word is found. Asked for
+     here so every caller draws the same way and none of them has to know
+     which game it is in. */
+  function placementOf(item) { return item.placement || placements[item.grid] || null; }
+
   function drawHighlight(item, isBonus) {
-    var cells = placementCells(item.placement, item.grid.length);
+    var pl = placementOf(item);
+    if (!pl) return;
+    var cells = placementCells(pl, item.grid.length);
     var a = cellEls[cells[0]], b = cellEls[cells[cells.length - 1]];
     if (!a || !b) return;
     var g = grid.getBoundingClientRect(), ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
@@ -668,8 +768,12 @@
   function redrawHighlights() {
     if (!puzzle || !hlayer) return;
     hlayer.innerHTML = "";
+    /* A found word with no placement cannot be drawn, and that is not an
+       error: on the daily a resumed round asks the server for both together,
+       and until it answers the word is ticked in the list without a line
+       through the grid. Better a missing line than a guessed one. */
     puzzle.answers.forEach(function (a) { if (found.has(a.grid)) drawHighlight(a, false); });
-    if (bonusFound) drawHighlight(puzzle.bonus, true);
+    if (bonusFound && puzzle.bonus) drawHighlight(puzzle.bonus, true);
   }
 
   /* ---- help — four cards, in the menu, Free Play only ------------------ */
@@ -737,8 +841,13 @@
        away, so a player had no idea what they were hunting for. The clue and
        the length are the hunt; the word itself stays hidden until found. */
     var bonusClue = puzzle.bonus && puzzle.bonus.clue;
-    var bonusLen = puzzle.bonus && puzzle.bonus.grid ? puzzle.bonus.grid.length : 0;
-    $("bonusState").textContent = bonusFound ? "★ " + puzzle.bonus.display
+    /* The length comes down with the clue now — it is part of the hunt, not
+       part of the answer — and Free Play still has the whole word. */
+    var bonusLen = (puzzle.bonus && (puzzle.bonus.len ||
+      (puzzle.bonus.grid ? puzzle.bonus.grid.length : 0))) || 0;
+    var known = secretWord || (puzzle.bonus && puzzle.bonus.display) || null;
+    $("bonusState").textContent = bonusFound && known ? "★ " + known
+      : bonusFound ? "★ Found"
       : (bonusClue || "Undiscovered");
     $("bonusSub").textContent = bonusFound ? "A full +10 points at full time."
       : (bonusLen ? bonusLen + " letters · " : "") + "Hidden in the grid · +10 points";
@@ -756,6 +865,40 @@
   }
 
   /* ---- finishing ------------------------------------------------------- */
+  /* What the server makes of the round, once the page has drawn its own card.
+     Best effort throughout: a round it cannot verify keeps the number the card
+     has always called the device's own. */
+  function askServerScore(reason, localScore) {
+    var id = playIdOf();
+    if (!id || mode !== "daily") return;
+    fetch("/api/wordsearch/finish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ playId: id }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (v) {
+        if (!v) return;
+        /* The secret, if the round is over. Redraw whichever lines name it. */
+        if (v.secret && !secretWord) { secretWord = v.secret; updateUI(); }
+        if (!v.verified) return;
+        $("resultScore").textContent = v.score;
+        $("resultEquation").textContent = v.bonusFound
+          ? v.base + " base + " + v.bonus + " bonus = " + v.score
+          : v.score + " pts · bonus missed";
+        var note = $("resultVerified");
+        if (note) {
+          note.textContent = v.score === localScore
+            ? "Verified by the server."
+            : "Verified by the server — " + v.score + " rather than " + localScore +
+              ", timed from when the board was opened.";
+        }
+      })
+      .catch(function () { /* the card keeps its own number */ });
+  }
+
+
   function finish(reason) {
     if ($("result").classList.contains("show")) return;
     clearInterval(timer); timer = null;
@@ -766,6 +909,15 @@
     $("finishPrompt").classList.remove("show");
     var m = footballMinute(), matchScore = liveScore(), sc = finalScore();
     $("resultScore").textContent = sc;
+    /* AND THE SERVER'S OWN NUMBER, ASKED FOR AFTER THE CARD IS DRAWN. It
+       judged every selection, timed the board from a clock it started, and
+       kept every foul in order — so it can work the score out without being
+       told any of it, and it writes plays.srv_score, which is what a challenge
+       table reads. The card keeps the device's number until the answer comes
+       back, and keeps it for good on a round nothing could verify.
+       The same request is what reveals a missed secret: the server decides the
+       round is over from its own rows, and only then says the word. */
+    askServerScore(reason, sc);
     $("resultEquation").textContent = bonusFound
       ? matchScore + " base + 10 bonus = " + sc
       : sc + " pts · bonus missed";
@@ -778,10 +930,15 @@
     if (reason === "time") {
       $("resultLine").textContent = "Full time — " + found.size + "/11 found." + (assisted ? " · Assisted" : "");
       if (missed.length) pieces.push("Missed: " + missed.join(", "));
-      if (!bonusFound) pieces.push("Bonus: " + puzzle.bonus.display);
+      /* Named only if it is known: on the daily that means full time has
+         been reached and the server has said it. */
+      var missedSecret = secretWord || (puzzle.bonus && puzzle.bonus.display);
+      if (!bonusFound && missedSecret) pieces.push("Bonus: " + missedSecret);
     } else {
+      var theSecret = secretWord || (puzzle.bonus && puzzle.bonus.display);
       $("resultLine").textContent = (bonusFound ? "XI complete — secret bonus found too."
-        : "XI complete. Bonus missed: " + puzzle.bonus.display + ".") + (assisted ? " · Assisted" : "");
+        : theSecret ? "XI complete. Bonus missed: " + theSecret + "."
+        : "XI complete. The secret stayed hidden.") + (assisted ? " · Assisted" : "");
     }
     $("resultMissed").textContent = pieces.join(" · ");
     $("resultMissed").classList.toggle("hidden", !pieces.length);
@@ -917,9 +1074,47 @@
       detail: { bonusFound: bonusFound, assisted: assisted, penaltyMinutes: penaltyMinutes },
     };
   }
+  /* The attempt this round belongs to. Every selection names it, so the
+     server can count the find against the clock it started. */
+  function playIdOf() {
+    var cur = window.XIPlays && window.XIPlays.current ? window.XIPlays.current() : null;
+    return (cur && cur.playId) || null;
+  }
+
+  /* THE SERVER'S CLOCK, told once at kick off. From then on it has everything
+     a score is made of, because it judges every selection: which words, when,
+     and every miss in between.
+     It answers with what this round has ALREADY found, which is how a resumed
+     board gets its lines back — the page cannot draw them from a board that no
+     longer carries placements, and asking the page what it thinks it found
+     would be trusting the thing this whole change stopped trusting. */
+  function startServerRound() {
+    var id = playIdOf();
+    if (!id || mode !== "daily") return;
+    fetch("/api/wordsearch/round", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-XI-Games": "1" },
+      credentials: "same-origin",
+      body: JSON.stringify({ playId: id }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (v) {
+        if (!v || !v.verified || !Array.isArray(v.found) || !v.found.length) return;
+        /* Ticked in the list straight away; the lines follow as the placements
+           arrive, and a word whose placement is unknown is simply not drawn. */
+        v.found.forEach(function (f) {
+          if (f.bonus) bonusFound = true; else found.add(f.word);
+        });
+        updateUI(); redrawHighlights();
+      })
+      .catch(function () { /* unverified, and the board plays on */ });
+  }
+
   function playsStart(kind, boardKey) {
     if (!window.XIPlays) return;
     window.XIPlays.start({ game: "wordsearch", mode: kind, boardKey: boardKey, total: 11 }, playsProgress);
+    /* After start, which is what mints the play id this names. */
+    startServerRound();
   }
   function playsEnd(completed) {
     if (window.XIPlays && window.XIPlays.active()) window.XIPlays.end(!!completed);

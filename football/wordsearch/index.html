@@ -39,7 +39,7 @@
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
 <script src="/shared/xi-theme.js?v=v21"></script>
-<link rel="stylesheet" href="css/style.css?v=v002h">
+<link rel="stylesheet" href="css/style.css?v=v002i">
 </head>
 <body>
 
@@ -277,6 +277,9 @@
     <h2>Full time</h2>
     <div class="big" id="resultScore">114</div>
     <div class="resultEquation" id="resultEquation"></div>
+    <!-- Whether the score above is the server's. A note about the number, not
+         part of it, and absent on a round nothing could verify. -->
+    <p class="resultVerified" id="resultVerified"></p>
     <p id="resultLine"></p>
     <div class="resultMissed hidden" id="resultMissed"></div>
     <div class="stats">
@@ -297,6 +300,9 @@
 <script src="/shared/xi-chrome.js?v=v21"></script>
 <script src="/shared/xi-plays.js?v=v21"></script>
 <script src="/shared/xi-share.js?v=v21"></script>
-<script src="js/game.js?v=v002h"></script>
+<!-- What a score is, in one file, so the Worker and the page cannot disagree
+     about it. Loaded before the game, which reads it. -->
+<script src="js/scoring.js?v=v002i"></script>
+<script src="js/game.js?v=v002i"></script>
 </body>
 </html>
