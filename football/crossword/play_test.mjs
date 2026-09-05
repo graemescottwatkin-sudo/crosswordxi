@@ -144,13 +144,51 @@ console.log("\nThemed boards are counted as themselves");
     return /\^\[a-z0-9\]\[a-z0-9-\]\{0,48\}\$/.test(src);
   })());
   t("a themed attempt carries no more about the person than any other", (() => {
-    /* Comments stripped first. This failed once on its own explanation: the
-       comment beside the code says "no user id", and the check greps for
-       "user". Fifth time in this project — §5 of the handover. */
-    const code = src.slice(src.indexOf("const themeKey"), src.indexOf("if (body.event"))
-      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    return !/user|account|device|ip\b/i.test(code);
+    /* THE ROW, NOT THE NEIGHBOURHOOD. This used to slice the source between
+       two landmarks, strip comments and refuse the word "user" anywhere in
+       between — a proxy for "the plays row has no identity in it", and one
+       that held only while nothing else lived in that window. On 5 Sep 2026
+       the season put a `seasonUser(request, env)` lookup there: a signed-in
+       player's day goes to season_play, a DIFFERENT table, and the plays row
+       was untouched — so the proxy went red for code that did not break the
+       property it was standing in for. A check that fires on the truth is as
+       bad as one that never fires.
+       So it reads the INSERT itself now: the columns the plays row is made of,
+       and the values bound into them. That is what "carries nothing about the
+       person" actually means, and it is stricter than the window ever was —
+       the old one would have allowed an identity column that happened to be
+       spelt something else. */
+    const insert = src.slice(src.indexOf("INSERT INTO plays"));
+    const cols = insert.slice(insert.indexOf("(") + 1, insert.indexOf(")"))
+      .split(",").map((c) => c.trim()).filter(Boolean);
+    const bound = insert.slice(insert.indexOf(".bind("), insert.indexOf(".run()"));
+    /* by_owner is one bit, set from the session and never from the browser,
+       and it is checked on its own below; everything else must be about the
+       BOARD or the VISIT, never about who is at the keyboard. */
+    const IDENTITY = /user|account|email|session_|player|device|ip_|\bip\b|cookie|name/i;
+    const badCol = cols.filter((c) => IDENTITY.test(c));
+    const badVal = /seasonPlayer|currentUser|\buser\b|email|cookie/i.test(
+      bound.replace(/\/\*[\s\S]*?\*\//g, ""));
+    if (badCol.length || badVal) {
+      console.log("        plays row carries: " +
+        (badCol.join(", ") || "") + (badVal ? " [identity bound into it]" : ""));
+      return false;
+    }
+    return cols.length > 5;
   })());
+  /* AND THE SEASON'S OWN ROW IS SOMEWHERE ELSE ENTIRELY. The lookup above is
+     allowed to exist in this file precisely because what it feeds is a
+     separate table that holds a day, a game and whether it was finished —
+     see functions/_lib/season-store.js. This is the check that keeps the two
+     apart, so the exemption cannot quietly widen. */
+  t("the season's identity never reaches the plays row", (() => {
+    const insert = src.slice(src.indexOf("INSERT INTO plays"), src.indexOf(".run()", src.indexOf("INSERT INTO plays")));
+    /* The CALL, not the name. Written as indexOf("seasonUser") first, which
+       the import line at the top of the file satisfied all on its own — so
+       deleting the lookup left this green. */
+    return /seasonUser\(\s*request,\s*env\s*\)/.test(src) &&
+      insert.indexOf("seasonPlayer") === -1;
+  })(), "a signed-in day goes to season_play, not to plays");
   const client = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
   /* Rewritten after the board refactor: the old assertion matched the
      pre-refactor source string (`mode === "theme" && themeWanted`), variables
