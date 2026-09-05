@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v001c";
+var BUILD = "v001d";
 
 (function () {
   "use strict";
@@ -585,12 +585,36 @@ var BUILD = "v001c";
 
   function stopClock() { if (ticker) { clearInterval(ticker); ticker = null; } }
 
+  /* ---- the live league table ------------------------------------------
+     Your score IS your club's points in a real historical season, and it
+     moves you up and down a real ladder while you play. Built by
+     shared/xi-table.js; this file only says which board it is and what the
+     score is now. */
+  var leagueTable = null;
+  function mountTable(seed) {
+    if (!window.XITable) return;
+    var el = $("tablePanel");
+    if (!el) return;
+    leagueTable = window.XITable.mount(el, {
+      seed: seed,
+      /* The board at kick-off: no clock run, nothing bought. `help` is a
+         NUMBER of points spent, not an object — an object here would have
+         coerced to zero and been right by accident. */
+      score: SCORING.computeScore(0, 0).score,
+    });
+  }
+
   function tick() {
     if (state.over) return;
     state.elapsed = Math.max(0, Math.round((Date.now() - state.startedAt) / 1000));
     var minute = SCORING.matchMinute(state.elapsed);
     $("clockValue").textContent = minute;
-    $("worthNow").textContent = SCORING.computeScore(state.elapsed, state.help).score;
+    var worth = SCORING.computeScore(state.elapsed, state.help).score;
+    $("worthNow").textContent = worth;
+    /* The ladder follows the SAME number the box above it shows, read from one
+       place rather than recomputed — a table that disagreed with the score
+       printed beside it would be two answers to one question. */
+    if (leagueTable) leagueTable.update(worth);
     if (CFG.HALF_TIME_MINUTE !== null && !state.teamTalkDone &&
         minute >= CFG.HALF_TIME_MINUTE) teamTalk();
   }
@@ -1504,6 +1528,21 @@ var BUILD = "v001c";
         }
         if (board.error) { say(board.error, "bad"); return; }
         state.board = board;
+        /* THE LIVE TABLE, remounted per board. The SEED IS THE BOARD'S TOKEN,
+           not its number — and the difference matters here more than anywhere
+           else in the family.
+
+           Scrambled and Vowels read ONE bank two ways, and boardForNumber puts
+           them half a ring apart: on day 12 they are different elevens, and
+           they share the number 12. Seeding on the number gave both games the
+           same historical season on the same day — one ladder for two boards,
+           so a player doing both played 2005/06 twice and the two games felt
+           like one. The token says which board AND which cypher (sc:12 against
+           sc:c:12), so it is the board's identity rather than the day's.
+
+           Still the server's, and still the same for everybody on that board,
+           which is what makes two people comparing positions mean anything. */
+        mountTable(String(board.token || ("sc:" + board.no)));
         /* THE CLOCK IS THE BOARD'S, NOT THE GAME'S. The payload says which
            cypher it gave and the per-game half of scoring follows it, so
            scoring.js still reads one number from one place. */

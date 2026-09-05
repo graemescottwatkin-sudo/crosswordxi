@@ -52,15 +52,24 @@ panel (item 9) has somewhere to show them.
   `shared/xi-seasons.js`: 66KB fetched once for the whole family instead of
   per game. The club is `xi.club`, family-wide, so picking Everton in one
   game picks it in all of them.
-- ⬜ **Scrambled, Vowels and HiLo still have no table.** The pattern is set
+- ✅ **Scrambled and Vowels have one** (sc v002i, vw v001d). Vowels is
+  generated from Scrambled by `tools/build_vowels.js`, so it inherited the
+  table from the same edit. The SEED IS THE BOARD'S TOKEN, not its number:
+  the two games read one bank half a ring apart, so on any day they are
+  different elevens sharing a number 12 — seeding on the number gave both the
+  same historical season and made the two games feel like one. Owner spotted
+  it before it shipped; `table_test.mjs` now checks fourteen days of both.
+- ⬜ **HiLo still has no table**, and it is the last one. The pattern is set
   and each is now three small pieces: a `<div class="tb-table xit"
   id="tablePanel">` in the page, the three shared assets loaded, and a mount
   wired to that game's live score with the SERVER's day or board number as
   the seed. Wordsearch's `mountTable()` in its `game.js` is the worked
   example — mounted after the daily arrives, never before, because the seed
   is what picks the season and a device must not decide it.
-  Scrambled and Vowels compute their score at `js/game.js:593`; HiLo has no
-  live-score accessor yet and needs one before it can mount.
+  HiLo has no live-score accessor at all — that is the piece to write first,
+  and until it exists there is no number to put in a ladder. Its row in
+  `table_test.mjs` is `table: false`; flip it and the check says what is
+  still missing.
 
 **There is ONE season and it belongs to the hub.** Decided 4 Sep, correcting an
 earlier reading of this item: a game does not have a season of its own.

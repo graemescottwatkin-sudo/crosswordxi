@@ -202,5 +202,98 @@ console.log("\nThe club is the family's, not one game's");
     "asking a settled question four more times is asking it four times too many");
 }
 
+console.log("\nOne bank, two games, two ladders");
+{
+  /* SCRAMBLED AND VOWELS READ ONE BANK TWO WAYS, and boardForNumber puts them
+     half a ring apart — on any given day they are different elevens that share
+     a board NUMBER. Seeding the table on that number gave both games the same
+     historical season on the same day: one ladder for two boards, so a player
+     doing both played the same season twice and the two games felt like one.
+     Spotted by the owner before it shipped.
+
+     The token is the board's identity rather than the day's — sc:12 against
+     sc:c:12 — so this checks the two rarely land on the same season, across a
+     fortnight rather than on one lucky day. Some collisions are expected: two
+     independent picks from thirty seasons will agree now and then, and a check
+     demanding they never do would be demanding the arithmetic be rigged. */
+  const same = [];
+  for (let n = 1; n <= 14; n++) {
+    const a = XITable.pickSeason("Everton", "sc:" + n);
+    const b = XITable.pickSeason("Everton", "sc:c:" + n);
+    if (a && b && a.season === b.season) same.push(`day ${n}: both ${a.season}`);
+  }
+  t("the two cypher games get different seasons on the same day",
+    same.length <= 2, same.length ? same.join(" | ") : "14 days, all different");
+  /* AND BOTH PAGES SEED ON THE TOKEN. The arithmetic above only means anything
+     if that is what they actually pass. */
+  for (const dir of ["football/scrambled", "football/vowels"]) {
+    const js = fs.readFileSync(`${dir}/js/game.js`, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/.*$/gm, " ");
+    t(`${dir} seeds on the board's token, not its number`,
+      /mountTable\(String\(board\.token/.test(js),
+      "the number is the same in both games; the token is not");
+  }
+}
+
+console.log("\nWhich games have one, and which do not");
+{
+  /* A ROW PER GAME, because the alternative is how Vowels XI launched with a
+     shirt that never lit: five hand-written blocks, and somebody adds four.
+     `table: true` means the game must mount one; false means it must not, and
+     saying so is the difference between a decision and an oversight.
+
+     HiLo is the one gap and it is deliberate: it has no live-score accessor,
+     so there is no number to put in a ladder yet. When it gets one this row
+     flips to true and this check says what is still missing. */
+  const GAMES = [
+    { dir: "football/crossword", table: true },
+    { dir: "football/wordsearch", table: true },
+    { dir: "football/scrambled", table: true },
+    { dir: "football/vowels", table: true },
+    { dir: "football/hilo", table: false },
+    { dir: "football/quickfire", table: false },
+  ];
+  const missing = [], stray = [], half = [];
+  for (const g of GAMES) {
+    const code = fs.readFileSync(`${g.dir}/index.html`, "utf8")
+      .replace(/<!--[\s\S]*?-->/g, " ");
+    const js = fs.readFileSync(`${g.dir}/js/game.js`, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/.*$/gm, " ");
+    /* The PANEL, the MODULE and the MOUNT — all three or none. A page with the
+       box and no script draws an empty rectangle; a script with no box does
+       nothing at all, and both look like a working game until somebody
+       scrolls that far. */
+    const box = /id="tablePanel"/.test(code);
+    const mod = /<script src="\/shared\/xi-table\.js\?v=/.test(code);
+    const seasons = /<script src="\/shared\/xi-seasons\.js\?v=/.test(code);
+    /* THE STYLESHEET IS REQUIRED ONLY BY THE GAMES USING THE SHARED MARKUP.
+       xi-table.css is scoped entirely under .xit, so a page whose panel does
+       not carry that class gets nothing from it — the crossword's table is
+       bespoke markup woven into its board layout and styled by its own sheet.
+       Demanding the file everywhere failed the crossword for a stylesheet it
+       could not have used, which is a check asking for the wrong thing rather
+       than a game missing something. */
+    const usesSharedMarkup = /class="[^"]*\bxit\b[^"]*"[^>]*id="tablePanel"/.test(code);
+    const styled = !usesSharedMarkup ||
+      /<link rel="stylesheet" href="\/shared\/xi-table\.css\?v=/.test(code);
+    /* The crossword builds its table through its own engine rather than
+       XITable.mount, so either way of reaching the shared module counts. */
+    const mounts = /XITable\.mount\(/.test(js) || /FCW\.buildTable\(/.test(js);
+    if (g.table && !(box && mod && seasons && mounts && styled)) {
+      missing.push(`${g.dir} (box ${box}, module ${mod}, seasons ${seasons}, ` +
+        `mount ${mounts}, styled ${styled})`);
+    }
+    if (!g.table && (box || mod || mounts)) stray.push(g.dir);
+    if (g.table && (box !== mod || mod !== mounts)) half.push(g.dir);
+  }
+  t("every game that should have a table has all three parts of one",
+    missing.length === 0, missing.join(" | ") || "crossword, wordsearch, scrambled, vowels");
+  t("and no game has half of one",
+    half.length === 0, half.join(", ") || "a box with no script draws an empty rectangle");
+  t("HiLo and QuickFire have none, which is a decision rather than an oversight",
+    stray.length === 0, stray.join(", ") ||
+      "HiLo has no live-score accessor yet; flip its row when it does");
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
