@@ -321,8 +321,15 @@ server.listen(0, "127.0.0.1", async () => {
     const rows = [...d.querySelectorAll("#tablePanel #leagueBody tr")];
     return rows.length === 20 && rows.filter((r) => !r.classList.contains("faroff")).length === 3;
   })(), [...d.querySelectorAll("#tablePanel #leagueBody tr")].filter((r) => !r.classList.contains("faroff")).length + " visible");
-  t("the season strip shows all 38 games",
-    d.querySelectorAll("#seasonGames .game").length === 38);
+  /* THE 38-GAME STRIP IS GONE and must not come back: it factorised one
+     board's score into an invented W/D/L record, and there is a real season on
+     the hub now counting days across all five games. This asserts its absence
+     rather than being deleted, because a check that is removed with the thing
+     it watched leaves nothing to notice the thing returning. */
+  t("no invented 38-game record anywhere in the page",
+    !$("seasonGames") && !$("rSeasonGames") && !$("seasonPanel") &&
+    d.querySelectorAll(".game, .season-strip").length === 0,
+    "one board is a score out of 114, not a season");
   t("the pitch backdrop is present", !!$("pitchBg") && !!$("pitchBg").querySelector("svg"));
   t("the clue card still has a fixed height",
     /\.now-clue\{[^}]*height:96px/.test(fs.readFileSync(path.join(DIR, "css/style.css"), "utf8").replace(/\s*\n\s*/g, "")));
@@ -344,15 +351,18 @@ server.listen(0, "127.0.0.1", async () => {
       !/\.stage\{[^}]*grid-template-columns:auto/.test(css) &&
       !d.querySelector(".side");
   })());
-  t("the vertical flow is active clue, board, controls, clues, season", (() => {
-    const order = [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
+  t("the vertical flow is active clue, board, clues, table", (() => {
+    const order = [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #tablePanel")]
       .map((n) => n.id || n.className.split(" ")[0]);
     /* Requested order: the clue you are answering, the board you answer it
-       on, the controls, the record of how it is going, then the full lists. */
+       on, the controls, then the full lists. */
     /* The lists moved up to sit under Help, and are closed by default: the
        clue being answered is already on screen, so they are a reference. */
-    return order.join(">") === "nowClue>grid-wrap>clues>seasonPanel";
-  })(), [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #seasonPanel")]
+    /* It ended at #seasonPanel until the invented 38-game record came out.
+       The LIVE TABLE is what sits at the foot of the column now — a real
+       league season, entered through the player's club. */
+    return order.join(">") === "nowClue>grid-wrap>clues>tablePanel";
+  })(), [...d.querySelectorAll("#toolbar, #nowClue, .grid-wrap, #clues, #tablePanel")]
     .map((n) => n.id || n.className.split(" ")[0]).join(" > "));
   t("the active clue strip is still immediately above the board", (() => {
     const nc = $("nowClue"), wrap = d.querySelector(".grid-wrap");
@@ -422,7 +432,7 @@ server.listen(0, "127.0.0.1", async () => {
     // cell size changes rather than each aligning to the page.
     return /\.now-clue\{[^}]*width:100%/.test(css) &&
       /\.clues\{[^}]*max-width:var\(--board-w/.test(css) &&
-      /#seasonPanel\{[^}]*max-width:var\(--board-w/.test(css);
+      /\.grid-panel > \.tb-table\{[^}]*max-width:var\(--board-w/.test(css);
   })());
   t("the content is capped and centred on very wide screens",
     /\.stage\{[^}]*max-width:1140px[^}]*margin:0 auto/.test(css));
@@ -1014,9 +1024,22 @@ server.listen(0, "127.0.0.1", async () => {
       /name \+ "\\n" \+ line \+ "\\n" \+ invite/.test(js);
   })());
   t("and a picture that gives nothing away", (() => {
-    // A season of W/D/L. Recognisable at a glance, spoils no answer.
+    /* Ten squares: how much of the 114 was kept. Recognisable at a glance,
+       spoils no answer, and claims nothing.
+       It was drawn from seasonRecord() — the invented 38-game split — until
+       that came out. This asserts the picture is built from the SCORE and its
+       one published maximum, so a share cannot go back to describing a season
+       that was never played. */
     const js = fs.readFileSync(path.join(DIR, "js/game.js"), "utf8");
-    return /function shareStrip/.test(js) && /FCW\.seasonRecord/.test(js);
+    const fn = js.slice(js.indexOf("function shareStrip"), js.indexOf("function shareResult"))
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    /* Comments stripped: the function's own comment explains what the season
+       strip WAS, and this check refuses the word "season" in it. Third time
+       today that a grep was satisfied — or failed — by prose rather than code.
+       See the note beside the same fix in play_test.mjs. */
+    return fn.length > 100 &&
+      /FCW\.SCORING\.MAX_SCORE/.test(fn) &&
+      !/season/i.test(fn);
   })());
   /* STILL THIS GAME'S, because the TEXT is: a crossword result is written
      here and must be safe to read before playing. The slice used to end at
@@ -1690,7 +1713,9 @@ server.listen(0, "127.0.0.1", async () => {
       ids.indexOf("grid-wrap") === 2 &&
       ids.indexOf("tb-game") > ids.indexOf("grid-wrap") &&
       ids.indexOf("tb-help") > ids.indexOf("tb-game") &&
-      ids.indexOf("seasonPanel") > ids.indexOf("tb-help");
+      /* The live table closes the column. It was #seasonPanel until the
+         invented 38-game record came out from under it. */
+      ids.indexOf("tablePanel") > ids.indexOf("tb-help");
   })(), [...d.querySelector(".grid-panel").children]
     .map((n) => n.id || n.className.split(" ").pop()).join(" > "));
 
@@ -1715,8 +1740,8 @@ server.listen(0, "127.0.0.1", async () => {
      phones, so its position was a runtime decision and two sets of CSS had to
      describe it. It is now under the board in the markup at every width — no
      move, nothing to get wrong on resize. */
-  t("the season record is inside the board column, after the board", (() => {
-    const panel = $("seasonPanel");
+  t("the league table is inside the board column, after the board", (() => {
+    const panel = $("tablePanel");
     const wrap = d.querySelector(".grid-wrap");
     return d.querySelector(".grid-panel").contains(panel) &&
       !$("toolbar") &&

@@ -286,7 +286,7 @@
   // falls outside it, dailyBans() returns null and the Daily plays as before.
   /* The build this file came from. Visible in the footer and on the console, so
      "is the new version actually live?" is a question with an answer. */
-  var BUILD = "v002x";
+  var BUILD = "v002y";
   try {
     window.CROSSWORDXI_BUILD = BUILD;
     console.log("Crossword XI build " + BUILD);
@@ -2667,13 +2667,14 @@
   /* Where the league table goes.
      In the rail beside the controls, which is where it belongs on anything
      with a rail: it reads as part of the same dashboard as the clock and the
-     help buttons, and the space under the board is the season record's — the
-     run of results is what the score actually means, and it belongs against
-     the thing that produced it.
+     help buttons.
      On a phone there is no rail, only a banner, and a twenty-team table in a
      banner is what forced it out in the first place. So on phones it drops
-     below the season strip instead. One runtime decision, and .below-board
-     describes the phone case only. */
+     below the board instead. One runtime decision, and .below-board describes
+     the phone case only.
+     It used to be positioned relative to #seasonPanel, the fake 38-game strip
+     that sat above it. That strip is gone, so the anchor is gone with it; the
+     class was always what did the positioning. */
   var tableHome = null, tableAnchor = null;
   function placeTable() {
     var panel = $("tablePanel");
@@ -2681,11 +2682,7 @@
     // Captured once, before any move, so a relocation cannot make this wrong.
     if (!tableHome) { tableHome = panel.parentNode; tableAnchor = panel.nextElementSibling; }
     var phone = (window.innerWidth || 360) <= 640;
-    var season = $("seasonPanel");
-    if (phone && season && season.parentNode) {
-      if (panel.previousElementSibling !== season) {
-        season.parentNode.insertBefore(panel, season.nextSibling);
-      }
+    if (phone) {
       panel.classList.add("below-board");
     } else {
       if (tableHome && panel.parentNode !== tableHome) tableHome.insertBefore(panel, tableAnchor);
@@ -4636,27 +4633,6 @@
     toastT = setTimeout(function () { el.className = "toast" + (kind ? " " + kind : ""); }, 2200);
   }
 
-  /* ---------- Season strip ----------
-     All 38 games, derived from the live score: a win is 3 points and a draw 1,
-     so the score resolves to exactly one W/D/L split. Time and help both show
-     here, because both cost points. */
-  function renderSeason(gamesId, wdlId, score) {
-    var el = $(gamesId);
-    if (!el) return;
-    // Built from what the player actually did, so the strip and the Full Time
-    // breakdown tell the same story.
-    var r = FCW.seasonFromActions(elapsed, checksUsed, revealedLetterCount(),
-                                  revealedAnswerCount(), checkAllsUsed);
-    var lastWin = r.won - 1;
-    el.innerHTML = r.marks.map(function (m, i) {
-      return '<span class="game ' + m + (i === lastWin ? ' now' : '') + '"></span>';
-    }).join("");
-    if ($(wdlId)) {
-      $(wdlId).textContent = r.won + "W  " + r.drawn + "D  " + r.lost + "L";
-    }
-    el.setAttribute("aria-label",
-      "Season record: " + r.won + " wins, " + r.drawn + " draws, " + r.lost + " defeats");
-  }
 
   /* ---------- Live league table ---------- */
   /* Which positions the live table shows: the player with one club above and
@@ -4743,7 +4719,6 @@
     var table = FCW.buildTable(club, score, season);
     if (!table.length) return;
     var pos = FCW.playerPosition(table);
-    renderSeason("seasonGames", "seasonWdl", score);
     if (started && !complete && !paused) announceMove(pos);
     // The position and running score are read off the league table itself —
     // a chip repeating them in the toolbar was saying the same thing twice.
@@ -4939,7 +4914,6 @@
     $("rClub").textContent = club + (season ? "  \u00B7  " + season.season : "");
     setResultLine(pos, res.score);
     $("rMsg").textContent = FCW.outcomeMessage(club, pos);
-    renderSeason("rSeasonGames", "rSeasonWdl", res.score);
     $("bClock").textContent = FCW.matchClockLabel(elapsed);
     $("bTime").textContent = fmt(elapsed);
     $("bTimePen").textContent = "\u2212" + res.timePenalty;
@@ -5340,7 +5314,6 @@
           setResultLine(pos, r.score);
           setFinalScore(r.score);
           $("rMsg").textContent = FCW.outcomeMessage(club, pos);
-          renderSeason("rSeasonGames", "rSeasonWdl", r.score);
           renderLeagueRows($("finalTableBody"), table, false);
           /* Re-scrolled, because re-rendering the rows throws the scroll back
              to the top. It barely showed while the window was ten rows deep;
@@ -5375,15 +5348,39 @@
   var SHARE_URL = "https://crossword.thexigames.com";
 
   function shareStrip(score) {
-    /* Ten squares, proportional to the season a score represents. Thirty-eight
-       is a wall of colour on a phone; ten reads at a glance and still tells a
-       good run from a poor one. */
-    var rec = FCW.seasonRecord(score);
-    var n = rec.marks.length || 1;
-    var out = "", used = 0;
-    var w = Math.round(rec.won / n * 10), d = Math.round(rec.drawn / n * 10);
-    for (var i = 0; i < w && used < 10; i++, used++) out += "\uD83D\uDFE9";
-    for (var j = 0; j < d && used < 10; j++, used++) out += "\uD83D\uDFE8";
+    /* Ten squares: how much of the 114 was kept.
+
+       This used to be the season a score "represents" \u2014 seasonRecord() split
+       the number into wins and draws across 38 invented matches and the
+       squares were drawn from that. The split was exact arithmetic and it was
+       still a fiction: one board is not a season, and there is a real one now,
+       on the hub, counting days across all five games. Two seasons is one too
+       many.
+
+       So the picture stays and the fiction goes. Green is points kept, red is
+       points dropped, and the single yellow is the part-square in between \u2014
+       which is what the owner asked a board to say: "how many of the 114
+       points did you retain". Ten squares because thirty-eight is a wall of
+       colour on a phone, and ten still tells a good round from a poor one at
+       a glance.
+
+       MAX_SCORE, not a 114 written here: the one place that number lives is
+       the engine, and a second copy is how a rescored game ends up with a
+       share strip that disagrees with its own card. */
+    var max = FCW.SCORING.MAX_SCORE;
+    var kept = Math.max(0, Math.min(max, Number(score) || 0));
+    var tenths = kept / max * 10;
+    var green = Math.floor(tenths);
+    /* A part-square is shown only when there is enough of one to mean
+       anything, and never as an eleventh square: a perfect score is ten
+       greens and nothing else. */
+    var yellow = (tenths - green) >= 0.25 && green < 10 ? 1 : 0;
+    /* Counted, not measured off the string: each of these emoji is a
+       surrogate pair, so out.length is twice the number of squares and
+       "while (out.length < 10)" would silently draw five. */
+    var out = "", used = 0, i;
+    for (i = 0; i < green; i++, used++) out += "\uD83D\uDFE9";
+    for (i = 0; i < yellow; i++, used++) out += "\uD83D\uDFE8";
     while (used < 10) { out += "\uD83D\uDFE5"; used++; }
     return out;
   }

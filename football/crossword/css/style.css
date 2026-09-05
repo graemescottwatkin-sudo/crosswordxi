@@ -142,8 +142,7 @@ header{
 .grid-panel > .bank-strip,
 .grid-panel > .now-clue,
 .grid-panel > .tb-box,
-.grid-panel > .tb-table,
-.grid-panel > #seasonPanel{
+.grid-panel > .tb-table{
   width:100%;max-width:var(--board-w,100%);margin:8px auto 0;box-sizing:border-box;
 }
 /* The clue strip is the one block above the board, so it keeps its own top
@@ -233,25 +232,6 @@ header{
 }
 .grid-panel > .tb-help .tb-row .btn{min-width:0;padding:0 9px}
 .grid-panel > .tb-help .tb-sub{min-width:0;flex:0 0 auto}
-
-/* The season strip spans the column: nineteen columns, two rows, filling the
-   width. A flex row with equal shares should have done the same and did not —
-   the cells stayed at their content width and the run stopped a third of the
-   way across, reading as a season that had ended. A grid with a stated column
-   count cannot do that: nineteen tracks of 1fr are nineteen equal tracks
-   whatever the cells contain. */
-.grid-panel > #seasonPanel .season-strip{width:100%}
-.grid-panel > #seasonPanel .season-games{
-  display:grid;grid-template-columns:repeat(19,1fr);gap:3px;width:100%;
-}
-.grid-panel > #seasonPanel .game{width:auto;min-width:0;height:16px}
-@media (max-width:560px){
-  /* Nineteen tracks across 390px leaves each result about 17px, which still
-     reads as a run of colour. Shorter, so two rows do not take a third of the
-     screen. */
-  .grid-panel > #seasonPanel .season-games{gap:2px}
-  .grid-panel > #seasonPanel .game{height:12px}
-}
 
 /* The full lists, closed by default and opened when wanted. */
 /* Listed with the other panel children rather than styled on its own, so the
@@ -855,26 +835,6 @@ body.no-pitch .cell.block{background:var(--grid-block);border-color:var(--grid-b
 .match-clock small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.14em;
   color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
 .match-clock.ht{color:var(--draw)}
-.season-strip{margin-top:10px}
-.season-head{
-  display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;
-}
-.season-head .lbl{
-  font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.18em;
-  color:var(--ink-faint);text-transform:uppercase;
-}
-.season-head .wdl{
-  font-family:var(--disp);font-weight:700;font-size:12.5px;letter-spacing:.06em;
-  color:var(--ink-soft);font-variant-numeric:tabular-nums;
-}
-.season-games{display:flex;flex-wrap:wrap;gap:2px}
-.game{
-  width:calc((100% - 36px) / 19);min-width:9px;height:13px;border-radius:2px;
-}
-.game.W{background:var(--pitch)}
-.game.D{background:var(--draw)}
-.game.L{background:var(--loss)}
-.game.now{box-shadow:0 0 0 1.5px var(--ink)}
 .form-strip{display:flex;align-items:center;gap:5px;margin-top:9px}
 .form-strip .lbl{font-family:var(--disp);font-weight:600;font-size:11px;letter-spacing:.18em;
   color:var(--ink-faint);text-transform:uppercase;margin-right:2px}
@@ -1034,7 +994,6 @@ table.history td.dim{color:var(--ink-faint)}
   border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card);padding:5px 8px;
 }
 .table-panel{margin-top:0}
-#seasonPanel{width:100%;max-width:var(--board-w, 100%);margin:0 auto}
 .season-tag{
   font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:0;
   text-transform:none;color:var(--ink-soft);float:right;padding-top:5px;
@@ -1930,7 +1889,6 @@ body.rotate-needed .rotate-prompt{
   .grid-panel > .now-clue,
   .grid-panel > .tb-box,
   .grid-panel > .tb-table,
-  .grid-panel > #seasonPanel,
   .clues-block{max-width:100%}
 
   /* The arrows were 44px wide each — 88px of a 393px screen, before gaps,
@@ -2241,10 +2199,6 @@ body.flex-layout .nudge-row{
   }
 }
 
-/* Hidden here, not deleted. The jump list on the clue label does what the clue
-   list does and needs no scrolling past the board; the season table and the
-   standings are a sheet away. Both come back the moment the toggle is off. */
-body.flex-layout #seasonPanel{display:none}
 /* On a phone there is no room for the panel; the jump list on the clue label
    does its job without scrolling past the board. */
 @media (max-width:859px){

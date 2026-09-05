@@ -688,13 +688,15 @@ t("levels: the season bias follows the clue mix on its own", (() => {
   const ph = FCW.generate(rows, { seed: 7311, filter: { diffs: FCW.LEVELS.hard.diffs } });
   return FCW.puzzleDifficulty(pe) < FCW.puzzleDifficulty(ph);
 })());
-t("levels: substitutions never touch the score or the season record", (() => {
+t("levels: substitutions never touch the score or the form strip", (() => {
   // A substitution is recorded nowhere the scoring can see: same inputs, same
-  // score, same W-D-L, however many subs were taken.
+  // score, same form, however many subs were taken. It used to compare the
+  // invented W-D-L record as its second half; the form strip is the
+  // presentation this game still has.
   const a = FCW.computeScore(600, 2, 1, 0, 0);
-  const rec = FCW.seasonFromActions(600, 2, 1, 0, 0);
   return a.score === FCW.computeScore(600, 2, 1, 0, 0).score &&
-    rec.points === FCW.seasonFromActions(600, 2, 1, 0, 0).points;
+    FCW.formStrip(["revealLetter"]).join("") ===
+    FCW.formStrip(["revealLetter"]).join("");
 })());
 
 /* ---- Repetition control: daily rotation + practice recency ---- */
@@ -1472,81 +1474,25 @@ t("checkAll: Form remains presentation only", (() => {
   })());
 }
 
-/* ---- The season strip is derived from the actions, not the total ---- */
-t("season: a revealed letter shows as a draw, so the strip matches the breakdown", (() => {
-  // Reverse-engineering the split from the score alone gave 10W 0D 28L beside a
-  // breakdown reading "6 draws" — a contradiction the player can see.
-  const r = FCW.seasonFromActions(228, 0, 6, 6, 0);
-  const score = FCW.computeScore(228, 0, 6, 6, 0).score;
-  return r.drawn === 6 && r.won === 8 && r.lost === 24 && r.points === score;
+/* ---- The invented 38-game record is GONE ------------------------------
+   seasonRecord() and seasonFromActions() factorised ONE board's score into a
+   W/D/L split across 38 matches. Every case that lived here proved the
+   arithmetic was exact, and it was — it was still a fiction. There is a real
+   season now: one result per DAY across all five games, on the hub, counted
+   from finishes rather than points (shared/xi-season.js, proved by
+   tools/season_test.mjs). A game showing a second invented one beside it
+   would be two answers to "how am I doing".
+   What replaces these checks is the absence check below: the engine must not
+   export either function again. What a board IS, is a score out of 114. */
+t("the engine no longer factorises a score into a season", (() => {
+  return typeof FCW.seasonRecord === "undefined" &&
+    typeof FCW.seasonFromActions === "undefined" &&
+    typeof FCW.SCORING.SEASON_GAMES === "undefined";
 })());
-t("season: one revealed letter is exactly one draw", (() => {
-  const r = FCW.seasonFromActions(0, 0, 1, 0, 0);
-  return r.drawn === 1 && r.lost === 0 && r.won === 37;
-})());
-t("season: a check is a defeat, a revealed answer three", (() => {
-  const c = FCW.seasonFromActions(0, 1, 0, 0, 0);
-  const a = FCW.seasonFromActions(0, 0, 0, 1, 0);
-  return c.lost === 1 && c.drawn === 0 && a.lost === 3 && a.drawn === 0;
-})());
-t("season: the strip always totals 38 games and equals the score exactly", (() => {
-  for (let sec = 0; sec <= 2400; sec += 97)
-    for (let c = 0; c <= 8; c++)
-      for (let l = 0; l <= 14; l++)
-        for (let a = 0; a <= 8; a++)
-          for (let ca = 0; ca <= 2; ca++) {
-            const r = FCW.seasonFromActions(sec, c, l, a, ca);
-            if (r.won + r.drawn + r.lost !== 38) return false;
-            if (r.won < 0 || r.drawn < 0 || r.lost < 0) return false;
-            if (r.points !== FCW.computeScore(sec, c, l, a, ca).score) return false;
-          }
-  return true;
-})());
-t("season: time alone still shows as dropped points", (() => {
-  const r = FCW.seasonFromActions(1500, 0, 0, 0, 0);   // 25 minutes, no help
-  return r.won < 38 && r.lost > 0;
-})());
-
-/* ---- 38-game season strip ---- */
-t("season: a perfect score is 38 wins", (() => {
-  const r = FCW.seasonRecord(114);
-  return r.won === 38 && r.drawn === 0 && r.lost === 0 && r.marks.length === 38;
-})());
-t("season: zero is 38 defeats", (() => {
-  const r = FCW.seasonRecord(0);
-  return r.won === 0 && r.drawn === 0 && r.lost === 38;
-})());
-t("season: every reachable score encodes exactly (W*3 + D = score)", (() => {
-  for (let s = 0; s <= 114; s++) {
-    if (s === 113) continue;              // arithmetically impossible in 38 games
-    const r = FCW.seasonRecord(s);
-    if (r.won * 3 + r.drawn !== s) return false;
-    if (r.won + r.drawn + r.lost !== 38) return false;
-    if (r.marks.length !== 38 || r.lost < 0) return false;
-  }
-  return true;
-})());
-t("season: 113 cannot arise, since the smallest deduction is 2",
-  FCW.computeScore(0, 0, 1, 0, 0).score === 112 && FCW.computeScore(0, 1, 0, 0, 0).score === 111);
-t("season: one Reveal Letter turns a win into a draw", (() => {
-  const r = FCW.seasonRecord(FCW.computeScore(0, 0, 1, 0, 0).score);
-  return r.won === 37 && r.drawn === 1 && r.lost === 0;
-})());
-t("season: one Check turns a win into a defeat", (() => {
-  const r = FCW.seasonRecord(FCW.computeScore(0, 1, 0, 0, 0).score);
-  return r.won === 37 && r.drawn === 0 && r.lost === 1;
-})());
-t("season: a Reveal Answer costs three defeats", (() => {
-  const r = FCW.seasonRecord(FCW.computeScore(0, 0, 0, 1, 0).score);
-  return r.won === 35 && r.lost === 3;
-})());
-t("season: time shows in the record too, not just help", (() => {
-  const clean = FCW.seasonRecord(FCW.computeScore(1500, 0, 0, 0, 0).score);   // 25 min, no help
-  return clean.won < 38 && clean.lost > 0;
-})());
-t("season: marks read wins, then draws, then defeats", (() => {
-  const m = FCW.seasonRecord(97).marks.join("");
-  return /^W+D*L*$/.test(m);
+t("but the score, the form strip and the real league table are untouched", (() => {
+  return FCW.computeScore(0, 0, 0, 0, 0).score === FCW.SCORING.MAX_SCORE &&
+    FCW.formStrip([]).join("") === "WWWWW" &&
+    typeof FCW.buildTable === "function";
 })());
 
 /* ---- V0.4: Form strip (presentation only) ---- */

@@ -28,6 +28,26 @@ panel (item 9) has somewhere to show them.
 
 ### 11. One season, at the top level — and a live table in each game
 
+**STATE, 5 Sep 2026. Two of the three parts are done; one is left.**
+
+- ✅ **The hub season.** Live. One result per DAY across the family, counted
+  from finishes: two puzzles done is a win, one a draw, turning up and
+  finishing none a defeat. The rule is `shared/xi-season.js` and
+  `functions/_lib/season.js` imports that same file, so the account branch
+  (server, `season_play`) and the device branch (the browser's own record)
+  cannot give two answers about what a Tuesday was. `tools/season_test.mjs`,
+  `season_store_test.mjs`, `season_device_test.mjs`.
+- ✅ **The fake 38-game strip is out of the crossword** (v002y). It
+  factorised one board's score into an invented W/D/L record across 38
+  matches — exact arithmetic, still a fiction, and with a real season on the
+  hub it was the second answer to "how am I doing". Gone from the engine, the
+  in-play panel, the Full Time card and the CSS; the share picture is now ten
+  squares showing how much of the 114 was kept. `headless_test.js` asserts the
+  engine cannot export either function again.
+- ⬜ **The live table still exists in the crossword only.** That is the
+  remainder of this item — see below. Wordsearch, Scrambled, HiLo and Vowels
+  have no table at all.
+
 **There is ONE season and it belongs to the hub.** Decided 4 Sep, correcting an
 earlier reading of this item: a game does not have a season of its own.
 
@@ -345,6 +365,17 @@ or a schedule position independently of the server it is testing.
 ### Small
 
 - `data/migrations/README.md` points at `data/schema.sql`, which does not exist.
+
+- **`football/crossword/headless_test.js` cannot load and runs nowhere.** It
+  `require`s `./engine.js`, `./data.json` and `./seasons.json` — three paths
+  the theme move invalidated — so it throws MODULE_NOT_FOUND on the first
+  line. It is not in `checks.yml`, and its `.js` extension means the roster
+  gate (which collects `*_test.mjs`) cannot see it either. About 1,500 lines
+  of assertions that have not run since 5 Sep. Fix the three paths and add it
+  to CI under its real name, or delete it — a test nobody runs is a comment,
+  and this one is worse than a comment because it looks like coverage. Found
+  5 Sep while taking the 38-game strip out; its season cases were updated in
+  place so the file is correct when somebody revives it.
 
 ---
 

@@ -58,12 +58,15 @@ t("nothing re-forces two clue columns after the stacking rule",
    record — the run of results is what the score means, and it belongs against
    the thing that produced it. */
 /* There is no banner any more. Everything sits in one column under the clue
-   strip, in the order it is read: board, controls, help, season, table. */
+   strip, in the order it is read: board, controls, help, table. The invented
+   38-game season strip used to sit between help and the table; it is gone,
+   and the table it stood above is the real one. */
 t("every block sits in the board column, not in a banner", (() => {
   const html = fs.readFileSync(path.join(DIR, "index.html"), "utf8");
   const panel = html.slice(html.indexOf('<div class="grid-panel"'), html.indexOf('<div class="osk"'));
   return html.indexOf('<div class="toolbar"') === -1 &&
-    ["tb-game", "tb-help", 'id="seasonPanel"', 'id="tablePanel"'].every((k) => panel.indexOf(k) > -1);
+    ["tb-game", "tb-help", 'id="tablePanel"'].every((k) => panel.indexOf(k) > -1) &&
+    panel.indexOf('id="seasonPanel"') === -1;
 })());
 t("nothing collapses the table to a single row now that it has the board's width",
   !/#tablePanel tbody tr:not\(\.you\)\{display:none\}/.test(css.replace(/\s*\n\s*/g, "")));

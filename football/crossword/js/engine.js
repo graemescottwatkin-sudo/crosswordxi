@@ -769,8 +769,6 @@ var FCW = (function () {
       { minute: 45, score: 68 },  { minute: 60, score: 58 },
       { minute: 75, score: 47 },  { minute: 90, score: 36 }
     ],
-    // Season strip: the full 38-game record derived from the score.
-    SEASON_GAMES: 38,
     // Recent-form strip: five most recent displayed results.
     FORM_LENGTH: 5,
     /* Checking is verification, revealing is being told. The markers used to
@@ -854,60 +852,22 @@ var FCW = (function () {
   function timePenalty(elapsedSeconds) {
     return Math.round(SCORING.MAX_SCORE - scoreAtMinute(matchMinute(elapsedSeconds)));
   }
-  /* The full season as 38 results — an exact encoding of the score rather than
-     an invented match record. Because a win is 3 points and a draw 1, any score
-     resolves to a unique W/D/L split across 38 games: W = floor(score/3), with
-     the remainder as draws and the rest as defeats. Every reachable score maps
-     exactly. (113 is the one arithmetic gap in 0-114, and the scoring system
-     cannot produce it: the smallest possible deduction is 2.) */
-  function seasonRecord(score, games) {
-    var n = games || SCORING.SEASON_GAMES;
-    var w = Math.floor(score / 3);
-    var d = score - w * 3;
-    if (w + d > n) d = Math.max(0, n - w);          // defensive; unreachable in play
-    if (w > n) { w = n; d = 0; }
-    var l = n - w - d;
-    var marks = [];
-    for (var i = 0; i < w; i++) marks.push("W");
-    for (var j = 0; j < d; j++) marks.push("D");
-    for (var k = 0; k < l; k++) marks.push("L");
-    return { won: w, drawn: d, lost: l, marks: marks, points: score };
-  }
+  /* THE FAKE 38-GAME RECORD IS GONE, and this note is here so it does not
+     come back. seasonRecord() and seasonFromActions() factorised ONE board's
+     score into an invented W/D/L split across 38 matches: 114 points is 38
+     wins at 3, so any score resolves to exactly one split. It was arithmetic
+     dressed as a season, and the word search refused to copy it for that
+     reason.
 
-  /* The season as it was actually played. Derived from the ACTIONS, not
-     reverse-engineered from the total: a Reveal Letter is a draw, a Check a
-     defeat, a Reveal Answer three defeats, and the time penalty converts to
-     defeats with a draw for any remainder. Both encodings sum to the same
-     score, but only this one agrees with the Full Time breakdown — a strip
-     reading 0D beside a line reading "6 draws" is a contradiction. */
-  function seasonFromActions(elapsedSeconds, checksUsed, revealedLetters,
-                             revealedAnswers, checkAllsUsed, games) {
-    var n = games || SCORING.SEASON_GAMES;
-    var t = timePenalty(elapsedSeconds);
-    var timeDefeats = Math.floor(t / 3), rem = t % 3, timeDraws = 0;
-    if (rem === 1) { timeDefeats -= 1; timeDraws = 2; }   // 4 dropped = two draws
-    else if (rem === 2) { timeDraws = 1; }
-    if (timeDefeats < 0) { timeDefeats = 0; timeDraws = Math.round(t / 2); }
-    var drawn = revealedLetters + timeDraws;
-    var score = computeScore(elapsedSeconds, checksUsed, revealedLetters,
-                             revealedAnswers, checkAllsUsed).score;
-    // The score is the invariant: W*3 + D must equal it, within n games. Keep
-    // the draw count as close to what the player actually did as those two
-    // constraints allow — a heavily assisted solve can ask for more than 38
-    // games, and the floor at 0 points can round the arithmetic.
-    if (drawn > score) drawn = score;
-    while (drawn % 3 !== score % 3 && drawn > 0) drawn--;
-    if (drawn % 3 !== score % 3) drawn = score % 3;
-    while ((score - drawn) / 3 + drawn > n && drawn >= 3) drawn -= 3;
-    var won = (score - drawn) / 3;
-    if (won < 0 || won + drawn > n) { drawn = score % 3; won = (score - drawn) / 3; }
-    var lost = n - won - drawn;
-    var marks = [];
-    for (var i = 0; i < won; i++) marks.push("W");
-    for (var j = 0; j < drawn; j++) marks.push("D");
-    for (var k = 0; k < lost; k++) marks.push("L");
-    return { won: won, drawn: drawn, lost: lost, marks: marks, points: won * 3 + drawn };
-  }
+     There IS a season now, and it is real: one result per DAY across the whole
+     family, counted from finishes rather than points, on the hub. See
+     shared/xi-season.js. A game showing a second, invented season beside it
+     would be two answers to "how am I doing".
+
+     What a single board is, in the owner's words, is "how many of the 114
+     points did you retain" — a score, not a season. The LIVE TABLE stays:
+     buildTable() puts that score into a real league season through the
+     player's club, and every number in it comes from real data. */
 
   /* Form strip. Actions arrive in order: "revealLetter" | "check" | "revealAnswer".
      Presentation only — it never changes the numerical score. */
@@ -1760,8 +1720,6 @@ var FCW = (function () {
     matchClockLabel: matchClockLabel,
     scoreAtMinute: scoreAtMinute,
     formStrip: formStrip,
-    seasonRecord: seasonRecord,
-    seasonFromActions: seasonFromActions,
     computeScore: computeScore,
     gridErrors: gridErrors,
     loadSeasons: loadSeasons,
