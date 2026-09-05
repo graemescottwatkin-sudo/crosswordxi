@@ -59,17 +59,16 @@ panel (item 9) has somewhere to show them.
   different elevens sharing a number 12 — seeding on the number gave both the
   same historical season and made the two games feel like one. Owner spotted
   it before it shipped; `table_test.mjs` now checks fourteen days of both.
-- ⬜ **HiLo still has no table**, and it is the last one. The pattern is set
-  and each is now three small pieces: a `<div class="tb-table xit"
-  id="tablePanel">` in the page, the three shared assets loaded, and a mount
-  wired to that game's live score with the SERVER's day or board number as
-  the seed. Wordsearch's `mountTable()` in its `game.js` is the worked
-  example — mounted after the daily arrives, never before, because the seed
-  is what picks the season and a device must not decide it.
-  HiLo has no live-score accessor at all — that is the piece to write first,
-  and until it exists there is no number to put in a ladder. Its row in
-  `table_test.mjs` is `table: false`; flip it and the check says what is
-  still missing.
+- ✅ **HiLo has one too** (v001t) — and it is the one game that CLIMBS.
+  Every other board opens on 114 and loses points to the clock; HiLo banks up
+  from nothing, so the ladder rises under the player instead of sinking.
+  Eleven right at full value plus the run bonus is 114, which is why it
+  belongs on the same ladder. It needed a `liveScore()` written first: the
+  score was computed inline wherever it was wanted and existed nowhere by
+  name.
+
+**ITEM 11 IS DONE.** One season at the top level, no invented 38-game strip
+anywhere, and a live league table in all five football games.
 
 **There is ONE season and it belongs to the hub.** Decided 4 Sep, correcting an
 earlier reading of this item: a game does not have a season of its own.

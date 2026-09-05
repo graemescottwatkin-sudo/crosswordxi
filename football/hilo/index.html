@@ -30,10 +30,11 @@
 <link rel="stylesheet" href="/shared/xi-landing.css?v=v24">
 <link rel="stylesheet" href="/shared/xi-chrome.css?v=v24">
 <link rel="stylesheet" href="/shared/xi-share.css?v=v24">
+<link rel="stylesheet" href="/shared/xi-table.css?v=v24">
 <!-- The theme, stamped before first paint: light unless the player chose
      dark, decided in one shared place for every page of the family. -->
 <script src="/shared/xi-theme.js?v=v24"></script>
-<link rel="stylesheet" href="css/style.css?v=v001s">
+<link rel="stylesheet" href="css/style.css?v=v001t">
 </head>
 <body>
 
@@ -227,6 +228,14 @@
         </div>
 
         <div class="card note" id="srcLine"></div>
+
+        <!-- THE LIVE TABLE. HiLo is the one game that CLIMBS: every other
+             board starts on 114 and falls, this one banks up from nothing, so
+             the ladder rises under you instead of sinking. Built by
+             shared/xi-table.js; no markup here beyond the box.
+             NOT the season — that is one result a day across the family, on
+             the hub. See shared/xi-season.js. -->
+        <div class="tb-table xit" id="tablePanel"></div>
       </aside>
     </div>
   </section>
@@ -257,12 +266,14 @@
 <!-- THE SHARED FOOTER, AT TOP LEVEL. It carries the family disclaimer. -->
 <footer class="xic-foot"></footer>
 
+<script src="/shared/xi-seasons.js?v=v24"></script>
 <script src="/shared/xi-clubs.js?v=v24"></script>
+<script src="/shared/xi-table.js?v=v24"></script>
 <script src="/shared/xi-chrome.js?v=v24"></script>
 <script src="/shared/xi-season.js?v=v24"></script>
 <script src="/shared/xi-plays.js?v=v24"></script>
 <script src="/shared/xi-share.js?v=v24"></script>
-<script src="js/scoring.js?v=v001s"></script>
-<script src="js/game.js?v=v001s"></script>
+<script src="js/scoring.js?v=v001t"></script>
+<script src="js/game.js?v=v001t"></script>
 </body>
 </html>

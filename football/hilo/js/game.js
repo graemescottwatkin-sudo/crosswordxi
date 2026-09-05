@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001s";
+var BUILD = "v001t";
 
 (function () {
   "use strict";
@@ -27,6 +27,30 @@ var BUILD = "v001s";
   /* ---- state ---------------------------------------------------------- */
   var serverDay = null, todayBoard = null, catalog = null, archiveDays = null;
   var g = null;      /* the round in play */
+
+  /* ---- the live league table -------------------------------------------
+     THE ONE GAME THAT CLIMBS. Every other board opens on 114 and loses points
+     to the clock; this one banks up from nothing, so the ladder rises under
+     the player rather than sinking — bottom of the table at kick-off and up
+     it as the calls go in. Eleven right at full value plus the run bonus is
+     114, which is why it belongs on the same ladder as the rest.
+
+     This is also the accessor HiLo never had: the score was computed inline
+     wherever it was needed and existed nowhere by name. */
+  function liveScore(g) {
+    if (!g) return 0;
+    return S.score(g.results, g.worths);
+  }
+
+  var leagueTable = null;
+  function mountTable(seed) {
+    if (!window.XITable) return;
+    var el = $("tablePanel");
+    if (!el) return;
+    /* THE SEED IS THE BOARD'S TOKEN, from the server: everybody on today's
+       board gets the same season, so comparing positions means something. */
+    leagueTable = window.XITable.mount(el, { seed: String(seed || "hl"), score: 0 });
+  }
 
   function freshRound(board, mode, meta) {
     return {
@@ -395,6 +419,11 @@ var BUILD = "v001s";
   /* ---- the round ------------------------------------------------------- */
   function startRound(board, mode, meta) {
     g = freshRound(board, mode, meta);
+    /* Mounted per ROUND, before the board is drawn: drawBoard reports the
+       banked score and the table has to exist to receive it. The token comes
+       from the server with the board, so a player opening yesterday's board
+       gets yesterday's ladder rather than today's. */
+    mountTable(g.token);
     drawBoard(g);
     show("screenGame");
     playsStart();
@@ -496,7 +525,11 @@ var BUILD = "v001s";
     });
     var right = 0; for (var i = 0; i < S.CALLS; i++) if (round.results[i] === true) right++;
     $("rightCount").textContent = right;
-    $("banked").textContent = S.score(round.results, round.worths);
+    var banked = liveScore(round);
+    $("banked").textContent = banked;
+    /* The ladder follows the number printed beside it, read from one place so
+       the two can never disagree. */
+    if (leagueTable) leagueTable.update(banked);
     Array.prototype.forEach.call($("subs").querySelectorAll("i"), function (dot, i) { dot.classList.toggle("spent", i < round.subsUsed); });
     var leftSubs = S.SUBS - round.subsUsed;
     $("subs").querySelector("span").textContent = leftSubs <= 0 ? "No substitutions left" : leftSubs + (leftSubs === 1 ? " substitution" : " substitutions");

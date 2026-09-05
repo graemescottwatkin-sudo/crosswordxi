@@ -242,15 +242,17 @@ console.log("\nWhich games have one, and which do not");
      `table: true` means the game must mount one; false means it must not, and
      saying so is the difference between a decision and an oversight.
 
-     HiLo is the one gap and it is deliberate: it has no live-score accessor,
-     so there is no number to put in a ladder yet. When it gets one this row
-     flips to true and this check says what is still missing. */
+     All five football games have one now. HiLo was the last and needed a
+     live-score accessor written first — it had none, because its score was
+     computed inline wherever it was wanted and existed nowhere by name.
+     QuickFire is unreleased and has none, which is the row that keeps this
+     honest: it says a game without a table is a decision. */
   const GAMES = [
     { dir: "football/crossword", table: true },
     { dir: "football/wordsearch", table: true },
     { dir: "football/scrambled", table: true },
     { dir: "football/vowels", table: true },
-    { dir: "football/hilo", table: false },
+    { dir: "football/hilo", table: true },
     { dir: "football/quickfire", table: false },
   ];
   const missing = [], stray = [], half = [];
@@ -286,13 +288,17 @@ console.log("\nWhich games have one, and which do not");
     if (!g.table && (box || mod || mounts)) stray.push(g.dir);
     if (g.table && (box !== mod || mod !== mounts)) half.push(g.dir);
   }
+  /* The roll-call is DERIVED, not typed. It read "crossword, wordsearch,
+     scrambled, vowels" — a literal that was already wrong the moment HiLo got
+     one, and that would have gone on reporting four games forever. */
   t("every game that should have a table has all three parts of one",
-    missing.length === 0, missing.join(" | ") || "crossword, wordsearch, scrambled, vowels");
+    missing.length === 0,
+    missing.join(" | ") ||
+      GAMES.filter((g) => g.table).map((g) => g.dir.split("/").pop()).join(", "));
   t("and no game has half of one",
     half.length === 0, half.join(", ") || "a box with no script draws an empty rectangle");
-  t("HiLo and QuickFire have none, which is a decision rather than an oversight",
-    stray.length === 0, stray.join(", ") ||
-      "HiLo has no live-score accessor yet; flip its row when it does");
+  t("a game with no table has none by decision, not by oversight",
+    stray.length === 0, stray.join(", ") || "QuickFire is unreleased");
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
