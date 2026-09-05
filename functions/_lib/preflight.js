@@ -166,7 +166,18 @@ const SCHEDULE = [
     /* Board numbers ARE days for the crossword and the two cypher games: #1 is
        the epoch and each one after it is a day later, so a future day is
        addition rather than date arithmetic. */
-    async board(env, at) { return getDailyPuzzle(env, dailyNumber(at)); },
+    async board(env, at) {
+      /* .puzzle, NOT the row. getDailyPuzzle hands back the stored payload,
+         which is { salt, puzzle }, and /api/daily reads stored.puzzle — this
+         read the wrapper and found no entries on it, so the first live run
+         reported the crossword broken for fourteen straight days when nothing
+         was wrong with a single board.
+         The offline suite could not have caught it: its fixture was built to
+         the same wrong shape, so the fake agreed with the mistake. Production
+         is what disagreed. */
+      const stored = await getDailyPuzzle(env, dailyNumber(at));
+      return stored && stored.puzzle;
+    },
     check: checkCrossword,
   },
   {

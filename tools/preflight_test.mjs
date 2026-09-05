@@ -102,7 +102,14 @@ function memDB(over = {}) {
       const stmt = (a) => ({
         bind: (...args) => stmt(args),
         first: async () => {
-          if (/FROM puzzles/.test(sql)) return cw ? { payload: JSON.stringify(cw) } : null;
+          /* THE STORED SHAPE, which is { salt, puzzle } and not the puzzle.
+             This returned the puzzle bare, so the fixture agreed with a bug in
+             the code it was testing and both looked right until production
+             said otherwise. A fake that is wrong in the same direction as the
+             code is worse than no fake. */
+          if (/FROM puzzles/.test(sql)) {
+            return cw ? { payload: JSON.stringify({ salt: "x", puzzle: cw }) } : null;
+          }
           if (/ws_schedule/.test(sql)) {
             const want = a[0];
             const ok = ws && [...Array(wsDays)].some((_, k) => utcDay(wsFrom + k * DAY_MS) === want);
