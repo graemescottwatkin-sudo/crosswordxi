@@ -14,6 +14,7 @@
  * flaps on a legitimate skip, and a floor left alone for five releases stops
  * being able to refuse anything.
  */
+import { gamePath } from "../../functions/_lib/permalink.js";
 const BASE = "https://www.thexigames.com";
 const expectArg = process.argv.indexOf("--expect");
 const EXPECT = expectArg > -1 ? process.argv[expectArg + 1] : null;
@@ -77,8 +78,20 @@ t("every asset on the page of its OWN carries that same tag", (() => {
   return tags.length > 0 && tags.every((x) => x === tag);
 })());
 t("and the rules it borrows are served on Scrambled's tag, not this game's", (() => {
-  const borrowed = [...html.matchAll(/\.\.\/football\/scrambled\/js\/(?:config|scoring)\.js\?v=([^"]+)"/g)]
-    .map((m) => m[1]);
+  /* Read by splitting on the path rather than by a regex over it. The pattern
+     was written for `../scrambled/js/`, the theme move rewrote the dots into
+     `../football/scrambled/js/`, and the page actually serves the absolute
+     `/football/scrambled/js/` — three spellings of one path, which is what a
+     literal in a check buys you. Built from gamePath, matched by hand. */
+  const base = gamePath("scrambled") + "js/";
+  const borrowed = [];
+  for (const file of ["config.js", "scoring.js"]) {
+    const key = base + file + "?v=";
+    const at = html.indexOf(key);
+    if (at < 0) continue;
+    const after = html.slice(at + key.length);
+    borrowed.push(after.slice(0, after.indexOf('"')));
+  }
   return borrowed.length === 2 && borrowed.every((v) => v !== tag);
 })(), "one file, one cache entry, two games");
 /* shared/ has its own lifecycle and must NOT match the game tag: they move for
@@ -141,7 +154,7 @@ t("a board past today is refused", future.status === 403 || future.status === 40
 
 console.log("\nIt is part of the family");
 t("the shared chrome is loaded, not a copy of it",
-  html.indexOf("../../shared/xi-chrome.js") > -1);
+  html.indexOf("/shared/xi-chrome.js") > -1);
 t("the page names the game once, as itself", /Vowels XI/.test(html));
 const hub = await get("/");
 const hubHtml = await hub.text();

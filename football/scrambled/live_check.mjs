@@ -122,7 +122,7 @@ t("a board past today is refused", future.status === 403 || future.status === 40
 
 console.log("\nIt is part of the family");
 t("the shared chrome is loaded, not a copy of it",
-  html.indexOf("../../shared/xi-chrome.js") > -1);
+  html.indexOf("/shared/xi-chrome.js") > -1);
 t("the page names the game once, as itself", /Scrambled XI/.test(html));
 const hub = await get("/");
 const hubHtml = await hub.text();

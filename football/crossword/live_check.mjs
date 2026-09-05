@@ -18,6 +18,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { gamePath } from "../../functions/_lib/permalink.js";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
@@ -102,8 +103,13 @@ console.log(`\n${SITE}\n`);
   const url = OLD + "/?token=practice:2";
   const res = await fetch(url, { redirect: "follow" });
   const landed = res.url;
+  /* WHERE IT LANDS, not which hop it takes. The zone's Redirect Rule still
+     points the old subdomain at /crossword, which now 301s on to the theme
+     path — two hops, and correct at the end of them. Asserting the
+     intermediate address would fail a chain that works, and asserting the
+     first hop would pass a chain that stopped working halfway. */
   t("the old subdomain still reaches the game",
-    landed.startsWith("https://www.thexigames.com/crossword"),
+    landed.startsWith("https://www.thexigames.com" + gamePath("crossword")),
     landed);
   t("and a shared link keeps its token across the move",
     landed.includes("token=practice:2"),

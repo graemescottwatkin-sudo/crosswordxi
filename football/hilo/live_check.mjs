@@ -91,7 +91,7 @@ if (firstClub) {
 }
 
 console.log("\nIt is part of the family");
-t("the shared chrome is loaded, not a copy of it", html.indexOf("../../shared/xi-chrome.js") > -1);
+t("the shared chrome is loaded, not a copy of it", html.indexOf("/shared/xi-chrome.js") > -1);
 t("the page names the game once, as itself", /HiLo XI/.test(html));
 const hub = await get("/");
 t("the hub links to it", (await hub.text()).indexOf('href="/football/hilo/"') > -1);
