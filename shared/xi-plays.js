@@ -116,8 +116,28 @@
     var p = post(body, false);
     if (!p) return Promise.resolve(null);
     return p.then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.playNo) playNo = d.playNo; return playNo; })
+      .then(function (d) {
+        if (d && d.playNo) playNo = d.playNo;
+        noteSeason("noteStart", d);
+        return playNo;
+      })
       .catch(function () { return null; });     /* never let counting break the game */
+  }
+
+  /* THE DEVICE'S OWN SEASON, written at the same two moments the server writes
+     the account's. Which is the point: one event, two records, and no game
+     has to know a season exists.
+     The day is the SERVER'S, read back off its answer — see xi-season.js. A
+     reply that carries no day (rate-limited, offline, a beacon that has no
+     reply at all) writes nothing, and a start that went unrecorded is a far
+     smaller wrong than one filed under a day a device clock invented. */
+  function noteSeason(which, d) {
+    try {
+      if (!d || !d.day || !meta || !meta.game) return;
+      if (window.XISeason && typeof window.XISeason[which] === "function") {
+        window.XISeason[which](meta.game, d.day);
+      }
+    } catch (e) {}
   }
 
   /* end: once per attempt. completed says the board was finished; the rest
@@ -138,7 +158,15 @@
       checks: p.checks || 0, reveals: p.reveals || 0,
       detail: p.detail && typeof p.detail === "object" ? p.detail : null,
     };
-    post(body, !!leaving);
+    var r = post(body, !!leaving);
+    /* Only a FINISH is worth waiting for a reply to. An abandon is the absence
+       of a finish — the start is already written, and the season reads what is
+       missing — so a beacon that answers nothing has nothing to tell us. */
+    if (completed && r && r.then) {
+      r.then(function (res) { return res.json(); })
+        .then(function (d) { noteSeason("noteFinish", d); })
+        .catch(function () {});
+    }
   }
 
   function current() { return { playId: playId, playNo: playNo }; }

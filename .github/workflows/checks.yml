@@ -82,6 +82,17 @@ jobs:
       - name: The sitemap lists every board and nothing that 404s
         run: node tools/sitemap_test.mjs
 
+      # ONE SEASON, AT THE TOP LEVEL, and three suites because it has three
+      # parts that can drift apart: the rule, the account's rows, and the
+      # device's own record. The last one runs the real shared/xi-plays.js
+      # against a fake fetch, because "the games record a season" is the
+      # claim and grepping for a function name would not test it.
+      - name: One season, and it says the same thing on both branches
+        run: |
+          node tools/season_test.mjs
+          node tools/season_store_test.mjs
+          node tools/season_device_test.mjs
+
       - name: API
         run: |
           node football/crossword/functions_test.mjs

@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v21">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v21">
-<script src="shared/xi-theme.js?v=v21"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v22">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v22">
+<script src="shared/xi-theme.js?v=v22"></script>
 <style>
 :root{
 
@@ -146,6 +146,23 @@ body{
 .about p{font-size:14.5px;line-height:1.65;margin:0 0 12px;color:var(--ink-soft)}
 .about a{color:var(--pitch);text-decoration:underline;text-underline-offset:2px}
 .sheet .played b{color:var(--gold);font-weight:700}
+
+/* The season, under the strip. A form guide, because that is what a run of
+   days IS — and because W D L needs no legend to anybody who has ever looked
+   at a league table. Today is dashed: it is not settled, and a defeat that
+   still has hours left in it must not look like one that is over. */
+.season{max-width:620px;margin:18px 0 0}
+.season p{font-family:var(--disp);font-size:14px;letter-spacing:.14em;
+  text-transform:uppercase;color:#9DBBA9;margin:0}
+.season p b{color:#fff;font-weight:700}
+.season .form{display:flex;gap:5px;margin:11px 0 0;flex-wrap:wrap}
+.season .mark{width:21px;height:21px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-family:var(--disp);
+  font-size:11px;font-weight:700;line-height:1;
+  border:1.5px solid rgba(255,255,255,.3);color:rgba(255,255,255,.55)}
+.season .mark.W{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.season .mark.D{border-color:#fff;color:#fff}
+.season .mark.now{border-style:dashed;opacity:.8}
 
 /* ---------- games ---------- */
 .section{padding:38px 0 8px}
@@ -249,6 +266,17 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     </div>
 
     <p class="played" id="playedLine"><span id="toSign">Seven</span> still to sign</p>
+
+    <!-- ONE SEASON, AND IT IS THE FAMILY'S. Not a game's: each game keeps its
+         own live table for the board being played, and this counts DAYS across
+         all of them — two puzzles finished is a win, one is a draw, turning up
+         and finishing none is a defeat. Written by nothing in the markup: it is
+         hidden until the season is known, because a season strip showing zeros
+         to somebody who has never played is worse than no strip. -->
+    <div class="season" id="season" hidden>
+      <p class="season-line" id="seasonLine"></p>
+      <div class="form" id="seasonForm" aria-hidden="true"></div>
+    </div>
   </div>
 </section>
 
@@ -436,7 +464,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v21"></script>
+<script src="shared/xi-season.js?v=v22"></script>
+<script src="shared/xi-chrome.js?v=v22"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
@@ -499,55 +528,154 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
       el.classList.remove("live"); el.classList.add("done");
       el.title = title + " \u2014 played today";
     };
-    fetch("/api/daily", { headers: { accept: "application/json" } })
-      .then(function (r) { return r.json(); })
-      .then(function (day) {
-        if (!day || !day.dailyNo) return;
-        var list = JSON.parse(localStorage.getItem("fcw.results.v1") || "[]");
-        if (list.some(function (r) { return r && r.dailyNo === day.dailyNo && r.complete !== false; })) {
-          markDone("shirt1", "Crossword XI"); played.push(1); settle();
-        }
-      }).catch(function () {});
-    fetch("/api/wordsearch/daily", { headers: { accept: "application/json" } })
-      .then(function (r) { return r.json(); })
-      .then(function (day) {
-        if (!day || !day.day) return;
-        var list = JSON.parse(localStorage.getItem("xiws.results") || "[]");
-        if (list.some(function (r) { return r && r.day === day.day; })) {
-          markDone("shirt2", "Wordsearch XI"); played.push(2); settle();
-        }
-      }).catch(function () {});
-    fetch("/api/scrambled/daily", { headers: { accept: "application/json", "X-XI-Games": "1" } })
-      .then(function (r) { return r.json(); })
-      .then(function (day) {
-        if (!day || !day.today) return;
-        var list = JSON.parse(localStorage.getItem("xisc.results") || "[]");
-        if (list.some(function (r) { return r && r.no === day.today; })) {
-          markDone("shirt3", "Scrambled XI"); played.push(3); settle();
-        }
-      }).catch(function () {});
-    fetch("/api/hilo/daily", { headers: { accept: "application/json" } })
-      .then(function (r) { return r.json(); })
-      .then(function (day) {
-        if (!day || !day.day) return;
-        var list = JSON.parse(localStorage.getItem("xihl.results") || "[]");
-        if (list.some(function (r) { return r && r.day === day.day; })) {
-          markDone("shirt4", "HiLo XI"); played.push(4); settle();
-        }
-      }).catch(function () {});
-    /* Vowels XI asks the same endpoint as Scrambled with its own cypher, and
-       reads its OWN results key: the two games share a daily number and never
-       a board, so a player who has done one has not done the other. */
-    fetch("/api/scrambled/daily?cy=1", { headers: { accept: "application/json", "X-XI-Games": "1" } })
-      .then(function (r) { return r.json(); })
-      .then(function (day) {
-        if (!day || !day.today) return;
-        var list = JSON.parse(localStorage.getItem("xivw.results") || "[]");
-        if (list.some(function (r) { return r && r.no === day.today; })) {
-          markDone("shirt5", "Vowels XI"); played.push(5); settle();
-        }
-      }).catch(function () {});
+    /* ---- THE GAMES, ONCE ----------------------------------------------
+       This was five blocks, one per game, each with its own fetch, its own
+       key and its own match — five copies of one idea, extended by hand. On
+       the day Vowels XI launched there were four of them for five live games,
+       so its shirt never dimmed and the roll-call never counted it.
+
+       They differ in exactly four ways, and those are the columns. Adding a
+       sixth game is a row; tools/aligned_test.mjs already refuses a hub that
+       does not judge every live game, so a row that is forgotten is caught
+       rather than shipped.
+
+       `today` reads the server's idea of today out of that game's own daily
+       payload — the crossword counts matchdays, the word search and HiLo
+       schedule by date, Scrambled and Vowels share a ring — and `done` asks
+       that game's own results list whether today's board is in it. The two
+       cypher games share a daily number and never a board, so each reads its
+       OWN key: a player who has done one has not done the other. */
+    var GAMES = [
+      { n: 1, id: "crossword", name: "Crossword XI", key: "fcw.results.v1",
+        api: "/api/daily",
+        today: function (d) { return d.dailyNo; },
+        done: function (r, t) { return r.dailyNo === t && r.complete !== false; } },
+      { n: 2, id: "wordsearch", name: "Wordsearch XI", key: "xiws.results",
+        api: "/api/wordsearch/daily",
+        today: function (d) { return d.day; },
+        done: function (r, t) { return r.day === t; } },
+      { n: 3, id: "scrambled", name: "Scrambled XI", key: "xisc.results",
+        api: "/api/scrambled/daily",
+        today: function (d) { return d.today; },
+        done: function (r, t) { return r.no === t; } },
+      { n: 4, id: "hilo", name: "HiLo XI", key: "xihl.results",
+        api: "/api/hilo/daily",
+        today: function (d) { return d.day; },
+        done: function (r, t) { return r.day === t; } },
+      { n: 5, id: "vowels", name: "Vowels XI", key: "xivw.results",
+        api: "/api/scrambled/daily?cy=1",
+        today: function (d) { return d.today; },
+        done: function (r, t) { return r.no === t; } }
+    ];
+
+    var listOf = function (key) {
+      try { return JSON.parse(localStorage.getItem(key) || "[]") || []; }
+      catch (e) { return []; }
+    };
+
+    GAMES.forEach(function (g) {
+      fetch(g.api, { headers: { accept: "application/json", "X-XI-Games": "1" } })
+        .then(function (r) { return r.json(); })
+        .then(function (payload) {
+          var t = payload && g.today(payload);
+          if (t === undefined || t === null) return;
+          var done = listOf(g.key).some(function (r) { return r && g.done(r, t); });
+          if (!done) return;
+          markDone("shirt" + g.n, g.name);
+          played.push(g.n);
+          settle();
+        })
+        .catch(function () { /* one API down never blanks the others */ });
+    });
   } catch (e) {}
+
+  /* ---- THE SEASON -------------------------------------------------------
+     The front door is the gatekeeper: it is the only page that sees every
+     game, so it is the only page that can say what a DAY came to. A game
+     knows whether you finished ITS board and nothing about the other four.
+
+     TWO BRANCHES, ONE RULE. shared/xi-season.js holds the rule, and
+     functions/_lib/season.js imports that same file — so the sentence "two
+     finished is a win" exists once in the repo and both branches read it.
+
+       an account   /api/season answers from the server's own table, and the
+                    season follows the player to any device they sign in on
+       no account   the same rule, over this device's own record, and the
+                    server never learns they played
+
+     A device code IS an account: /api/account/code turns a linked pair of
+     devices into a user, so a player who linked two devices is in the first
+     branch and there is no third case here. Owner, 5 Sep: "Per account if
+     registered / Per device if not unless they linked their 2 account with
+     the code in settings."
+
+     TODAY IS THE SERVER'S, in both branches — /api/season says so in its
+     answer even when it has no season to give. The hub must never decide from
+     a device clock which day is still in flight, or a phone an hour behind
+     would settle today's defeat before it was over. */
+  (function () {
+    var box = document.getElementById("season");
+    var line = document.getElementById("seasonLine");
+    var form = document.getElementById("seasonForm");
+    if (!box || !line || !form || !window.XISeason) return;
+
+    /* The last stretch of the season, not all of it: a form guide is the
+       recent run, and 200 circles is not a guide. */
+    var FORM_SHOWN = 10;
+
+    function mark(letter, now) {
+      var el = document.createElement("span");
+      el.className = "mark " + letter + (now ? " now" : "");
+      el.textContent = letter;
+      return el;
+    }
+
+    function draw(s, message) {
+      /* THE INVITATION. Shown when the season has no PLAY in it — not when it
+         has no RESULTS, because somebody who kicked off an hour ago has a
+         season under way and telling them to start one would be wrong. The
+         sentence travels with the rule; the hub does not write it. */
+      if (message) {
+        line.textContent = message;
+        form.textContent = "";
+        box.hidden = false;
+        return;
+      }
+      var bits = ["Season " + String.fromCharCode(183) + " ",
+        "<b>P" + s.played + "</b> ",
+        "<b>W" + s.won + "</b> ",
+        "<b>D" + s.drawn + "</b> ",
+        "<b>L" + s.lost + "</b> ",
+        String.fromCharCode(183) + " <b>" + s.points + "</b> pts"];
+      line.innerHTML = bits.join("");
+
+      form.textContent = "";
+      s.marks.slice(-FORM_SHOWN).forEach(function (m) { form.appendChild(mark(m, false)); });
+      /* Today, as it stands, and marked as unsettled. It is not counted into
+         P W D L above — a defeat with hours left in it can still become a
+         draw, and a season that banked it would take the point back. */
+      if (s.inFlight) form.appendChild(mark(s.inFlight.provisional, true));
+      box.hidden = false;
+    }
+
+    fetch("/api/season", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        /* No day means the server did not answer with one, and there is no
+           second place to get one from. Nothing is drawn — an empty space is
+           correct, a season computed from this device's clock is not. */
+        if (!d || !d.today) return;
+        if (d.account && d.season) {
+          var s = d.season;
+          s.inFlight = d.inFlight;
+          draw(s, d.message);
+          return;
+        }
+        var own = window.XISeason.season(window.XISeason.days(), d.today);
+        draw(own, own.started ? null : window.XISeason.NO_SEASON_YET);
+      })
+      .catch(function () { /* a season that cannot be read shows nothing */ });
+  })();
 })();
 </script>
 </body>

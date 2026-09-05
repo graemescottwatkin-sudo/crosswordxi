@@ -355,8 +355,8 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v21";
-const SHARED_HASH = "90ad0c8c418dd494";
+const SHARED_TAG = "v22";
+const SHARED_HASH = "52f80a548b85bbc3";
 /* EVERY PAGE THAT LINKS THE SHARED LAYER, not the games alone. The hub, the
    two static pages and the unlaunched game all carry the chrome now, and the
    server-rendered shell writes the tag from a constant of its own — so a tag
@@ -578,28 +578,34 @@ console.log("\nNo game restates a shared token");
  * shirt marked, or the hub is not judging it. */
 console.log("\n=== The hub judges every live game ===");
 {
+  /* READ THE HUB'S TABLE, NOT THE CODE THAT USES IT.
+     This looked for five hand-written blocks — a getItem per prefix and a
+     markDone per shirt. That was the right property checked against the wrong
+     thing: the hub HAD five copies of one idea, which is exactly why the fifth
+     was forgotten the day Vowels launched. It keeps one table now, and five
+     literal blocks are what it must never have again — so a check demanding
+     them would be demanding the fault back. The table is the one place, and
+     this reads the one place.
+     Matched on the prefix rather than a guessed key: the crossword's is
+     `fcw.results.v1`, and a check that demands a key shape the games never
+     agreed on fails a game for being itself. */
   const hub = read("index.html");
-  /* Matched on the PREFIX, not on a guessed key. The first draft looked for
-     `<prefix>.results` and failed the crossword, whose key is
-     `fcw.results.v1` — a check that demands a key shape the games never
-     agreed on is a check that fails the game for being itself. What every
-     game does share is that its key starts with its own prefix, which is the
-     cross-game rule this file already enforces above. */
+  const at = hub.indexOf("var GAMES = [");
+  const table = at > -1 ? hub.slice(at, hub.indexOf("];", at)) : "";
+  const rows = [...table.matchAll(/n:\s*(\d+),\s*id:\s*"([a-z]+)"[\s\S]*?key:\s*"([^"]+)"/g)]
+    .map((m) => ({ n: Number(m[1]), id: m[2], key: m[3] }));
+  t("the front door keeps one table of the games, not a block each",
+    !!table && rows.length > 0, rows.length + " rows");
   const unjudged = GAMES.filter((g) =>
-    hub.indexOf(`getItem("${g.prefix}.`) === -1 || hub.indexOf(`"${g.name}"`) === -1);
-  t("every live game's record is read by the front door",
+    !rows.some((r) => r.id === g.id && r.key.indexOf(g.prefix + ".") === 0));
+  t("every live game has a row in it, under its own prefix",
     unjudged.length === 0,
     unjudged.length ? unjudged.map((g) => g.name).join(", ") + " not judged"
-      : GAMES.map((g) => g.prefix).join(", "));
-  /* And one shirt per game, numbered from the squad rather than counted here:
-     a hub marking shirt4 twice would pass a check that only counted them. */
-  const marked = [...hub.matchAll(/markDone\("shirt(\d+)", "([^"]+)"\)/g)]
-    .map((m) => ({ n: Number(m[1]), name: m[2] }));
-  t("each is marked on its own shirt, and no shirt twice",
-    marked.length === GAMES.length &&
-    new Set(marked.map((x) => x.n)).size === GAMES.length &&
-    GAMES.every((g) => marked.some((x) => x.name === g.name)),
-    marked.map((x) => x.n + " " + x.name).join(" | "));
+      : rows.map((r) => r.id).join(", "));
+  t("each has its own shirt, and no shirt twice",
+    rows.length === GAMES.length &&
+    new Set(rows.map((r) => r.n)).size === GAMES.length,
+    rows.map((r) => r.n + " " + r.id).join(" | "));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

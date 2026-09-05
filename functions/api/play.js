@@ -18,7 +18,8 @@ import { hasDB } from "../_lib/db.js";
 import { newId, isAdmin} from "../_lib/auth.js";
 import { limited } from "../_lib/limit.js";
 import { validPlayGame, validMode, DEFAULT_GAME } from "../_lib/games.js";
-import { dailyKey } from "../_lib/daily.js";
+import { dailyKey, utcDay } from "../_lib/daily.js";
+import { noteStart, noteFinish, seasonUser } from "../_lib/season-store.js";
 
 const int = (v, max = 100000) => {
   const n = Number(v);
@@ -58,7 +59,20 @@ export async function onRequestPost({ request, env }) {
      handler via sendBeacon, which cannot set headers. It writes nothing that
      belongs to anybody and reads nothing back, so there is nothing to protect
      against being triggered. */
-  if (!hasDB(env)) return json({ ok: false });
+
+  /* THE SERVER'S DAY, ANSWERED ON EVERY EVENT. Not for the server's benefit —
+     it already knows — but for the device's. A player with no account keeps
+     their own season in their own browser, and it has to be filed under the
+     same day the account branch would use, or the two branches would disagree
+     about what a Tuesday was for anybody who signed in later. The device must
+     never decide this: a phone an hour behind, a traveller, a wound-back
+     tablet all produce a different season on the same play.
+
+     Answered even when there is no database, because the device's season does
+     not need one. */
+  const day = utcDay();
+
+  if (!hasDB(env)) return json({ ok: false, day });
 
   let body;
   try { body = await request.json(); } catch (e) { return bad("Expected a JSON body."); }
@@ -91,9 +105,18 @@ export async function onRequestPost({ request, env }) {
   /* Was this the owner testing? Read from the session, never from the browser
      — a flag the client could set is a flag anyone could set about anyone.
      It records that one bit and nothing else: no email, no user id, and
-     nothing at all about any other player. */
+     nothing at all about any other player. THAT IS STILL TRUE OF THIS TABLE.
+     The season below writes to its own, for a signed-in player only, holding
+     a day and a game and whether it was finished — see _lib/season-store.js.
+     Attaching identity to this row instead would have given a season the
+     referrer, the campaign and the help count as well, none of which a season
+     is made of. */
   let byOwner = 0;
   try { byOwner = (await isAdmin(request, env)) ? 1 : 0; } catch (e) { byOwner = 0; }
+
+  /* THE SEASON'S OWN RECORD. Null for everyone who is not signed in, and for
+     them nothing is written at all: their season is their device's. */
+  const seasonPlayer = await seasonUser(request, env);
 
   if (body.event === "start") {
     /* One row per play id. A retry, a double-fire on a flaky connection, or a
@@ -105,7 +128,7 @@ export async function onRequestPost({ request, env }) {
     if (seen) {
       const had = await env.DB.prepare("SELECT play_no FROM plays WHERE play_id = ?")
         .bind(playId).first();
-      return json({ ok: true, already: true, playNo: (had && had.play_no) || null });
+      return json({ ok: true, already: true, day, playNo: (had && had.play_no) || null });
     }
     /* The next number for this board. Counted rather than kept in a counter
        table: one query, no second thing to keep in step, and at this scale a
@@ -142,7 +165,11 @@ export async function onRequestPost({ request, env }) {
             slug(attr.utm_source), slug(attr.utm_medium), slug(attr.utm_campaign),
             slug(attr.utm_content), slug(attr.utm_term), slug(attr.referrer),
             "session").run();
-    return json({ ok: true, playNo });
+    /* The season's own row, for a signed-in player. Best effort and after the
+       play is banked: a season that failed to record must never cost somebody
+       the attempt they just started. */
+    await noteStart(env, seasonPlayer, game);
+    return json({ ok: true, day, playNo });
   }
 
   if (body.event === "end") {
@@ -156,7 +183,11 @@ export async function onRequestPost({ request, env }) {
       .bind(int(body.solved, 50), body.completed ? 1 : 0,
             int(body.elapsed, 86400), int(body.checks, 500),
             int(body.reveals, 500), detailOf(body.detail), playId).run();
-    return json({ ok: true });
+    /* AND FINISHED, only if it was. An attempt that ends unfinished leaves
+       finished_at null, which IS the loss condition — the season reads the
+       absence, so there is nothing to write for it. */
+    if (body.completed) await noteFinish(env, seasonPlayer, game);
+    return json({ ok: true, day });
   }
 
   return bad("Unknown event.");
