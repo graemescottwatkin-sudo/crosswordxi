@@ -426,6 +426,25 @@ URL migration.
 Worth checking at the same time: any suite that computes a day, a board number
 or a schedule position independently of the server it is testing.
 
+### A shipped tag is unguarded until post_deploy catches up
+
+Found 5 Sep 2026, the hard way. The asset-hash gate refuses changed bytes
+under a tag that has not moved — but only while the tag EQUALS
+`LAST_SHIPPED`. Between a tag shipping and `post_deploy` recording it, that
+game's assets can be changed again under the same tag and nothing objects.
+
+It happened to HiLo the same day: v001u shipped with the board re-import, the
+next commit fixed its body margin without bumping, and `?v=v001u` went on
+serving the old stylesheet from every cache that already had it. The origin
+had the fix; nobody who had loaded the game that day would have seen it. The
+gate was green throughout.
+
+The window is small and the consequence is a player pinned to old bytes,
+which is the exact fault the tag law exists to prevent. Options: have the
+gate hash assets whenever the tag is at or ahead of `LAST_SHIPPED` and keep a
+second hash for "the tag as last built", or make `post_deploy` run
+automatically after every deploy so the window closes itself.
+
 ### Small
 
 - `data/migrations/README.md` points at `data/schema.sql`, which does not exist.
