@@ -503,6 +503,62 @@ console.log("\nNo game styles a class the chrome writes");
    ownership is enforced here instead of spelled in the names: a game that
    redefines a selector the shell owns is exactly the drift the prefix would
    have prevented, and this refuses it by name. */
+console.log("\nEvery game opens at the same width");
+{
+  /* THE FAMILY HAS TO LOOK LIKE ONE FAMILY. The owner clicked through from the
+     front door on 5 Sep and found the games at different widths, with HiLo's
+     header sitting in a visible gutter. Two separate faults, both invisible to
+     every check here because both are about what RENDERS rather than what is
+     declared — and both catchable statically once you can name the cause. */
+
+  /* ONE: the browser's 8px body margin, unreset. HiLo alone never reset it —
+     its stylesheet says it is "the game view only", and a body reset reads
+     like the shell's job, except the shell does not do it and the other four
+     each do it themselves. So the page sat in a gutter and the chrome bar
+     started eight pixels in. */
+  const noReset = GAMES.filter((g) => {
+    const css = listCss(g.dir).map(read).join("\n").replace(/\s+/g, "");
+    return !/body\{[^}]*margin:0/.test(css) && !/\*\{[^}]*margin:0/.test(css);
+  });
+  t("every game resets the body margin, so none sits in a gutter",
+    noReset.length === 0,
+    noReset.map((g) => g.name).join(", ") || "no default 8px anywhere");
+
+  /* TWO: a game capping the shared landing. Scrambled and Vowels put
+     max-width:720px on the container holding EVERYTHING — right for the
+     formation, wrong for the landing, which is the family's shell built to
+     1080 and used at 1080 by the other three. It rendered at 692.
+     Read from the markup: which classes WRAP the shell in each game, and then
+     from that game's own CSS, whether it narrows any of them. A cap on
+     something that contains the shell is a cap on the shell. */
+  const capped = [];
+  for (const g of GAMES) {
+    const html = read(`${g.dir}/index.html`);
+    const at = html.indexOf('class="site-wrap"');
+    if (at === -1) continue;                       // this game does not use the shell
+    const open = [];
+    const tag = /<(\/?)([a-z]+)([^>]*)>/gi;
+    let m;
+    while ((m = tag.exec(html)) && m.index < at) {
+      if (m[1]) { open.pop(); continue; }
+      if (/\/>$/.test(m[0]) || /^(br|img|input|link|meta|hr|source)$/i.test(m[2])) continue;
+      const cls = (m[3].match(/class="([^"]*)"/) || [])[1] || "";
+      open.push(cls.split(/\s+/).filter(Boolean));
+    }
+    const ancestors = new Set(open.flat());
+    const css = listCss(g.dir).map(read).join("\n");
+    for (const cls of ancestors) {
+      const rule = new RegExp("(^|[},])\\s*\\." + cls + "\\s*\\{([^}]*)\\}", "m").exec(css);
+      const mw = rule && /max-width:\s*(\d+)px/.exec(rule[2]);
+      if (mw && Number(mw[1]) < 1080) {
+        capped.push(`${g.name}: .${cls} caps the landing at ${mw[1]}px`);
+      }
+    }
+  }
+  t("and no game narrows the shared landing with a cap of its own",
+    capped.length === 0, capped.join(" | ") || "the shell renders at its own width everywhere");
+}
+
 console.log("\nThe landing shell is defined once");
 {
   const shellSelectors = new Set();

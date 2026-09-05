@@ -18,10 +18,21 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* THE 720 IS THE PITCH'S, NOT THE APP'S. This capped everything the game
+   renders, landing included — so the shared landing shell, built to 1080 and
+   used at 1080 by the crossword, the word search and HiLo, was squeezed to 692
+   here and this game opened visibly narrower than its siblings for no reason
+   anyone chose. The owner spotted it clicking through from the front door: the
+   five games did not look like one family.
+   The cap now sits on the screens that need it — the formation and the full
+   time card — and the landing takes the width the shell asks for. */
 .app {
-  max-width: 720px;
   margin: 0 auto;
   padding: 12px 14px 40px;
+}
+.screen:not(.prematch) {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .screen[hidden] { display: none; }

@@ -8,6 +8,15 @@
  */
 :root{ --hl-kit:#1F4E79; --hl-kit-ink:#FFFFFF; }
 
+/* THE ONE LINE EVERY OTHER GAME HAS AND THIS ONE DID NOT. Without it the
+   browser's default 8px body margin stands, so the chrome bar started eight
+   pixels in and the whole page sat in a gutter — the header looked inset and
+   the game looked narrower than its siblings. Nothing in this sheet set it
+   because the sheet is "the game view only" and a body reset reads like the
+   shell's job; the shell does not do it, and four games each do it in their
+   own stylesheet. Found by the owner clicking through from the front door. */
+body{margin:0}
+
 .screen[hidden]{display:none!important}
 .hidden{display:none!important}
 
