@@ -15,7 +15,7 @@
  *   - no practice. There is now an archive picker and a finals catalogue; what
  *     is still missing is a practice mode, which this game may never want.
  */
-var BUILD = "v002j";
+var BUILD = "v002k";
 
 (function () {
   "use strict";
@@ -1641,7 +1641,16 @@ var BUILD = "v002j";
          happened to say, so each spelling is present exactly when it is true. */
       var q = [];
       if (board.iconic) q.push("iconic=" + encodeURIComponent(board.id));
-      if (board.cypher === "consonants") q.push("cy=1");
+      /* NO ?cy= IN THE ADDRESS ANY MORE. It earned its place when one route
+         served both cyphers and the query was the only thing telling them
+         apart. The games split on 4 Sep and the PATH says which one you are on
+         — /football/scrambled/ or /football/vowels/ — so the parameter said
+         nothing the address did not already say, and Vowels rewrote every
+         visitor's URL to /football/vowels/?cy=1 for no gain: an implementation
+         detail in the address bar and in every link anybody copied.
+         It is still read on the way IN, so a link somebody already has keeps
+         working; it is simply no longer written. The API call is a separate
+         question and still carries the cypher — see askUrl. */
       history.replaceState(null, "",
         (board.iconic ? "/football/scrambled/" : location.pathname) +
         (q.length ? "?" + q.join("&") : "") + location.hash);

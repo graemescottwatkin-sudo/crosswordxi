@@ -327,15 +327,24 @@ console.log("\n=== The page, played in the consonant cypher ===");
     doc.querySelectorAll(".slot.solved").length >= 1 && thrown.length === 0,
     $("feedback").textContent);
 
-  /* THE ADDRESS HAS TO KEEP THE CYPHER. It did not: the archive gate's
-     address() cleared the query wholesale to drop a stale ?iconic=, and once a
-     second cypher existed it took ?cy= with it — so a reload, a copied link
-     and the back button all handed back the anagram. Found by reloading the
-     page by hand, which is why this check exists rather than the other way
-     round. */
-  t("the address still says which cypher this is",
-    /(\?|&)cy=1(&|$)/.test(window.location.search),
+  /* THE ADDRESS HAS TO SAY WHICH CYPHER THIS IS — and since 4 September the
+     PATH says it. This asked for ?cy=1 in the query, which was right while one
+     route served both cyphers and the parameter was the only thing telling
+     them apart. The games split; /football/scrambled/ and /football/vowels/
+     are different addresses, and the parameter went on being written to every
+     visitor's URL saying nothing the path had not already said.
+
+     So the property is unchanged and the test of it moves: a reload, a copied
+     link and the back button must all come back to the same cypher. That is
+     now true because of where the page IS, and the check asks that instead —
+     including that no redundant cy= is left in the address, because a URL
+     nobody can tell from another URL is a URL somebody will paste wrongly. */
+  t("the address says which cypher this is, by its path",
+    /\/football\/(scrambled|vowels)\//.test(window.location.pathname),
     window.location.pathname + window.location.search);
+  t("and does not repeat it in the query",
+    !/(\?|&)cy=/.test(window.location.search),
+    window.location.search || "(no query, which is the point)");
 
   t("nothing threw across the whole round", thrown.length === 0, thrown.join("; ") || "clean");
 }
