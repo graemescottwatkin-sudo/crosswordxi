@@ -220,6 +220,17 @@ depend on scoring, which is a good sign it is the right half to make universal.
   device code, put that code in the repository secret `XI_BOT_CODE`, then
   uncomment the `schedule` in `.github/workflows/playbot.yml`.** It is
   dispatch-only until then, so nothing runs red nightly while it waits.
+- ⚠️ **The bot cannot produce a LOSS, and the spec assumed it would.**
+  season_play is keyed (user_id, day, game), so the abandon session and the
+  completion for the SAME game on the SAME day collapse into one row and the
+  completion wins. Confirmed against production on the first run: ten sessions
+  in, five rows out, all finished — the bot's day is a Win. The abandon still
+  exercises the unfinished row in `plays`, which is what it was written for,
+  but the season's loss condition is untouched by it. Exercising that needs a
+  day on which the bot ONLY abandons — a weekly variant, or a second bot
+  account that never finishes anything. Worth doing before anything is built
+  on the loss branch; season_test.mjs proves the RULE, so what is missing is
+  proof of the wiring, not of the arithmetic.
 - ⬜ **Not yet: the cheating probes.** "Claim a score, claim a smaller board,
   replay a word, omit the CSRF header" — every one of those is already proved
   offline in the games' `verified_test.mjs` suites against the real handlers.
