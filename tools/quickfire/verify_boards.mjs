@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* verify_boards.mjs — read D1 and check what is published there.
  *
- *   node tools/quickfire/verify_boards.mjs --days 14
- *   node tools/quickfire/verify_boards.mjs --days 14 --local
+ *   node tools/football/quickfire/verify_boards.mjs --days 14
+ *   node tools/football/quickfire/verify_boards.mjs --days 14 --local
  *
  * READS ONLY. It writes nothing anywhere.
  *

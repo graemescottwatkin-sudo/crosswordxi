@@ -1,4 +1,4 @@
-/* The club pages: /hilo/clubs/ and /hilo/club/<club>/…
+/* The club pages: /football/hilo/clubs/ and /football/hilo/club/<club>/…
  *
  * THE SAME SHAPE AS THE CROSSWORD'S CLUBS AND THE WORD SEARCH'S THEMES: an
  * index that names the clubs, one page per club with every board a numbered
@@ -16,16 +16,16 @@ import { loadBank, clubCatalog } from "./hl-board.js";
 import { sitePage, htmlResponse, esc } from "./site-page.js";
 
 const SITE = "https://www.thexigames.com";
-const INDEX = "/hilo/clubs/";
+const INDEX = "/football/hilo/clubs/";
 const SLUG = /^[a-z0-9][a-z0-9-]{0,48}$/;
 
-export function clubPath(slug) { return `/hilo/club/${slug}/`; }
+export function clubPath(slug) { return `/football/hilo/club/${slug}/`; }
 
 function notFound(what) {
   const page = sitePage({
     title: "Not found — HiLo XI",
     description: "That page does not exist.",
-    canonical: SITE + "/hilo/",
+    canonical: SITE + "/football/hilo/",
     game: "hilo", current: INDEX,
     noindex: true,
     body: `<h1>Not found</h1>
@@ -40,7 +40,7 @@ function notFound(what) {
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-/* ---- /hilo/clubs/ ---- */
+/* ---- /football/hilo/clubs/ ---- */
 export async function indexPage({ env }) {
   let clubs = [];
   try { clubs = clubCatalog(await loadBank(env)); } catch (e) { clubs = []; }
@@ -51,7 +51,7 @@ export async function indexPage({ env }) {
 <p class="sub">A club's managers by the year they took charge: twelve names, eleven calls,
 earlier or later. Every board here is free to play, and none of them touch your run.</p>
 ${items ? `<ul>${items}</ul>` : `<p class="sub">No club boards have been released yet.</p>`}
-<a class="cta" href="/hilo/">Play today's board</a>`;
+<a class="cta" href="/football/hilo/">Play today's board</a>`;
   return htmlResponse(sitePage({
     title: "HiLo XI by club — the higher-or-lower football game",
     description: "HiLo XI club boards: a club's managers by the year they took charge. " +
@@ -62,7 +62,7 @@ ${items ? `<ul>${items}</ul>` : `<p class="sub">No club boards have been release
   }));
 }
 
-/* ---- /hilo/club/<club>/ and /<n> ---- */
+/* ---- /football/hilo/club/<club>/ and /<n> ---- */
 export async function treeRoute({ params, env }) {
   const parts = (params && params.path) || [];
   const list = Array.isArray(parts) ? parts.filter(Boolean) : [parts].filter(Boolean);
@@ -195,7 +195,7 @@ board, and the first clock starts when you kick off.</p>
 ${rulesFor(club.boards)}
 ${asAtLine(club.boards)}
 <ul>${rows.map((r) => boardRow(club, r)).join("")}</ul>
-<a class="cta" href="/hilo/">Play today's board</a>`;
+<a class="cta" href="/football/hilo/">Play today's board</a>`;
   return htmlResponse(sitePage({
     title: `${club.name} — HiLo XI`,
     /* IT IS NOT ALL MANAGERS ANY MORE. This said "boards of <club> managers"
@@ -215,5 +215,5 @@ ${asAtLine(club.boards)}
 function boardDoor(club, raw) {
   const n = parseInt(String(raw), 10);
   if (!Number.isInteger(n) || n <= 0 || n > club.boards.length) return notFound("board");
-  return Response.redirect(`${SITE}/hilo/?b=${encodeURIComponent(club.boards[n - 1].id)}`, 302);
+  return Response.redirect(`${SITE}/football/hilo/?b=${encodeURIComponent(club.boards[n - 1].id)}`, 302);
 }

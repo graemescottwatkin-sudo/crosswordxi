@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="canonical" href="https://www.thexigames.com/football/crossword/how-to-play">
+<!-- Pages serves this page at .html and extensionless — two URLs, one
+     document. WRONG, and kept wrong for four builds: Pages 308-redirects the
+     .html form to the extensionless one, so the old canonical named a URL
+     that always redirects — and the sitemap listed it. The canonical names
+     the URL that actually serves. External review, finding 11. The old line
+     read: "The canonical names the .html form because that is what every
+     link on the site points at; without it Google picks one arbitrarily and
+     splits what little signal a new domain has. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play &middot; Crossword XI</title>
+<meta name="description" content="Eleven football answers, scored out of 114. What the clock costs you, and what each help button costs.">
+<meta name="robots" content="index, follow">
+
+<meta property="og:title" content="How to play Crossword XI">
+<meta property="og:description" content="Eleven football answers, scored out of 114. What the clock costs you, and what each help button costs.">
+<meta property="og:image" content="https://www.thexigames.com/football/crossword/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- HowTo rather than FAQPage: this is one procedure with steps, not a list of
+     separate questions. Every figure in it is read from SCORING by
+     howto_test.mjs, so the page and the game cannot drift; this block is prose
+     about the same rules and is checked the same way. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to play Crossword XI",
+  "description": "Eleven football answers, scored out of 114.",
+  "inLanguage": "en-GB",
+  "step": [
+    { "@type": "HowToStep", "name": "Solve eleven answers",
+      "text": "Every board has eleven football answers. Everyone gets the same puzzle each day." },
+    { "@type": "HowToStep", "name": "Watch the clock",
+      "text": "The clock counts in match minutes. Your score is whatever the clock has left, starting at 114." },
+    { "@type": "HowToStep", "name": "Spend your substitutions",
+      "text": "Three a board. A revealed letter uses one, a revealed answer uses all three. Go past them and the day is a draw." },
+    { "@type": "HowToStep", "name": "Take a result",
+      "text": "Solve it before full time with substitutions to spare for a win, otherwise a draw. Thirty-eight matches make a season." }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How is Crossword XI scored?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Every board has eleven football answers and is scored out of 114 - the points available across a 38-match season at three per win. The faster you solve, the more of the 114 you keep; the clock and any help you use cost points." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the clock ever pause?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The clock starts when the board opens and does not stop - not for closing the tab, and not for hiding the board. You can hide the board if you need to step away; the match plays on." }
+    },
+    {
+      "@type": "Question",
+      "name": "What counts as a win, a draw and a loss?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Finish within your three substitutions and inside 90 match minutes for a win. Overspend your substitutions or finish after full time and it is a draw. An unfinished board is a loss." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do old boards count towards my streak?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yesterday's board still counts if you finish it before the end of today. Anything older is a friendly against the past - you get your score, but it does not bank a matchday or extend a run." }
+    },
+    {
+      "@type": "Question",
+      "name": "When are the answers published?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A board's clues and answers become a public page once the board is more than seven days old. Newer boards stay sealed so the archive is worth playing." }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- THE FAMILY SHELL, on the same reasoning as privacy.html: this page
+     carried its own palette, header and footer and looked like a different
+     site from the game it explains. The shared tokens, chrome and theme are
+     what every page loads now. Every number below is still read from
+     SCORING in js/engine.js; nothing keeps them in step but this list.
+     Links stay relative so the page runs unchanged wherever it is served. -->
+<link rel="stylesheet" href="/shared/xi-tokens.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-landing.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-chrome.css?v=v21">
+<script src="/shared/xi-theme.js?v=v21"></script>
+<style>
+/* What is this page's own: the reading column, the prose, and the cards
+   that show the scoring. All on the shared tokens. */
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+.site-page{max-width:760px;margin:0 auto;padding:28px 20px 64px;line-height:1.65}
+.site-page h1{
+  font-family:var(--disp);font-weight:700;color:var(--ink);
+  font-size:34px;line-height:1.15;margin:0 0 6px;text-transform:uppercase;letter-spacing:.02em;
+}
+.site-page h2{font-family:var(--disp);font-weight:600;font-size:23px;margin:38px 0 10px;letter-spacing:.02em;color:var(--ink)}
+.site-page h3{font-size:16px;font-weight:700;margin:24px 0 8px}
+.site-page p{margin:0 0 14px}
+.site-page ul{margin:0 0 16px;padding-left:22px}
+.site-page li{margin-bottom:6px}
+.site-page a{color:var(--pitch-ink,var(--pitch))}
+.site-page .xi{
+  display:inline-block;background:var(--tint);color:var(--xi-ink);
+  padding:.06em .3em .1em;border-radius:.18em;line-height:1;transform:translateY(-.04em);
+}
+.site-page code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+  background:var(--card);border:1px solid var(--line);
+  padding:1px 5px;border-radius:4px;word-break:break-word;
+}
+.site-page hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.site-page table{
+  width:100%;border-collapse:collapse;margin:0 0 20px;font-size:15px;
+  background:var(--card);border:1px solid var(--line);border-radius:6px;
+  overflow:hidden;display:block;overflow-x:auto;
+}
+.site-page th,.site-page td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.site-page th{
+  font-family:var(--disp);font-weight:600;font-size:14px;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);white-space:nowrap;
+}
+.site-page tbody tr:last-child td{border-bottom:0}
+
+.htp-lede{font-size:17px;color:var(--ink-soft);margin:0 0 26px}
+.htp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:18px 20px;margin:0 0 14px}
+.htp-big{display:flex;align-items:baseline;gap:13px;margin-bottom:7px;flex-wrap:wrap}
+.htp-big b{font-family:'Barlow Condensed',sans-serif;font-size:38px;line-height:1;
+  letter-spacing:-.01em;color:var(--pitch)}
+.htp-big span{font-size:14px;color:var(--ink-soft)}
+.htp-clock{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 14px}
+.htp-tick{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:12px 8px;text-align:center}
+.htp-tick .m{font-family:'Barlow Condensed',sans-serif;font-size:15px;
+  letter-spacing:.04em;color:var(--ink-faint)}
+.htp-tick .p{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;
+  color:var(--pitch);margin-top:1px}
+.htp-tick .r{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+table.htp{width:100%;border-collapse:collapse;font-size:15px}
+table.htp th{text-align:left;font-size:11.5px;letter-spacing:.09em;color:var(--ink-faint);
+  font-weight:700;padding:0 0 8px}
+table.htp td{padding:9px 0;border-top:1px solid var(--line)}
+table.htp td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.htp-cost{color:#9A3F1F;font-weight:700}
+.htp-free{color:var(--pitch);font-weight:700}
+.htp-note{background:#FBF3DA;border:1px solid #E8D9A8;border-radius:11px;
+  padding:14px 16px;font-size:14.5px;color:#7A5E00;margin:16px 0}
+:root[data-theme="dark"] .htp-note{background:#2A2618;border-color:#4A422A;color:#D8C68A}
+@media (max-width:620px){.htp-clock{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<!-- The shared bar, filled by shared/xi-chrome.js, then the crossword's own
+     masthead: the same two rows every crossword page wears. -->
+<header class="xic-bar"></header>
+<header class="site-head"><div class="site-bar">
+  <a class="site-mast" href="index.html">Crossword <span class="site-xi">XI</span></a>
+  <nav class="site-nav">
+    <a class="site-navlink" href="index.html">Today</a>
+    <a class="site-navlink" href="clubs/">Clubs</a>
+    <a class="site-navlink" href="answers/">Answers</a>
+    <a class="site-navlink on" href="how-to-play.html">How to play</a>
+  </nav>
+</div></header>
+<main class="site-page">
+
+<h1>How to play</h1>
+<p class="htp-lede">Eleven answers, all about football. Everyone gets the same
+  puzzle each day.</p>
+
+<h2>The score</h2>
+<div class="htp-card">
+  <div class="htp-big"><b>114</b><span>= 38 matches &times; 3 points</span></div>
+  <p>A league season is 38 games. Win all 38 and you finish on 114 &mdash; a
+     perfect season, which nobody has ever had. Nineteen of the last thirty
+     title winners took fewer than 90, so anything in the eighties is a very
+     good day.</p>
+</div>
+
+<h2>The clock</h2>
+<p>The clock counts in match minutes, not real ones. A minute passes every 20
+   seconds, so the full 90 takes half an hour. <b>Your score is whatever the
+   clock has left</b> &mdash; nothing else takes points off it.</p>
+<div class="htp-clock">
+  <div class="htp-tick"><div class="m">0&rsquo;</div><div class="p">114</div><div class="r">kick off</div></div>
+  <div class="htp-tick"><div class="m">30&rsquo;</div><div class="p">78</div><div class="r">10 real min</div></div>
+  <div class="htp-tick"><div class="m">45&rsquo;</div><div class="p">68</div><div class="r">half time</div></div>
+  <div class="htp-tick"><div class="m">90&rsquo;</div><div class="p">36</div><div class="r">full time</div></div>
+</div>
+<p>It drops fastest early and levels off, so finishing late still gets you a
+   result. At 90&rsquo; it stops falling altogether &mdash; take as long as you
+   like after that, though the day counts as a draw once the whistle has gone.</p>
+<div class="htp-note">The clock starts when the board opens and does not pause — not for closing the tab, and not for hiding the board. You can hide the board at any time if you need to step away; the match plays on.
+  Closing the tab does not stop it.</div>
+
+<h2>The help buttons</h2>
+<p>All four are there whenever you want them. <b>They cost time.</b> Asking for
+   help moves the clock forward, and the clock is what your score is made of.</p>
+<div class="htp-card">
+  <table class="htp">
+    <tr><th>Button</th><th>What it does</th><th style="text-align:right">Cost</th></tr>
+    <tr><td><b>Check word</b></td><td>Marks which letters of this answer are wrong</td><td class="n htp-cost">+2&prime;</td></tr>
+    <tr><td><b>Check grid</b></td><td>Marks every wrong letter on the board</td><td class="n htp-cost">+10&prime;</td></tr>
+    <tr><td><b>Reveal letter</b></td><td>Fills in the square you are on</td><td class="n htp-cost">+3&prime; &middot; 1 sub</td></tr>
+    <tr><td><b>Reveal answer</b></td><td>Fills in the whole answer</td><td class="n htp-cost">+14&prime; &middot; 3 subs</td></tr>
+  </table>
+</div>
+<p><b>There is no penalty for a wrong guess.</b> Typing something and changing
+   your mind is free. Only asking the game costs you.</p>
+<p>Checking never costs a substitution, so verifying your own work can never
+   turn a win into a draw. Help late is riskier than help early: reveal an
+   answer at 45&rsquo; and you are fine, but take three letters at 82&rsquo; and
+   the whistle goes before you finish.</p>
+<p>Marks stay put until you edit that square, so you can come back to a word
+   later and still see what was wrong.</p>
+
+<h2>Substitutions</h2>
+<div class="htp-card">
+  <div class="htp-big"><b>3</b><span>a board, every board</span></div>
+  <p>A revealed letter uses one. A revealed answer uses all three.</p>
+</div>
+<p><b>Spending all three is fine.</b> Going past them is not: ask for a fourth
+   letter, or an answer when you only have two left, and the day becomes a draw
+   however well you finish. You will be warned before it happens.</p>
+
+<h2>Win, draw or lose</h2>
+<p>Every board is a match, and every match is one of three results.</p>
+<div class="htp-card">
+  <table class="htp">
+    <tr><td><b>Win</b></td><td>Solved before full time, without going past your three substitutions</td><td class="n htp-free">3 pts</td></tr>
+    <tr><td><b>Draw</b></td><td>Solved, but you ran out of substitutions or the whistle went first</td><td class="n">1 pt</td></tr>
+    <tr><td><b>Loss</b></td><td>Started and did not finish it</td><td class="n">0</td></tr>
+  </table>
+</div>
+<p><b>Missing a day is not a loss.</b> It ends your run, and that is all &mdash;
+   the table is about how you play, the run is about turning up.</p>
+<p>Yesterday&rsquo;s board still counts &mdash; for the run and the record &mdash;
+   if you finish it before the end of today. Anything older is a friendly
+   against the past: you get your score and your Full Time, but it does not
+   bank a matchday or extend a run. Once a board is more than a week old its
+   answers are published, so an old score could never be trusted anyway.</p>
+
+<h2>Your record</h2>
+<p>Thirty-eight matches make a season, the same as a league. Your results build
+   a table, and where you finish is measured against a real season &mdash;
+   champions, Europe, mid-table, relegated.</p>
+<p>Miss a board and you can play it later from <b>Previous puzzles</b>: every
+   daily since the start is there, and one more arrives every day.</p>
+
+<footer class="xic-foot"></footer>
+<script src="/shared/xi-chrome.js?v=v21"></script>
+<script>
+/* Follows the appearance you chose in the game, if you have chosen one. Read
+   only — this page never writes the preference, so opening a legal notice
+   cannot change a setting. Falls back to the system setting. */
+(function () {
+  try {
+    var t = localStorage.getItem("fcw.theme");
+    if (t === "dark" || t === "light") {
+      document.documentElement.setAttribute("data-theme", t);
+    }
+  } catch (e) { /* storage blocked: the system setting still applies */ }
+})();
+</script>
+</body>
+</html>

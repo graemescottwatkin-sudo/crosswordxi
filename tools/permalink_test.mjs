@@ -12,8 +12,9 @@
  *
  *   node tools/permalink_test.mjs        (from the repo root)
  */
+import { gameDir } from "../functions/_lib/permalink.js";
 import fs from "node:fs";
-import { PERMA_GAMES, todayKeyFor, validKey, permalinkPath, permalinkRoute }
+import { PERMA_GAMES, todayKeyFor, validKey, permalinkPath, permalinkRoute, gamePath }
   from "../functions/_lib/permalink.js";
 
 let pass = 0, fail = 0;
@@ -30,12 +31,16 @@ const NOW = Date.parse("2026-09-03T10:00:00Z");
    changes shape has to fail here rather than quietly serving a permalink
    whose preview still says the game's front page. A stubbed head could not
    fail that way, which is the whole reason this reads the file. */
-const shellFor = (game) => fs.readFileSync(`${game}/index.html`, "utf8");
+const shellFor = (game) => fs.readFileSync(`${gameDir(game)}/index.html`, "utf8");
 
 const env = {
   ASSETS: {
     fetch: async (req) => {
-      const game = new URL(req.url || req).pathname.split("/").filter(Boolean)[0];
+      /* THE GAME IS NOT THE FIRST SEGMENT ANY MORE. /football/crossword/ —
+         the theme leads, so the stub took "football" as the game and looked
+         for football/football/index.html. */
+      const parts = new URL(req.url || req).pathname.split("/").filter(Boolean);
+      const game = parts[1] || parts[0];
       return new Response(shellFor(game), { headers: { "Content-Type": "text/html" } });
     },
   },
@@ -50,8 +55,12 @@ console.log("Every game has the same shape");
 for (const game of GAMES) {
   const today = todayKeyFor(game, NOW);
   t(`${game}: today's key is the server's idea of today`, !!today, today);
-  t(`${game}: the path is /${game}/daily/<key>`,
-    permalinkPath(game, today) === `/${game}/daily/${today}`);
+  /* THE THEME LEADS. /football/crossword/daily/12 since 5 Sep 2026 — other
+     kinds of quiz are coming, and XI never meant football. Built from
+     gamePath rather than written out, so this asserts the SHAPE holds rather
+     than restating the theme and having to be edited when it changes. */
+  t(`${game}: the path is ${gamePath(game)}daily/<key>`,
+    permalinkPath(game, today) === `${gamePath(game)}daily/${today}`);
 }
 
 console.log("\n/<game>/daily IS today, and today does not wear a number");
@@ -84,7 +93,7 @@ for (const game of GAMES) {
      this tag they would resolve against /<game>/daily/ and 404 — the board
      would be a blank screen. */
   t(`${game}: carries a base so its relative assets still resolve`,
-    html.includes(`<base href="/${game}/">`));
+    html.includes(`<base href="${gamePath(game)}">`));
   t(`${game}: is not cached, like the page it is`, r.headers.get("Cache-Control") === "no-store");
 }
 
@@ -103,9 +112,9 @@ console.log("\nWhat a share preview says names the board");
   const shellTitle = (shellFor("crossword").match(/<title>([^<]*)</) || [])[1];
   t("which is not what the page it started from said", shellTitle !== "30 August 2026 · Crossword XI", shellTitle);
   t("the canonical is the permalink itself, so it is the address of the board",
-    html.includes('href="https://www.thexigames.com/crossword/daily/5"'));
+    html.includes('href="https://www.thexigames.com/football/crossword/daily/5"'));
   t("og:url and og:title follow it",
-    html.includes('content="https://www.thexigames.com/crossword/daily/5"') &&
+    html.includes('content="https://www.thexigames.com/football/crossword/daily/5"') &&
     html.includes('content="30 August 2026 · Crossword XI"'));
   /* INDEXED, on the owner's call. What a page offered to a crawler must at
      least have is something of its own, and for these that is the title and
@@ -132,7 +141,7 @@ console.log("\nOne board, one address");
 {
   const r = await call("crossword", "007");
   t("a padded number is corrected with a 301, not served twice",
-    r.status === 301 && r.headers.get("Location") === "/crossword/daily/7",
+    r.status === 301 && r.headers.get("Location") === "/football/crossword/daily/7",
     `${r.status} -> ${r.headers.get("Location")}`);
   const deep = await call("crossword", "5/6");
   t("a key with more path after it is refused", deep.status === 404, String(deep.status));
@@ -172,7 +181,7 @@ console.log("\nA refusal says nothing about what it refused");
 
 /* ---- A DAY THE GAME DID NOT RUN IS NOT A BOARD ----
  *
- * /wordsearch/daily/2020-01-01 and /hilo/daily/1999-12-31 both answered 200
+ * /football/wordsearch/daily/2020-01-01 and /football/hilo/daily/1999-12-31 both answered 200
  * with a self-referencing canonical, for any past date at all: an unbounded
  * set of near-identical pages each claiming to be the permanent address of a
  * board that never existed.
@@ -234,7 +243,7 @@ console.log("\n=== A date with no board ===");
     DB: { prepare: () => { asked++; return { bind: () => ({ first: async () => ({ n: 1 }) }) }; } },
   };
   await permalinkRoute({
-    request: new Request("https://www.thexigames.com/crossword/daily/1"),
+    request: new Request("https://www.thexigames.com/football/crossword/daily/1"),
     env: countEnv, params: { path: ["1"] },
   }, "crossword");
   t("a numbered game reads no schedule to serve a board", asked === 0, asked + " queries");

@@ -23,6 +23,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BUILT, MODES, validPlayGame, validMode } from "../functions/_lib/games.js";
+import { gameDir } from "../functions/_lib/permalink.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
@@ -35,7 +36,12 @@ const pass = (msg) => console.log("ok    " + msg);
 /* The games, as the server understands them, are the games checked. A fourth
    game joins this suite by being built, not by being added here. */
 for (const game of BUILT) {
-  const dir = game;
+  /* THE ID IS NOT THE DIRECTORY ANY MORE. They were the same word until the
+     games moved under a theme, and `const dir = game` was true for as long as
+     that held. A game is identified as "crossword" and lives at
+     football/crossword; asked for rather than assumed, so the next move is one
+     function and not this line again. */
+  const dir = gameDir(game);
 
   /* THE RULE IS "A GAME YOU CAN PLAY COUNTS", not "a name in GAMES counts".
      A game under construction has a directory and a scoring module before it
@@ -82,10 +88,13 @@ for (const game of BUILT) {
    "daily" or refused, and either way the board it names is lost. */
 const seen = new Set();
 for (const game of BUILT) {
-  const jsDir = path.join(ROOT, game, "js");
+  /* The directory, not the id: this loop still walked ROOT/<id>/js while the
+     read below had already been moved to gameDir. It found no files, skipped
+     every game, and reported "no mode literals found at all". */
+  const jsDir = path.join(ROOT, gameDir(game), "js");
   if (!fs.existsSync(jsDir)) continue;
   for (const f of fs.readdirSync(jsDir).filter((x) => x.endsWith(".js"))) {
-    const src = read(`${game}/js/${f}`);
+    const src = read(`${gameDir(game)}/js/${f}`);
     for (const m of src.matchAll(/XIPlays\.start\s*\(\s*\{[^}]*?mode:\s*['"]([a-z]+)['"]/g)) {
       seen.add(m[1]);
     }

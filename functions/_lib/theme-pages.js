@@ -1,4 +1,4 @@
-/* The club and theme pages: /crossword/club/… and /crossword/theme/…
+/* The club and theme pages: /football/crossword/club/… and /football/crossword/theme/…
  *
  * ONE RENDERER, TWO TREES. Clubs and topics are the same shape of thing with
  * different words around them — Arsenal has boards, so does Grounds — and the
@@ -31,7 +31,7 @@ const TREES = {
 };
 
 export function pathOf(theme) {
-  return `/crossword/${TREES[theme.kind] ? TREES[theme.kind].path : "theme"}/${theme.id}/`;
+  return `/football/crossword/${TREES[theme.kind] ? TREES[theme.kind].path : "theme"}/${theme.id}/`;
 }
 
 /* A CLUB HAS ONE PAGE, and it is addressed by the club rather than by any one
@@ -40,7 +40,7 @@ export function pathOf(theme) {
    thing is the shape search engines discard. The sets keep their own board
    URLs; only the page is shared. */
 export function clubPath(clubId) {
-  return `/crossword/club/${clubId}/`;
+  return `/football/crossword/club/${clubId}/`;
 }
 
 /* What to call a set on its club's page. The club's name is already the
@@ -57,12 +57,12 @@ function notFound(what) {
   const page = sitePage({
     title: "Not found — Crossword XI",
     description: "That page does not exist.",
-    canonical: SITE + "/crossword/",
-    current: "/crossword/clubs/",
+    canonical: SITE + "/football/crossword/",
+    current: "/football/crossword/clubs/",
     noindex: true,
     body: `<h1>Not found</h1>
 <p class="sub">There is no ${esc(what)} here. It may not have been released yet.</p>
-<a class="cta" href="/crossword/clubs/">Clubs and themes</a>`,
+<a class="cta" href="/football/crossword/clubs/">Clubs and themes</a>`,
   });
   return new Response(page, {
     status: 404,
@@ -75,7 +75,7 @@ function notFound(what) {
 }
 
 
-/* ---- /crossword/clubs/ — the index both trees are reached from ---- */
+/* ---- /football/crossword/clubs/ — the index both trees are reached from ---- */
 export async function indexPage({ env }) {
   if (!hasDB(env)) return notFound("index");
   let themes = [];
@@ -110,15 +110,15 @@ ${clubBlocks ? `<h2>Clubs</h2><ul>${clubBlocks}</ul>` : ""}
 ${topicBlocks ? `<h2>Themes</h2><ul>${topicBlocks}</ul>` : ""}
 ${!clubBlocks && !topicBlocks
   ? `<p class="sub">No club or theme boards have been released yet.</p>` : ""}
-<a class="cta" href="/crossword/">Play today's board</a>
-<a class="cta ghost" href="/crossword/?themes=1">Request a board</a>`;
+<a class="cta" href="/football/crossword/">Play today's board</a>
+<a class="cta ghost" href="/football/crossword/?themes=1">Request a board</a>`;
 
   return htmlResponse(sitePage({
     title: "Football crosswords by club — Crossword XI",
     description: "Crossword XI club and theme boards: Arsenal, Manchester United and more, " +
       "plus themed football crosswords. A new board every Friday.",
-    canonical: SITE + "/crossword/clubs/",
-    current: "/crossword/clubs/",
+    canonical: SITE + "/football/crossword/clubs/",
+    current: "/football/crossword/clubs/",
     body,
   }));
 }
@@ -130,13 +130,13 @@ function clubName(group) {
   return group.map((t) => t.name).reduce((a, b) => (b.length < a.length ? b : a));
 }
 
-/* ---- /crossword/club/<club>/ , /crossword/theme/<topic>/ , and /<no> ---- */
+/* ---- /football/crossword/club/<club>/ , /football/crossword/theme/<topic>/ , and /<no> ---- */
 export async function treeRoute({ params, env }, kind) {
   const parts = (params && params.path) || [];
   const list = Array.isArray(parts) ? parts.filter(Boolean) : [parts].filter(Boolean);
 
   /* The bare tree root is not a page of its own — the index is. */
-  if (!list.length) return Response.redirect(SITE + "/crossword/clubs/", 301);
+  if (!list.length) return Response.redirect(SITE + "/football/crossword/clubs/", 301);
 
   const id = String(list[0]).toLowerCase();
   if (!isSlug(id) || list.length > 2) return notFound(TREES[kind].one);
@@ -188,38 +188,38 @@ function clubPage(clubId, sets) {
   const name = ordered.map((t) => t.name).reduce((a, b) => (b.length < a.length ? b : a));
   const total = ordered.reduce((n, t) => n + t.boards.length, 0);
 
-  const body = `<p class="crumb"><a href="/crossword/clubs/">Clubs and themes</a></p>
+  const body = `<p class="crumb"><a href="/football/crossword/clubs/">Clubs and themes</a></p>
 <h1>${esc(name)}</h1>
 <p class="sub">${total} ${total === 1 ? "crossword" : "crosswords"} across
 ${ordered.length} ${ordered.length === 1 ? "set" : "sets"}. Pick a number — it opens ready to start,
 and the clock waits for you to kick off.</p>
 <ul>${ordered.map(setRow).join("")}</ul>
-<a class="cta" href="/crossword/">Play today's board</a>`;
+<a class="cta" href="/football/crossword/">Play today's board</a>`;
 
   return htmlResponse(sitePage({
     title: `${name} crossword — Crossword XI`,
     description: `${total} ${name} football crosswords across ${ordered.length} sets. ` +
       `Free to play, no answers given away.`,
     canonical: SITE + clubPath(clubId),
-    current: "/crossword/clubs/",
+    current: "/football/crossword/clubs/",
     body,
   }));
 }
 
 function topicPage(theme) {
-  const body = `<p class="crumb"><a href="/crossword/clubs/">Clubs and themes</a></p>
+  const body = `<p class="crumb"><a href="/football/crossword/clubs/">Clubs and themes</a></p>
 <h1>${esc(theme.name)}</h1>
 <p class="sub">${theme.boards.length} ${theme.boards.length === 1 ? "crossword" : "crosswords"}.
 Pick a number — it opens ready to start, and the clock waits for you to kick off.</p>
 <ul>${setRow(theme)}</ul>
-<a class="cta" href="/crossword/">Play today's board</a>`;
+<a class="cta" href="/football/crossword/">Play today's board</a>`;
 
   return htmlResponse(sitePage({
     title: `${theme.name} crossword — Crossword XI`,
     description: `${theme.boards.length} ${theme.name} football crosswords. ` +
       `Free to play, no answers given away.`,
     canonical: SITE + pathOf(theme),
-    current: "/crossword/clubs/",
+    current: "/football/crossword/clubs/",
     body,
   }));
 }
@@ -230,5 +230,5 @@ function boardDoor(theme, raw) {
   const no = parseInt(String(raw), 10);
   if (!Number.isInteger(no) || no <= 0) return notFound("board");
   if (!theme.boards.some((b) => b.no === no)) return notFound("board");
-  return Response.redirect(`${SITE}/crossword/?t=${theme.id}-${no}`, 302);
+  return Response.redirect(`${SITE}/football/crossword/?t=${theme.id}-${no}`, 302);
 }

@@ -141,7 +141,7 @@ const handlers = [
    it is the family bar and drawer, it links to games that are not in this
    file, and a tester that carries the squad list would name an unreleased game
    in markup somebody could screenshot. */
-const page = read("scrambled/index.html");
+const page = read("football/scrambled/index.html");
 const body = page
   .slice(page.indexOf("<body>") + 6, page.indexOf("</body>"))
   .replace(/<header class="xic-bar">[\s\S]*?<\/header>/, "")
@@ -162,7 +162,7 @@ const out = `<!doctype html>
      inlined below. On the site the names never leave the Worker. -->
 <style>
 ${read("shared/xi-tokens.css")}
-${read("scrambled/css/style.css")}
+${read("football/scrambled/css/style.css")}
 
 /* ---- tester chrome, which is not part of the game ---- */
 .tst {
@@ -244,8 +244,8 @@ ${handlers}
 /* ============================================================
    The game, inlined from scrambled/js/
    ============================================================ */
-${read("scrambled/js/config.js")}
-${read("scrambled/js/scoring.js")}
+${read("football/scrambled/js/config.js")}
+${read("football/scrambled/js/scoring.js")}
 
 /* The tester's own overrides, applied BEFORE the engine reads them. The clock
    is the one that matters: half time is 45', and waiting seven and a half real
@@ -256,7 +256,7 @@ ${read("scrambled/js/scoring.js")}
   if (clock > 0) window.SCX_CONFIG.MATCH_CLOCK_REAL_SECONDS = clock;
 })();
 
-${read("scrambled/js/game.js")}
+${read("football/scrambled/js/game.js")}
 
 /* ============================================================
    Tester controls. Nothing below this line exists on the site.

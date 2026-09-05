@@ -14,6 +14,7 @@
  *   npm install -D jsdom --no-save
  *   node tools/keys_test.mjs        (from the repo root)
  */
+import { gameDir } from "../functions/_lib/permalink.js";
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 
@@ -253,19 +254,19 @@ t("the block height a game reserves is three rows of keys",
 
 console.log("\nBoth games ask for it, and neither keeps a copy");
 {
-  const pages = { crossword: "crossword/index.html", scrambled: "scrambled/index.html" };
+  const pages = { crossword: "football/crossword/index.html", scrambled: "football/scrambled/index.html" };
   for (const [game, page] of Object.entries(pages)) {
     const html = fs.readFileSync(page, "utf8");
     t(`${game} links the shared keys, script and stylesheet`,
       html.includes("shared/xi-keys.js?v=") && html.includes("shared/xi-keys.css?v=") &&
       /<div class="osk" id="osk">/.test(html));
-    const js = fs.readFileSync(`${game}/js/game.js`, "utf8");
+    const js = fs.readFileSync(`${gameDir(game)}/js/game.js`, "utf8");
     t(`${game} builds through the shared module`, js.includes("XIKeys.build("));
     /* THE POINT OF MOVING IT. A game holding its own row strings or its own
        key markup is a second keyboard, whatever it is called. */
     t(`${game} holds no keyboard of its own`,
       !js.includes("QWERTYUIOP") && !/className\s*=\s*["']osk-key/.test(js));
-    const gameCss = fs.readFileSync(`${game}/css/style.css`, "utf8");
+    const gameCss = fs.readFileSync(`${gameDir(game)}/css/style.css`, "utf8");
     t(`${game} does not restate how a key is sized`,
       !/^\.osk-key\s*\{/m.test(gameCss) && !gameCss.includes("--osk-key:"),
       "overrides of .osk for its own layout are fine; the keys are not its own");

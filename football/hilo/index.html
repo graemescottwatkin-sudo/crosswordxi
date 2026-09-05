@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4F5F2">
+<title>HiLo XI — the higher-or-lower football game | The XI Games</title>
+<meta name="description" content="One stat, eleven calls. Twelve names in a chain, is the next one higher or lower, earlier or later? Three substitutions, a clock on every call, 114 points. A new board every day from The XI Games.">
+<link rel="canonical" href="https://www.thexigames.com/football/hilo/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.thexigames.com/football/hilo/">
+<meta property="og:title" content="HiLo XI — the higher-or-lower football game">
+<meta property="og:description" content="One stat, eleven calls. Higher or lower, earlier or later, three substitutions.">
+<meta property="og:site_name" content="The XI Games">
+<meta property="og:image" content="https://www.thexigames.com/football/crossword/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HiLo XI — the higher-or-lower football game">
+<meta name="twitter:description" content="One stat, eleven calls. Higher or lower, earlier or later, three substitutions.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication",
+ "name":"HiLo XI","applicationCategory":"Game",
+ "url":"https://www.thexigames.com/football/hilo/",
+ "operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},
+ "publisher":{"@type":"Organization","name":"The XI Games","url":"https://www.thexigames.com/"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/xi-tokens.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-landing.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-chrome.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-share.css?v=v21">
+<!-- The theme, stamped before first paint: light unless the player chose
+     dark, decided in one shared place for every page of the family. -->
+<script src="/shared/xi-theme.js?v=v21"></script>
+<link rel="stylesheet" href="css/style.css?v=v001s">
+</head>
+<body>
+
+<!-- The shared bar. The burger and the wordmark are inserted by
+     shared/xi-chrome.js; only this game's own control is written here. -->
+<header class="xic-bar">
+  <div class="xic-right">
+    <a class="xic-ghost" href="#how" data-optional>How to play</a>
+  </div>
+</header>
+
+<main class="app">
+
+  <!-- One H1, first in the body, saying what the game is. The landing shows
+       the name in the masthead, which is furniture; this is the heading a
+       screen reader and a search engine read. -->
+  <h1 class="sr-only">HiLo XI &mdash; the higher-or-lower football game</h1>
+
+  <header class="site-head">
+    <div class="site-bar">
+      <div class="site-mast">HiLo <span class="site-xi">XI</span></div>
+      <nav class="site-nav">
+        <button class="on" id="navToday">Today</button>
+        <a class="site-navlink" href="/football/hilo/clubs/">Clubs</a>
+        <a class="site-navlink" href="#how">How to play</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="screen prematch" id="screenStart">
+    <!-- THE LANDING, THE FAMILY'S. Layout, type and spacing are
+         shared/xi-landing.css — the same file the other three open on — so
+         this is the same page with this game's content in it. -->
+    <div class="site-wrap">
+      <p class="site-lede">One stat, eleven calls. You see one number; is the
+         next one higher or lower? A wrong call costs a substitution.</p>
+
+      <div class="site-grid">
+        <div class="site-main">
+          <button class="home-choice hero" id="homeDaily">
+            <span class="hc-kicker" id="startKicker">TODAY</span>
+            <span class="hc-title" id="startTitle">Today&rsquo;s board</span>
+            <span class="hc-note" id="startSub">Twelve names, eleven calls, a clock on every one.</span>
+            <!-- The rule that settles the awkward cases. The hero IS the
+                 daily's cover — it starts the round with no cover in between —
+                 so this is where the second sentence has to be readable, the
+                 same way kickFine carries it for every other board. -->
+            <span class="hc-fine" id="startFine"></span>
+            <span class="hc-state" id="startState"></span>
+            <span class="hc-cta">Kick off</span>
+          </button>
+        </div>
+
+        <aside class="site-side">
+          <div class="side-card">
+            <div class="sc-kicker">YOUR FORM</div>
+            <div class="sc-title" id="homeRunTitle">No run yet</div>
+            <div class="home-run" id="homeRun"></div>
+          </div>
+
+          <div class="side-card">
+            <div class="sc-kicker">PLAY AS</div>
+            <div class="home-club">
+              <select id="homeClubSelect" title="Choose your club (optional)"></select>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="site-sec">OTHER BOARDS</div>
+      <div class="site-row">
+        <button class="home-choice col" id="homeFeatured">
+          <span class="hc-kicker">BOARD OF THE WEEK</span>
+          <span class="hc-title" id="homeFeaturedName">&mdash;</span>
+          <span class="hc-note" id="homeFeaturedNote">One club's managers, changed every Monday.</span>
+          <span class="hc-state" id="homeFeaturedState"></span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/>
+            <path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M12 13v4"/><path d="M9 20h6"/>
+            <path d="M10 17h4l1 3H9l1-3Z"/>
+          </svg>
+        </button>
+
+        <!-- A link, because it goes somewhere: the clubs are pages, the same
+             shape as the crossword's clubs and the word search's themes. -->
+        <a class="home-choice col" id="homeThemed" href="/football/hilo/clubs/">
+          <span class="hc-kicker">CLUBS AND THEMES</span>
+          <span class="hc-title">Every club&rsquo;s managers</span>
+          <span class="hc-note">Earlier or later, by the year they took charge.</span>
+          <span class="hc-state" id="homeThemedState"></span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+            <rect x="9" y="9" width="6" height="6" fill="currentColor" opacity=".25" stroke="none"/>
+          </svg>
+        </a>
+
+        <button class="home-choice col" id="homePrevious" aria-expanded="false" aria-controls="archivePanel">
+          <span class="hc-kicker">PREVIOUS PUZZLES</span>
+          <span class="hc-title" id="homePreviousCount">Every day so far</span>
+          <span class="hc-note">One more every day. Replay any of them &mdash;
+            only today&rsquo;s keeps a run going.</span>
+          <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5v4h4"/><path d="M3.5 9A9 9 0 1 1 4 15"/><path d="M12 8v4l3 2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- PREVIOUS PUZZLES, by day, newest first. A day you played as your
+           daily shows its score; the rest are there to play. -->
+      <div class="archive hidden" id="archivePanel">
+        <div class="arch-head">
+          <span class="site-sec">PREVIOUS PUZZLES</span>
+          <span class="arch-sub" id="archiveSub"></span>
+        </div>
+        <ol class="arch-list" id="archiveList"></ol>
+      </div>
+
+      <p class="legal">Unofficial football game. Not affiliated with or endorsed by any club, league, competition or governing body.<br>
+         <strong>The XI Games &middot; <span id="buildTag"></span></strong></p>
+    </div>
+
+    <section class="how" id="how">
+      <h2>How to play</h2>
+      <p><b>Twelve names, eleven calls.</b> You see one number. Is the next one higher or lower? On a board of years the faces read earlier or later; on a board of ages, younger or older. The question names who the call is about and what it is against, every time.</p>
+      <p><b>A clock on every call.</b> Each call is worth up to ten. The clock holds for two seconds so you can read it, then the points fall a point a second to nothing. A call that runs out is a wrong call, and waits for you to tap Next; an answered call moves straight on.</p>
+      <p><b>Three substitutions.</b> A wrong call spends one. Three wrong and it is still a win; four is a draw. Leave a board unfinished and it is a loss.</p>
+      <p><b>114 is the ceiling.</b> Eleven right at full value is 110, and every run of five right in a row is worth two more. Two runs of five, or a perfect eleven, reach 114.</p>
+      <p><b>The source shows as the call settles.</b> Every number on a board comes from an opened official record, or from a cached list where the club publishes none, and the line that proves it appears beside the answer once you have called it, never before.</p>
+    </section>
+  </section>
+
+  <section class="screen" id="screenGame" hidden>
+    <div class="game">
+      <section class="stage" aria-label="The ladder">
+        <div class="eyebrow" id="modeLabel">Today</div>
+        <h2 class="cat" id="cat"></h2>
+        <div class="ladder" id="ladder"></div>
+        <div class="rows" id="rows">
+          <div class="duel live" id="live">
+            <div class="player known" id="left"><div class="who"></div><div class="sub"></div><div class="val"></div></div>
+            <div class="vs">V</div>
+            <div class="player" id="right"><div class="who"></div><div class="sub"></div><div class="val q">?</div></div>
+          </div>
+        </div>
+        <p class="ask" id="ask"></p>
+        <div class="calls">
+          <button class="call higher" id="higher"><b>&#9650; Higher</b><small></small></button>
+          <button class="call lower" id="lower"><b>&#9660; Lower</b><small></small></button>
+        </div>
+        <!-- Only a timed-out call waits for this. -->
+        <div class="nextRow hidden" id="nextRow">
+          <button class="kick" id="nextBtn" type="button">Next call</button>
+        </div>
+
+        <!-- THE BOARD'S CARD BEFORE KICK OFF, over the stage. A board reached
+             from its club page, the board of the week or a previous day opens
+             here, named, with the first clock waiting for Kick off. -->
+        <div class="kickCover hidden" id="kickCover">
+          <div class="kickCard">
+            <span class="hc-kicker" id="kickKicker">BOARD</span>
+            <div class="kickTitle" id="kickTitle">&mdash;</div>
+            <div class="kickNote" id="kickNote"></div>
+            <!-- The rule that settles the awkward cases — a man with two
+                 spells is dated by his first, and so on. It decides real
+                 boards, so it is said; it is not the answer to "what is this
+                 board", so it is said quietly and only here. -->
+            <div class="kickFine" id="kickFine"></div>
+            <button class="kick" id="kickBtn" type="button">Kick off</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="dug">
+        <div class="card">
+          <h2>This call</h2>
+          <div class="clock">
+            <div class="worth"><span>On offer</span><b id="callWorth">10</b></div>
+            <div class="banked"><span>Banked</span><b id="banked">0</b></div>
+          </div>
+          <div class="bar" id="clockBar"><i></i></div>
+          <div class="subs" id="subs"><i></i><i></i><i></i><span>3 substitutions</span></div>
+          <div class="rule"><b>A wrong call is a substitution.</b> Three wrong and it is still a win; four is a draw at best.</div>
+        </div>
+
+        <div class="card">
+          <h2>The eleven &middot; <span id="rightCount">0</span> right</h2>
+          <ol class="sheet" id="sheet"></ol>
+        </div>
+
+        <div class="card note" id="srcLine"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="screen ft" id="screenResults" hidden>
+    <div class="ftcard">
+      <div class="k">Full time &middot; HiLo XI</div>
+      <h3><span id="ftScore">0</span> <span class="of">/ 114</span></h3>
+      <span class="res W" id="ftRes">Win</span>
+      <p class="line" id="ftLine"></p>
+      <!-- Whether the number above is the server's. Empty until it
+           answers, and empty for good on a round it could not verify:
+           the card is the player's own arithmetic either way, and has
+           always been honest about that. -->
+      <p class="line verified" id="ftVerified"></p>
+      <textarea id="shareText" rows="5" readonly aria-label="Shareable result"></textarea>
+      <div class="row">
+        <div id="shareRow"></div>
+        <button class="btn" id="resultMenuBtn">Back to menu</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- THE SHARED FOOTER, AT TOP LEVEL. It carries the family disclaimer. -->
+<footer class="xic-foot"></footer>
+
+<script src="/shared/xi-clubs.js?v=v21"></script>
+<script src="/shared/xi-chrome.js?v=v21"></script>
+<script src="/shared/xi-plays.js?v=v21"></script>
+<script src="/shared/xi-share.js?v=v21"></script>
+<script src="js/scoring.js?v=v001s"></script>
+<script src="js/game.js?v=v001s"></script>
+</body>
+</html>

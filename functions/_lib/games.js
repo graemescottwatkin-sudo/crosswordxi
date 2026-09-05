@@ -34,7 +34,7 @@ export function validGame(v) {
    written for a game nobody can play is a row nobody will ever read.
 
    Reporting bad content is not that. A game can be PLAYABLE in the repo before
-   it is launched — /scrambled/ and /quickfire/ both are — and the whole point
+   it is launched — /football/scrambled/ and /football/quickfire/ both are — and the whole point
    of reporting is to hear about wrong content BEFORE anyone else sees it. A
    built game that cannot be reported is the one stage where reports are most
    useful and least available.

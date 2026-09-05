@@ -23,7 +23,48 @@
 # catches the address itself, which survives in histories and old tabs.
 # 302 not 301: a hub account page is planned, and a cached permanent
 # redirect would fight it when it arrives. Sign-in lives in the game.
-/account   /crossword/   302
+/account   /football/crossword/   302
+
+# ---- THE THEME MOVE, 5 Sep 2026 ----
+#
+# Every game moved under the theme it belongs to, because other kinds of quiz
+# are coming and XI never meant football: eleven clues, eleven games, eleven
+# players to a team. The old addresses must keep working forever — these games
+# promise "one URL, one puzzle, forever", and a permalink that 404s breaks that
+# promise in the one way it was built to prevent.
+#
+# 301 AND NOT 302 for the games: they have moved permanently, and search should
+# consolidate on the new address. The splat carries the whole tail, so
+# /crossword/daily/5 and /crossword/answers/2 and /hilo/clubs/ all land on
+# their own new homes rather than on a game's front page — a redirect that
+# drops the tail is a redirect that loses the board somebody was linking to.
+/crossword/*    /football/crossword/:splat    301
+/wordsearch/*   /football/wordsearch/:splat   301
+/scrambled/*    /football/scrambled/:splat    301
+/hilo/*         /football/hilo/:splat         301
+/vowels/*       /football/vowels/:splat       301
+/quickfire/*    /football/quickfire/:splat    301
+
+# And the bare paths, which the splat above does not cover.
+/crossword      /football/crossword/          301
+/wordsearch     /football/wordsearch/         301
+/scrambled      /football/scrambled/          301
+/hilo           /football/hilo/               301
+/vowels         /football/vowels/             301
+/quickfire      /football/quickfire/          301
+
+# THE THEME'S OWN PAGE, AND WHY THIS ONE IS A 302.
+#
+# The hub is at / and there is one theme, so /football/ has nothing of its own
+# to say yet and points home. That will change the day a second theme lands: /
+# becomes the picker and /football/ becomes the football hub, and this line is
+# deleted.
+#
+# A redirect known to be temporary must not be permanent. It is on /football/
+# rather than on / for the same reason: almost nobody has /football/ cached,
+# and everybody has /. Putting the reversible redirect on the apex would have
+# meant un-caching a 301 from the most-linked URL on the site.
+/football/      /                             302
 
 # WHAT PAGES SERVES THAT NOBODY MEANT IT TO — AND WHY THERE IS NO RULE HERE.
 #

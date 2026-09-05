@@ -21,7 +21,7 @@
  * A game that stopped working because a table was missing would be a worse
  * failure than an unverified score.
  */
-import HL_SCORING from "../../hilo/js/scoring.js";
+import HL_SCORING from "../../football/hilo/js/scoring.js";
 
 /* THE RULE IS THE PAGE'S OWN FILE, imported rather than restated. Crossword XI
    keeps two copies of its scoring and a suite to stop them drifting, because

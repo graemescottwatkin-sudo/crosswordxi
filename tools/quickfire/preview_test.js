@@ -1,7 +1,7 @@
 /* preview_test.js — boots preview/quickfire-preview.html and plays a question.
  *
- *   python3 tools/quickfire/build_preview.py
- *   node tools/quickfire/preview_test.js          (needs jsdom)
+ *   python3 tools/football/quickfire/build_preview.py
+ *   node tools/football/quickfire/preview_test.js          (needs jsdom)
  *
  * It caught two faults in the preview builder that reading the file would not
  * have: the stub was being written after the game scripts, so game.js fetched

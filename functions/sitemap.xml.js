@@ -31,18 +31,18 @@ const SITE = "https://www.thexigames.com";
    listed rather than derived because that is what they are: a fixed set. */
 const STATIC = [
   ["/", "daily", "1.0"],
-  ["/crossword/", "daily", "0.9"],
-  ["/wordsearch/", "daily", "0.9"],
-  ["/scrambled/", "daily", "0.9"],
-  ["/vowels/", "daily", "0.9"],
-  ["/hilo/", "daily", "0.9"],
-  ["/crossword/answers/", "daily", "0.7"],
-  ["/wordsearch/answers/", "daily", "0.7"],
-  ["/crossword/clubs/", "weekly", "0.6"],
-  ["/wordsearch/themes/", "weekly", "0.6"],
-  ["/hilo/clubs/", "weekly", "0.6"],
-  ["/crossword/how-to-play", "monthly", "0.5"],
-  ["/crossword/privacy", "yearly", "0.3"],
+  ["/football/crossword/", "daily", "0.9"],
+  ["/football/wordsearch/", "daily", "0.9"],
+  ["/football/scrambled/", "daily", "0.9"],
+  ["/football/vowels/", "daily", "0.9"],
+  ["/football/hilo/", "daily", "0.9"],
+  ["/football/crossword/answers/", "daily", "0.7"],
+  ["/football/wordsearch/answers/", "daily", "0.7"],
+  ["/football/crossword/clubs/", "weekly", "0.6"],
+  ["/football/wordsearch/themes/", "weekly", "0.6"],
+  ["/football/hilo/clubs/", "weekly", "0.6"],
+  ["/football/crossword/how-to-play", "monthly", "0.5"],
+  ["/football/crossword/privacy", "yearly", "0.3"],
 ];
 
 /* THE DAYS EACH DATED GAME ACTUALLY RAN, newest first and never past today.

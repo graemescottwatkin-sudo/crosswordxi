@@ -1,4 +1,4 @@
-/* The themes pages: /wordsearch/themes/ and /wordsearch/theme/<category>/…
+/* The themes pages: /football/wordsearch/themes/ and /football/wordsearch/theme/<category>/…
  *
  * THE SAME SHAPE AS THE CROSSWORD'S CLUB PAGES, because a player who has
  * learnt one should already know the other: an index that names the groups,
@@ -22,7 +22,7 @@ import { catalog } from "./wsdata.js";
 import { sitePage, htmlResponse, esc } from "./site-page.js";
 
 const SITE = "https://www.thexigames.com";
-const INDEX = "/wordsearch/themes/";
+const INDEX = "/football/wordsearch/themes/";
 
 /* A category as it may appear in a URL. Anything else was not issued by
    categorySlug and is refused before it is looked up. */
@@ -36,7 +36,7 @@ export function categorySlug(name) {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 49);
 }
 
-export function groupPath(slug) { return `/wordsearch/theme/${slug}/`; }
+export function groupPath(slug) { return `/football/wordsearch/theme/${slug}/`; }
 
 /* Released boards grouped by category, id order within a group, so a board's
    number on its page is its place in the group. Two names that slug the same
@@ -59,7 +59,7 @@ function notFound(what) {
   const page = sitePage({
     title: "Not found — Wordsearch XI",
     description: "That page does not exist.",
-    canonical: SITE + "/wordsearch/",
+    canonical: SITE + "/football/wordsearch/",
     game: "wordsearch", current: INDEX,
     noindex: true,
     body: `<h1>Not found</h1>
@@ -78,7 +78,7 @@ function notFound(what) {
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-/* ---- /wordsearch/themes/ — the index ---- */
+/* ---- /football/wordsearch/themes/ — the index ---- */
 export async function indexPage({ env }) {
   let list = [];
   try { list = await groups(env); } catch (e) { list = []; }
@@ -91,7 +91,7 @@ export async function indexPage({ env }) {
 <p class="sub">Football word searches by theme: club sides, eras, finals and nations.
 Every board here is free to play, and none of them touch your run.</p>
 ${items ? `<ul>${items}</ul>` : `<p class="sub">No themed boards have been released yet.</p>`}
-<a class="cta" href="/wordsearch/">Play today's board</a>`;
+<a class="cta" href="/football/wordsearch/">Play today's board</a>`;
 
   return htmlResponse(sitePage({
     title: "Football word searches by theme — Wordsearch XI",
@@ -103,7 +103,7 @@ ${items ? `<ul>${items}</ul>` : `<p class="sub">No themed boards have been relea
   }));
 }
 
-/* ---- /wordsearch/theme/<category>/ and /<n> ---- */
+/* ---- /football/wordsearch/theme/<category>/ and /<n> ---- */
 export async function treeRoute({ params, env }) {
   const parts = (params && params.path) || [];
   const list = Array.isArray(parts) ? parts.filter(Boolean) : [parts].filter(Boolean);
@@ -183,7 +183,7 @@ function groupPage(group) {
 ${plural(rows.length, "series", "series")}. Pick one — it opens on the board, and the
 clock waits for you to kick off.</p>
 <ul>${rows.map((r) => seriesRow(group, r)).join("")}</ul>
-<a class="cta" href="/wordsearch/">Play today's board</a>`;
+<a class="cta" href="/football/wordsearch/">Play today's board</a>`;
 
   return htmlResponse(sitePage({
     title: `${group.name} word searches — Wordsearch XI`,
@@ -201,5 +201,5 @@ clock waits for you to kick off.</p>
 function boardDoor(group, raw) {
   const n = parseInt(String(raw), 10);
   if (!Number.isInteger(n) || n <= 0 || n > group.boards.length) return notFound("board");
-  return Response.redirect(`${SITE}/wordsearch/?b=${group.boards[n - 1].id}`, 302);
+  return Response.redirect(`${SITE}/football/wordsearch/?b=${group.boards[n - 1].id}`, 302);
 }

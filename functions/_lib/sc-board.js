@@ -147,7 +147,7 @@ export function boardForNumber(n, boards, mode) {
 const OPEN_ARCHIVE = false;
 
 /* WHETHER THE CONSONANT BOARDS ARE PUBLIC. THEY ARE, SINCE 4 SEP 2026.
-   They became Vowels XI, the fifth shirt, at /vowels/ — the same eleven names
+   They became Vowels XI, the fifth shirt, at /football/vowels/ — the same eleven names
    and the same bank as Scrambled, with the letters left in their own order and
    the vowels taken out instead of the whole name shuffled.
    It was false for as long as the game was being built, and false did not mean

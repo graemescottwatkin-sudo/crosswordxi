@@ -13,10 +13,10 @@
  *
  * The key is whatever the game ALREADY calls a board, never a new name for it:
  *
- *   crossword   matchday number   /crossword/daily/12
- *   scrambled   board number      /scrambled/daily/12
- *   wordsearch  the day it ran    /wordsearch/daily/2026-09-03
- *   hilo        the day it ran    /hilo/daily/2026-09-03
+ *   crossword   matchday number   /football/crossword/daily/12
+ *   scrambled   board number      /football/scrambled/daily/12
+ *   wordsearch  the day it ran    /football/wordsearch/daily/2026-09-03
+ *   hilo        the day it ran    /football/hilo/daily/2026-09-03
  *
  * Two games count matchdays and two schedule by date; that is what their data
  * is, and inventing a common key would have meant a second identity for every
@@ -32,8 +32,8 @@
  * not hold for a crawler, and the two use the same URLs.
  *
  * A numbered game is bounded: keys run 1 to today. A game keyed by DATE is
- * not, and /wordsearch/daily/2020-01-01 answered 200 with a self-referencing
- * canonical, as did /hilo/daily/1999-12-31 — an unbounded set of
+ * not, and /football/wordsearch/daily/2020-01-01 answered 200 with a self-referencing
+ * canonical, as did /football/hilo/daily/1999-12-31 — an unbounded set of
  * near-identical pages each claiming to be the permanent address of a board
  * that never ran. Crawl budget is finite and those pages would spend it, which
  * makes this worse for search than having no board links at all.
@@ -123,7 +123,7 @@ export function validKey(game, raw, now = Date.now()) {
  * in the future". For a numbered game that is the whole question: the ring
  * wraps, so every number from 1 to today resolves to a board. For a game keyed
  * by DATE it is not, and the gap was an unbounded set of crawlable pages —
- * /wordsearch/daily/2020-01-01 and /hilo/daily/1999-12-31 both answered 200
+ * /football/wordsearch/daily/2020-01-01 and /football/hilo/daily/1999-12-31 both answered 200
  * with a self-referencing canonical, for any past date anybody typed. Hundreds
  * of thousands of near-identical pages, each claiming to be the permanent
  * address of a board that never existed. Worse for search than having no board
@@ -161,7 +161,33 @@ export async function ranOn(env, game, key) {
   return true;
 }
 
-export const permalinkPath = (game, key) => `/${game}/daily/${key}`;
+/* ---- WHERE A GAME LIVES ----
+ *
+ * The theme is the first segment of every game's URL, added on 4 Sep 2026 when
+ * the owner said other kinds of quiz are coming — Friends, Game of Thrones —
+ * and that they will not use football's scoring. XI is three meanings and none
+ * of them is football: eleven clues, eleven games, eleven players to a team.
+ *
+ * ONE PLACE, and this is it. The move rewrote a hundred literal paths across
+ * ninety files, and every one of those was a place the theme could later be
+ * wrong. Anything that BUILDS a path asks here instead, so the day a second
+ * theme lands there is one function to change rather than a search to repeat.
+ *
+ * A lookup rather than a constant for the same reason: the second theme is
+ * coming, and its games will not be football's. */
+export const THEME_OF = {
+  crossword: "football", wordsearch: "football", scrambled: "football",
+  hilo: "football", vowels: "football", quickfire: "football",
+};
+export const themeOf = (game) => THEME_OF[game] || "football";
+export const gamePath = (game) => `/${themeOf(game)}/${game}/`;
+/* The same fact as a FILE path, for the gates and suites that read a game's
+   own files off the repository. They built those paths dynamically —
+   `${game}/index.html` — which no search-and-replace can see, so the move left
+   a dozen of them reading a directory that no longer existed. Asked for here
+   so the next move is one function again. */
+export const gameDir = (game) => `${themeOf(game)}/${game}`;
+export const permalinkPath = (game, key) => `${gamePath(game)}daily/${key}`;
 
 /* The page a permalink serves is the GAME'S OWN PAGE, fetched from the static
    assets and altered in four ways. Not a copy of it: a second copy of a game's
@@ -194,7 +220,7 @@ export function permalinkHtml(html, { game, key, origin }) {
      run the same in both places, against a head this repo writes and this
      repo's own test reads. A rewrite that stops matching is not silent: the
      suite asserts every one of them landed, on the real page. */
-  const head = `<base href="/${game}/">`;
+  const head = `<base href="${gamePath(game)}">`;
   const desc = `The ${g.name} board from ${keyLabel(game, key)}, playable in full. ` +
     `One address, one puzzle — this link opens this board and no other.`;
   return html
@@ -243,7 +269,7 @@ export async function permalinkRoute({ request, env, params }, game) {
      two it hit, which is the rule the answers pages already keep. */
   if (!(await ranOn(env, game, key))) return notFound();
 
-  const shell = await env.ASSETS.fetch(new URL(`/${game}/`, url.origin));
+  const shell = await env.ASSETS.fetch(new URL(gamePath(game), url.origin));
   if (!shell.ok) return notFound();
   const html = permalinkHtml(await shell.text(), { game, key, origin: url.origin });
   /* The same no-store the game's own page carries in _headers: the shell

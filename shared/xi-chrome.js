@@ -43,17 +43,17 @@
      gates enforce is unchanged — an unreleased game is named nowhere.
      Order is the shirt number. */
   var SQUAD = [
-    { n: 1,  name: "Crossword XI",   href: "/crossword/" },
-    { n: 2,  name: "Wordsearch XI",  href: "/wordsearch/" },
-    { n: 3,  name: "Scrambled XI",   href: "/scrambled/" },
-    { n: 4,  name: "HiLo XI",        href: "/hilo/" },
+    { n: 1,  name: "Crossword XI",   href: "/football/crossword/" },
+    { n: 2,  name: "Wordsearch XI",  href: "/football/wordsearch/" },
+    { n: 3,  name: "Scrambled XI",   href: "/football/scrambled/" },
+    { n: 4,  name: "HiLo XI",        href: "/football/hilo/" },
     /* Vowels XI launched on 4 Sep 2026 and took the next free number, which
        is what launching does. QuickFire was sitting at 5 while in testing and
        moves down: a game that is not out does not hold a shirt, and the rule
        says so — "only a launched game holds a number ... and moves down when a
        game ships past it". */
-    { n: 5,  name: "Vowels XI",      href: "/vowels/" },
-    { n: 6,  status: "In testing",   href: "/quickfire/" },
+    { n: 5,  name: "Vowels XI",      href: "/football/vowels/" },
+    { n: 6,  status: "In testing",   href: "/football/quickfire/" },
     { n: 7,  status: "In build" },
     { n: 8,  status: "In build" },
     { n: 9,  status: "On the drawing board" },
@@ -63,14 +63,27 @@
     { n: 11, status: "Not yet signed" }
   ];
 
+  /* WHERE A GAME LIVES, read off the squad rather than assembled from its id.
+     The two were the same word until the theme move — "/" + game + "/" — and
+     every place that assumed it broke at once. The squad's hrefs are the one
+     statement of a game's address on the client side; this is how the rest of
+     the chrome asks for it. */
+  function pathOfGame(game) {
+    for (var i = 0; i < SQUAD.length; i++) {
+      var h = SQUAD[i].href;
+      if (h && h.slice(-(game.length + 2)) === "/" + game + "/") return h;
+    }
+    return "/" + game + "/";
+  }
+
   /* The pages every game shares. Kept here for the same reason as the squad:
      a footer written into each page is a footer that drifts. */
   var PAGES = [
-    { name: "How to play", href: "/crossword/how-to-play" },
-    { name: "Answers",     href: "/crossword/answers/" },
-    { name: "Privacy",     href: "/crossword/privacy" }
+    { name: "How to play", href: "/football/crossword/how-to-play" },
+    { name: "Answers",     href: "/football/crossword/answers/" },
+    { name: "Privacy",     href: "/football/crossword/privacy" }
   ];
-  var PRIVACY = "/crossword/privacy";
+  var PRIVACY = "/football/crossword/privacy";
 
   /* xic-xi, not xi. The chrome owns its markup and every class in it lives in
      the xic- namespace, because a bare .xi is a class any game may already
@@ -867,7 +880,7 @@
 
      Reading it was already done in all four games; WRITING it was not, which
      is why opening a board from the archive left the address bar saying
-     /crossword/ and gave the player nothing to copy. A board that can be
+     /football/crossword/ and gave the player nothing to copy. A board that can be
      addressed should say its address while you are on it.
 
      replaceState, not pushState: the page is not re-rendered by going back,
@@ -905,7 +918,13 @@
     box.innerHTML = '<span>You followed a link to ' + says +
       '. It is yours to play, and it does not count towards a run.</span>';
     var go = el("a", "xic-aged-go", "Play today's");
-    go.href = "/" + game + "/daily";
+    /* THE GAME'S PATH, ASKED OF THE SQUAD. This built "/" + game + "/daily",
+       which was the address until the games moved under a theme and is
+       /football/crossword/daily now. The squad list above already holds every
+       game's href — one statement of where a game lives — so this reads it
+       rather than adding a second, and it follows the day a game changes
+       theme. */
+    go.href = pathOfGame(game) + "daily";
     box.appendChild(go);
     var x = btn("xic-aged-x", "&times;");
     x.setAttribute("aria-label", "Dismiss");

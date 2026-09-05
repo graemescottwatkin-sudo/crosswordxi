@@ -35,8 +35,8 @@ earlier reading of this item: a game does not have a season of its own.
 **The 38-match strip comes out of every game.** Today the crossword turns one
 board's score into a fake 38-game record — 114 points is 38 matches at 3 a win,
 so any score resolves to a unique W/D/L split (`seasonRecord` /
-`seasonFromActions` in `crossword/js/engine.js`, the `#seasonPanel` strip in
-`crossword/index.html`, and about twenty other references). All of it goes. The
+`seasonFromActions` in `football/crossword/js/engine.js`, the `#seasonPanel` strip in
+`football/crossword/index.html`, and about twenty other references). All of it goes. The
 word search already refused to do this and left the reason in a comment beside
 its share text — "v4.3 factorised one board's score into a fake 38-game strip;
 that is the fault Crossword's season rules retire, not a convention to keep."
@@ -95,7 +95,7 @@ eleven games, eleven players to a team.
   draw. Nothing in that rule knows what a puzzle scores out of, so it works
   whatever a Friends crossword is marked on. It is the family-wide half.
 - The PER-GAME LIVE TABLE does not. It is 114 = 38 matches at 3 points a win
-  (`MAX_SCORE: 114` and `SEASON_GAMES: 38`, both in `crossword/js/engine.js`),
+  (`MAX_SCORE: 114` and `SEASON_GAMES: 38`, both in `football/crossword/js/engine.js`),
   and it puts the player in a real league season by way of their chosen club. A
   Friends crossword cannot have a position in the Premier League table.
 
@@ -123,14 +123,14 @@ that would go red if it were missed.
 
 **Theme first, not game first.** `/football/crossword/` groups by what a
 visitor came for, and gives each theme a landing page and a sitemap section
-that match search intent. `/crossword/football/` would treat themes as content
+that match search intent. `/football/crossword/football/` would treat themes as content
 inside products, which is the weaker read now that the theme carries real
 BEHAVIOUR — see item 11: the scoring and the league table are football's, not
 the family's.
 
 Two conditions:
 
-- Move football on the same day. A flagship left at `/crossword/` while new
+- Move football on the same day. A flagship left at `/football/crossword/` while new
   themes sit under a theme segment is two conventions kept forever.
 - 301 the old paths permanently. The permalinks promise one URL, one puzzle,
   forever; a 301 keeps that promise and a 404 breaks it.
@@ -191,7 +191,7 @@ whole board and its four help cards, and it is not scored competitively.
 The pages themselves are right and nothing about them needs fixing: each board
 has a unique dated title, a unique description and a self-referencing
 canonical; unreleased and future boards 404 rather than serving a thin page;
-and `/wordsearch/daily` canonicalises to its dated URL instead of competing
+and `/football/wordsearch/daily` canonicalises to its dated URL instead of competing
 with it. They simply cannot earn anything, because nothing points at them.
 
 Both gaps verified against production, 4 Sep:
@@ -206,11 +206,11 @@ restating it.
 
 **Gap 2 — almost nothing on the site links to a board page.** CORRECTED 4 Sep:
 the first write-up of this said "zero links anywhere", and so did my own check,
-because neither of us looked at an answers DETAIL page. `/crossword/answers/1`
-and `/crossword/answers/2` each link the board they are about — the crossword's
+because neither of us looked at an answers DETAIL page. `/football/crossword/answers/1`
+and `/football/crossword/answers/2` each link the board they are about — the crossword's
 live_check has an assertion for it. Everything else is bare: zero on the hub,
-on `/crossword/`, on `/crossword/answers/`, on `/crossword/clubs/`, on a club
-page, on `/hilo/clubs/` and on `/wordsearch/answers/`.
+on `/football/crossword/`, on `/football/crossword/answers/`, on `/football/crossword/clubs/`, on a club
+page, on `/football/hilo/clubs/` and on `/football/wordsearch/answers/`.
 
 So a crawl path exists and reaches exactly TWO boards, because an answers page
 is sealed until `ANSWERS_AFTER_DAYS` past a board's first day and only two are
@@ -219,8 +219,8 @@ published. It is the shape of the fix, at 2 boards out of hundreds.
 TWO CORRECTIONS to how this was first written up, both from checking it:
 
 - **It is four games, not one.** All four have working board pages off a single
-  module — `/crossword/daily/12`, `/scrambled/daily/12`,
-  `/wordsearch/daily/2026-09-03`, `/hilo/daily/2026-09-03`, all 200, all built
+  module — `/football/crossword/daily/12`, `/football/scrambled/daily/12`,
+  `/football/wordsearch/daily/2026-09-03`, `/football/hilo/daily/2026-09-03`, all 200, all built
   by `functions/_lib/permalink.js`. Two games count matchdays and two schedule
   by date. The sitemap generator has to handle both key shapes, and the fix is
   worth four games rather than one.
@@ -240,7 +240,7 @@ Verify after:
 
 ```
 curl -s https://www.thexigames.com/sitemap.xml | grep -c "/daily/"
-curl -s https://www.thexigames.com/crossword/answers/ | grep -c 'crossword/daily/'
+curl -s https://www.thexigames.com/football/crossword/answers/ | grep -c 'football/crossword/daily/'
 ```
 
 Both should be greater than zero, and the first should equal the number of
@@ -255,7 +255,29 @@ As each game's score becomes the server's. HiLo and Scrambled now write
 
 ### 10. The shared sheet/calendar CSS lift
 
-Debt recorded in `scrambled/css/style.css`.
+Debt recorded in `football/scrambled/css/style.css`.
+
+### A suite can fail at UTC midnight, and did
+
+Found 5 Sep 2026 at 00:06 UTC, while the theme move was being checked. Two
+suites went red on a tree that had changed nothing about them.
+
+`football/crossword/save_test.mjs` fixes its day number ONCE, at module load,
+from `Date.now()`; the page under test asks the SERVER, which computes it later
+in the run. Across midnight those two disagree by one, the seeded save no
+longer matches the board that loads, and the menu shows nothing. It failed
+three times running at 23:5x-00:0x and passed again at 00:06 with both sides on
+the same day. CI has never caught it because a run has to straddle the
+boundary — which it will, eventually, and then it will look like a real fault
+in the save code.
+
+The fix is for the suite to take ONE reading of the day and hand it to both
+sides, rather than each asking separately. Not done here: it wants a careful
+look at how many suites do the same thing, and it should not ride along with a
+URL migration.
+
+Worth checking at the same time: any suite that computes a day, a board number
+or a schedule position independently of the server it is testing.
 
 ### Small
 
@@ -265,7 +287,7 @@ Debt recorded in `scrambled/css/style.css`.
 
 ## Shipped
 
-- **Vowels XI launched** — shirt 5, `/vowels/`, 4 Sep. The same eleven names
+- **Vowels XI launched** — shirt 5, `/football/vowels/`, 4 Sep. The same eleven names
   and the same bank as Scrambled, with the letters left in their own order and
   the vowels taken out. Its page, stylesheet and script are GENERATED from
   Scrambled's by `tools/build_vowels.js`, gated by `--check`, because two

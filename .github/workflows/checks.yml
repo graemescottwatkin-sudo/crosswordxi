@@ -42,29 +42,29 @@ jobs:
       # cheaper to hear about here than as a ReferenceError inside a suite, and
       # this is the gap that put broken reveals on the live v146 build.
       - name: Names resolve
-        run: node crossword/names_test.mjs
+        run: node football/crossword/names_test.mjs
 
       # A citation must not travel before the clue is solved, and a citation a
       # player is shown is not the same thing as one the bank records. Both are
       # server-side rules, so this runs with the rest of the offline suites.
       - name: Citations
-        run: node crossword/sources_test.mjs
+        run: node football/crossword/sources_test.mjs
 
       # The generator suite needs the clue bank, which is not in the repository.
       # Skipped rather than failed: a suite that cannot run is not a suite that
       # found something.
       - name: Behaviour and layout
         run: |
-          node crossword/frontend_test.mjs
-          node crossword/viewport_test.mjs
-          node crossword/save_test.mjs
-          node crossword/tabs_test.mjs
-          node crossword/themes_ui_test.mjs
+          node football/crossword/frontend_test.mjs
+          node football/crossword/viewport_test.mjs
+          node football/crossword/save_test.mjs
+          node football/crossword/tabs_test.mjs
+          node football/crossword/themes_ui_test.mjs
           # The club and theme pages are server-rendered and meant to be read
           # by a search engine, so what they SAY is the contract: a released
           # board linked, an unreleased one nowhere in the bytes, no clue and
           # no answer on an indexable page.
-          node crossword/clubs_test.mjs
+          node football/crossword/clubs_test.mjs
 
       # Family-wide, so it runs before the per-game suites. QuickFire shipped
       # playable and completely uncounted because nothing anywhere said that a
@@ -84,55 +84,55 @@ jobs:
 
       - name: API
         run: |
-          node crossword/functions_test.mjs
-          node crossword/status_test.mjs
-          node crossword/play_test.mjs
-          node crossword/blank_test.mjs
-          node crossword/circulation_test.mjs
-          node crossword/d1_test.mjs
+          node football/crossword/functions_test.mjs
+          node football/crossword/status_test.mjs
+          node football/crossword/play_test.mjs
+          node football/crossword/blank_test.mjs
+          node football/crossword/circulation_test.mjs
+          node football/crossword/d1_test.mjs
           # A saved practice board survives its pool being retired. Nothing has
           # mode = practice_retired until the retirement runs, so the fix cannot
           # be tested by the data — the suite stubs a retired row instead.
-          node crossword/retire_test.mjs
+          node football/crossword/retire_test.mjs
           # Reporting bad content, from every game that has any. The case the
           # old schema could not express: a report from a game with no row in
           # `clues` must still store, with the game recorded.
-          node crossword/report_test.mjs
-          node crossword/epoch_test.mjs
-          node crossword/answers_test.mjs
-          node crossword/outcome_test.mjs
-          node crossword/record_test.mjs
+          node football/crossword/report_test.mjs
+          node football/crossword/epoch_test.mjs
+          node football/crossword/answers_test.mjs
+          node football/crossword/outcome_test.mjs
+          node football/crossword/record_test.mjs
           # live_check.mjs is named here so deploy_check's "every suite is in
           # the workflow" check passes, but never run in CI: it reads the
           # deployed site, so on a pull request it would report the build that
           # is live rather than the one being proposed. Run it by hand after a
-          # deploy.  ->  node crossword/live_check.mjs --expect v152
-          node crossword/fairness_test.mjs
-          node crossword/howto_test.mjs
-          node crossword/auth_test.mjs
-          node crossword/admin_test.mjs
-          node crossword/themes_test.mjs
-          node crossword/challenge_test.mjs
+          # deploy.  ->  node football/crossword/live_check.mjs --expect v152
+          node football/crossword/fairness_test.mjs
+          node football/crossword/howto_test.mjs
+          node football/crossword/auth_test.mjs
+          node football/crossword/admin_test.mjs
+          node football/crossword/themes_test.mjs
+          node football/crossword/challenge_test.mjs
           # One account, more than one game: the rules that only exist
           # once there are two, which no older suite could have caught.
-          node crossword/games_test.mjs
+          node football/crossword/games_test.mjs
           # The shared chrome: one bar, one drawer, one squad list, and
           # the rule that an unreleased game is never named.
-          node crossword/chrome_test.mjs
+          node football/crossword/chrome_test.mjs
           # A board in progress follows the player: the state endpoint
           # executed, and the convergence rules both clients keep.
-          node crossword/state_test.mjs
+          node football/crossword/state_test.mjs
           # The same feature from the OUTSIDE: a daily opened the normal way,
           # the account holding a journey, and the letters on the screen.
-          node crossword/adopt_test.mjs
-          node wordsearch/frontend_test.mjs
-          node wordsearch/functions_test.mjs
+          node football/crossword/adopt_test.mjs
+          node football/wordsearch/frontend_test.mjs
+          node football/wordsearch/functions_test.mjs
           # The answers pages: the seal, the refusal that names nothing,
           # and the window imported rather than restated.
-          node wordsearch/answers_test.mjs
+          node football/wordsearch/answers_test.mjs
           # The themes pages: the index, a category's numbered boards, the
           # door into the game, and an unreleased board named nowhere.
-          node wordsearch/themes_test.mjs
+          node football/wordsearch/themes_test.mjs
           # The cross-game contract: what every game must have, checked
           # identically. Game three is a row in its GAMES table.
           node tools/aligned_test.mjs
@@ -143,13 +143,13 @@ jobs:
           # QuickFire XI's gate, and the proof that its gate can fail. The
           # second one is the point: every check in that file is watched
           # failing before it is trusted.
-          node quickfire/gate_test.mjs
+          node football/quickfire/gate_test.mjs
           # Scrambled XI, shirt 3, released. It has its own gate, its own
           # live_check and a row in aligned_test now, so it is held to the
           # same law as the other two.
-          node scrambled/names_test.mjs
-          node scrambled/board_test.mjs
-          node scrambled/scoring_test.mjs
+          node football/scrambled/names_test.mjs
+          node football/scrambled/board_test.mjs
+          node football/scrambled/scoring_test.mjs
           # The boards come from D1, and the module is only the fallback. The
           # stub holds a board that exists nowhere else, so a handler quietly
           # still reading the module fails rather than passing on a match.
@@ -168,34 +168,34 @@ jobs:
           # the page as well as testing the server, because the payload sends
           # different fields in that cypher and a suite that only asked the
           # server was green while eight client sites threw.
-          node scrambled/consonant_test.mjs
-          node scrambled/d1_test.mjs
+          node football/scrambled/consonant_test.mjs
+          node football/scrambled/d1_test.mjs
           # The finals: 543 boards out of the daily rotation, opened to
           # everyone by a token that needs no authority BECAUSE it resolves
           # nothing in the rotation. That guard is what this suite is for —
           # break it and the id space becomes a way to read the schedule.
-          node scrambled/iconic_test.mjs
-          node scrambled/journey_test.mjs
+          node football/scrambled/iconic_test.mjs
+          node football/scrambled/journey_test.mjs
           # The score the SERVER computes. It already marked every guess and
           # sold every reveal; the clock is its own now, and so is the count of
           # how many slots the board has — which the page used to be asked for,
           # and which is what a short board was claimed against.
-          node scrambled/verified_test.mjs
+          node football/scrambled/verified_test.mjs
           # Vowels XI, shirt 5. The same engine and the same bank as Scrambled
           # with the other cypher, so its page and script are GENERATED from
           # Scrambled's — --check is what makes that copy honest, and refuses
           # if either side has moved without the other.
           node tools/build_vowels.js --check
-          node vowels/generated_test.mjs
+          node football/vowels/generated_test.mjs
           # Half time: free hints, fired by the clock and not by a click, so no
           # journey through the game ever reaches it. It was the only untested
           # path in Scrambled, and a player who never receives their hints has
           # nothing to see and nothing to report.
-          node scrambled/teamtalk_test.mjs
+          node football/scrambled/teamtalk_test.mjs
           # The tester is generated, so it is built and then PLAYED. A
           # generator can produce something that parses and does not run.
           node tools/build_scrambled_tester.js
-          node scrambled/tester_test.mjs
+          node football/scrambled/tester_test.mjs
           # The generated board module must be the one the source files
           # produce. --check gates and writes nothing, so a board edited by
           # hand in functions/_lib/ shows up here rather than in production.
@@ -204,16 +204,16 @@ jobs:
           # judge, its API executed against the sample bank, its club pages,
           # and one round played from kick off to full time through the real
           # page and the real handlers.
-          node hilo/board_test.mjs
-          node hilo/api_test.mjs
-          node hilo/pages_test.mjs
-          node hilo/journey_test.mjs
+          node football/hilo/board_test.mjs
+          node football/hilo/api_test.mjs
+          node football/hilo/pages_test.mjs
+          node football/hilo/journey_test.mjs
           # The score the SERVER computes, and what it refuses. This game has
           # always judged which calls were right; the clock is its now too, so
           # a challenge table can be worth looking at. The checks that matter
           # are the ones that try to cheat it: a score sent up, a call replayed
           # faster, a round that never kicked off.
-          node hilo/verified_test.mjs
+          node football/hilo/verified_test.mjs
           # The sample must be what the sources produce; with no bank on the
           # runner the committed sample is gated on its own.
           node tools/import_hilo.js --check
@@ -223,12 +223,12 @@ jobs:
       - name: Pre-upload checklist
         run: |
           rm -rf node_modules package-lock.json package.json
-          node crossword/deploy_check.mjs
-          node wordsearch/deploy_check.mjs
-          node scrambled/deploy_check.mjs
-          node vowels/deploy_check.mjs
-          node quickfire/deploy_check.mjs
-          node hilo/deploy_check.mjs
+          node football/crossword/deploy_check.mjs
+          node football/wordsearch/deploy_check.mjs
+          node football/scrambled/deploy_check.mjs
+          node football/vowels/deploy_check.mjs
+          node football/quickfire/deploy_check.mjs
+          node football/hilo/deploy_check.mjs
 
   render:
     name: Sixteen viewports, real browser
@@ -255,7 +255,7 @@ jobs:
 
       - name: Measure
         env:
-          # /crossword/, not the site root. The v152 restructure moved the game
+          # /football/crossword/, not the site root. The v152 restructure moved the game
           # under a path and left the root as the hub, which has no #dailyBtn,
           # no #kickOffBtn and no #startOverlay. render_test kept opening the
           # root, found none of them, fell into its catch and reported
@@ -264,16 +264,16 @@ jobs:
           # easy to read as one flaky job rather than a suite measuring the
           # wrong page. The widths in those reports (1198 at desktop) were the
           # hub's layout, never a crossword grid.
-          BASE: http://127.0.0.1:8788/crossword/
-        run: node crossword/render_test.mjs
+          BASE: http://127.0.0.1:8788/football/crossword/
+        run: node football/crossword/render_test.mjs
       # journey_test and signin_test were EXEMPTED from the offline job as
       # browser suites — and then never added to the browser job, so they ran
       # in neither. External review, finding 5: three of the four exempted
       # suites executed nowhere. This job already has Chromium and the server.
       - name: Player journeys in a real browser
         env:
-          BASE: http://127.0.0.1:8788/crossword/
-        run: node crossword/journey_test.mjs
+          BASE: http://127.0.0.1:8788/football/crossword/
+        run: node football/crossword/journey_test.mjs
       # signin_test is NOT here, and cannot be. It needs a real database, a
       # configured GOOGLE_CLIENT_ID and a person to click the Google popup —
       # the popup is the point, because a stubbed one would test the stub and

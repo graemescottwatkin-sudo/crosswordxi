@@ -12,6 +12,7 @@
  *
  *   node tools/share_test.mjs        (from the repo root)
  */
+import { gameDir } from "../functions/_lib/permalink.js";
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 
@@ -25,8 +26,8 @@ const GAMES = ["crossword", "wordsearch", "scrambled", "hilo"];
 
 console.log("One row, four games");
 for (const g of GAMES) {
-  const html = read(`${g}/index.html`);
-  const js = read(`${g}/js/game.js`);
+  const html = read(`${gameDir(g)}/index.html`);
+  const js = read(`${gameDir(g)}/js/game.js`);
   t(`${g} links the shared share module, script and stylesheet`,
     /shared\/xi-share\.js/.test(html) && /shared\/xi-share\.css/.test(html));
   t(`${g} has somewhere to mount it, and mounts it`,
@@ -53,7 +54,7 @@ console.log("\nWhat the row actually builds");
 
   const mounted = window.XIShare.mount(doc.getElementById("m"), {
     text: () => "Scrambled XI #10\nline two",
-    url: () => "https://www.thexigames.com/scrambled/daily/10",
+    url: () => "https://www.thexigames.com/football/scrambled/daily/10",
   });
   t("it mounts and returns its controls", !!mounted && !!mounted.share);
   t("a share control and a challenge control",
@@ -145,7 +146,7 @@ console.log("\nThe challenge control");
     !!dom3.window.document.querySelector(".xis-share") &&
     dom3.window.document.querySelectorAll(".xis-target").length === 3);
   t("and the crossword is the game that asks for that",
-    /challenge:\s*false/.test(read("crossword/js/game.js")),
+    /challenge:\s*false/.test(read("football/crossword/js/game.js")),
     "its results card already carries a challenge form");
 }
 

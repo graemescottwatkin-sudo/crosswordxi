@@ -1,7 +1,7 @@
 /* The themes catalogue, in one place.
  *
  * /api/themes draws the in-game section from this; the club and theme pages
- * under /crossword/club/ and /crossword/theme/ are rendered from it. Two
+ * under /football/crossword/club/ and /football/crossword/theme/ are rendered from it. Two
  * destinations, one derivation — the alternative is a second SELECT that
  * agrees with the first until somebody changes what "on the shelf" means.
  *

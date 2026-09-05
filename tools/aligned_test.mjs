@@ -73,12 +73,25 @@ function selectorsOf(css) {
 /* THE FAMILY. dir is the path under the root and the URL; prefix is the
    game's localStorage namespace — distinct per game, or two games sharing a
    browser overwrite each other's saves. */
+/* `dir` is where the game LIVES, and since 5 Sep 2026 that is under its theme:
+   other kinds of quiz are coming and XI never meant football. Written out
+   rather than composed, because this table is the family's own statement of
+   what a game is — but it agrees with gameDir() in permalink.js, and the check
+   below holds the two together so a game cannot live in one place and be
+   addressed in another. */
+/* `id` IS NOT `dir`, AND THE MOVE IS WHAT SEPARATED THEM. They were the same
+   word until 5 Sep 2026 and every check could use either. Now a game is
+   identified as "crossword" — in the server's game list, in its results rows,
+   in its storage prefix — and LIVES at football/crossword. Conflating them
+   made this file ask games.js whether it listed "football/crossword", which it
+   does not and must not: an id is not a path, and the day the theme changes
+   the id must not change with it. */
 const GAMES = [
-  { dir: "crossword",  name: "Crossword XI",  prefix: "fcw"  },
-  { dir: "wordsearch", name: "Wordsearch XI", prefix: "xiws" },
-  { dir: "scrambled",  name: "Scrambled XI",  prefix: "xisc" },
-  { dir: "hilo",       name: "HiLo XI",       prefix: "xihl" },
-  { dir: "vowels",     name: "Vowels XI",     prefix: "xivw" },
+  { id: "crossword",  dir: "football/crossword",  name: "Crossword XI",  prefix: "fcw"  },
+  { id: "wordsearch", dir: "football/wordsearch", name: "Wordsearch XI", prefix: "xiws" },
+  { id: "scrambled",  dir: "football/scrambled",  name: "Scrambled XI",  prefix: "xisc" },
+  { id: "hilo",       dir: "football/hilo",       name: "HiLo XI",       prefix: "xihl" },
+  { id: "vowels",     dir: "football/vowels",     name: "Vowels XI",     prefix: "xivw" },
 ];
 
 const workflow = read(".github/workflows/checks.yml");
@@ -322,7 +335,7 @@ t("the CSRF rule is the family's, defined once",
 t("the server's game list and this table agree", (() => {
   const lib = read("functions/_lib/games.js");
   const listed = (lib.match(/GAMES = \[([^\]]+)\]/) || [, ""])[1];
-  return GAMES.every((g) => listed.indexOf(`"${g.dir}"`) > -1);
+  return GAMES.every((g) => listed.indexOf(`"${g.id}"`) > -1);
 })(), "functions/_lib/games.js");
 t("no game carries a private copy of a shared file",
   GAMES.every((g) => !has(`${g.dir}/xi-tokens.css`) && !has(`${g.dir}/xi-chrome.css`) &&
@@ -342,15 +355,15 @@ t("no game carries a private copy of a shared file",
 
    Move both constants together, in the post-deploy commit, exactly as a game's
    LAST_SHIPPED and LAST_SHIPPED_ASSETS move together. */
-const SHARED_TAG = "v20";
-const SHARED_HASH = "1cb616ed8d62a963";
+const SHARED_TAG = "v21";
+const SHARED_HASH = "90ad0c8c418dd494";
 /* EVERY PAGE THAT LINKS THE SHARED LAYER, not the games alone. The hub, the
    two static pages and the unlaunched game all carry the chrome now, and the
    server-rendered shell writes the tag from a constant of its own — so a tag
    bump that missed one of them would serve two builds of one chrome. */
 const SHARED_PAGES = [
   ...GAMES.map((g) => `${g.dir}/index.html`),
-  "index.html", "crossword/privacy.html", "crossword/how-to-play.html", "quickfire/index.html",
+  "index.html", "football/crossword/privacy.html", "football/crossword/how-to-play.html", "football/quickfire/index.html",
 ];
 const sharedRefsOf = (page) => page.split("shared/xi-").slice(1)
   .map((chunk) => chunk.split(String.fromCharCode(34))[0])

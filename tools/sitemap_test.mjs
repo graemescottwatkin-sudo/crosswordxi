@@ -13,8 +13,10 @@
  * that answers 404 spends crawl budget on nothing and teaches a crawler to
  * trust it less. So every check here is one or the other.
  */
+import { gameDir } from "../functions/_lib/permalink.js";
 import { onRequestGet as sitemap } from "../functions/sitemap.xml.js";
-import { permalinkRoute, todayKeyFor, PERMA_GAMES } from "../functions/_lib/permalink.js";
+import { permalinkRoute, todayKeyFor, PERMA_GAMES, gamePath, permalinkPath }
+  from "../functions/_lib/permalink.js";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
@@ -45,8 +47,9 @@ const env = {
   },
   ASSETS: {
     fetch: async (req) => {
-      const game = new URL(req.url || req).pathname.split("/").filter(Boolean)[0];
-      return new Response(fs.readFileSync(`${game}/index.html`, "utf8"),
+      const parts = new URL(req.url || req).pathname.split("/").filter(Boolean);
+      const game = parts[1] || parts[0];
+      return new Response(fs.readFileSync(`${gameDir(game)}/index.html`, "utf8"),
         { headers: { "Content-Type": "text/html" } });
     },
   },
@@ -75,12 +78,12 @@ for (const game of Object.keys(PERMA_GAMES)) {
   const want = kind === "number"
     ? Array.from({ length: Number(todayKeyFor(game)) }, (_, i) => String(i + 1))
     : RAN[game === "wordsearch" ? "ws_schedule" : "hl_schedule"];
-  const missing = want.filter((k) => !locs.includes(`https://www.thexigames.com/${game}/daily/${k}`));
+  const missing = want.filter((k) => !locs.includes(`https://www.thexigames.com${permalinkPath(game, k)}`));
   t(`${game}: all ${want.length} of its boards are listed`, missing.length === 0,
     missing.length ? "missing " + missing.slice(0, 4).join(", ") : want.length + " boards");
 }
 t("and each game's own front page is there",
-  Object.keys(PERMA_GAMES).every((g) => locs.includes(`https://www.thexigames.com/${g}/`)));
+  Object.keys(PERMA_GAMES).every((g) => locs.includes(`https://www.thexigames.com${gamePath(g)}`)));
 
 console.log("\nTrue: nothing in it answers 404");
 /* THE CHECK THAT PULLS THE OTHER WAY. Every board URL listed is fetched
@@ -91,11 +94,13 @@ console.log("\nTrue: nothing in it answers 404");
   const boards = locs.filter((u) => u.includes("/daily/"));
   const bad = [];
   for (const u of boards) {
-    const [, game, , key] = new URL(u).pathname.split("/");
+    /* /football/<game>/daily/<key> — the theme leads, so the game is the
+       second segment and the key the fourth. */
+    const [, , game, , key] = new URL(u).pathname.split("/");
     const r = await permalinkRoute({
       request: new Request(u), env, params: { path: [key] },
     }, game);
-    if (r.status !== 200) bad.push(`${game}/${key} -> ${r.status}`);
+    if (r.status !== 200) bad.push(`${gameDir(game)}/${key} -> ${r.status}`);
   }
   t(`every one of the ${boards.length} board urls is served by the route`,
     bad.length === 0, bad.slice(0, 4).join(", ") || "all 200");
@@ -105,14 +110,14 @@ console.log("\nAnd what it must never carry");
 {
   const future = Object.keys(PERMA_GAMES).map((g) => {
     const k = todayKeyFor(g);
-    return `https://www.thexigames.com/${g}/daily/${
-      PERMA_GAMES[g].kind === "number" ? String(Number(k) + 1) : "2099-01-01"}`;
+    return `https://www.thexigames.com${permalinkPath(g,
+      PERMA_GAMES[g].kind === "number" ? String(Number(k) + 1) : "2099-01-01")}`;
   });
   t("tomorrow's board is not named", future.every((u) => !locs.includes(u)),
     "the future is shut, and a sitemap naming it leaks the schedule");
   /* A day inside the range but not scheduled: the hole in RAN above. */
   t("a day a dated game did not run is not named",
-    !locs.includes("https://www.thexigames.com/wordsearch/daily/2026-09-02"),
+    !locs.includes("https://www.thexigames.com/football/wordsearch/daily/2026-09-02"),
     "2026-09-02 sits between two days that DID run");
   const UNRELEASED = ["quickfire", "missing", "transfer", "kit", "manager", "stadium"];
   t("no unreleased game appears",

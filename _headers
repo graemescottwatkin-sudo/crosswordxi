@@ -45,29 +45,29 @@
 /index.html
   Cache-Control: no-store
 
-/crossword/
+/football/crossword/
   Cache-Control: no-store
 
-/crossword/index.html
+/football/crossword/index.html
   Cache-Control: no-store
 
-/crossword/css/*
+/football/crossword/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/crossword/js/*
+/football/crossword/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # XI Word Search — same three rules as the crossword, one pair per game.
-/wordsearch/
+/football/wordsearch/
   Cache-Control: no-store
 
-/wordsearch/index.html
+/football/wordsearch/index.html
   Cache-Control: no-store
 
-/wordsearch/css/*
+/football/wordsearch/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/wordsearch/js/*
+/football/wordsearch/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # The shared token layer. Immutable is safe because every reference carries a
@@ -80,16 +80,16 @@
   X-Robots-Tag: noindex
 
 # QuickFire XI — the same three rules again, one pair per game.
-/quickfire/
+/football/quickfire/
   Cache-Control: no-store
 
-/quickfire/index.html
+/football/quickfire/index.html
   Cache-Control: no-store
 
-/quickfire/css/*
+/football/quickfire/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/quickfire/js/*
+/football/quickfire/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # The shared token layer. Immutable is safe because every reference carries a
@@ -104,16 +104,16 @@
 # Scrambled XI — the same three rules again, one pair per game. A game added
 # without them pairs new markup with a month-old stylesheet and the only sign
 # is a cache header quietly reverting to the Pages default.
-/scrambled/
+/football/scrambled/
   Cache-Control: no-store
 
-/scrambled/index.html
+/football/scrambled/index.html
   Cache-Control: no-store
 
-/scrambled/css/*
+/football/scrambled/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/scrambled/js/*
+/football/scrambled/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # Vowels XI — the same three rules again, one pair per game. Its page and
@@ -121,42 +121,42 @@
 # they need their own block; config.js and scoring.js are loaded from
 # /scrambled/js/ and are covered by that game's block, which is the point of
 # loading them from there rather than copying them.
-/vowels/
+/football/vowels/
   Cache-Control: no-store
 
-/vowels/index.html
+/football/vowels/index.html
   Cache-Control: no-store
 
-/vowels/css/*
+/football/vowels/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/vowels/js/*
+/football/vowels/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # HiLo XI — the same three rules again, one pair per game.
-/hilo/
+/football/hilo/
   Cache-Control: no-store
 
-/hilo/index.html
+/football/hilo/index.html
   Cache-Control: no-store
 
-/hilo/css/*
+/football/hilo/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/hilo/js/*
+/football/hilo/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # QuickFire XI — the same three rules again, one pair per game.
-/quickfire/
+/football/quickfire/
   Cache-Control: no-store
 
-/quickfire/index.html
+/football/quickfire/index.html
   Cache-Control: no-store
 
-/quickfire/css/*
+/football/quickfire/css/*
   Cache-Control: public, max-age=31536000, immutable
 
-/quickfire/js/*
+/football/quickfire/js/*
   Cache-Control: public, max-age=31536000, immutable
 
 # The shared token layer. Immutable is safe because every reference carries a

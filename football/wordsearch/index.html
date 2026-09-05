@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4F5F2">
+<title>Wordsearch XI — the daily football word search | The XI Games</title>
+<meta name="description" content="Find the XI in a daily football word search. Eleven names, one hidden bonus and 114 points to play for. A new board every day from The XI Games.">
+<!-- Same shape and same green as the crossword's, with this game's motif: a
+     letter grid with the found-word strike through it. Inline, like the
+     crossword's, because a data: URI is not a request and cannot 404 — and
+     because a file here would be a fourth tagged asset for the gate to police
+     for one icon. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%231E6B45'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='5' height='5' opacity='.45'/%3E%3Crect x='13.5' y='6' width='5' height='5' opacity='.45'/%3E%3Crect x='21' y='6' width='5' height='5'/%3E%3Crect x='6' y='13.5' width='5' height='5' opacity='.45'/%3E%3Crect x='13.5' y='13.5' width='5' height='5'/%3E%3Crect x='21' y='13.5' width='5' height='5' opacity='.45'/%3E%3Crect x='6' y='21' width='5' height='5'/%3E%3Crect x='13.5' y='21' width='5' height='5' opacity='.45'/%3E%3Crect x='21' y='21' width='5' height='5' opacity='.45'/%3E%3C/g%3E%3Cpath d='M24 8 L8 24' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E">
+<link rel="canonical" href="https://www.thexigames.com/football/wordsearch/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.thexigames.com/football/wordsearch/">
+<meta property="og:title" content="Wordsearch XI — the daily football word search">
+<meta property="og:description" content="Eleven names, one hidden bonus, 114 points. A new board every day.">
+<meta property="og:site_name" content="The XI Games">
+<meta property="og:image" content="https://www.thexigames.com/football/wordsearch/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Wordsearch XI — the daily football word search">
+<meta name="twitter:description" content="Eleven names, one hidden bonus, 114 points. A new board every day.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication",
+ "name":"Wordsearch XI","applicationCategory":"Game",
+ "url":"https://www.thexigames.com/football/wordsearch/",
+ "operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},
+ "publisher":{"@type":"Organization","name":"The XI Games","url":"https://www.thexigames.com/"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/xi-tokens.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-landing.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-chrome.css?v=v21">
+<link rel="stylesheet" href="/shared/xi-share.css?v=v21">
+<!-- The theme, stamped before first paint: light unless the player chose
+     dark, decided in one shared place for every page of the family. -->
+<script src="/shared/xi-theme.js?v=v21"></script>
+<link rel="stylesheet" href="css/style.css?v=v002h">
+</head>
+<body>
+
+<!-- One H1 on the page, first in the body, and it says what the game is.
+     The board title is an h2: the theme changes daily; what the page IS
+     does not. -->
+<!-- The shared bar. The burger and the wordmark are inserted by
+     shared/xi-chrome.js so that every game's bar is the same bar rather than
+     two that happen to look alike. The family navigation that used to live
+     here is in the drawer now: the bar holds THIS game, the drawer holds the
+     squad. -->
+<header class="xic-bar">
+  <div class="xic-right">
+    <button class="xic-ghost" id="wsHowTo" data-optional>How to play</button>
+  </div>
+</header>
+
+<!-- THE LANDING, THE FAMILY'S. The layout, the type and the spacing are
+     shared/xi-landing.css — the same file the crossword opens on — so this is
+     the same page with this game's content in it, not a second design that
+     resembles it. The card this replaces was the generation before: a centred
+     panel with two mode tiles, which is why the two games looked unrelated. -->
+<!-- One H1, first in the body, saying what the game is. The landing shows
+     the name in the masthead, which is a div because it is furniture; the
+     heading a screen reader and a search engine read is this. -->
+<h1 class="sr-only">Wordsearch XI &mdash; the daily football word search</h1>
+
+<header class="site-head" id="wsHead">
+  <div class="site-bar">
+    <div class="site-mast">Wordsearch <span class="site-xi">XI</span></div>
+    <nav class="site-nav">
+      <button class="on" id="navToday">Today</button>
+      <button id="navThemes">Themes</button>
+      <a class="site-navlink" href="/football/wordsearch/answers/">Answers</a>
+    </nav>
+  </div>
+</header>
+
+<section class="prematch" id="prematch">
+  <div class="site-wrap">
+    <p class="site-lede">Eleven football names hidden in the grid. One secret
+       bonus. A new word search every day.</p>
+
+    <div class="site-grid">
+      <div class="site-main">
+        <!-- Today. The one thing on the page with weight, because it is the
+             one thing most people came for. -->
+        <button class="home-choice hero" id="homeDaily">
+          <span class="hc-kicker">TODAY</span>
+          <span class="hc-title">Today&rsquo;s word search</span>
+          <span class="hc-note">One grid, the same for everyone. The clock counts.</span>
+          <span class="hc-state" id="homeDailyState"></span>
+          <span class="hc-cta">Kick off</span>
+        </button>
+      </div>
+
+      <aside class="site-side">
+        <!-- Where the run has got to. Drawn by the shared chrome, so a win
+             looks the same here as it does on the crossword. -->
+        <div class="side-card">
+          <div class="sc-kicker">YOUR FORM</div>
+          <div class="sc-title" id="homeRunTitle">No run yet</div>
+          <div class="home-run" id="homeRun"></div>
+        </div>
+
+        <div class="side-card">
+          <div class="sc-kicker">PLAY AS</div>
+          <div class="home-club">
+            <select id="homeClubSelect" title="Choose your club (optional)"></select>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="site-sec">OTHER BOARDS</div>
+    <div class="site-row">
+      <button class="home-choice col" id="homeFeatured">
+        <span class="hc-kicker">BOARD OF THE WEEK</span>
+        <span class="hc-title" id="homeFeaturedName">&mdash;</span>
+        <span class="hc-note">One pick from the themes, changed every Monday.</span>
+        <span class="hc-state" id="homeFeaturedState"></span>
+        <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/>
+          <path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M12 13v4"/><path d="M9 20h6"/>
+          <path d="M10 17h4l1 3H9l1-3Z"/>
+        </svg>
+      </button>
+
+      <!-- A link, because it goes somewhere: the themes are pages now, at
+           /football/wordsearch/themes/, the same shape as the crossword's clubs. The
+           two-select drawer this replaced could not be linked to, searched
+           for, or read by anyone who had not already found the game. -->
+      <a class="home-choice col" id="homeThemed" href="/football/wordsearch/themes/">
+        <span class="hc-kicker">CLUBS AND THEMES</span>
+        <span class="hc-title">Browse every board</span>
+        <span class="hc-note">Club sides, eras, finals and nations.</span>
+        <span class="hc-state" id="homeThemedState"></span>
+        <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+          <rect x="9" y="9" width="6" height="6" fill="currentColor" opacity=".25" stroke="none"/>
+        </svg>
+      </a>
+
+      <button class="home-choice col" id="homePrevious" aria-expanded="false" aria-controls="archivePanel">
+        <span class="hc-kicker">PREVIOUS PUZZLES</span>
+        <span class="hc-title" id="homePreviousCount">Every day so far</span>
+        <span class="hc-note">One more every day. Replay any of them &mdash;
+          only today&rsquo;s keeps a run going.</span>
+        <svg class="hc-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5v4h4"/><path d="M3.5 9A9 9 0 1 1 4 15"/><path d="M12 8v4l3 2"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- PREVIOUS PUZZLES, by day. A list rather than the crossword's calendar
+         because a word search has a name: "Brazil — 2002 World Cup" is the
+         reason to pick a day, and a calendar cell cannot say it. Newest first;
+         a day you played as your daily shows its score, the rest are there to
+         play. Filled from /api/wordsearch/archive, which stops at yesterday. -->
+    <div class="archive hidden" id="archivePanel">
+      <div class="arch-head">
+        <span class="site-sec">PREVIOUS PUZZLES</span>
+        <span class="arch-sub" id="archiveSub"></span>
+      </div>
+      <ol class="arch-list" id="archiveList"></ol>
+    </div>
+
+    <p class="legal">Unofficial football game. Not affiliated with or endorsed by any club, league, competition or governing body.<br>
+       <strong>The XI Games &middot; <span id="buildTag"></span></strong></p>
+  </div>
+</section>
+
+<div class="app hidden" id="gameApp">
+  <div class="toolbar">
+    <div class="menuWrap">
+      <button class="btn" id="gameBtn" aria-haspopup="true" aria-expanded="false">Game ▾</button>
+      <div class="menuPanel hidden" id="gameMenu" role="menu">
+        <button class="menuRow" data-act="daily">Team of the day</button>
+        <button class="menuRow" data-act="themes">Clubs and themes</button>
+        <button class="menuRow" data-act="menu">Back to menu</button>
+        <div class="menuVer" id="menuVer"></div>
+      </div>
+    </div>
+    <!-- Help lives here and only here — a card is a decision, not furniture
+         beside the board. All four are Free Play only. -->
+    <div class="menuWrap">
+      <button class="btn" id="helpBtn" aria-haspopup="true" aria-expanded="false">Help ▾</button>
+      <div class="menuPanel hidden" id="helpMenu" role="menu">
+        <button class="menuRow" data-help="auto">Auto-fill <span class="menuMeta" data-base="one word">one word</span></button>
+        <button class="menuRow" data-help="first">First letter <span class="menuMeta" data-base="flash">flash</span></button>
+        <button class="menuRow" data-help="live">Live letter <span class="menuMeta" data-base="one square">one square</span></button>
+        <button class="menuRow" data-help="var">VAR review <span class="menuMeta" data-base="30 sec">30 sec</span></button>
+        <div class="menuNote" id="helpNote"></div>
+      </div>
+    </div>
+    <div class="menuWrap">
+      <button class="btn" id="zoomBtn" aria-haspopup="true" aria-expanded="false">Board ▾</button>
+      <div class="menuPanel hidden" id="zoomMenu" role="menu">
+        <button class="menuRow" data-zoom="in">Zoom board in <span class="menuMeta">+</span></button>
+        <button class="menuRow" data-zoom="out">Zoom board out <span class="menuMeta">−</span></button>
+        <button class="menuRow" data-zoom="reset">Reset board zoom</button>
+        <div class="menuNote">Zooming the board leaves the rest of the page alone. Pinch the grid does the same.</div>
+      </div>
+    </div>
+    <button class="btn" id="shareBtn">Share</button>
+    <div class="menuWrap right">
+      <button class="btn cog" id="setBtn" aria-haspopup="true" aria-expanded="false" aria-label="Settings">⚙</button>
+      <!-- NO MENU OF ITS OWN. Both its rows already existed elsewhere: Theme
+           is in the family's Settings menu in the bar, and Back to menu is in
+           the Game menu two buttons along. Two controls for one setting on
+           one page is the thing that stops a family of games reading as one
+           site, so the cog opens the family's menu, as the crossword's does. -->
+    </div>
+  </div>
+
+  <div class="matchHead">
+    <div class="matchTitle">
+      <div class="eyebrow" id="modeLabel">Team of the day</div>
+      <h2 id="themeTitle"></h2>
+    </div>
+    <div class="scoreCluster">
+      <div class="clock" id="clock">0'</div>
+      <div class="scoreBox"><span class="scoreVal" id="score">104</span><span class="scoreStar" id="scoreStar">☆</span><span class="scoreOf">/ 114</span></div>
+    </div>
+  </div>
+  <div class="varBanner hidden" id="varBanner"><b>VAR review</b><strong id="varCountdown">30s</strong><span>match clock stopped</span></div>
+
+  <!-- The board is the bottom of the used space. .main's height is the grid's
+       height; the panel on the right is clamped to it and scrolls inside.
+       Nothing renders below the board. -->
+  <main class="main" id="main">
+    <section class="boardWrap" id="boardWrap" aria-label="Word search board">
+      <div class="gridShell" id="gridShell">
+        <div class="grid" id="grid"><div class="highlightLayer" id="highlightLayer"></div></div>
+        <!-- KICK OFF, ON THE BOARD. A board reached from its themes page, the
+             board of the week or a previous day opens HERE, named, with the
+             letters and the eleven covered and the clock waiting. A card on
+             the landing was the first version: it sent a person who had
+             just chosen a board back to the front page to choose it again. -->
+        <div class="kickCover hidden" id="kickCover">
+          <div class="kickCard">
+            <span class="hc-kicker" id="kickKicker">BOARD</span>
+            <div class="kickTitle" id="kickTitle">&mdash;</div>
+            <div class="kickNote" id="kickNote"></div>
+            <button class="kick" id="kickBtn" type="button">Kick off</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <aside class="side" id="side">
+      <div class="sideHead">
+        <h3>The XI</h3>
+        <div class="foundCount"><strong id="count">0</strong><span>of 11</span></div>
+      </div>
+      <div class="progress"><div id="progress"></div></div>
+      <div class="words" id="wordList" tabindex="0" aria-label="Names to find"></div>
+      <div class="bonusBox" id="bonusBox">
+        <div class="bonusTitle">★ Secret bonus</div>
+        <div class="bonusState" id="bonusState">Undiscovered</div>
+        <div class="bonusSub" id="bonusSub">Hidden in the grid · +10 points</div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="finishPrompt" id="finishPrompt"><strong>XI complete.</strong> Keep hunting for the secret bonus?
+    <span class="finishBtns"><button class="action" id="keepBtn">Keep hunting</button><button class="action gold" id="finishBtn">Full time</button></span>
+  </div>
+</div>
+
+<div class="overlay" id="result">
+  <div class="modal">
+    <h2>Full time</h2>
+    <div class="big" id="resultScore">114</div>
+    <div class="resultEquation" id="resultEquation"></div>
+    <p id="resultLine"></p>
+    <div class="resultMissed hidden" id="resultMissed"></div>
+    <div class="stats">
+      <div class="stat"><b id="resultClock">0'</b><span>Match clock</span></div>
+      <div class="stat"><b id="resultFound">11/11</b><span>XI found</span></div>
+      <div class="stat"><b id="resultBonus">—</b><span>Bonus</span></div>
+    </div>
+    <button class="kick" id="againBtn">Play another</button>
+    <div id="shareRow"></div>
+    <button class="action quiet" id="resultMenuBtn">Back to menu</button>
+  </div>
+</div>
+<div class="penaltyPop" id="penaltyPop">FOUL +1'</div>
+<div class="toast" id="toast">Copied</div>
+
+<footer class="xic-foot"></footer>
+<script src="/shared/xi-clubs.js?v=v21"></script>
+<script src="/shared/xi-chrome.js?v=v21"></script>
+<script src="/shared/xi-plays.js?v=v21"></script>
+<script src="/shared/xi-share.js?v=v21"></script>
+<script src="js/game.js?v=v002h"></script>
+</body>
+</html>

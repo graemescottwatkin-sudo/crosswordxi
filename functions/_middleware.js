@@ -6,7 +6,7 @@
  * from GET: a handler exporting only onRequestGet never sees a HEAD request,
  * so it fell through to the static handler and 404'd. Static pages answered
  * HEAD fine, which is exactly why nobody noticed — the crawler-facing pages
- * that diverged were the Function-served ones, and /crossword/answers/ is IN
+ * that diverged were the Function-served ones, and /football/crossword/answers/ is IN
  * the sitemap at priority 0.7. With the wordsearch archive now live, every
  * answers page in BOTH games had this. The fix is the only honest HEAD there
  * is: run the GET, keep the status and headers, drop the body.

@@ -12,16 +12,16 @@ shirt of an eleven-game squad; the others are named on launch, not before.
 
 ## URLs — the move happened
 
-The game lives at **`https://www.thexigames.com/crossword/`** as of 26 August
+The game lives at **`https://www.thexigames.com/football/crossword/`** as of 26 August
 2026. The subdomain `crossword.thexigames.com` 301s there via a zone Redirect
 Rule, tokens preserved; the apex does the same. One hostname owns the site:
 
 | | |
 |---|---|
-| the game | `/crossword/` |
-| how to play | `/crossword/how-to-play/` |
-| a past daily | `/crossword/daily/<yyyy-mm-dd>/` |
-| a club board | `/crossword/club/<slug>/` |
+| the game | `/football/crossword/` |
+| how to play | `/football/crossword/how-to-play/` |
+| a past daily | `/football/crossword/daily/<yyyy-mm-dd>/` |
+| a club board | `/football/crossword/club/<slug>/` |
 
 Dates rather than daily numbers in the archive URLs: a number means nothing to
 anyone outside the game and changes if the epoch ever moves, while a date is
@@ -42,13 +42,13 @@ Done since the move, at the final address:
 
 - `sitemap.xml` — live at the root, lists the hub, the game pages and the
   answers index
-- `/crossword/answers/` — a page per board once it is more than seven days
+- `/football/crossword/answers/` — a page per board once it is more than seven days
   old, rendered from D1, sealed boards refused; the archive calendar and the
   board strap link into it
 - hub ↔ game internal links, canonicals on every page, FAQ markup on
   how-to-play
 
-Still to come at this address: club landing pages (`/crossword/clubs/…`),
+Still to come at this address: club landing pages (`/football/crossword/clubs/…`),
 directory listings and outreach.
 
 ### While on a subdomain

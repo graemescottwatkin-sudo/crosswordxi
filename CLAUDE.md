@@ -6,8 +6,8 @@ every rule below exists because its absence cost a real release.
 ## What this is
 
 A family of football-themed daily puzzle games at **thexigames.com**, targeting
-eleven titles. Live: **Crossword XI** (`/crossword/`) and **Wordsearch XI**
-(`/wordsearch/`). Cloudflare Pages + D1 (database `crosswordxi`) + Functions at
+eleven titles. Live: **Crossword XI** (`/football/crossword/`) and **Wordsearch XI**
+(`/football/wordsearch/`). Cloudflare Pages + D1 (database `crosswordxi`) + Functions at
 the repo root, shared by all games. The hub is `/index.html`; shared assets in
 `shared/` (tokens, chrome). No package.json in the repo — Pages must not build.
 
@@ -90,13 +90,13 @@ and diagnose before anything ships. Never push past a red gate.
 - Totals only from CI-shaped runs: suites run **from the repo root**, after
   `npm install -D jsdom acorn --no-save`, and node_modules removed again before
   gates. Suite roster is in `.github/workflows/checks.yml`; the gate asserts
-  every `*_test.mjs` in `crossword/`, `wordsearch/`, `tools/` is named there.
+  every `*_test.mjs` in `football/crossword/`, `football/wordsearch/`, `tools/` is named there.
 - `tools/aligned_test.mjs` is the cross-game contract. **A new game is a row in
   its GAMES table** (dir, team-sheet name, storage prefix); its failures are
   the integration checklist. Run it first when integrating a game.
 - Browser suites (`render_test`, `journey_test`, `signin_test`) run in the CI
   render job, not offline. `render_test` needs
-  `BASE=http://127.0.0.1:8788/crossword/` against `wrangler pages dev`.
+  `BASE=http://127.0.0.1:8788/football/crossword/` against `wrangler pages dev`.
 
 ## One fact, one place (the project's core principle)
 

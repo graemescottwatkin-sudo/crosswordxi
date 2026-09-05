@@ -14,8 +14,8 @@
  * did before a score could be verified, and the Full Time card keeps saying
  * the number is the device's own.
  */
-import SCX_SCORING from "../../scrambled/js/scoring.js";
-import SCX_CONFIG from "../../scrambled/js/config.js";
+import SCX_SCORING from "../../football/scrambled/js/scoring.js";
+import SCX_CONFIG from "../../football/scrambled/js/config.js";
 import { loadBoards, boardForToken, tokenCypher } from "./sc-board.js";
 
 /* THE RULE AND THE PRICES ARE THE PAGE'S OWN FILES, imported rather than

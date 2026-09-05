@@ -20,24 +20,24 @@
 /* THE SHARED LAYER'S TAG, as every page carries it in its ?v=. One more
    place the tag is written; tools/aligned_test.mjs asserts it agrees with the
    pages, so it cannot fall behind them quietly. */
-export const SHARED_TAG = "v20";
+export const SHARED_TAG = "v21";
 
 /* What each game's masthead says and where its tabs go. The current tab is
    marked by path; a page with no game (a hub-level page) gets no masthead. */
 const MAST = {
   crossword: {
-    name: "Crossword", home: "/crossword/",
-    nav: [["Today", "/crossword/"], ["Clubs", "/crossword/clubs/"],
-          ["Answers", "/crossword/answers/"], ["How to play", "/crossword/how-to-play"]],
+    name: "Crossword", home: "/football/crossword/",
+    nav: [["Today", "/football/crossword/"], ["Clubs", "/football/crossword/clubs/"],
+          ["Answers", "/football/crossword/answers/"], ["How to play", "/football/crossword/how-to-play"]],
   },
   wordsearch: {
-    name: "Wordsearch", home: "/wordsearch/",
-    nav: [["Today", "/wordsearch/"], ["Themes", "/wordsearch/themes/"],
-          ["Answers", "/wordsearch/answers/"], ["How to play", "/crossword/how-to-play"]],
+    name: "Wordsearch", home: "/football/wordsearch/",
+    nav: [["Today", "/football/wordsearch/"], ["Themes", "/football/wordsearch/themes/"],
+          ["Answers", "/football/wordsearch/answers/"], ["How to play", "/football/crossword/how-to-play"]],
   },
   hilo: {
-    name: "HiLo", home: "/hilo/",
-    nav: [["Today", "/hilo/"], ["Clubs", "/hilo/clubs/"], ["How to play", "/hilo/#how"]],
+    name: "HiLo", home: "/football/hilo/",
+    nav: [["Today", "/football/hilo/"], ["Clubs", "/football/hilo/clubs/"], ["How to play", "/football/hilo/#how"]],
   },
 };
 

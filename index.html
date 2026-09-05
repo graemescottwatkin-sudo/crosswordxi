@@ -44,7 +44,7 @@
     {
       "@type": "WebApplication",
       "name": "Crossword XI",
-      "url": "https://www.thexigames.com/crossword/",
+      "url": "https://www.thexigames.com/football/crossword/",
       "applicationCategory": "GameApplication",
       "operatingSystem": "Any",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
@@ -57,7 +57,7 @@
 <meta property="og:description" content="Eleven daily football puzzles. A new board every day.">
 <meta property="og:url" content="https://www.thexigames.com/">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://www.thexigames.com/crossword/og-image.png">
+<meta property="og:image" content="https://www.thexigames.com/football/crossword/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23123B27'/%3E%3Ctext x='16' y='22' font-family='Arial Narrow,Arial' font-size='15' font-weight='700' fill='%23F2C94C' text-anchor='middle'%3EXI%3C/text%3E%3C/svg%3E">
 <!-- THE FAMILY SHELL. The hub carried a copy of the palette "straight from
@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v20">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v20">
-<script src="shared/xi-theme.js?v=v20"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v21">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v21">
+<script src="shared/xi-theme.js?v=v21"></script>
 <style>
 :root{
 
@@ -225,19 +225,19 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
     <p class="date" id="sheetDate">Today</p>
 
     <div class="xi-strip">
-      <a class="shirt live" id="shirt1" href="/crossword/" title="Crossword XI" aria-label="Crossword XI">
+      <a class="shirt live" id="shirt1" href="/football/crossword/" title="Crossword XI" aria-label="Crossword XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><rect x="9" y="9" width="6" height="6" fill="currentColor" stroke="none"/></svg></a>
-      <a class="shirt live" id="shirt2" href="/wordsearch/" title="Wordsearch XI" aria-label="Wordsearch XI">
+      <a class="shirt live" id="shirt2" href="/football/wordsearch/" title="Wordsearch XI" aria-label="Wordsearch XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><path d="M3 8h18M3 16h18M8 3v18M16 3v18" opacity=".5"/><rect x="2.6" y="9.4" width="18.8" height="5.2" rx="2.6" transform="rotate(-42 12 12)"/></svg></a>
-      <a class="shirt live" id="shirt3" href="/scrambled/" title="Scrambled XI" aria-label="Scrambled XI">
+      <a class="shirt live" id="shirt3" href="/football/scrambled/" title="Scrambled XI" aria-label="Scrambled XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><rect x="2.6" y="7" width="7.4" height="7.4" rx="1.4" transform="rotate(-13 6.3 10.7)"/><rect x="13.4" y="4.6" width="7.4" height="7.4" rx="1.4" transform="rotate(11 17.1 8.3)"/><rect x="8.4" y="14" width="7.4" height="7.4" rx="1.4" fill="currentColor" fill-opacity=".35" transform="rotate(-6 12.1 17.7)"/></svg></a>
-      <a class="shirt live" id="shirt4" href="/hilo/" title="HiLo XI" aria-label="HiLo XI">
+      <a class="shirt live" id="shirt4" href="/football/hilo/" title="HiLo XI" aria-label="HiLo XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><path d="M6.5 9.5 12 4l5.5 5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 15.5 12 21l5.5-5.5" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></svg></a>
-      <a class="shirt live" id="shirt5" href="/vowels/" title="Vowels XI" aria-label="Vowels XI">
+      <a class="shirt live" id="shirt5" href="/football/vowels/" title="Vowels XI" aria-label="Vowels XI">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
              stroke-width="1.9"><path d="M4 8h4M10 8h4M16 8h4" stroke-linecap="round"/><path d="M4 13h4M16 13h4" stroke-linecap="round"/><path d="M10 12.4v1.2" stroke-linecap="round" opacity=".45"/><path d="M4 18h16" stroke-linecap="round" opacity=".35"/></svg></a>
       <span class="shirt soon" title="Not out yet">6</span>
@@ -271,8 +271,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
         <div class="body">
           <p>A daily football crossword. Eleven clues drawn from the history of the game.</p>
-          <a class="btn primary" href="/crossword/">Play today</a>
-          <a class="btn" href="/crossword/#archive">Past puzzles</a>
+          <a class="btn primary" href="/football/crossword/">Play today</a>
+          <a class="btn" href="/football/crossword/#archive">Past puzzles</a>
         </div>
       </article>
 
@@ -288,7 +288,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
         <div class="body">
           <p>A daily football word search. Eleven to find in the grid, plus a hidden bonus word.</p>
-          <a class="btn primary" href="/wordsearch/">Play today</a>
+          <a class="btn primary" href="/football/wordsearch/">Play today</a>
         </div>
       </article>
 
@@ -308,7 +308,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
         <div class="body">
           <p>A daily football anagram. Eleven scrambled names in their real positions, on a ninety-minute clock.</p>
-          <a class="btn primary" href="/scrambled/">Play today</a>
+          <a class="btn primary" href="/football/scrambled/">Play today</a>
         </div>
       </article>
 
@@ -324,7 +324,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
         <div class="body">
           <p>One stat, eleven calls. Higher or lower, earlier or later, three substitutions.</p>
-          <a class="btn primary" href="/hilo/">Play today</a>
+          <a class="btn primary" href="/football/hilo/">Play today</a>
         </div>
       </article>
 
@@ -341,7 +341,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         </div>
         <div class="body">
           <p>The same eleven names, in the right order with the vowels taken out. Fill them back in before the whistle.</p>
-          <a class="btn primary" href="/vowels/">Play today</a>
+          <a class="btn primary" href="/football/vowels/">Play today</a>
         </div>
       </article>
 
@@ -369,7 +369,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
          familiar before the name ever appears. The status line is the only
          thing that moves. -->
     <div class="soon-grid">
-      <a class="soon-card open" href="/quickfire/" rel="nofollow"
+      <a class="soon-card open" href="/football/quickfire/" rel="nofollow"
          title="In testing — not finished, and not yet a daily game">
         <span class="sq" style="background:var(--kit-06)">6</span>
         <span class="nm">Number six<span>In testing</span></span>
@@ -418,7 +418,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
        the competition: eleven answers a day, scored out of 114 &mdash; the
        points available across a 38-match season &mdash; with wins, draws and
        losses that build a league table of your own season.</p>
-    <p><a href="/crossword/">Crossword XI</a> wears the number one shirt: a
+    <p><a href="/football/crossword/">Crossword XI</a> wears the number one shirt: a
        daily football crossword with eleven clues drawn from the history of
        the game &mdash; title winners, transfers, grounds, nicknames and the
        players everyone half-remembers. The clock starts when the board opens
@@ -436,7 +436,7 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-chrome.js?v=v20"></script>
+<script src="shared/xi-chrome.js?v=v21"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
