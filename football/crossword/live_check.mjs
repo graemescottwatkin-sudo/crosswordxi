@@ -43,7 +43,12 @@ let pass = 0, fail = 0, warn = 0;
    The uncaughtException hook is load-bearing: a rejection out of top-level
    await terminates by a path that never runs 'exit' listeners, so a guard
    hung on 'exit' alone stays as silent as the bug it is meant to catch. */
-const MIN_ASSERTIONS = 37;
+/* FORTY-EIGHT run with --expect, forty-seven without — the tag assertion is
+   the one that legitimately skips, so forty-seven is the honest floor.
+   Reviewed on 5 Sep, when the floor was moved to the end of the file and could
+   see the whole run for the first time: it sat at 37 against a run of 48, and
+   before the move it was measuring a partial run anyway. */
+const MIN_ASSERTIONS = 47;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;
@@ -375,13 +380,6 @@ console.log(`
         cross-device sign-in         needs two devices
         srv_elapsed_secs populating  wrangler d1, not HTTP`);
 
-/* The floor, for a block that goes quiet without crashing. */
-const ran = pass + fail + warn;
-if (ran < MIN_ASSERTIONS) {
-  fail++;
-  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
-}
-reachedEnd = true;
 /* ---- the permalink: one URL, one puzzle, forever ---------------------- */
 /* The whole contract a linking bot depends on, checked against production:
    /football/crossword/daily lands on a dated address, that address serves the game, and a
@@ -427,6 +425,22 @@ reachedEnd = true;
   const future = await fetch(HUB + "/football/crossword/daily/99999", { redirect: "manual" });
   t("a board that does not exist yet is not a page", future.status === 404, String(future.status));
 }
+
+/* THE FLOOR AND THE END MARKER GO LAST, and until 5 Sep 2026 they did not.
+   Both sat two thirds of the way down this file, with forty more assertions
+   after them — so the floor counted a partial run and could never see the
+   whole thing, and `reachedEnd` was set before the last block, which left
+   everything after it outside the completion guard as well. A crash in the
+   permalink checks would have been reported as a clean finish.
+   Both nets are meant to catch a run that stops early. Armed early, they
+   catch nothing that happens late. */
+/* The floor, for a block that goes quiet without crashing. */
+const ran = pass + fail + warn;
+if (ran < MIN_ASSERTIONS) {
+  fail++;
+  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
+}
+reachedEnd = true;
 
 console.log(`\n${pass} passed, ${fail} failed${warn ? `, ${warn} unknown` : ""}`);
 process.exit(fail ? 1 : 0);

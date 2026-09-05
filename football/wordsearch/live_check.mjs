@@ -51,7 +51,12 @@ const w = (n, d) => { warn++; console.log(`  ??  ${n}${d ? "  — " + d : ""}`);
    the larger blocks vanishing at once (50 - 5 - 4 - 4 = 37), not all of them:
    36. A floor at 30 could not have noticed the themes and the archive, sixteen
    assertions, going missing together. */
-const MIN_ASSERTIONS = 36;
+/* FIFTY-NINE run with --expect, fifty-eight without — the tag assertion is
+   the one that legitimately skips. Fifty-eight is the honest floor.
+   Reviewed on 5 Sep when the leak checks were added, rather than raised by
+   reflex: it sat at 36 against a run of 57, twenty-one below, which could not
+   have refused a whole block going quiet — the one job the floor has. */
+const MIN_ASSERTIONS = 58;
 let reachedEnd = false, announced = false;
 function incomplete() {
   if (announced) return;
@@ -168,12 +173,30 @@ t("the board comes from D1, not the sample fallback",
   !!d && d.source === "d1", d && "source: " + d.source);
 t("eleven answers, which is the whole premise",
   !!(d && d.puzzle && d.puzzle.answers && d.puzzle.answers.length === 11));
-t("and a bonus", !!(d && d.puzzle && d.puzzle.bonus && d.puzzle.bonus.display));
-t("placements are 0-based on the wire",
-  !!(d && d.puzzle && d.puzzle.answers.every((a) =>
-    a.placement.start_row >= 0 && a.placement.start_row <= 13 &&
-    a.placement.start_col >= 0 && a.placement.start_col <= 11)),
-  "rows 0-13, cols 0-11");
+t("and a bonus, as a clue and a length", (() => {
+  const b = d && d.puzzle && d.puzzle.bonus;
+  return !!(b && b.has === true && b.clue && b.len > 0);
+})(), d && d.puzzle && d.puzzle.bonus ? d.puzzle.bonus.clue : "no bonus");
+
+/* THE LEAK, GUARDED WHERE IT WAS OPEN. This asserted the opposite until
+   5 Sep 2026 — "placements are 0-based on the wire" — because the board
+   travelled whole and the page judged its own drags. It does not travel now:
+   the server judges a selection and hands back the placement of what it hit,
+   one word at a time. The offline suite proves the shaping; this proves what
+   PRODUCTION is actually serving, which is the only place the leak could
+   reopen. */
+t("no answer on the wire says where it is",
+  !!(d && d.puzzle && d.puzzle.answers.every((a) => a.placement === undefined)),
+  "the solving is knowing where; sending it is sending the answer");
+t("and the secret word is not on it either", (() => {
+  if (!d || !d.puzzle) return false;
+  /* The grid is set aside: every word IS in the grid, which is the puzzle
+     rather than a leak. What must not appear is the answer as a field. */
+  const noGrid = JSON.stringify({ ...d.puzzle, grid: undefined });
+  const b = d.puzzle.bonus || {};
+  return b.display === undefined && b.grid === undefined &&
+    !/"placement"|"start_row"|"direction"/.test(noGrid);
+})(), "the clue and the length are the hunt; the word is the answer");
 
 /* ---- the schedule guard ------------------------------------------------- */
 const cat = await get("/api/wordsearch/catalog");
@@ -343,13 +366,6 @@ for (const [path, wants] of [["/api/account/results?game=wordsearch", 401],
     `HTTP ${r.status}${r.status === 500 ? " — the query is broken, check the schema" : ""}`);
 }
 
-/* The floor, for a block that goes quiet without crashing. */
-const ran = pass + fail + warn;
-if (ran < MIN_ASSERTIONS) {
-  fail++;
-  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
-}
-reachedEnd = true;
 /* ---- the permalink: one URL, one puzzle, forever ---------------------- */
 /* The whole contract a linking bot depends on, checked against production:
    /football/wordsearch/daily lands on a dated address, that address serves the game, and a
@@ -386,6 +402,22 @@ reachedEnd = true;
   const future = await fetch(BASE + "/football/wordsearch/daily/2099-01-01", { redirect: "manual" });
   t("a board that does not exist yet is not a page", future.status === 404, String(future.status));
 }
+
+/* THE FLOOR AND THE END MARKER GO LAST, and until 5 Sep 2026 they did not.
+   Both sat two thirds of the way down this file, with forty more assertions
+   after them — so the floor counted a partial run and could never see the
+   whole thing, and `reachedEnd` was set before the last block, which left
+   everything after it outside the completion guard as well. A crash in the
+   permalink checks would have been reported as a clean finish.
+   Both nets are meant to catch a run that stops early. Armed early, they
+   catch nothing that happens late. */
+/* The floor, for a block that goes quiet without crashing. */
+const ran = pass + fail + warn;
+if (ran < MIN_ASSERTIONS) {
+  fail++;
+  console.log(`FAIL  the run is short — ${ran} assertion(s) ran, floor is ${MIN_ASSERTIONS}`);
+}
+reachedEnd = true;
 
 console.log(`\n${pass} passed, ${fail} failed${warn ? `, ${warn} unknown` : ""}`);
 process.exit(fail ? 1 : 0);
