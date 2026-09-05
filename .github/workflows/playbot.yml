@@ -6,31 +6,25 @@
 # own scoring rule to a real play, on a clock it kept, against fouls it
 # recorded. A shape rule cannot tell you that.
 #
-# NOT SCHEDULED YET, ON PURPOSE. It needs two things first, and both are the
-# owner's to do:
+# LIVE FROM 5 Sep 2026. The bot plays as ONE account, created by device code —
+# no name, no email, exactly the "a random string and some scores" case
+# functions/api/account/code.js describes — so excluding its plays from any
+# table ever built is one user_id, forever:
 #
-#   1. A bot ACCOUNT. Open any game, Settings, and take the device code — that
-#      is an account with no name and no email, exactly the "a random string and
-#      some scores" case functions/api/account/code.js describes. Use a code
-#      that is the bot's alone and is never linked to a real device.
-#   2. That code as the repository secret XI_BOT_CODE.
+#   5dcc40a3-3ef1-422a-8c21-ef90355f243c
 #
-# Then uncomment the `schedule` block below. Until both exist the bot refuses to
-# run rather than playing anonymously: ten sessions a night is ~3,650 rows a
-# year, half of them carrying a real verified score, and rows written without an
-# account could never afterwards be told apart from a player's. Excluding the
-# bot from any table ever built is one user_id — but only if every row had it
-# from the first run.
-#
-# It is left on workflow_dispatch in the meantime so it can be run by hand,
-# rather than scheduled to fail nightly until somebody notices.
+# The code itself is the repository secret XI_BOT_CODE and is never entered on
+# a real device. If it is missing the bot REFUSES to run rather than playing
+# anonymously: ten sessions a night is ~3,650 rows a year, half carrying a real
+# verified score, and rows written without an account could never afterwards be
+# told apart from a player's.
 name: Play bot
 
 on:
-  # schedule:
-  #   # 01:30 UTC — after the preflight at 01:10, so a board that is malformed is
-  #   # already reported and this is not the thing that finds it second.
-  #   - cron: "30 1 * * *"
+  schedule:
+    # 01:30 UTC — after the preflight at 01:10, so a board that is malformed is
+    # already reported and this is not the thing that finds it second.
+    - cron: "30 1 * * *"
   workflow_dispatch:
     inputs:
       games:
