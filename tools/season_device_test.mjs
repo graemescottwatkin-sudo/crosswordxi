@@ -342,9 +342,17 @@ console.log("\nAnd the hub's own block, run rather than read");
     inFlight: { day: DAY, provisional: "W", started: 2, finished: 2 },
   });
   t("an account's season is drawn from the server's own numbers",
-    acct.season.hidden === false && /P6/.test(acct.seasonLine.innerHTML) &&
-    /W2/.test(acct.seasonLine.innerHTML) && /9<\/b> pts/.test(acct.seasonLine.innerHTML),
+    acct.season.hidden === false &&
+    /<b>6<\/b> played/.test(acct.seasonLine.innerHTML) &&
+    /<b>2<\/b> won/.test(acct.seasonLine.innerHTML) &&
+    /<b>9<\/b> pts/.test(acct.seasonLine.innerHTML),
     acct.seasonLine.innerHTML.replace(/<[^>]+>/g, ""));
+  /* SPELT OUT, NOT LETTER-AND-NUMBER. "P0 W0 D0 L0" reads as PO WO DO LO in
+     the display face — four words and no numbers — which is what the owner
+     saw on the first day this shipped. */
+  t("and the labels are words, so no count can read as a letter",
+    !/P\d/.test(acct.seasonLine.innerHTML) && !/W\d/.test(acct.seasonLine.innerHTML),
+    "P0 in this typeface is indistinguishable from PO");
   t("with today shown as unsettled beside the settled run",
     acct.seasonForm.kids.length === 7 &&
     acct.seasonForm.kids[6].className.indexOf("now") > -1 &&
@@ -360,15 +368,34 @@ console.log("\nAnd the hub's own block, run rather than read");
      { day: "2026-09-03", started: 1, finished: 0 },
      { day: DAY, started: 1, finished: 0 }]);
   t("a device's season is computed from its own record, not the server's",
-    dev.season.hidden === false && /P3/.test(dev.seasonLine.innerHTML) &&
-    /W1/.test(dev.seasonLine.innerHTML) && /D1/.test(dev.seasonLine.innerHTML) &&
-    /L1/.test(dev.seasonLine.innerHTML) && /4<\/b> pts/.test(dev.seasonLine.innerHTML),
+    dev.season.hidden === false &&
+    /<b>3<\/b> played/.test(dev.seasonLine.innerHTML) &&
+    /<b>1<\/b> won/.test(dev.seasonLine.innerHTML) &&
+    /<b>1<\/b> drawn/.test(dev.seasonLine.innerHTML) &&
+    /<b>1<\/b> lost/.test(dev.seasonLine.innerHTML) &&
+    /<b>4<\/b> pts/.test(dev.seasonLine.innerHTML),
     dev.seasonLine.innerHTML.replace(/<[^>]+>/g, ""));
   t("and today is still in flight on that branch too",
     dev.seasonForm.kids.length === 4 &&
     dev.seasonForm.kids[3].className.indexOf("now") > -1 &&
     dev.seasonForm.kids[3].textContent === "L",
     dev.seasonForm.kids.map((k) => k.textContent).join(""));
+
+  /* A SEASON UNDER WAY WITH NOTHING SETTLED must not recite four zeroes.
+     A player who kicked off an hour ago has a season and no result in it, and
+     "0 played 0 won 0 drawn 0 lost" is both ugly and, in this typeface,
+     unreadable. It says the first result is pending, which is the truth. */
+  const dayOne = await render({ account: false, today: DAY },
+    [{ day: DAY, started: 2, finished: 2 }]);
+  t("a season with nothing settled says so rather than printing zeroes",
+    /first result pending/.test(dayOne.seasonLine.innerHTML) &&
+    !/0/.test(dayOne.seasonLine.innerHTML),
+    dayOne.seasonLine.innerHTML.replace(/<[^>]+>/g, ""));
+  t("and today still shows as the provisional result it would be",
+    dayOne.seasonForm.kids.length === 1 &&
+    dayOne.seasonForm.kids[0].textContent === "W" &&
+    dayOne.seasonForm.kids[0].className.indexOf("now") > -1,
+    "two finished today is a win, once the day is over");
 
   /* THE INVITATION, which is what the owner asked for: "there should be a
      message to play your 1st game to start your season." */

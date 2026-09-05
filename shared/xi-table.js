@@ -169,11 +169,21 @@
     if (!list.length) return null;                 // no seasons loaded: draw nothing
     if (!club || list.indexOf(club) === -1) club = "";
 
+    /* IT SAYS WHAT IT IS BEFORE YOU PICK A CLUB. The first version was a bare
+       dropdown reading "Your club — Pick a club…", forty-four pixels at the
+       foot of a sidebar, and the owner played two games and reported no table
+       at all. It was there; it just never announced itself, and nothing about
+       it explained that choosing a club turns a score into a league position.
+       The heading is always drawn and the invitation replaces the ladder while
+       there is nothing to rank. */
     el.innerHTML =
+      '<span class="tb-label xit-head">League table' +
+      '<span class="season-tag xit-season"></span></span>' +
       '<div class="club-bar"><label>Your club ' +
       '<select class="xit-club" title="Choose your club (optional)"></select></label></div>' +
-      '<table class="league"><tbody class="xit-body"></tbody></table>' +
-      '<span class="tb-label tb-season">League table <span class="season-tag xit-season"></span></span>';
+      '<p class="xit-invite">Pick your club and this board’s score becomes ' +
+      'its points in a real season.</p>' +
+      '<table class="league"><tbody class="xit-body"></tbody></table>';
 
     var select = el.querySelector(".xit-club");
     var tbody = el.querySelector(".xit-body");

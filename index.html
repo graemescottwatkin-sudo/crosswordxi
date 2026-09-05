@@ -68,9 +68,9 @@
      own — the team sheet and the kit colours. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared/xi-tokens.css?v=v23">
-<link rel="stylesheet" href="shared/xi-chrome.css?v=v23">
-<script src="shared/xi-theme.js?v=v23"></script>
+<link rel="stylesheet" href="shared/xi-tokens.css?v=v24">
+<link rel="stylesheet" href="shared/xi-chrome.css?v=v24">
+<script src="shared/xi-theme.js?v=v24"></script>
 <style>
 :root{
 
@@ -464,8 +464,8 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
      and the one page list, so the front door's footer and every game's are
      the same footer. -->
 <footer class="xic-foot"></footer>
-<script src="shared/xi-season.js?v=v23"></script>
-<script src="shared/xi-chrome.js?v=v23"></script>
+<script src="shared/xi-season.js?v=v24"></script>
+<script src="shared/xi-chrome.js?v=v24"></script>
 
 <script>
 /* Progressive enhancement only: everything above renders complete without
@@ -641,13 +641,26 @@ a.soon-card:hover .nm,a.soon-card:focus-visible .nm{color:var(--ink)}
         box.hidden = false;
         return;
       }
-      var bits = ["Season " + String.fromCharCode(183) + " ",
-        "<b>P" + s.played + "</b> ",
-        "<b>W" + s.won + "</b> ",
-        "<b>D" + s.drawn + "</b> ",
-        "<b>L" + s.lost + "</b> ",
-        String.fromCharCode(183) + " <b>" + s.points + "</b> pts"];
-      line.innerHTML = bits.join("");
+      /* WORDS, NOT LETTER-AND-NUMBER PAIRS. This read "P6 W2 D3 L1" — and on
+         a season with nothing settled yet it printed "P0 W0 D0 L0", which in
+         the display face reads as PO WO DO LO: four words, no numbers, and
+         nothing a player could parse. The owner saw exactly that on the first
+         day. Spelling the labels costs a few characters and cannot be
+         misread at any count.
+         And a season with no settled day says so rather than reciting four
+         zeroes: the first result is pending, which is the true state of a
+         player who kicked off an hour ago. */
+      var dot = " " + String.fromCharCode(183) + " ";
+      if (s.played === 0) {
+        line.innerHTML = "Season" + dot + "first result pending";
+      } else {
+        line.innerHTML = "Season" + dot +
+          "<b>" + s.played + "</b> played" + dot +
+          "<b>" + s.won + "</b> won" + dot +
+          "<b>" + s.drawn + "</b> drawn" + dot +
+          "<b>" + s.lost + "</b> lost" + dot +
+          "<b>" + s.points + "</b> pts";
+      }
 
       form.textContent = "";
       s.marks.slice(-FORM_SHOWN).forEach(function (m) { form.appendChild(mark(m, false)); });
