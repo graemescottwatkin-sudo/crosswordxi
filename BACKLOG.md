@@ -154,44 +154,6 @@ should be built as one — rolled out to the four football games and not assumed
 of whatever comes next. The half that spans themes is the half that does not
 depend on scoring, which is a good sign it is the right half to make universal.
 
-### 5c. The word search's score, server-side — and two live leaks it closes
-
-The last of the four. Its loop has to be inverted: the page is shipped
-`answers` with full coordinates and judges every drag itself, so the server
-never learns what the player found and NO word search score can be verified as
-things stand. The client must send the selection and the server say what it
-hit.
-
-TWO THINGS ARE LIVE NOW, both confirmed against production on 4 Sep, and
-neither is patchable on its own because the page needs the placements to judge:
-
-- **Today's daily board is served whole by the free-play route.**
-  `/api/wordsearch/puzzle?id=<today's id>` returns all eleven answers with
-  exact coordinates, to anyone. `released()` passes any board first scheduled
-  today or earlier, and the archive gate sees `daysBack = 0`. So withholding
-  placements from `/api/wordsearch/daily` alone would be theatre.
-- **The secret bonus word ships before it is found.** The ★ the player is meant
-  to deduce from a clue rides down as `bonus.display` in the daily payload
-  every player loads. The page simply does not draw it until full time; it is
-  readable in the network tab.
-
-The work, in order:
-
-1. Today's daily is not served whole anywhere else: out of the free-play
-   catalogue, and `/puzzle` refuses its id with the same identical 404 an
-   unreleased board gets.
-2. The daily ships the grid and the word list, not the placements — and not the
-   bonus word until it is found.
-3. `round` / `find` / `finish`, with `ws_round` + `ws_find` (migration 030 or
-   whatever is free by then). The server judges each selection, times it, and
-   prices the fouls; the daily has no help cards, so time, fouls and the bonus
-   are the whole score.
-4. The page sends the selection and draws what comes back.
-
-THE PRICE, worth deciding with eyes open: every find becomes a round trip, so
-the daily stops being playable offline. Free Play is unaffected — it keeps its
-whole board and its four help cards, and it is not scored competitively.
-
 ### 14. Automated testing against the live site
 
 Raised by the owner on 5 Sep: "can agent or automation be made to test the game
@@ -407,6 +369,11 @@ or a schedule position independently of the server it is testing.
   rather than one board, so no label is written twice; and the server stopped
   printing a row's source quote when that quote is a slice of JSON, which it is
   for every board sourced from the league's data endpoint.
+- **5c. The word search's score, server-side** — wordsearch v002i, migration
+  031, 5 Sep. The server judges every selection now; the board no longer
+  travels with its placements and the secret no longer travels at all. Closed
+  two live leaks with it: today's board was served whole by the free-play
+  route, and the bonus word shipped before it was found.
 - **5b. Scrambled's score, server-side** — scrambled v002g, migration 029,
   4 Sep. The server owns the clock and counts the board's own slots.
 - **5a. HiLo's score, server-side** — hilo v001p, migration 028, 4 Sep.
