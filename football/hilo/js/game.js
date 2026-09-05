@@ -10,7 +10,7 @@
  * more, 114 the ceiling. This file is the page: the landing the family
  * shares, the ladder of two rows, the clock, the answers list, the share.
  */
-var BUILD = "v001t";
+var BUILD = "v001u";
 
 (function () {
   "use strict";
@@ -519,7 +519,29 @@ var BUILD = "v001t";
       if (r !== undefined && src && (src.quote || src.url)) {
         var s = document.createElement("span"); s.className = "src";
         if (src.quote) s.appendChild(document.createTextNode("“" + src.quote + "” "));
-        if (src.url) { var a = document.createElement("a"); a.href = src.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = src.publisher || "source"; s.appendChild(a); }
+        if (src.url) {
+          var a = document.createElement("a");
+          a.href = src.url; a.target = "_blank"; a.rel = "noopener";
+          /* A LINK INTO A RANKED FEED SAYS SO. Rows taken from the league's own
+             feed carry a page note, and their URL opens a hundred-row page of
+             JSON rather than a tidy table — so the link is labelled for what it
+             is, "Premier League official statistics", instead of the bare
+             publisher. Derived from the publisher rather than written out, so a
+             second feed gets the same treatment without a second rule. */
+          a.textContent = src.page && src.publisher
+            ? src.publisher + " official statistics"
+            : (src.publisher || "source");
+          s.appendChild(a);
+        }
+        /* And WHICH page of it. Without this the link is honest and still
+           unhelpful: the owner followed one for Emerson Thome, landed on page
+           one of Sheffield Wednesday's list, and found ten rows without him. */
+        if (src.page) {
+          var pg = document.createElement("small");
+          pg.className = "srcPage";
+          pg.textContent = " — " + src.page;
+          s.appendChild(pg);
+        }
         li.appendChild(s);
       }
     });

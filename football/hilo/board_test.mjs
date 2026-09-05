@@ -82,6 +82,30 @@ t("a call that ran out of clock is wrong and still reveals the value",
 t("call zero and call twelve are not calls", judge(daily, 0, "higher") === null && judge(daily, 12, "higher") === null);
 t("and a call that is not a call is refused", judge(daily, 1, "sideways") === null);
 
+/* WHERE ON THE PAGE THE ROW IS. Rows read from the league's ranked feed link
+   to a hundred-row page of JSON, and a link that opened page one for a player
+   ranked eightieth showed ten names without him — the owner followed one for
+   Emerson Thome and found exactly that. The content side puts the right page
+   in the URL and a sentence in source.page saying which; the judge has to
+   carry that sentence or the player lands on the wall of JSON with nothing to
+   look for. */
+{
+  const feed = JSON.parse(JSON.stringify(daily));
+  feed.chain[1].source = {
+    publisher: "Premier League",
+    url: "https://footballapi.pulselive.com/football/stats/ranked/players/appearances?comps=1&pageSize=100&page=0",
+    quote: "\"display\":\"Nigel Winterburn\"",
+    page: "the league feed, one hundred rows a page; this row is rank 80 on page 1",
+  };
+  const v = judge(feed, 1, truth(1));
+  t("a league-feed row brings its page note back with the verdict",
+    !!v && v.source.page === feed.chain[1].source.page, v && v.source.page);
+  /* And a row without one says null rather than undefined, so the page can ask
+     without guessing. */
+  const plain = judge(daily, 2, truth(2));
+  t("a row with no page note says so plainly", plain.source.page === null);
+}
+
 /* ---- A QUOTE IS EVIDENCE, AND NOT ALL EVIDENCE IS COPY ----
    The club boards are sourced from the league's data endpoint, so their
    verbatim quote is a slice of JSON — and the settled row printed it to the

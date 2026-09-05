@@ -231,7 +231,19 @@ export function judge(board, index, call) {
     context: row.context || "",
     ...(row.detail && row.detail.birthDate ? { birthDate: row.detail.birthDate } : {}),
     ...(row.precision ? { precision: row.precision } : {}),
-    source: { publisher: src.publisher || null, url: src.url || null, quote: readableQuote(src.quote) },
+    source: {
+      publisher: src.publisher || null, url: src.url || null,
+      quote: readableQuote(src.quote),
+      /* WHERE ON THE PAGE THE ROW IS, in words. The league's ranked feed is a
+         hundred rows to a page, and a link that opened page one for a player
+         ranked eightieth showed ten names without him — the owner followed one
+         for Emerson Thome and found exactly that. The URLs carry the right page
+         now, and this sentence says which, so somebody who lands on a wall of
+         JSON knows what they are looking for. Passed through rather than
+         rebuilt: it is the content side's sentence, about the content side's
+         URL, and a second phrasing here would be a second claim. */
+      page: src.page || null,
+    },
   };
 }
 
