@@ -192,6 +192,101 @@ THE PRICE, worth deciding with eyes open: every find becomes a round trip, so
 the daily stops being playable offline. Free Play is unaffected — it keeps its
 whole board and its four help cards, and it is not scored competitively.
 
+### 14. Automated testing against the live site
+
+Raised by the owner on 5 Sep: "can agent or automation be made to test the game
+when these updates go live where the aim is to see if the game breaks".
+
+**WHAT EXISTS AND WHAT DOES NOT.** Five `live_check.mjs` hit production but only
+READ — grepped, they contain zero clicks and zero drags between them.
+`journey_test` and `render_test` play, in a real browser for the second, but
+against `wrangler pages dev` with sample data. CI runs on push and
+pull_request; there is no schedule. So nothing plays the live site and nothing
+runs unless somebody pushes.
+
+**AND DEPLOYS ARE NOT THE MAIN RISK.** Every game serves a different board at
+midnight UTC with no deploy at all. A malformed board, a hole in a schedule, a
+board whose bonus is missing — none of that involves a code change and nothing
+would catch it. On 5 Sep the HiLo journey went red at 00:06 because a new board
+came round with a one-sentence subtitle; that was a fault in the check rather
+than the board, but it is the class exactly: the site's behaviour changes daily
+on its own.
+
+**TWO QUESTIONS, AND ONLY ONE OF THEM NEEDS A BROWSER.**
+
+*Are the upcoming boards good?* is a DATA question. Answer it where the data
+already is: `/api/preflight`, gated by a shared secret, walking the next N days
+of every game's schedule and applying the shape rules the importers already
+enforce. **It returns verdicts, never boards** —
+
+    { "checked": 70, "days": 14,
+      "problems": [ { "game": "hilo", "day": "2026-09-12", "why": "no board" } ] }
+
+no grid, no answer, no name. If that secret leaked, an attacker learns whether
+the next fortnight is well-formed and nothing else. This is the higher-value
+half — it catches a bad board BEFORE a player sees it — and it needs no browser
+at all. Build it first.
+
+*Does the game play?* is a browser question, and it is asked of TODAY's board,
+because that is what a player gets.
+
+**NO BOT NEEDS TO BE TOLD ANYTHING.** Every game can reach full time unaided:
+
+  wordsearch    solves the grid — both halves are public and must be, the grid
+                IS the puzzle and a word search shows its list. Demonstrated:
+                all eleven located in milliseconds from the live payload.
+  hilo          calls higher/lower; a wrong call still settles the row
+  scrambled     buys a name reveal per slot
+  vowels        the same
+  crossword     reveal answer per entry, or a published answers page
+
+Withholding the placements never made the board unsolvable by a machine. It
+made the SERVER the judge, which is what makes the score mean something. A bot
+that solves the grid and drags is a bot playing the game properly.
+
+**TEN SESSIONS A NIGHT.** Per game: one that fouls a few times and then
+completes, and one that starts and abandons. The first covers the escalation,
+the reset and a clean finish in a single play; splitting them doubles the cost
+for no coverage. The second is the only way to exercise an unfinished board —
+and the LOSS condition of item 11. Roughly 20-40 seconds each, 5-7 minutes of
+Actions time. Cheating is probed without a browser at all: claim a score, claim
+a smaller board, replay a word, omit the CSRF header.
+
+**SCORE VARIETY IS FREE; LOW SCORES ARE NOT.** Fouls and the bonus move the
+score without moving the clock — 113 with the bonus, 103 clean, 100 with six
+minutes of fouls, 93 with fifteen, all in twenty seconds. Reaching 71 means
+five real minutes of play and reaching 0 means ten, per game. But the curve is
+arithmetic and is already proven offline in milliseconds; what a live bot
+uniquely proves is the WIRING — that production applies that rule to a real
+play, on a clock it kept, against fouls it recorded. One play proves the
+wiring; ten prove it ten times. So: the bot computes its expected score from
+the SAME shared module the server uses and asserts production agrees to the
+point. A slow run for the bottom of the curve is worth having weekly, not
+nightly.
+
+**THE BOT'S PLAYS MUST BE EXCLUDABLE FROM THE START.** Ten sessions a night is
+~3,650 rows a year and half of them carry a real `srv_score` — the kind that
+would sit in a challenge table once item 6 lands. One bot account, created by
+DEVICE CODE rather than Google (no name, no email — exactly the "a code holds a
+random string and some scores" case `functions/api/account/code.js` describes),
+and every play signed in as it. Then excluding them is one `user_id`, forever,
+in any table ever built. Decided before the first run, because retro-fitting it
+means working out which historical rows were bots.
+
+**REJECTED: giving a bot admin.** The owner asked whether bots could hold admin
+so they could play future boards. Admin is not a "see future boards" flag — the
+route also serves `plays.csv` and `reports.csv` (player data, exportable) and
+accepts `featured-set`, `challenge-hide`, `reports/clear` and `replay-day`
+(mutations). That credential in Actions secrets on a PUBLIC repo is one leak
+away from the forward bank, a player-data export and write access. The
+preflight endpoint above serves the same goal — knowing a future board is sound
+— and gives up nothing if it leaks.
+
+**REJECTED: several bots guessing differently to discover answers.**
+Unnecessary, since every game completes unaided, and a fleet submitting wrong
+guesses at volume against the rate limits is indistinguishable from an attack
+on the service — the one traffic pattern worth being able to block cleanly.
+
 ### 12. The board permalink pages are orphaned
 
 The pages themselves are right and nothing about them needs fixing: each board
