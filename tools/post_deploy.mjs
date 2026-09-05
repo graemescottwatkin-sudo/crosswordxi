@@ -33,8 +33,14 @@ const SITE = "https://www.thexigames.com";
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
 
 /* The game list, from the contract that already owns it. */
+/* Matched on `dir:` wherever it sits and whatever it contains. This required
+   dir to be the FIRST key in the object and to hold no slash — both true until
+   the games moved under a theme and the table grew an `id` beside a `dir` of
+   "football/crossword". It then matched nothing, and the guard below turned
+   that into a refusal rather than a silent run over zero games, which is the
+   only reason this was a one-line fix and not a wrong LAST_SHIPPED. */
 const GAMES = [...read("tools/aligned_test.mjs")
-  .matchAll(/\{\s*dir:\s*"([a-z]+)"/g)].map((m) => m[1]);
+  .matchAll(/\bdir:\s*"([a-z\/]+)"/g)].map((m) => m[1]);
 if (!GAMES.length) { console.log("FAIL  no games found in tools/aligned_test.mjs"); process.exit(1); }
 
 /* The same rule both gates use: the game's own tagged assets, discovered from
