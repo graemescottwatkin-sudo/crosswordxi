@@ -176,6 +176,37 @@ depend on scoring, which is a good sign it is the right half to make universal.
 
 ### 14. Automated testing against the live site
 
+**STATE, 5 Sep 2026.**
+
+- ✅ **14a, /api/preflight.** Live. Walks the next fortnight of every game's
+  schedule and answers with verdicts, never boards. `.github/workflows/
+  nightly.yml` asks it at 01:10 UTC. **NEEDS ONE MANUAL STEP: set
+  `PREFLIGHT_SECRET` as a Cloudflare Pages environment variable AND as a
+  GitHub repository secret.** Until both exist the endpoint refuses everybody
+  (by design — no secret configured is no access) and the nightly job fails
+  loudly rather than passing on nothing.
+- ✅ **14b, the bot's reasoning half.** `tools/bot_solve.mjs`, proved by
+  `bot_solve_test.mjs` against real boards AND against production's own
+  judge: 33 words located from the grid a browser is given, in 1ms, with no
+  placements in the payload. The claim that no bot needs to be told anything
+  is now checked rather than asserted — which is what keeps the bank out of
+  CI on a public repo.
+- ✅ **14b, the driver.** `tools/play_bot.mjs` plays ten sessions — complete
+  and abandon, per game — signing in first and refusing to run if it cannot.
+  **NEEDS TWO MANUAL STEPS: create a bot account from any game's Settings
+  device code, put that code in the repository secret `XI_BOT_CODE`, then
+  uncomment the `schedule` in `.github/workflows/playbot.yml`.** It is
+  dispatch-only until then, so nothing runs red nightly while it waits.
+- ⬜ **Not yet: the cheating probes.** "Claim a score, claim a smaller board,
+  replay a word, omit the CSRF header" — every one of those is already proved
+  offline in the games' `verified_test.mjs` suites against the real handlers.
+  Doing it again over the wire proves the deployment rather than the rule, so
+  it is worth having and is not urgent.
+- ⬜ **Not yet: a browser session.** The bot drives the API, which is what
+  proves the wiring. Whether the PAGE plays is `journey_test`'s question and
+  it still runs against `wrangler pages dev` rather than production.
+
+
 Raised by the owner on 5 Sep: "can agent or automation be made to test the game
 when these updates go live where the aim is to see if the game breaks".
 

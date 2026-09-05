@@ -94,6 +94,13 @@ jobs:
       - name: The coming boards are checked, and the gate holds
         run: node tools/preflight_test.mjs
 
+      # The play bot's reasoning half, proved offline against real boards and
+      # against production's OWN judge: every word located from the grid a
+      # browser is given, with no placements in it. If this claim were false the
+      # bank would have to reach CI, which on a public repo it must never do.
+      - name: A bot can finish every game without being told anything
+        run: node tools/bot_solve_test.mjs
+
       - name: One season, and it says the same thing on both branches
         run: |
           node tools/season_test.mjs

@@ -1,0 +1,56 @@
+# Play bot — does today's board actually play?
+#
+# The nightly preflight asks whether the coming boards are well FORMED. This
+# asks whether today's can be PLAYED, which is the question that needs a
+# running server: what it exercises is the WIRING — that production applies its
+# own scoring rule to a real play, on a clock it kept, against fouls it
+# recorded. A shape rule cannot tell you that.
+#
+# NOT SCHEDULED YET, ON PURPOSE. It needs two things first, and both are the
+# owner's to do:
+#
+#   1. A bot ACCOUNT. Open any game, Settings, and take the device code — that
+#      is an account with no name and no email, exactly the "a random string and
+#      some scores" case functions/api/account/code.js describes. Use a code
+#      that is the bot's alone and is never linked to a real device.
+#   2. That code as the repository secret XI_BOT_CODE.
+#
+# Then uncomment the `schedule` block below. Until both exist the bot refuses to
+# run rather than playing anonymously: ten sessions a night is ~3,650 rows a
+# year, half of them carrying a real verified score, and rows written without an
+# account could never afterwards be told apart from a player's. Excluding the
+# bot from any table ever built is one user_id — but only if every row had it
+# from the first run.
+#
+# It is left on workflow_dispatch in the meantime so it can be run by hand,
+# rather than scheduled to fail nightly until somebody notices.
+name: Play bot
+
+on:
+  # schedule:
+  #   # 01:30 UTC — after the preflight at 01:10, so a board that is malformed is
+  #   # already reported and this is not the thing that finds it second.
+  #   - cron: "30 1 * * *"
+  workflow_dispatch:
+    inputs:
+      games:
+        description: "Which games (comma separated), or blank for all five"
+        required: false
+        default: ""
+
+jobs:
+  play:
+    name: Ten sessions against the live site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No install: fetch and nothing else. The repo has no package.json on
+      # purpose and this job must not become the reason for one.
+      - name: Play
+        env:
+          XI_BOT_CODE: ${{ secrets.XI_BOT_CODE }}
+          GAMES: ${{ github.event.inputs.games }}
+        run: node tools/play_bot.mjs
